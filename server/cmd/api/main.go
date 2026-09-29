@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -33,6 +34,10 @@ func run() error {
 	if databaseURL == "" {
 		return errors.New("DATABASE_URL is required")
 	}
+	authSecret := os.Getenv("AUTH_JWT_SECRET")
+	if authSecret == "" {
+		return errors.New("AUTH_JWT_SECRET is required")
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -51,6 +56,9 @@ func run() error {
 		Handler: httpapi.NewHandler(httpapi.Config{
 			AllowedOrigin: os.Getenv("WEB_ORIGIN"),
 			Ping:          pool.Ping,
+			Store:         store.New(pool),
+			AuthSecret:    []byte(authSecret),
+			AuthTokenTTL:  authTokenTTL(),
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,
@@ -79,4 +87,12 @@ func run() error {
 	}
 	slog.Info("Farash API stopped")
 	return nil
+}
+
+func authTokenTTL() time.Duration {
+	hours, err := strconv.Atoi(os.Getenv("AUTH_TOKEN_TTL_HOURS"))
+	if err != nil || hours <= 0 {
+		return 24 * time.Hour
+	}
+	return time.Duration(hours) * time.Hour
 }

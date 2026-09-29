@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 )
 
 type healthResponse struct {
@@ -15,11 +16,28 @@ type Config struct {
 	AllowedOrigin string
 	// Ping reports whether the database answers; nil skips the check.
 	Ping func(context.Context) error
+	// Store persists and reads authenticated users.
+	Store userStore
+	// AuthSecret signs HS256 JWTs.
+	AuthSecret []byte
+	// AuthTokenTTL controls the returned token lifetime.
+	AuthTokenTTL time.Duration
 }
 
 func NewHandler(config Config) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/v1/health", health(config.Ping))
+
+	if config.AuthTokenTTL == 0 {
+		config.AuthTokenTTL = 24 * time.Hour
+	}
+	if config.Store != nil && len(config.AuthSecret) > 0 {
+		auth := newAuthHandler(config.Store, config.AuthSecret, config.AuthTokenTTL)
+		mux.HandleFunc("POST /api/v1/auth/register", auth.register)
+		mux.HandleFunc("POST /api/v1/auth/login", auth.login)
+		mux.HandleFunc("GET /api/v1/me", auth.me)
+	}
+
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found")
 	})
