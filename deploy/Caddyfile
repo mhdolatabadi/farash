@@ -1,0 +1,13 @@
+{$FARASH_DOMAIN} {
+  encode zstd gzip
+
+  handle /api/* {
+    reverse_proxy api:8080 {
+      header_up X-Farash-Client-IP {remote_host}
+    }
+  }
+
+  handle {
+    reverse_proxy web:80
+  }
+}
