@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:farash/features/auth/data/auth_models.dart';
 
 class ApiException implements Exception {
   const ApiException(this.message, {this.statusCode, this.code});
@@ -17,9 +18,15 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+abstract interface class AuthApi {
+  Future<AuthSession> register(String email, String password);
+  Future<AuthSession> login(String email, String password);
+  Future<AuthUser> me(String token);
+}
+
 /// Talks to the Farash API. Feature interfaces are implemented here so that
 /// one HTTP client serves the whole app.
-class ApiClient {
+class ApiClient implements AuthApi {
   ApiClient(this.baseUri, {http.Client? client})
     : _client = client ?? http.Client();
 
@@ -30,6 +37,35 @@ class ApiClient {
 
   Future<void> checkHealth() async {
     await _send('GET', '/api/v1/health');
+  }
+
+  @override
+  Future<AuthSession> register(String email, String password) async =>
+      AuthSession.fromJson(
+        await _send(
+              'POST',
+              '/api/v1/auth/register',
+              body: {'email': email, 'password': password},
+            )
+            as Map<String, dynamic>,
+      );
+
+  @override
+  Future<AuthSession> login(String email, String password) async =>
+      AuthSession.fromJson(
+        await _send(
+              'POST',
+              '/api/v1/auth/login',
+              body: {'email': email, 'password': password},
+            )
+            as Map<String, dynamic>,
+      );
+
+  @override
+  Future<AuthUser> me(String token) async {
+    final body =
+        await _send('GET', '/api/v1/me', token: token) as Map<String, dynamic>;
+    return AuthUser.fromJson(body['user'] as Map<String, dynamic>);
   }
 
   Uri _uri(String path, [Map<String, String>? query]) => baseUri.replace(

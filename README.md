@@ -25,6 +25,7 @@ docker run -d --name farash-db -p 5432:5432 \
   -e POSTGRES_USER=farash -e POSTGRES_PASSWORD=farash -e POSTGRES_DB=farash postgres:16-alpine
 cd server
 export DATABASE_URL='postgres://farash:farash@localhost:5432/farash?sslmode=disable'
+export AUTH_JWT_SECRET="$(openssl rand -hex 32)"
 TEST_DATABASE_URL="$DATABASE_URL" go test -p 1 ./...
 go run ./cmd/api
 ```
@@ -37,6 +38,13 @@ database. `WEB_ORIGIN` allows one web origin to call the API cross-origin, and
 | Endpoint | Purpose |
 | --- | --- |
 | `GET /api/v1/health` | `{"status":"ok"}` when the API reaches PostgreSQL, `503` otherwise |
+| `POST /api/v1/auth/register` | Create an account from `{"email", "password"}` and return `{"token", "user"}` |
+| `POST /api/v1/auth/login` | Return `{"token", "user"}` for valid credentials |
+| `GET /api/v1/me` | `{"user"}` for `Authorization: Bearer <token>` |
+
+Passwords must be 8–72 characters and are stored only as bcrypt hashes.
+`AUTH_JWT_SECRET` (required) signs access tokens and `AUTH_TOKEN_TTL_HOURS`
+(default `24`) sets how long a sign-in lasts.
 
 ## Run the Flutter app
 
@@ -50,7 +58,9 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
 `10.0.2.2` points to the host machine from the Android emulator. The web build
 falls back to its own origin, so it works behind the same domain as the API.
 The app checks `/api/v1/health` on startup and offers a retry when the server
-is unavailable.
+is unavailable. It then restores the saved session, or asks the user to sign
+in or register. The access token is kept in Android Keystore or encrypted
+browser storage on the web.
 
 Every push to `main` builds a debug Android APK: download the
 `farash-android-debug` artifact from the **Quality checks** run. The Android

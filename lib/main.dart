@@ -4,16 +4,23 @@ import 'package:farash/app/app_configuration.dart';
 import 'package:farash/app/app_theme.dart';
 import 'package:farash/app/backend_gate.dart';
 import 'package:farash/core/api/api_client.dart';
+import 'package:farash/features/auth/application/auth_controller.dart';
+import 'package:farash/features/auth/data/token_store.dart';
+import 'package:farash/features/auth/presentation/auth_gate.dart';
+import 'package:farash/features/home/home_screen.dart';
 
 void main() {
   runApp(const FarashApp());
 }
 
 class FarashApp extends StatefulWidget {
-  const FarashApp({super.key, this.healthCheck});
+  const FarashApp({super.key, this.healthCheck, this.authApi, this.tokenStore});
 
-  /// Test override; by default the app checks [AppConfiguration.apiBaseUri].
+  /// Test overrides; by default these talk to [AppConfiguration.apiBaseUri]
+  /// and the device's secure storage.
   final Future<void> Function()? healthCheck;
+  final AuthApi? authApi;
+  final TokenStore? tokenStore;
 
   @override
   State<FarashApp> createState() => _FarashAppState();
@@ -23,9 +30,23 @@ class _FarashAppState extends State<FarashApp> {
   late final ApiClient? _apiClient = AppConfiguration.apiBaseUri == null
       ? null
       : ApiClient(AppConfiguration.apiBaseUri!);
+  late final AuthApi? _authApi = widget.authApi ?? _apiClient;
+  late final AuthController? _auth = _authApi == null
+      ? null
+      : AuthController(
+          api: _authApi,
+          tokenStore: widget.tokenStore ?? SecureTokenStore(),
+        );
+
+  @override
+  void dispose() {
+    _auth?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final auth = _auth;
     return MaterialApp(
       title: 'Farash',
       debugShowCheckedModeBanner: false,
@@ -38,21 +59,14 @@ class _FarashAppState extends State<FarashApp> {
       darkTheme: FarashTheme.dark(),
       home: BackendGate(
         healthCheck: widget.healthCheck ?? _apiClient?.checkHealth,
-        child: const _Placeholder(),
+        child: auth == null
+            ? const SizedBox.shrink()
+            : AuthGate(
+                controller: auth,
+                signedIn: (context) =>
+                    HomeScreen(email: auth.user!.email, onLogout: auth.logout),
+              ),
       ),
-    );
-  }
-}
-
-/// Stands in for the task screens until accounts and projects land.
-class _Placeholder extends StatelessWidget {
-  const _Placeholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('فراش')),
-      body: const Center(child: Text('به فراش خوش آمدید')),
     );
   }
 }
