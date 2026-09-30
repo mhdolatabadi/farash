@@ -15,7 +15,7 @@ type Config struct {
 	AllowedOrigin string
 	Ping          func(context.Context) error
 	Store         userStore
-	ProjectStore  projectStore
+	ProjectStore  projectsStore
 	AuthSecret    []byte
 	AuthTokenTTL  time.Duration
 }
@@ -31,14 +31,14 @@ func NewHandler(config Config) http.Handler {
 		mux.HandleFunc("POST /api/v1/auth/register", auth.register)
 		mux.HandleFunc("POST /api/v1/auth/login", auth.login)
 		mux.HandleFunc("GET /api/v1/me", auth.me)
-		projectStore := config.ProjectStore
-		if projectStore == nil {
-			if storeWithProjects, ok := config.Store.(projectStore); ok {
-				projectStore = storeWithProjects
+		projectsStore := config.ProjectStore
+		if projectsStore == nil {
+			if storeWithProjects, ok := config.Store.(projectsStore); ok {
+				projectsStore = storeWithProjects
 			}
 		}
-		if projectStore != nil {
-			projects := newProjectsHandler(auth, projectStore)
+		if projectsStore != nil {
+			projects := newProjectsHandler(auth, projectsStore)
 			mux.HandleFunc("GET /api/v1/projects", projects.list)
 			mux.HandleFunc("POST /api/v1/projects", projects.create)
 			mux.HandleFunc("PATCH /api/v1/projects/{id}", projects.update)
