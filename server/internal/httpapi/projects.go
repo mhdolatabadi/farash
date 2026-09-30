@@ -10,7 +10,7 @@ import (
 	"github.com/mhdolatabadi/farash/server/internal/store"
 )
 
-type projectStore interface {
+type projectsStore interface {
 	EnsureInboxProject(context.Context, string) (store.Project, error)
 	ListProjects(context.Context, string) ([]store.Project, error)
 	CreateProject(context.Context, string, store.ProjectInput) (store.Project, error)
@@ -20,7 +20,7 @@ type projectStore interface {
 
 type projectsHandler struct {
 	auth  *authHandler
-	store projectStore
+	store projectsStore
 }
 
 type projectRequest struct {
@@ -42,7 +42,7 @@ type projectPatchRequest struct {
 	Kind       *string `json:"kind"`
 }
 
-func newProjectsHandler(auth *authHandler, store projectStore) *projectsHandler {
+func newProjectsHandler(auth *authHandler, store projectsStore) *projectsHandler {
 	return &projectsHandler{auth: auth, store: store}
 }
 
