@@ -7,21 +7,25 @@ import (
 	"time"
 )
 
-type healthResponse struct { Status string `json:"status"` }
+type healthResponse struct {
+	Status string `json:"status"`
+}
 
 type Config struct {
 	AllowedOrigin string
-	Ping func(context.Context) error
-	Store userStore
-	ProjectStore projectStore
-	AuthSecret []byte
-	AuthTokenTTL time.Duration
+	Ping          func(context.Context) error
+	Store         userStore
+	ProjectStore  projectStore
+	AuthSecret    []byte
+	AuthTokenTTL  time.Duration
 }
 
 func NewHandler(config Config) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/v1/health", health(config.Ping))
-	if config.AuthTokenTTL == 0 { config.AuthTokenTTL = 24 * time.Hour }
+	if config.AuthTokenTTL == 0 {
+		config.AuthTokenTTL = 24 * time.Hour
+	}
 	if config.Store != nil && len(config.AuthSecret) > 0 {
 		auth := newAuthHandler(config.Store, config.AuthSecret, config.AuthTokenTTL)
 		mux.HandleFunc("POST /api/v1/auth/register", auth.register)
@@ -29,7 +33,9 @@ func NewHandler(config Config) http.Handler {
 		mux.HandleFunc("GET /api/v1/me", auth.me)
 		projectStore := config.ProjectStore
 		if projectStore == nil {
-			if storeWithProjects, ok := config.Store.(projectStore); ok { projectStore = storeWithProjects }
+			if storeWithProjects, ok := config.Store.(projectStore); ok {
+				projectStore = storeWithProjects
+			}
 		}
 		if projectStore != nil {
 			projects := newProjectsHandler(auth, projectStore)
@@ -46,7 +52,10 @@ func NewHandler(config Config) http.Handler {
 func cors(allowedOrigin string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Vary", "Origin")
-		if allowedOrigin == "" || r.Header.Get("Origin") != allowedOrigin { next.ServeHTTP(w, r); return }
+		if allowedOrigin == "" || r.Header.Get("Origin") != allowedOrigin {
+			next.ServeHTTP(w, r)
+			return
+		}
 		w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
 		if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
 			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
@@ -62,14 +71,25 @@ func cors(allowedOrigin string, next http.Handler) http.Handler {
 func health(ping func(context.Context) error) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if ping != nil {
-			if err := ping(r.Context()); err != nil { writeError(w, http.StatusServiceUnavailable, "database_unavailable"); return }
+			if err := ping(r.Context()); err != nil {
+				writeError(w, http.StatusServiceUnavailable, "database_unavailable")
+				return
+			}
 		}
 		writeJSON(w, http.StatusOK, healthResponse{Status: "ok"})
 	}
 }
 
-func writeJSON(w http.ResponseWriter, status int, body any) { w.Header().Set("Content-Type", "application/json"); w.WriteHeader(status); _ = json.NewEncoder(w).Encode(body) }
+func writeJSON(w http.ResponseWriter, status int, body any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(body)
+}
 
-type errorResponse struct { Error string `json:"error"` }
+type errorResponse struct {
+	Error string `json:"error"`
+}
 
-func writeError(w http.ResponseWriter, status int, code string) { writeJSON(w, status, errorResponse{Error: code}) }
+func writeError(w http.ResponseWriter, status int, code string) {
+	writeJSON(w, status, errorResponse{Error: code})
+}

@@ -109,13 +109,30 @@ func (s *Store) UpdateProject(ctx context.Context, ownerID string, id string, in
 		return Project{}, ErrInboxProject
 	}
 	name, color, sortOrder, isFavorite, isArchived, kind, parentID := current.Name, current.Color, current.SortOrder, current.IsFavorite, current.IsArchived, current.Kind, current.ParentID
-	if input.Name != nil { name = cleanName(*input.Name); if name == "" { return Project{}, ErrProjectNotFound } }
-	if input.Color != nil { color = cleanColor(*input.Color) }
-	if input.SortOrder != nil { sortOrder = *input.SortOrder }
-	if input.IsFavorite != nil { isFavorite = *input.IsFavorite }
-	if input.IsArchived != nil { isArchived = *input.IsArchived }
-	if input.Kind != nil { kind = cleanKind(*input.Kind) }
-	if input.ParentID != nil { parentID = cleanOptional(input.ParentID) }
+	if input.Name != nil {
+		name = cleanName(*input.Name)
+		if name == "" {
+			return Project{}, ErrProjectNotFound
+		}
+	}
+	if input.Color != nil {
+		color = cleanColor(*input.Color)
+	}
+	if input.SortOrder != nil {
+		sortOrder = *input.SortOrder
+	}
+	if input.IsFavorite != nil {
+		isFavorite = *input.IsFavorite
+	}
+	if input.IsArchived != nil {
+		isArchived = *input.IsArchived
+	}
+	if input.Kind != nil {
+		kind = cleanKind(*input.Kind)
+	}
+	if input.ParentID != nil {
+		parentID = cleanOptional(input.ParentID)
+	}
 	var project Project
 	row := s.pool.QueryRow(ctx, `
 		UPDATE projects
@@ -123,17 +140,27 @@ func (s *Store) UpdateProject(ctx context.Context, ownerID string, id string, in
 		WHERE owner_id = $1 AND id = $2
 		RETURNING id, owner_id, parent_id, name, color, sort_order, is_favorite, is_archived, is_inbox, kind, 0
 	`, ownerID, id, parentID, name, color, sortOrder, isFavorite, isArchived, kind)
-	if err := scanProject(row, &project); err != nil { return Project{}, ErrProjectNotFound }
+	if err := scanProject(row, &project); err != nil {
+		return Project{}, ErrProjectNotFound
+	}
 	return project, nil
 }
 
 func (s *Store) DeleteProject(ctx context.Context, ownerID string, id string) error {
 	project, err := s.ProjectByID(ctx, ownerID, id)
-	if err != nil { return err }
-	if project.IsInbox { return ErrInboxProject }
+	if err != nil {
+		return err
+	}
+	if project.IsInbox {
+		return ErrInboxProject
+	}
 	tag, err := s.pool.Exec(ctx, `DELETE FROM projects WHERE owner_id = $1 AND id = $2`, ownerID, id)
-	if err != nil { return err }
-	if tag.RowsAffected() == 0 { return ErrProjectNotFound }
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrProjectNotFound
+	}
 	return nil
 }
 
@@ -154,6 +181,26 @@ func scanProject(row projectScanner, project *Project) error {
 }
 
 func cleanName(name string) string { return strings.TrimSpace(name) }
-func cleanColor(color string) string { color = strings.TrimSpace(color); if color == "" { return "#7c3aed" }; return color }
-func cleanKind(kind string) string { if kind == "folder" { return "folder" }; return "project" }
-func cleanOptional(value *string) *string { if value == nil { return nil }; cleaned := strings.TrimSpace(*value); if cleaned == "" { return nil }; return &cleaned }
+func cleanColor(color string) string {
+	color = strings.TrimSpace(color)
+	if color == "" {
+		return "#7c3aed"
+	}
+	return color
+}
+func cleanKind(kind string) string {
+	if kind == "folder" {
+		return "folder"
+	}
+	return "project"
+}
+func cleanOptional(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	cleaned := strings.TrimSpace(*value)
+	if cleaned == "" {
+		return nil
+	}
+	return &cleaned
+}
