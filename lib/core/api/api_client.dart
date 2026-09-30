@@ -19,9 +19,10 @@ class ApiException implements Exception {
 }
 
 abstract interface class AuthApi {
-  @override
-  Future<AuthSession> register({required String email, required String password});
-  @override
+  Future<AuthSession> register({
+    required String email,
+    required String password,
+  });
   Future<AuthSession> login({required String email, required String password});
   Future<AuthUser> me(String token);
 }
