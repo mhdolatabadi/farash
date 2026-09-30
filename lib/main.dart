@@ -5,6 +5,7 @@ import 'package:farash/app/app_theme.dart';
 import 'package:farash/app/backend_gate.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/features/auth/auth_screen.dart';
+import 'package:farash/features/auth/data/auth_models.dart';
 
 void main() {
   runApp(const FarashApp());
@@ -52,7 +53,7 @@ class _FarashAppState extends State<FarashApp> {
         child: _apiClient == null
             ? const SizedBox.shrink()
             : _session == null
-            ? AuthScreen(apiClient: _apiClient!, onAuthenticated: _setSession)
+            ? AuthScreen(apiClient: _apiClient, onAuthenticated: _setSession)
             : _HomeScreen(session: _session!, onSignOut: _signOut),
       ),
     );
