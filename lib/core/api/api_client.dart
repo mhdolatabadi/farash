@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:farash/features/auth/data/auth_models.dart';
+import 'package:farash/features/projects/data/project.dart';
 
 class ApiException implements Exception {
   const ApiException(this.message, {this.statusCode, this.code});
@@ -24,9 +25,46 @@ abstract interface class AuthApi {
   Future<AuthUser> me(String token);
 }
 
+/// Fields for a new project, or the fields to change on an existing one.
+class ProjectDraft {
+  const ProjectDraft({
+    this.name,
+    this.color,
+    this.parentId,
+    this.moveParent = false,
+    this.isFavorite,
+    this.isArchived,
+  });
+
+  final String? name;
+  final String? color;
+  final String? parentId;
+
+  /// On update: move under [parentId], or to the top level when it is null.
+  final bool moveParent;
+  final bool? isFavorite;
+  final bool? isArchived;
+
+  Map<String, Object?> toJson() => {
+    'name': ?name,
+    'color': ?color,
+    if (moveParent || parentId != null) 'parentId': parentId,
+    'isFavorite': ?isFavorite,
+    'isArchived': ?isArchived,
+  };
+}
+
+abstract interface class ProjectsApi {
+  Future<List<Project>> listProjects(String token, {bool archived = false});
+  Future<Project> createProject(String token, ProjectDraft draft);
+  Future<Project> updateProject(String token, String id, ProjectDraft changes);
+  Future<void> deleteProject(String token, String id);
+  Future<void> reorderProjects(String token, List<String> ids);
+}
+
 /// Talks to the Farash API. Feature interfaces are implemented here so that
 /// one HTTP client serves the whole app.
-class ApiClient implements AuthApi {
+class ApiClient implements AuthApi, ProjectsApi {
   ApiClient(this.baseUri, {http.Client? client})
     : _client = client ?? http.Client();
 
@@ -37,6 +75,71 @@ class ApiClient implements AuthApi {
 
   Future<void> checkHealth() async {
     await _send('GET', '/api/v1/health');
+  }
+
+  @override
+  Future<List<Project>> listProjects(
+    String token, {
+    bool archived = false,
+  }) async {
+    final body =
+        await _send(
+              'GET',
+              '/api/v1/projects',
+              token: token,
+              query: archived ? {'archived': 'true'} : null,
+            )
+            as Map<String, dynamic>;
+    return [
+      for (final item in body['projects'] as List<dynamic>)
+        Project.fromJson(item as Map<String, dynamic>),
+    ];
+  }
+
+  @override
+  Future<Project> createProject(String token, ProjectDraft draft) async =>
+      Project.fromJson(
+        await _send(
+              'POST',
+              '/api/v1/projects',
+              token: token,
+              body: draft.toJson(),
+            )
+            as Map<String, dynamic>,
+      );
+
+  @override
+  Future<Project> updateProject(
+    String token,
+    String id,
+    ProjectDraft changes,
+  ) async => Project.fromJson(
+    await _send(
+          'PATCH',
+          '/api/v1/projects/${Uri.encodeComponent(id)}',
+          token: token,
+          body: changes.toJson(),
+        )
+        as Map<String, dynamic>,
+  );
+
+  @override
+  Future<void> deleteProject(String token, String id) async {
+    await _send(
+      'DELETE',
+      '/api/v1/projects/${Uri.encodeComponent(id)}',
+      token: token,
+    );
+  }
+
+  @override
+  Future<void> reorderProjects(String token, List<String> ids) async {
+    await _send(
+      'POST',
+      '/api/v1/projects/reorder',
+      token: token,
+      body: {'ids': ids},
+    );
   }
 
   @override

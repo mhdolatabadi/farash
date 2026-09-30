@@ -4,6 +4,7 @@ import 'package:farash/features/auth/data/token_store.dart';
 import 'package:farash/main.dart';
 
 import 'support/fake_auth_api.dart';
+import 'support/fake_projects_api.dart';
 
 void main() {
   Widget app({Future<void> Function()? healthCheck, TokenStore? tokens}) =>
@@ -11,6 +12,7 @@ void main() {
         healthCheck: healthCheck ?? () async {},
         authApi: FakeAuthApi(),
         tokenStore: tokens ?? MemoryTokenStore(),
+        projectsApi: FakeProjectsApi(),
       );
 
   testWidgets('shows sign-in once the server answers', (tester) async {
@@ -47,7 +49,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('به فراش خوش آمدید'), findsOneWidget);
+    expect(find.text('هنوز کاری در «صندوق ورودی» نیست.'), findsOneWidget);
   });
 
   testWidgets('lays the app out right to left', (tester) async {

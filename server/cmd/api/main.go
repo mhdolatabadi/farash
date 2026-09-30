@@ -51,12 +51,14 @@ func run() error {
 		return fmt.Errorf("migrate database: %w", err)
 	}
 
+	data := store.New(pool)
 	server := &http.Server{
 		Addr: ":" + port,
 		Handler: httpapi.NewHandler(httpapi.Config{
 			AllowedOrigin: os.Getenv("WEB_ORIGIN"),
 			Ping:          pool.Ping,
-			Store:         store.New(pool),
+			Store:         data,
+			Projects:      data,
 			AuthSecret:    []byte(authSecret),
 			AuthTokenTTL:  authTokenTTL(),
 		}),

@@ -41,6 +41,16 @@ database. `WEB_ORIGIN` allows one web origin to call the API cross-origin, and
 | `POST /api/v1/auth/register` | Create an account from `{"email", "password"}` and return `{"token", "user"}` |
 | `POST /api/v1/auth/login` | Return `{"token", "user"}` for valid credentials |
 | `GET /api/v1/me` | `{"user"}` for `Authorization: Bearer <token>` |
+| `GET /api/v1/projects` | The caller's projects in tree order, Inbox first; `?archived=true` lists archived ones |
+| `POST /api/v1/projects` | Create from `{"name", "color"?, "parentId"?, "isFavorite"?}` |
+| `GET /api/v1/projects/{id}` | One of the caller's projects; another user's is `404` |
+| `PATCH /api/v1/projects/{id}` | Change `name`, `color`, `isFavorite`, `isArchived` or `parentId` (`null` = top level) |
+| `DELETE /api/v1/projects/{id}` | Delete a project and its sub-projects |
+| `POST /api/v1/projects/reorder` | Save the order of sibling projects from `{"ids": [...]}` |
+
+Every account has one Inbox, created with the account; it cannot be renamed,
+moved, archived or deleted (`inbox_protected`). Projects nest up to four
+levels; archiving or deleting a project does the same to its sub-projects.
 
 Passwords must be 8–72 characters and are stored only as bcrypt hashes.
 `AUTH_JWT_SECRET` (required) signs access tokens and `AUTH_TOKEN_TTL_HOURS`

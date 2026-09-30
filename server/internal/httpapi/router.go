@@ -22,6 +22,8 @@ type Config struct {
 	AuthSecret []byte
 	// AuthTokenTTL controls the returned token lifetime.
 	AuthTokenTTL time.Duration
+	// Projects persists projects; nil leaves the project routes out.
+	Projects projectStore
 }
 
 func NewHandler(config Config) http.Handler {
@@ -36,6 +38,9 @@ func NewHandler(config Config) http.Handler {
 		mux.HandleFunc("POST /api/v1/auth/register", auth.register)
 		mux.HandleFunc("POST /api/v1/auth/login", auth.login)
 		mux.HandleFunc("GET /api/v1/me", auth.me)
+		if config.Projects != nil {
+			(&projectHandler{auth: auth, projects: config.Projects}).routes(mux)
+		}
 	}
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {

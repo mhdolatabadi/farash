@@ -8,19 +8,27 @@ import 'package:farash/features/auth/application/auth_controller.dart';
 import 'package:farash/features/auth/data/token_store.dart';
 import 'package:farash/features/auth/presentation/auth_gate.dart';
 import 'package:farash/features/home/home_screen.dart';
+import 'package:farash/features/projects/application/projects_controller.dart';
 
 void main() {
   runApp(const FarashApp());
 }
 
 class FarashApp extends StatefulWidget {
-  const FarashApp({super.key, this.healthCheck, this.authApi, this.tokenStore});
+  const FarashApp({
+    super.key,
+    this.healthCheck,
+    this.authApi,
+    this.tokenStore,
+    this.projectsApi,
+  });
 
   /// Test overrides; by default these talk to [AppConfiguration.apiBaseUri]
   /// and the device's secure storage.
   final Future<void> Function()? healthCheck;
   final AuthApi? authApi;
   final TokenStore? tokenStore;
+  final ProjectsApi? projectsApi;
 
   @override
   State<FarashApp> createState() => _FarashAppState();
@@ -38,15 +46,22 @@ class _FarashAppState extends State<FarashApp> {
           tokenStore: widget.tokenStore ?? SecureTokenStore(),
         );
 
+  late final ProjectsApi? _projectsApi = widget.projectsApi ?? _apiClient;
+  late final ProjectsController? _projects = _projectsApi == null
+      ? null
+      : ProjectsController(api: _projectsApi, token: () => _auth?.token);
+
   @override
   void dispose() {
     _auth?.dispose();
+    _projects?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = _auth;
+    final projects = _projects;
     return MaterialApp(
       title: 'Farash',
       debugShowCheckedModeBanner: false,
@@ -59,12 +74,20 @@ class _FarashAppState extends State<FarashApp> {
       darkTheme: FarashTheme.dark(),
       home: BackendGate(
         healthCheck: widget.healthCheck ?? _apiClient?.checkHealth,
-        child: auth == null
+        child: auth == null || projects == null
             ? const SizedBox.shrink()
             : AuthGate(
                 controller: auth,
-                signedIn: (context) =>
-                    HomeScreen(email: auth.user!.email, onLogout: auth.logout),
+                signedIn: (context) => HomeScreen(
+                  // A new account never sees the previous one's projects.
+                  key: ValueKey(auth.user!.id),
+                  email: auth.user!.email,
+                  projects: projects,
+                  onLogout: () {
+                    projects.clear();
+                    auth.logout();
+                  },
+                ),
               ),
       ),
     );
