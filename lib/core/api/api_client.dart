@@ -137,6 +137,7 @@ class ApiClient implements AuthApi, ProjectsApi {
   );
 
   @override
+  @override
   Future<AuthSession> register({
     required String email,
     required String password,
@@ -149,6 +150,7 @@ class ApiClient implements AuthApi, ProjectsApi {
     return AuthSession.fromJson(decoded as Map<String, dynamic>);
   }
 
+  @override
   @override
   Future<AuthSession> login({
     required String email,
