@@ -13,7 +13,7 @@ class ProjectNode {
   final bool hasChildren;
 }
 
-/// The signed-in account's projects, in the API's tree order.
+/// The signed-in account's projects.
 class ProjectsController extends ChangeNotifier {
   ProjectsController({required ProjectsApi api, required this.token})
     : _api = api;
@@ -23,48 +23,90 @@ class ProjectsController extends ChangeNotifier {
   /// The current access token; null once signed out.
   final String? Function() token;
 
-  List<Project> _projects = const [];
+  List<Project> _all = const [];
   bool _loading = false;
   Object? _error;
 
-  List<Project> get projects => _projects;
+  /// Active projects, in tree order with the Inbox first.
+  List<Project> get projects => [?inbox, for (final node in tree) node.project];
+
+  /// Archived projects, in the API's order.
+  List<Project> get archivedProjects =>
+      _all.where((p) => p.isArchived).toList();
+
   bool get isLoading => _loading;
 
   /// The last load failure, shown with a retry action.
   Object? get error => _error;
 
-  Project? get inbox => _projects.where((p) => p.isInbox).firstOrNull;
+  Project? get inbox => _all.where((p) => p.isInbox).firstOrNull;
 
-  List<Project> get favorites =>
-      _projects.where((p) => p.isFavorite && !p.isInbox).toList();
+  List<Project> get favorites => [
+    for (final node in tree)
+      if (node.project.isFavorite) node.project,
+  ];
 
-  Project? byId(String? id) =>
-      id == null ? null : _projects.where((p) => p.id == id).firstOrNull;
+  Project? byId(String? id) => id == null
+      ? null
+      : _all.where((p) => p.id == id && !p.isArchived).firstOrNull;
 
-  /// Every project except the Inbox, each with its depth, in tree order.
+  /// Active projects except the Inbox, each after its parent, siblings by
+  /// sort order. A project whose parent is gone or archived shows at the
+  /// top level; a parent loop is cut where it closes.
   List<ProjectNode> get tree {
-    final byId = {for (final p in _projects) p.id: p};
-    final parents = {for (final p in _projects) ?p.parentId};
-    int depthOf(Project p) {
-      var depth = 0;
-      var parent = byId[p.parentId];
-      while (parent != null && depth < 8) {
-        depth++;
-        parent = byId[parent.parentId];
-      }
-      return depth;
+    final active = [
+      for (final p in _all)
+        if (!p.isInbox && !p.isArchived) p,
+    ];
+    final ids = {for (final p in active) p.id};
+    String? parentOf(Project p) =>
+        p.parentId != null && ids.contains(p.parentId) ? p.parentId : null;
+
+    final children = <String?, List<Project>>{};
+    for (final p in active) {
+      children.putIfAbsent(parentOf(p), () => []).add(p);
+    }
+    for (final list in children.values) {
+      // A stable sort keeps the API's order for equal sort orders.
+      mergeSort(list, compare: (a, b) => a.sortOrder.compareTo(b.sortOrder));
     }
 
-    return [
-      for (final p in _projects)
-        if (!p.isInbox)
-          ProjectNode(p, depthOf(p), hasChildren: parents.contains(p.id)),
-    ];
+    final nodes = <ProjectNode>[];
+    final visited = <String>{};
+    void visit(String? parentId, int depth) {
+      for (final p in children[parentId] ?? const <Project>[]) {
+        if (!visited.add(p.id)) continue;
+        nodes.add(
+          ProjectNode(
+            p,
+            depth,
+            hasChildren: children[p.id]?.isNotEmpty ?? false,
+          ),
+        );
+        visit(p.id, depth + 1);
+      }
+    }
+
+    visit(null, 0);
+    return nodes;
   }
 
-  /// The project's own sub-projects, in order.
-  List<Project> childrenOf(String? parentId) =>
-      _projects.where((p) => !p.isInbox && p.parentId == parentId).toList();
+  /// The active sub-projects of [parentId] as shown in the tree, in order;
+  /// null gives the top level.
+  List<Project> childrenOf(String? parentId) => [
+    for (final node in tree)
+      if (parentId == null
+          ? node.depth == 0
+          : node.depth > 0 && node.project.parentId == parentId)
+        node.project,
+  ];
+
+  /// [project] and the projects shown next to it, in order.
+  List<Project> siblingsOf(Project project) {
+    final node = tree.where((n) => n.project.id == project.id).firstOrNull;
+    if (node == null) return const [];
+    return childrenOf(node.depth == 0 ? null : project.parentId);
+  }
 
   Future<void> load() async {
     final token = this.token();
@@ -73,7 +115,7 @@ class ProjectsController extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      _projects = await _api.listProjects(token);
+      _all = await _api.listProjects(token);
     } catch (error) {
       _error = error;
     } finally {
@@ -87,7 +129,9 @@ class ProjectsController extends ChangeNotifier {
     required String color,
     String? parentId,
     bool isFavorite = false,
+    ProjectKind kind = ProjectKind.project,
   }) async {
+    final siblings = childrenOf(parentId);
     final project = await _api.createProject(
       _requireToken(),
       ProjectDraft(
@@ -95,13 +139,15 @@ class ProjectsController extends ChangeNotifier {
         color: color,
         parentId: parentId,
         isFavorite: isFavorite,
+        kind: kind,
+        sortOrder: siblings.isEmpty ? 0 : siblings.last.sortOrder + 1,
       ),
     );
     await load();
     return project;
   }
 
-  /// Saves an edit. Moving under another parent reloads the tree.
+  /// Saves an edit. The Inbox keeps its name and place.
   Future<void> edit(
     Project project, {
     required String name,
@@ -109,7 +155,7 @@ class ProjectsController extends ChangeNotifier {
     required String? parentId,
     required bool isFavorite,
   }) async {
-    final moved = parentId != project.parentId;
+    final moved = !project.isInbox && parentId != project.parentId;
     await _api.updateProject(
       _requireToken(),
       project.id,
@@ -117,19 +163,30 @@ class ProjectsController extends ChangeNotifier {
         name: project.isInbox ? null : name,
         color: color,
         isFavorite: isFavorite,
-        parentId: parentId,
+        parentId: moved ? parentId : null,
         moveParent: moved,
       ),
     );
     await load();
   }
 
-  Future<void> setFavorite(Project project, bool favorite) => _optimistic(
-    project.copyWith(isFavorite: favorite),
-    ProjectDraft(isFavorite: favorite),
-  );
+  Future<void> setFavorite(Project project, bool favorite) async {
+    final before = _all;
+    _replace(project.copyWith(isFavorite: favorite));
+    try {
+      await _api.updateProject(
+        _requireToken(),
+        project.id,
+        ProjectDraft(isFavorite: favorite),
+      );
+    } catch (_) {
+      _all = before;
+      notifyListeners();
+      rethrow;
+    }
+  }
 
-  /// Archives the project and its sub-projects; they leave the sidebar.
+  /// Archives the project; it leaves the sidebar.
   Future<void> archive(Project project) async {
     await _api.updateProject(
       _requireToken(),
@@ -148,45 +205,42 @@ class ProjectsController extends ChangeNotifier {
     await load();
   }
 
-  Future<List<Project>> archived() =>
-      _api.listProjects(_requireToken(), archived: true);
-
+  /// Deletes the project; its sub-projects move to the top level.
   Future<void> delete(Project project) async {
     await _api.deleteProject(_requireToken(), project.id);
     await load();
   }
 
-  /// Moves [project] to [newIndex] among its siblings.
+  /// Moves [project] to [newIndex] among its siblings and saves the new
+  /// sort orders of the siblings that changed.
   Future<void> reorder(Project project, int newIndex) async {
-    final siblings = childrenOf(project.parentId);
+    final siblings = siblingsOf(project);
     final oldIndex = siblings.indexWhere((p) => p.id == project.id);
     if (oldIndex < 0 || oldIndex == newIndex) return;
     siblings.removeAt(oldIndex);
     siblings.insert(newIndex.clamp(0, siblings.length), project);
-    await _api.reorderProjects(_requireToken(), [
-      for (final p in siblings) p.id,
-    ]);
+    final token = _requireToken();
+    for (var i = 0; i < siblings.length; i++) {
+      if (siblings[i].sortOrder == i) continue;
+      await _api.updateProject(
+        token,
+        siblings[i].id,
+        ProjectDraft(sortOrder: i),
+      );
+    }
     await load();
   }
 
   /// Forgets the account's projects, for sign-out.
   void clear() {
-    _projects = const [];
+    _all = const [];
     _error = null;
     notifyListeners();
   }
 
-  Future<void> _optimistic(Project updated, ProjectDraft changes) async {
-    final before = _projects;
-    _projects = [for (final p in _projects) p.id == updated.id ? updated : p];
+  void _replace(Project updated) {
+    _all = [for (final p in _all) p.id == updated.id ? updated : p];
     notifyListeners();
-    try {
-      await _api.updateProject(_requireToken(), updated.id, changes);
-    } catch (_) {
-      _projects = before;
-      notifyListeners();
-      rethrow;
-    }
   }
 
   String _requireToken() {

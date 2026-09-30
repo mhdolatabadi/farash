@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// A project (list). Every account has one Inbox, which cannot be renamed,
-/// moved, archived or deleted.
+/// A project (list) or a folder of projects. Every account has one Inbox,
+/// which cannot be renamed, moved, archived or deleted.
 class Project {
   const Project({
     required this.id,
@@ -11,39 +11,50 @@ class Project {
     this.isInbox = false,
     this.isFavorite = false,
     this.isArchived = false,
-    this.childOrder = 0,
+    this.sortOrder = 0,
+    this.kind = ProjectKind.project,
+    this.openTasks = 0,
   });
 
   factory Project.fromJson(Map<String, dynamic> json) => Project(
     id: json['id'] as String,
-    parentId: json['parentId'] as String?,
+    parentId: json['parent_id'] as String?,
     name: json['name'] as String,
-    color: json['color'] as String,
-    isInbox: json['isInbox'] as bool? ?? false,
-    isFavorite: json['isFavorite'] as bool? ?? false,
-    isArchived: json['isArchived'] as bool? ?? false,
-    childOrder: json['childOrder'] as int? ?? 0,
+    color: json['color'] as String? ?? ProjectColor.defaultHex,
+    isInbox: json['is_inbox'] as bool? ?? false,
+    isFavorite: json['is_favorite'] as bool? ?? false,
+    isArchived: json['is_archived'] as bool? ?? false,
+    sortOrder: json['sort_order'] as int? ?? 0,
+    kind: json['kind'] == 'folder' ? ProjectKind.folder : ProjectKind.project,
+    openTasks: json['open_tasks'] as int? ?? 0,
   );
 
   final String id;
   final String? parentId;
   final String name;
+
+  /// A `#rrggbb` color.
   final String color;
   final bool isInbox;
   final bool isFavorite;
   final bool isArchived;
-  final int childOrder;
+  final int sortOrder;
+  final ProjectKind kind;
+  final int openTasks;
+
+  bool get isFolder => kind == ProjectKind.folder;
 
   /// The name to show: the Inbox is always «صندوق ورودی».
   String get displayName => isInbox ? 'صندوق ورودی' : name;
 
-  Color get swatch => ProjectColor.of(color).color;
+  Color get swatch => ProjectColor.parse(color);
 
   Project copyWith({
     String? name,
     String? color,
     bool? isFavorite,
     bool? isArchived,
+    int? sortOrder,
   }) => Project(
     id: id,
     parentId: parentId,
@@ -52,43 +63,48 @@ class Project {
     isInbox: isInbox,
     isFavorite: isFavorite ?? this.isFavorite,
     isArchived: isArchived ?? this.isArchived,
-    childOrder: childOrder,
+    sortOrder: sortOrder ?? this.sortOrder,
+    kind: kind,
+    openTasks: openTasks,
   );
 }
 
-/// The project palette, matching the API's color names.
+enum ProjectKind { project, folder }
+
+/// The colors offered when creating or editing a project.
 class ProjectColor {
-  const ProjectColor(this.key, this.label, this.color);
+  const ProjectColor(this.hex, this.label);
 
-  final String key;
+  /// `#rrggbb`, as the API stores it.
+  final String hex;
   final String label;
-  final Color color;
 
-  static const defaultKey = 'charcoal';
+  Color get color => parse(hex);
+
+  /// The API's default project color.
+  static const defaultHex = '#7c3aed';
 
   static const all = [
-    ProjectColor('berry_red', 'تمشکی', Color(0xFFB8255F)),
-    ProjectColor('red', 'قرمز', Color(0xFFDB4035)),
-    ProjectColor('orange', 'نارنجی', Color(0xFFFF9933)),
-    ProjectColor('yellow', 'زرد', Color(0xFFFAD000)),
-    ProjectColor('olive_green', 'زیتونی', Color(0xFFAFB83B)),
-    ProjectColor('lime_green', 'لیمویی', Color(0xFF7ECC49)),
-    ProjectColor('green', 'سبز', Color(0xFF299438)),
-    ProjectColor('mint_green', 'نعنایی', Color(0xFF6ACCBC)),
-    ProjectColor('teal', 'سبزآبی', Color(0xFF158FAD)),
-    ProjectColor('sky_blue', 'آسمانی', Color(0xFF14AAF5)),
-    ProjectColor('light_blue', 'آبی روشن', Color(0xFF96C3EB)),
-    ProjectColor('blue', 'آبی', Color(0xFF4073FF)),
-    ProjectColor('grape', 'انگوری', Color(0xFF884DFF)),
-    ProjectColor('violet', 'بنفش', Color(0xFFAF38EB)),
-    ProjectColor('lavender', 'اسطوخودوسی', Color(0xFFEB96EB)),
-    ProjectColor('magenta', 'سرخابی', Color(0xFFE05194)),
-    ProjectColor('salmon', 'صورتی', Color(0xFFFF8D85)),
-    ProjectColor('charcoal', 'زغالی', Color(0xFF808080)),
-    ProjectColor('grey', 'خاکستری', Color(0xFFB8B8B8)),
-    ProjectColor('taupe', 'قهوه‌ای', Color(0xFFCCAC93)),
+    ProjectColor('#7c3aed', 'بنفش'),
+    ProjectColor('#2563eb', 'آبی'),
+    ProjectColor('#0ea5e9', 'آسمانی'),
+    ProjectColor('#0f8b7c', 'سبزآبی'),
+    ProjectColor('#16a34a', 'سبز'),
+    ProjectColor('#84cc16', 'لیمویی'),
+    ProjectColor('#eab308', 'زرد'),
+    ProjectColor('#f97316', 'نارنجی'),
+    ProjectColor('#dc2626', 'قرمز'),
+    ProjectColor('#db2777', 'سرخابی'),
+    ProjectColor('#a16207', 'قهوه‌ای'),
+    ProjectColor('#64748b', 'خاکستری'),
   ];
 
-  static ProjectColor of(String key) =>
-      all.firstWhere((c) => c.key == key, orElse: () => all[17]);
+  /// Reads `#rrggbb`; anything else shows as grey.
+  static Color parse(String hex) {
+    final value = hex.startsWith('#') ? hex.substring(1) : hex;
+    final parsed = value.length == 6 ? int.tryParse(value, radix: 16) : null;
+    return parsed == null
+        ? const Color(0xFF64748B)
+        : Color(0xFF000000 | parsed);
+  }
 }

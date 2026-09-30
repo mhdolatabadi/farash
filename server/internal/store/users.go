@@ -7,7 +7,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -42,21 +41,10 @@ func (s *Store) CreateUser(ctx context.Context, email string, passwordHash strin
 		Email:        NormalizeEmail(email),
 		PasswordHash: passwordHash,
 	}
-	// The account and its Inbox are created together, so no account ever
-	// exists without an Inbox.
-	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, `
-			INSERT INTO users (id, email, password_hash)
-			VALUES ($1, $2, $3)
-		`, user.ID, user.Email, user.PasswordHash); err != nil {
-			return err
-		}
-		_, err := tx.Exec(ctx, `
-			INSERT INTO projects (id, owner_id, name, is_inbox)
-			VALUES ($1, $2, $3, true)
-		`, newID(), user.ID, InboxName)
-		return err
-	})
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO users (id, email, password_hash)
+		VALUES ($1, $2, $3)
+	`, user.ID, user.Email, user.PasswordHash)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {

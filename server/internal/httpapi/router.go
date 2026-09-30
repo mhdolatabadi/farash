@@ -12,24 +12,17 @@ type healthResponse struct {
 }
 
 type Config struct {
-	// AllowedOrigin is the web origin allowed to call the API cross-origin.
 	AllowedOrigin string
-	// Ping reports whether the database answers; nil skips the check.
-	Ping func(context.Context) error
-	// Store persists and reads authenticated users.
-	Store userStore
-	// AuthSecret signs HS256 JWTs.
-	AuthSecret []byte
-	// AuthTokenTTL controls the returned token lifetime.
-	AuthTokenTTL time.Duration
-	// Projects persists projects; nil leaves the project routes out.
-	Projects projectStore
+	Ping          func(context.Context) error
+	Store         userStore
+	ProjectStore  projectStore
+	AuthSecret    []byte
+	AuthTokenTTL  time.Duration
 }
 
 func NewHandler(config Config) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/v1/health", health(config.Ping))
-
 	if config.AuthTokenTTL == 0 {
 		config.AuthTokenTTL = 24 * time.Hour
 	}
@@ -38,14 +31,22 @@ func NewHandler(config Config) http.Handler {
 		mux.HandleFunc("POST /api/v1/auth/register", auth.register)
 		mux.HandleFunc("POST /api/v1/auth/login", auth.login)
 		mux.HandleFunc("GET /api/v1/me", auth.me)
-		if config.Projects != nil {
-			(&projectHandler{auth: auth, projects: config.Projects}).routes(mux)
+		// Named so it does not shadow the projectStore type used below.
+		projectData := config.ProjectStore
+		if projectData == nil {
+			if storeWithProjects, ok := config.Store.(projectStore); ok {
+				projectData = storeWithProjects
+			}
+		}
+		if projectData != nil {
+			projects := newProjectsHandler(auth, projectData)
+			mux.HandleFunc("GET /api/v1/projects", projects.list)
+			mux.HandleFunc("POST /api/v1/projects", projects.create)
+			mux.HandleFunc("PATCH /api/v1/projects/{id}", projects.update)
+			mux.HandleFunc("DELETE /api/v1/projects/{id}", projects.delete)
 		}
 	}
-
-	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
-		writeError(w, http.StatusNotFound, "not_found")
-	})
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) { writeError(w, http.StatusNotFound, "not_found") })
 	return cors(config.AllowedOrigin, mux)
 }
 

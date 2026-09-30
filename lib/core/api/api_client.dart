@@ -52,6 +52,8 @@ class ProjectDraft {
     this.moveParent = false,
     this.isFavorite,
     this.isArchived,
+    this.sortOrder,
+    this.kind,
   });
 
   final String? name;
@@ -62,22 +64,27 @@ class ProjectDraft {
   final bool moveParent;
   final bool? isFavorite;
   final bool? isArchived;
+  final int? sortOrder;
+  final ProjectKind? kind;
 
   Map<String, Object?> toJson() => {
     'name': ?name,
     'color': ?color,
-    if (moveParent || parentId != null) 'parentId': parentId,
-    'isFavorite': ?isFavorite,
-    'isArchived': ?isArchived,
+    // The API reads an empty parent_id as "move to the top level".
+    if (moveParent || parentId != null) 'parent_id': parentId ?? '',
+    'is_favorite': ?isFavorite,
+    'is_archived': ?isArchived,
+    'sort_order': ?sortOrder,
+    if (kind != null) 'kind': kind!.name,
   };
 }
 
 abstract interface class ProjectsApi {
-  Future<List<Project>> listProjects(String token, {bool archived = false});
+  /// Every project of the account, archived ones included.
+  Future<List<Project>> listProjects(String token);
   Future<Project> createProject(String token, ProjectDraft draft);
   Future<Project> updateProject(String token, String id, ProjectDraft changes);
   Future<void> deleteProject(String token, String id);
-  Future<void> reorderProjects(String token, List<String> ids);
 }
 
 /// Talks to the Farash API. Feature interfaces are implemented here so that
@@ -96,17 +103,9 @@ class ApiClient implements ProjectsApi {
   }
 
   @override
-  Future<List<Project>> listProjects(
-    String token, {
-    bool archived = false,
-  }) async {
+  Future<List<Project>> listProjects(String token) async {
     final body =
-        await _send(
-              'GET',
-              '/api/v1/projects',
-              token: token,
-              query: archived ? {'archived': 'true'} : null,
-            )
+        await _send('GET', '/api/v1/projects', token: token)
             as Map<String, dynamic>;
     return [
       for (final item in body['projects'] as List<dynamic>)
@@ -116,14 +115,13 @@ class ApiClient implements ProjectsApi {
 
   @override
   Future<Project> createProject(String token, ProjectDraft draft) async =>
-      Project.fromJson(
+      _project(
         await _send(
-              'POST',
-              '/api/v1/projects',
-              token: token,
-              body: draft.toJson(),
-            )
-            as Map<String, dynamic>,
+          'POST',
+          '/api/v1/projects',
+          token: token,
+          body: draft.toJson(),
+        ),
       );
 
   @override
@@ -131,14 +129,13 @@ class ApiClient implements ProjectsApi {
     String token,
     String id,
     ProjectDraft changes,
-  ) async => Project.fromJson(
+  ) async => _project(
     await _send(
-          'PATCH',
-          '/api/v1/projects/${Uri.encodeComponent(id)}',
-          token: token,
-          body: changes.toJson(),
-        )
-        as Map<String, dynamic>,
+      'PATCH',
+      '/api/v1/projects/${Uri.encodeComponent(id)}',
+      token: token,
+      body: changes.toJson(),
+    ),
   );
 
   @override
@@ -150,15 +147,9 @@ class ApiClient implements ProjectsApi {
     );
   }
 
-  @override
-  Future<void> reorderProjects(String token, List<String> ids) async {
-    await _send(
-      'POST',
-      '/api/v1/projects/reorder',
-      token: token,
-      body: {'ids': ids},
-    );
-  }
+  static Project _project(Object? body) => Project.fromJson(
+    (body as Map<String, dynamic>)['project'] as Map<String, dynamic>,
+  );
 
   Future<AuthSession> register({
     required String email,

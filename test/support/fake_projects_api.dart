@@ -1,7 +1,9 @@
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/features/projects/data/project.dart';
 
-/// Projects in memory, with the API's tree order and Inbox rules.
+/// Projects in memory, behaving like the API: the list includes archived
+/// projects, the Inbox is protected and deleting a parent moves its
+/// sub-projects to the top level.
 class FakeProjectsApi implements ProjectsApi {
   FakeProjectsApi({List<Project>? projects})
     : _projects =
@@ -9,8 +11,8 @@ class FakeProjectsApi implements ProjectsApi {
           [
             const Project(
               id: 'inbox',
-              name: 'Inbox',
-              color: 'charcoal',
+              name: 'صندوق ورودی',
+              color: '#2563eb',
               isInbox: true,
             ),
           ];
@@ -20,6 +22,9 @@ class FakeProjectsApi implements ProjectsApi {
 
   /// Thrown by the next call instead of answering.
   Object? failNext;
+
+  /// Every update the app sent, in order.
+  final updates = <(String, ProjectDraft)>[];
 
   List<Project> get all => List.unmodifiable(_projects);
 
@@ -32,44 +37,22 @@ class FakeProjectsApi implements ProjectsApi {
   }
 
   @override
-  Future<List<Project>> listProjects(
-    String token, {
-    bool archived = false,
-  }) async {
+  Future<List<Project>> listProjects(String token) async {
     _maybeFail();
-    final active = _projects.where((p) => p.isArchived == archived).toList();
-    final ordered = <Project>[];
-    void add(String? parentId) {
-      final children = active.where((p) => p.parentId == parentId).toList()
-        ..sort((a, b) {
-          if (a.isInbox != b.isInbox) return a.isInbox ? -1 : 1;
-          return a.childOrder.compareTo(b.childOrder);
-        });
-      for (final child in children) {
-        ordered.add(child);
-        add(child.id);
-      }
-    }
-
-    add(null);
-    // Archived children of active parents still show up.
-    for (final p in active) {
-      if (!ordered.contains(p)) ordered.add(p);
-    }
-    return ordered;
+    return List.of(_projects);
   }
 
   @override
   Future<Project> createProject(String token, ProjectDraft draft) async {
     _maybeFail();
-    final siblings = _projects.where((p) => p.parentId == draft.parentId);
     final project = Project(
       id: 'p${_nextId++}',
-      name: draft.name!,
-      color: draft.color ?? 'charcoal',
+      name: draft.name!.trim(),
+      color: draft.color ?? ProjectColor.defaultHex,
       parentId: draft.parentId,
       isFavorite: draft.isFavorite ?? false,
-      childOrder: siblings.length,
+      sortOrder: draft.sortOrder ?? 0,
+      kind: draft.kind ?? ProjectKind.project,
     );
     _projects.add(project);
     return project;
@@ -82,20 +65,21 @@ class FakeProjectsApi implements ProjectsApi {
     ProjectDraft changes,
   ) async {
     _maybeFail();
+    updates.add((id, changes));
     final index = _projects.indexWhere((p) => p.id == id);
     if (index < 0) {
-      throw const ApiException('not found', statusCode: 404, code: 'not_found');
+      throw const ApiException(
+        'not found',
+        statusCode: 404,
+        code: 'project_not_found',
+      );
     }
     final current = _projects[index];
     if (current.isInbox &&
         (changes.name != null ||
             changes.moveParent ||
             changes.isArchived != null)) {
-      throw const ApiException(
-        'inbox',
-        statusCode: 400,
-        code: 'inbox_protected',
-      );
+      throw const ApiException('inbox', statusCode: 409, code: 'inbox_project');
     }
     final updated = Project(
       id: current.id,
@@ -105,7 +89,8 @@ class FakeProjectsApi implements ProjectsApi {
       isInbox: current.isInbox,
       isFavorite: changes.isFavorite ?? current.isFavorite,
       isArchived: changes.isArchived ?? current.isArchived,
-      childOrder: current.childOrder,
+      sortOrder: changes.sortOrder ?? current.sortOrder,
+      kind: current.kind,
     );
     _projects[index] = updated;
     return updated;
@@ -114,34 +99,20 @@ class FakeProjectsApi implements ProjectsApi {
   @override
   Future<void> deleteProject(String token, String id) async {
     _maybeFail();
-    final removed = {id};
-    var grew = true;
-    while (grew) {
-      final before = removed.length;
-      removed.addAll(
-        _projects.where((p) => removed.contains(p.parentId)).map((p) => p.id),
-      );
-      grew = removed.length != before;
-    }
-    _projects.removeWhere((p) => removed.contains(p.id));
-  }
-
-  @override
-  Future<void> reorderProjects(String token, List<String> ids) async {
-    _maybeFail();
-    for (var i = 0; i < ids.length; i++) {
-      final index = _projects.indexWhere((p) => p.id == ids[i]);
-      final p = _projects[index];
-      _projects[index] = Project(
-        id: p.id,
-        parentId: p.parentId,
-        name: p.name,
-        color: p.color,
-        isInbox: p.isInbox,
-        isFavorite: p.isFavorite,
-        isArchived: p.isArchived,
-        childOrder: i,
-      );
+    _projects.removeWhere((p) => p.id == id);
+    for (var i = 0; i < _projects.length; i++) {
+      final p = _projects[i];
+      if (p.parentId == id) {
+        _projects[i] = Project(
+          id: p.id,
+          name: p.name,
+          color: p.color,
+          isFavorite: p.isFavorite,
+          isArchived: p.isArchived,
+          sortOrder: p.sortOrder,
+          kind: p.kind,
+        );
+      }
     }
   }
 }

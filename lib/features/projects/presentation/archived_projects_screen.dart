@@ -5,30 +5,19 @@ import 'package:farash/features/projects/presentation/project_messages.dart';
 import 'package:farash/features/projects/presentation/project_sidebar.dart';
 
 /// Archived projects, with restore and delete.
-class ArchivedProjectsScreen extends StatefulWidget {
+class ArchivedProjectsScreen extends StatelessWidget {
   const ArchivedProjectsScreen({super.key, required this.controller});
 
   final ProjectsController controller;
 
-  @override
-  State<ArchivedProjectsScreen> createState() => _ArchivedProjectsScreenState();
-}
-
-class _ArchivedProjectsScreenState extends State<ArchivedProjectsScreen> {
-  late Future<List<Project>> _archived = widget.controller.archived();
-
-  void _reload() {
-    setState(() {
-      _archived = widget.controller.archived();
-    });
-  }
-
-  Future<void> _run(Future<void> Function() action) async {
+  Future<void> _run(
+    BuildContext context,
+    Future<void> Function() action,
+  ) async {
     try {
       await action();
-      _reload();
     } catch (error) {
-      if (mounted) showProjectError(context, error);
+      if (context.mounted) showProjectError(context, error);
     }
   }
 
@@ -37,29 +26,10 @@ class _ArchivedProjectsScreenState extends State<ArchivedProjectsScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('پروژه‌های بایگانی‌شده')),
-      body: FutureBuilder<List<Project>>(
-        future: _archived,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(projectErrorMessage(snapshot.error!)),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: _reload,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('تلاش دوباره'),
-                  ),
-                ],
-              ),
-            );
-          }
-          final projects = snapshot.data!;
+      body: ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) {
+          final projects = controller.archivedProjects;
           if (projects.isEmpty) {
             return Center(
               child: Padding(
@@ -80,47 +50,64 @@ class _ArchivedProjectsScreenState extends State<ArchivedProjectsScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 children: [
                   for (final project in projects)
-                    ListTile(
-                      leading: Icon(
-                        Icons.circle,
-                        size: 12,
-                        color: project.swatch,
-                      ),
-                      title: Text(
-                        project.displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            tooltip: 'برگرداندن از بایگانی',
-                            icon: const Icon(Icons.unarchive_outlined),
-                            onPressed: () => _run(
-                              () => widget.controller.unarchive(project),
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: 'حذف',
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () => _run(() async {
-                              if (await confirmProjectDelete(
-                                context,
-                                project,
-                              )) {
-                                await widget.controller.delete(project);
-                              }
-                            }),
-                          ),
-                        ],
-                      ),
+                    _ArchivedTile(
+                      project: project,
+                      onRestore: () =>
+                          _run(context, () => controller.unarchive(project)),
+                      onDelete: () => _run(context, () async {
+                        if (await confirmProjectDelete(context, project)) {
+                          await controller.delete(project);
+                        }
+                      }),
                     ),
                 ],
               ),
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _ArchivedTile extends StatelessWidget {
+  const _ArchivedTile({
+    required this.project,
+    required this.onRestore,
+    required this.onDelete,
+  });
+
+  final Project project;
+  final VoidCallback onRestore;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(
+        project.isFolder ? Icons.folder_outlined : Icons.circle,
+        size: project.isFolder ? null : 12,
+        color: project.swatch,
+      ),
+      title: Text(
+        project.displayName,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: 'برگرداندن از بایگانی',
+            icon: const Icon(Icons.unarchive_outlined),
+            onPressed: onRestore,
+          ),
+          IconButton(
+            tooltip: 'حذف',
+            icon: const Icon(Icons.delete_outline),
+            onPressed: onDelete,
+          ),
+        ],
       ),
     );
   }

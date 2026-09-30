@@ -45,7 +45,8 @@ class _ProjectEditor extends StatefulWidget {
 class _ProjectEditorState extends State<_ProjectEditor> {
   final _formKey = GlobalKey<FormState>();
   late final _name = TextEditingController(text: widget.project?.name ?? '');
-  late String _color = widget.project?.color ?? ProjectColor.defaultKey;
+  late String _color = widget.project?.color ?? ProjectColor.defaultHex;
+  bool _folder = false;
   late String? _parentId = widget.initialParentId;
   late bool _favorite = widget.project?.isFavorite ?? false;
   bool _saving = false;
@@ -87,6 +88,7 @@ class _ProjectEditorState extends State<_ProjectEditor> {
           color: _color,
           parentId: _parentId,
           isFavorite: _favorite,
+          kind: _folder ? ProjectKind.folder : ProjectKind.project,
         );
         widget.onCreated?.call(created);
       } else {
@@ -185,7 +187,16 @@ class _ProjectEditorState extends State<_ProjectEditor> {
                   onChanged: (value) => setState(() => _parentId = value),
                 ),
               ],
-              const SizedBox(height: 8),
+              if (isNew)
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('پوشه'),
+                  subtitle: const Text(
+                    'پوشه فقط پروژه‌های دیگر را نگه می‌دارد.',
+                  ),
+                  value: _folder,
+                  onChanged: (value) => setState(() => _folder = value),
+                ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('در علاقه‌مندی‌ها'),
@@ -225,13 +236,13 @@ class _ColorChooser extends StatelessWidget {
       children: [
         for (final color in ProjectColor.all)
           Semantics(
-            selected: color.key == selected,
+            selected: color.hex == selected,
             button: true,
             label: color.label,
             child: Tooltip(
               message: color.label,
               child: InkResponse(
-                onTap: () => onChanged(color.key),
+                onTap: () => onChanged(color.hex),
                 radius: 24,
                 child: SizedBox.square(
                   dimension: 48,
@@ -244,13 +255,13 @@ class _ColorChooser extends StatelessWidget {
                         color: color.color,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: color.key == selected
+                          color: color.hex == selected
                               ? outline
                               : Colors.transparent,
                           width: 2.5,
                         ),
                       ),
-                      child: color.key == selected
+                      child: color.hex == selected
                           ? const Icon(
                               Icons.check,
                               size: 16,

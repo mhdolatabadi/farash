@@ -205,7 +205,7 @@ class _ProjectTile extends StatelessWidget {
           );
         case _ProjectAction.moveUp:
         case _ProjectAction.moveDown:
-          final siblings = controller.childrenOf(project.parentId);
+          final siblings = controller.siblingsOf(project);
           final index = siblings.indexWhere((p) => p.id == project.id);
           await controller.reorder(
             project,
@@ -238,7 +238,7 @@ class _ProjectTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final siblings = project.isInbox
         ? const <Project>[]
-        : controller.childrenOf(project.parentId);
+        : controller.siblingsOf(project);
     final index = siblings.indexWhere((p) => p.id == project.id);
     return Padding(
       padding: EdgeInsetsDirectional.only(start: 16.0 * depth),
@@ -247,6 +247,8 @@ class _ProjectTile extends StatelessWidget {
         onTap: onTap,
         leading: icon != null
             ? Icon(icon)
+            : project.isFolder
+            ? Icon(Icons.folder_outlined, color: project.swatch)
             : Icon(Icons.circle, size: 12, color: project.swatch),
         title: Text(
           project.displayName,
@@ -270,9 +272,11 @@ class _ProjectTile extends StatelessWidget {
               ),
             ),
             if (!project.isInbox) ...[
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: _ProjectAction.addChild,
-                child: Text('افزودن زیرپروژه'),
+                child: Text(
+                  project.isFolder ? 'افزودن پروژه به پوشه' : 'افزودن زیرپروژه',
+                ),
               ),
               if (index > 0)
                 const PopupMenuItem(
@@ -308,8 +312,9 @@ Future<bool> confirmProjectDelete(BuildContext context, Project project) async {
     builder: (context) => AlertDialog(
       title: Text('حذف «${project.displayName}»؟'),
       content: const Text(
-        'زیرپروژه‌ها و همهٔ کارهای این پروژه هم حذف می‌شوند و '
-        'برگرداندنشان ممکن نیست. اگر فقط نمی‌خواهید ببینیدش، بایگانی‌اش کنید.',
+        'کارهای این پروژه هم حذف می‌شوند و برگرداندنشان ممکن نیست؛ '
+        'زیرپروژه‌هایش به سطح اول می‌روند. اگر فقط نمی‌خواهید ببینیدش، '
+        'بایگانی‌اش کنید.',
       ),
       actions: [
         TextButton(

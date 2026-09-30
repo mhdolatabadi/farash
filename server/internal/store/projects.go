@@ -4,326 +4,205 @@ import (
 	"context"
 	"errors"
 	"strings"
-	"time"
-
-	"github.com/jackc/pgx/v5"
 )
 
-// InboxName is stored for every Inbox; clients show it in the user's language.
-const InboxName = "Inbox"
-
-// MaxProjectDepth is how many levels of nested projects are allowed; a
-// top-level project is level 1.
-const MaxProjectDepth = 4
-
 var (
-	ErrNotFound       = errors.New("not found")
-	ErrInboxProtected = errors.New("the inbox cannot be changed this way")
-	ErrInvalidParent  = errors.New("invalid parent project")
-	ErrInvalidOrder   = errors.New("invalid order")
+	ErrProjectNotFound = errors.New("project not found")
+	ErrInboxProject    = errors.New("inbox project cannot be changed this way")
 )
 
 type Project struct {
-	ID         string
+	ID         string  `json:"id"`
+	OwnerID    string  `json:"owner_id"`
+	ParentID   *string `json:"parent_id,omitempty"`
+	Name       string  `json:"name"`
+	Color      string  `json:"color"`
+	SortOrder  int     `json:"sort_order"`
+	IsFavorite bool    `json:"is_favorite"`
+	IsArchived bool    `json:"is_archived"`
+	IsInbox    bool    `json:"is_inbox"`
+	Kind       string  `json:"kind"`
+	OpenTasks  int     `json:"open_tasks"`
+}
+
+type ProjectInput struct {
 	ParentID   *string
 	Name       string
 	Color      string
-	IsInbox    bool
+	SortOrder  int
 	IsFavorite bool
-	IsArchived bool
-	ChildOrder int
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	Kind       string
 }
 
-type NewProject struct {
-	Name       string
-	Color      string
+type ProjectUpdate struct {
 	ParentID   *string
-	IsFavorite bool
-}
-
-// ProjectChanges lists the fields to change; nil fields stay as they are.
-type ProjectChanges struct {
 	Name       *string
 	Color      *string
+	SortOrder  *int
 	IsFavorite *bool
 	IsArchived *bool
-	// MoveParent moves the project under ParentID, or to the top level when
-	// ParentID is nil.
-	MoveParent bool
-	ParentID   *string
+	Kind       *string
 }
 
-const projectColumns = `id, parent_id, name, color, is_inbox, is_favorite, is_archived, child_order, created_at, updated_at`
-
-func scanProject(row pgx.Row) (Project, error) {
-	var p Project
-	err := row.Scan(&p.ID, &p.ParentID, &p.Name, &p.Color, &p.IsInbox, &p.IsFavorite,
-		&p.IsArchived, &p.ChildOrder, &p.CreatedAt, &p.UpdatedAt)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return Project{}, ErrNotFound
+func (s *Store) EnsureInboxProject(ctx context.Context, ownerID string) (Project, error) {
+	project := Project{ID: newID(), OwnerID: ownerID, Name: "صندوق ورودی", Color: "#2563eb", Kind: "project", IsInbox: true}
+	row := s.pool.QueryRow(ctx, `
+		INSERT INTO projects (id, owner_id, name, color, kind, is_inbox)
+		VALUES ($1, $2, $3, $4, $5, TRUE)
+		ON CONFLICT (owner_id) WHERE is_inbox DO UPDATE
+		SET owner_id = EXCLUDED.owner_id
+		RETURNING id, owner_id, parent_id, name, color, sort_order, is_favorite, is_archived, is_inbox, kind, 0
+	`, project.ID, project.OwnerID, project.Name, project.Color, project.Kind)
+	if err := scanProject(row, &project); err != nil {
+		return Project{}, err
 	}
-	return p, err
+	return project, nil
 }
 
-// Projects lists the owner's active or archived projects in tree order: the
-// Inbox first, then each project followed by its sub-projects, siblings in
-// their saved order.
-func (s *Store) Projects(ctx context.Context, ownerID string, archived bool) ([]Project, error) {
+func (s *Store) ListProjects(ctx context.Context, ownerID string) ([]Project, error) {
+	if _, err := s.EnsureInboxProject(ctx, ownerID); err != nil {
+		return nil, err
+	}
 	rows, err := s.pool.Query(ctx, `
-		WITH RECURSIVE tree AS (
-			SELECT id, ARRAY[(NOT is_inbox)::int, child_order] AS path FROM projects
-			WHERE owner_id = $1 AND parent_id IS NULL
-			UNION ALL
-			SELECT p.id, t.path || ARRAY[1, p.child_order] FROM projects p
-			JOIN tree t ON p.parent_id = t.id
-		)
-		SELECT `+prefixed("p.", projectColumns)+` FROM projects p JOIN tree USING (id)
-		WHERE p.is_archived = $2
-		ORDER BY tree.path, p.created_at, p.id
-	`, ownerID, archived)
+		SELECT id, owner_id, parent_id, name, color, sort_order, is_favorite, is_archived, is_inbox, kind, 0
+		FROM projects
+		WHERE owner_id = $1
+		ORDER BY is_inbox DESC, is_favorite DESC, sort_order ASC, created_at ASC
+	`, ownerID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	projects := []Project{}
 	for rows.Next() {
-		p, err := scanProject(rows)
-		if err != nil {
+		var project Project
+		if err := scanProject(rows, &project); err != nil {
 			return nil, err
 		}
-		projects = append(projects, p)
+		projects = append(projects, project)
 	}
 	return projects, rows.Err()
 }
 
-func (s *Store) Project(ctx context.Context, ownerID, id string) (Project, error) {
-	return scanProject(s.pool.QueryRow(ctx,
-		`SELECT `+projectColumns+` FROM projects WHERE owner_id = $1 AND id = $2`, ownerID, id))
+func (s *Store) CreateProject(ctx context.Context, ownerID string, input ProjectInput) (Project, error) {
+	project := Project{ID: newID(), OwnerID: ownerID, ParentID: cleanOptional(input.ParentID), Name: cleanName(input.Name), Color: cleanColor(input.Color), SortOrder: input.SortOrder, IsFavorite: input.IsFavorite, Kind: cleanKind(input.Kind)}
+	if project.Name == "" {
+		return Project{}, ErrProjectNotFound
+	}
+	row := s.pool.QueryRow(ctx, `
+		INSERT INTO projects (id, owner_id, parent_id, name, color, sort_order, is_favorite, kind)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id, owner_id, parent_id, name, color, sort_order, is_favorite, is_archived, is_inbox, kind, 0
+	`, project.ID, project.OwnerID, project.ParentID, project.Name, project.Color, project.SortOrder, project.IsFavorite, project.Kind)
+	if err := scanProject(row, &project); err != nil {
+		return Project{}, err
+	}
+	return project, nil
 }
 
-// CreateProject adds a project after its siblings.
-func (s *Store) CreateProject(ctx context.Context, ownerID string, input NewProject) (Project, error) {
+func (s *Store) UpdateProject(ctx context.Context, ownerID string, id string, input ProjectUpdate) (Project, error) {
+	current, err := s.ProjectByID(ctx, ownerID, id)
+	if err != nil {
+		return Project{}, err
+	}
+	if current.IsInbox && (input.Name != nil || input.ParentID != nil || input.IsArchived != nil || input.Kind != nil) {
+		return Project{}, ErrInboxProject
+	}
+	name, color, sortOrder, isFavorite, isArchived, kind, parentID := current.Name, current.Color, current.SortOrder, current.IsFavorite, current.IsArchived, current.Kind, current.ParentID
+	if input.Name != nil {
+		name = cleanName(*input.Name)
+		if name == "" {
+			return Project{}, ErrProjectNotFound
+		}
+	}
+	if input.Color != nil {
+		color = cleanColor(*input.Color)
+	}
+	if input.SortOrder != nil {
+		sortOrder = *input.SortOrder
+	}
+	if input.IsFavorite != nil {
+		isFavorite = *input.IsFavorite
+	}
+	if input.IsArchived != nil {
+		isArchived = *input.IsArchived
+	}
+	if input.Kind != nil {
+		kind = cleanKind(*input.Kind)
+	}
+	if input.ParentID != nil {
+		parentID = cleanOptional(input.ParentID)
+	}
 	var project Project
-	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		if input.ParentID != nil {
-			if err := checkParent(ctx, tx, ownerID, *input.ParentID, "", 1); err != nil {
-				return err
-			}
-		}
-		var err error
-		project, err = scanProject(tx.QueryRow(ctx, `
-			INSERT INTO projects (id, owner_id, parent_id, name, color, is_favorite, child_order)
-			VALUES ($1, $2, $3, $4, $5, $6, (
-				SELECT COALESCE(max(child_order) + 1, 0) FROM projects
-				WHERE owner_id = $2 AND parent_id IS NOT DISTINCT FROM $3
-			))
-			RETURNING `+projectColumns,
-			newID(), ownerID, input.ParentID, input.Name, input.Color, input.IsFavorite))
-		return err
-	})
-	return project, err
-}
-
-// UpdateProject applies changes to one of the owner's projects. Archiving
-// also archives its sub-projects; unarchiving restores the project, its
-// sub-projects and its ancestors so that it shows up in the tree again.
-func (s *Store) UpdateProject(ctx context.Context, ownerID, id string, changes ProjectChanges) (Project, error) {
-	var project Project
-	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		current, err := scanProject(tx.QueryRow(ctx,
-			`SELECT `+projectColumns+` FROM projects WHERE owner_id = $1 AND id = $2 FOR UPDATE`, ownerID, id))
-		if err != nil {
-			return err
-		}
-		if current.IsInbox && (changes.Name != nil || changes.MoveParent || changes.IsArchived != nil) {
-			return ErrInboxProtected
-		}
-
-		if changes.MoveParent && !sameID(current.ParentID, changes.ParentID) {
-			if changes.ParentID != nil {
-				height, err := subtreeHeight(ctx, tx, id)
-				if err != nil {
-					return err
-				}
-				if err := checkParent(ctx, tx, ownerID, *changes.ParentID, id, height); err != nil {
-					return err
-				}
-			}
-			if _, err := tx.Exec(ctx, `
-				UPDATE projects SET parent_id = $3, child_order = (
-					SELECT COALESCE(max(child_order) + 1, 0) FROM projects
-					WHERE owner_id = $1 AND parent_id IS NOT DISTINCT FROM $3
-				)
-				WHERE owner_id = $1 AND id = $2
-			`, ownerID, id, changes.ParentID); err != nil {
-				return err
-			}
-		}
-
-		if _, err := tx.Exec(ctx, `
-			UPDATE projects SET
-				name = COALESCE($3, name),
-				color = COALESCE($4, color),
-				is_favorite = COALESCE($5, is_favorite)
-			WHERE owner_id = $1 AND id = $2
-		`, ownerID, id, changes.Name, changes.Color, changes.IsFavorite); err != nil {
-			return err
-		}
-
-		if changes.IsArchived != nil {
-			if err := setArchived(ctx, tx, ownerID, id, *changes.IsArchived); err != nil {
-				return err
-			}
-		}
-
-		project, err = scanProject(tx.QueryRow(ctx,
-			`SELECT `+projectColumns+` FROM projects WHERE owner_id = $1 AND id = $2`, ownerID, id))
-		return err
-	})
-	return project, err
-}
-
-// DeleteProject removes a project and, through the foreign keys, its
-// sub-projects and everything in them.
-func (s *Store) DeleteProject(ctx context.Context, ownerID, id string) error {
-	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		project, err := scanProject(tx.QueryRow(ctx,
-			`SELECT `+projectColumns+` FROM projects WHERE owner_id = $1 AND id = $2 FOR UPDATE`, ownerID, id))
-		if err != nil {
-			return err
-		}
-		if project.IsInbox {
-			return ErrInboxProtected
-		}
-		_, err = tx.Exec(ctx, `DELETE FROM projects WHERE owner_id = $1 AND id = $2`, ownerID, id)
-		return err
-	})
-}
-
-// ReorderProjects saves the order of sibling projects: ids[0] comes first.
-// Every id must be one of the owner's projects and they must share a parent.
-func (s *Store) ReorderProjects(ctx context.Context, ownerID string, ids []string) error {
-	if len(ids) == 0 {
-		return ErrInvalidOrder
+	row := s.pool.QueryRow(ctx, `
+		UPDATE projects
+		SET parent_id = $3, name = $4, color = $5, sort_order = $6, is_favorite = $7, is_archived = $8, kind = $9
+		WHERE owner_id = $1 AND id = $2
+		RETURNING id, owner_id, parent_id, name, color, sort_order, is_favorite, is_archived, is_inbox, kind, 0
+	`, ownerID, id, parentID, name, color, sortOrder, isFavorite, isArchived, kind)
+	if err := scanProject(row, &project); err != nil {
+		return Project{}, ErrProjectNotFound
 	}
-	seen := make(map[string]bool, len(ids))
-	for _, id := range ids {
-		if seen[id] {
-			return ErrInvalidOrder
-		}
-		seen[id] = true
-	}
-	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		var found, parents int
-		if err := tx.QueryRow(ctx, `
-			SELECT count(*), count(DISTINCT COALESCE(parent_id, '')) FROM projects
-			WHERE owner_id = $1 AND id = ANY($2)
-		`, ownerID, ids).Scan(&found, &parents); err != nil {
-			return err
-		}
-		if found != len(ids) {
-			return ErrNotFound
-		}
-		if parents != 1 {
-			return ErrInvalidOrder
-		}
-		_, err := tx.Exec(ctx, `
-			UPDATE projects SET child_order = ordered.position - 1
-			FROM unnest($2::text[]) WITH ORDINALITY AS ordered(id, position)
-			WHERE projects.owner_id = $1 AND projects.id = ordered.id
-		`, ownerID, ids)
-		return err
-	})
+	return project, nil
 }
 
-// checkParent verifies that parentID can hold a subtree of the given height:
-// it is the owner's, active, not the Inbox, not inside movingID's subtree, and
-// deep enough room is left under MaxProjectDepth.
-func checkParent(ctx context.Context, tx pgx.Tx, ownerID, parentID, movingID string, height int) error {
-	var isInbox, isArchived bool
-	var depth int
-	var insideMoving bool
-	err := tx.QueryRow(ctx, `
-		WITH RECURSIVE ancestors AS (
-			SELECT id, parent_id, 1 AS depth FROM projects WHERE owner_id = $1 AND id = $2
-			UNION ALL
-			SELECT p.id, p.parent_id, a.depth + 1 FROM projects p
-			JOIN ancestors a ON p.id = a.parent_id
-			WHERE p.owner_id = $1
-		)
-		SELECT pr.is_inbox, pr.is_archived,
-			(SELECT max(depth) FROM ancestors),
-			EXISTS (SELECT 1 FROM ancestors WHERE id = $3)
-		FROM projects pr WHERE pr.owner_id = $1 AND pr.id = $2
-	`, ownerID, parentID, movingID).Scan(&isInbox, &isArchived, &depth, &insideMoving)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return ErrInvalidParent
-	}
+func (s *Store) DeleteProject(ctx context.Context, ownerID string, id string) error {
+	project, err := s.ProjectByID(ctx, ownerID, id)
 	if err != nil {
 		return err
 	}
-	if isInbox || isArchived || insideMoving || depth+height > MaxProjectDepth {
-		return ErrInvalidParent
+	if project.IsInbox {
+		return ErrInboxProject
+	}
+	tag, err := s.pool.Exec(ctx, `DELETE FROM projects WHERE owner_id = $1 AND id = $2`, ownerID, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrProjectNotFound
 	}
 	return nil
 }
 
-// subtreeHeight is 1 for a project without sub-projects.
-func subtreeHeight(ctx context.Context, tx pgx.Tx, id string) (int, error) {
-	var height int
-	err := tx.QueryRow(ctx, `
-		WITH RECURSIVE subtree AS (
-			SELECT id, 1 AS level FROM projects WHERE id = $1
-			UNION ALL
-			SELECT p.id, s.level + 1 FROM projects p JOIN subtree s ON p.parent_id = s.id
-		)
-		SELECT max(level) FROM subtree
-	`, id).Scan(&height)
-	return height, err
+func (s *Store) ProjectByID(ctx context.Context, ownerID string, id string) (Project, error) {
+	var project Project
+	row := s.pool.QueryRow(ctx, `
+		SELECT id, owner_id, parent_id, name, color, sort_order, is_favorite, is_archived, is_inbox, kind, 0
+		FROM projects WHERE owner_id = $1 AND id = $2
+	`, ownerID, id)
+	if err := scanProject(row, &project); err != nil {
+		return Project{}, ErrProjectNotFound
+	}
+	return project, nil
 }
 
-func setArchived(ctx context.Context, tx pgx.Tx, ownerID, id string, archived bool) error {
-	// Descendants follow the project either way; ancestors are only restored.
-	query := `
-		WITH RECURSIVE subtree AS (
-			SELECT id FROM projects WHERE owner_id = $1 AND id = $2
-			UNION ALL
-			SELECT p.id FROM projects p JOIN subtree s ON p.parent_id = s.id
-		)
-		UPDATE projects SET is_archived = $3
-		WHERE owner_id = $1 AND id IN (SELECT id FROM subtree) AND is_archived <> $3`
-	if _, err := tx.Exec(ctx, query, ownerID, id, archived); err != nil {
-		return err
+type projectScanner interface{ Scan(dest ...any) error }
+
+func scanProject(row projectScanner, project *Project) error {
+	return row.Scan(&project.ID, &project.OwnerID, &project.ParentID, &project.Name, &project.Color, &project.SortOrder, &project.IsFavorite, &project.IsArchived, &project.IsInbox, &project.Kind, &project.OpenTasks)
+}
+
+func cleanName(name string) string { return strings.TrimSpace(name) }
+func cleanColor(color string) string {
+	color = strings.TrimSpace(color)
+	if color == "" {
+		return "#7c3aed"
 	}
-	if archived {
+	return color
+}
+func cleanKind(kind string) string {
+	if kind == "folder" {
+		return "folder"
+	}
+	return "project"
+}
+func cleanOptional(value *string) *string {
+	if value == nil {
 		return nil
 	}
-	_, err := tx.Exec(ctx, `
-		WITH RECURSIVE ancestors AS (
-			SELECT parent_id FROM projects WHERE owner_id = $1 AND id = $2
-			UNION ALL
-			SELECT p.parent_id FROM projects p JOIN ancestors a ON p.id = a.parent_id
-		)
-		UPDATE projects SET is_archived = false
-		WHERE owner_id = $1 AND id IN (SELECT parent_id FROM ancestors) AND is_archived
-	`, ownerID, id)
-	return err
-}
-
-// prefixed qualifies each column in a comma-separated list, for joins.
-func prefixed(prefix, columns string) string {
-	parts := strings.Split(columns, ", ")
-	for i, part := range parts {
-		parts[i] = prefix + part
+	cleaned := strings.TrimSpace(*value)
+	if cleaned == "" {
+		return nil
 	}
-	return strings.Join(parts, ", ")
-}
-
-func sameID(a, b *string) bool {
-	if a == nil || b == nil {
-		return a == nil && b == nil
-	}
-	return *a == *b
+	return &cleaned
 }

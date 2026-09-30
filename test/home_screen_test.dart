@@ -51,7 +51,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.all.last.name, 'کار');
-    expect(api.all.last.color, 'blue');
+    expect(api.all.last.color, '#2563eb');
     // The new project is selected and the drawer closed.
     expect(find.widgetWithText(AppBar, 'کار'), findsOneWidget);
     expect(find.byType(Drawer), findsNothing);
@@ -75,7 +75,7 @@ void main() {
 
   testWidgets('wide screens keep the sidebar open', (tester) async {
     await pumpHome(tester, size: const Size(1200, 800));
-    await projects.create(name: 'Work', color: 'blue');
+    await projects.create(name: 'Work', color: '#2563eb');
     await tester.pumpAndSettle();
 
     expect(find.byType(Drawer), findsNothing);
@@ -90,7 +90,7 @@ void main() {
     tester,
   ) async {
     await pumpHome(tester, size: const Size(1200, 800));
-    final work = await projects.create(name: 'Work', color: 'blue');
+    final work = await projects.create(name: 'Work', color: '#2563eb');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Work'));
     await tester.pumpAndSettle();
@@ -133,7 +133,7 @@ void main() {
     await projects.create(
       name:
           'پروژه‌ای با نامی بسیار طولانی که در یک خط جا نمی‌شود و باید کوتاه شود',
-      color: 'red',
+      color: '#dc2626',
     );
     await tester.tap(find.byTooltip('Open navigation menu'));
     await tester.pumpAndSettle();
