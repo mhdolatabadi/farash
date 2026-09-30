@@ -1,29 +1,41 @@
-#!/usr/bin/env sh
-set -eu
+#!/usr/bin/env bash
+# Pulls one validated commit and its prebuilt images, then restarts the stack.
+set -euo pipefail
 
-required_vars="FARASH_DOMAIN FARASH_IMAGE_REPO FARASH_IMAGE_TAG POSTGRES_PASSWORD AUTH_JWT_SECRET GHCR_USERNAME GHCR_TOKEN"
-for var in $required_vars; do
-  eval "value=\${$var:-}"
-  if [ -z "$value" ]; then
-    echo "Missing required environment variable: $var" >&2
-    exit 1
+revision="${1:-main}"
+cd "$(dirname "$0")"
+
+if [[ ! -f .env ]]; then
+  echo "deploy/.env is missing; copy .env.example and fill in real values first." >&2
+  exit 1
+fi
+
+if ! grep -qE '^FARASH_DOMAIN=' .env; then
+  echo "deploy/.env has no FARASH_DOMAIN; see deploy/README.md." >&2
+  exit 1
+fi
+
+git fetch --prune origin main
+git checkout --detach "$revision"
+
+# Images are tagged with the exact source commit. Pull everything before
+# changing running containers, so a missing image leaves production untouched.
+export FARASH_IMAGE_TAG="$(git rev-parse HEAD)"
+docker compose pull api web
+docker compose up -d --no-build --remove-orphans
+docker image prune -f
+
+domain="$(grep -E '^FARASH_DOMAIN=' .env | cut -d= -f2-)"
+for attempt in $(seq 1 30); do
+  if curl -fsS "https://${domain}/api/v1/health"; then
+    echo
+    echo "Deployed $(git rev-parse --short HEAD) to https://${domain}"
+    exit 0
   fi
+  sleep 5
 done
 
-cat > .env <<EOF
-FARASH_DOMAIN=$FARASH_DOMAIN
-POSTGRES_PASSWORD=$POSTGRES_PASSWORD
-AUTH_JWT_SECRET=$AUTH_JWT_SECRET
-AUTH_TOKEN_TTL_HOURS=${AUTH_TOKEN_TTL_HOURS:-24}
-FARASH_IMAGE_REPO=$FARASH_IMAGE_REPO
-FARASH_IMAGE_TAG=$FARASH_IMAGE_TAG
-EOF
-
-printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
-
-docker compose pull api web
-docker compose up -d --remove-orphans
-
-docker compose exec -T api /usr/local/bin/farash-api --help >/dev/null 2>&1 || true
-
-echo "Farash deploy finished for https://$FARASH_DOMAIN"
+echo "Health check failed for https://${domain}/api/v1/health" >&2
+docker compose ps
+docker compose logs --tail=100 api
+exit 1
