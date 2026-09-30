@@ -7,12 +7,12 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
-	ErrEmailTaken         = errors.New("email already registered")
+	ErrEmailTaken        = errors.New("email already registered")
 	ErrInvalidCredential = errors.New("invalid credentials")
 	ErrUserNotFound      = errors.New("user not found")
 )
