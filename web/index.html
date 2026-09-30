@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="فراش — فهرست کارها و برنامه‌ریزی شخصی">
+  <meta name="theme-color" content="#0F8B7C">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="فراش">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <title>فراش</title>
+  <style>
+    /* Shown while Flutter downloads and starts; removed on its first frame. */
+    html, body { margin: 0; height: 100%; background: #f5fbf8; }
+    @media (prefers-color-scheme: dark) { html, body { background: #0e1513; } }
+    #splash {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 20px;
+      color: #5b6763; font-family: Tahoma, sans-serif;
+      transition: opacity 250ms ease-out;
+    }
+    #splash.hidden { opacity: 0; pointer-events: none; }
+    #splash img { width: 72px; height: 72px; }
+    #splash .spinner {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 3px solid rgba(15, 139, 124, 0.25); border-top-color: #0F8B7C;
+      animation: spin 0.9s linear infinite;
+    }
+    #splash .slow { display: none; max-width: 280px; text-align: center; font-size: 14px; line-height: 1.8; }
+    #splash.slow .slow { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { #splash .spinner { animation-duration: 3s; } }
+  </style>
+</head>
+<body>
+  <div id="splash" role="status" aria-live="polite">
+    <img src="icons/icon.svg" alt="فراش">
+    <div class="spinner" aria-label="در حال بارگذاری"></div>
+    <div class="slow">بارگذاری بیشتر از معمول طول کشیده است. اتصال اینترنت را بررسی کنید یا صفحه را دوباره باز کنید.</div>
+  </div>
+  <script>
+    (function () {
+      var splash = document.getElementById('splash');
+      var slowTimer = setTimeout(function () { splash.classList.add('slow'); }, 20000);
+      window.addEventListener('flutter-first-frame', function () {
+        clearTimeout(slowTimer);
+        splash.classList.add('hidden');
+        setTimeout(function () { splash.remove(); }, 300);
+      }, { once: true });
+    })();
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
