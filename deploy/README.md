@@ -6,35 +6,36 @@ the Flutter web app behind nginx, and Caddy for automatic HTTPS.
 ## Production launch
 
 1. Point `FARASH_DOMAIN` at the server and open ports `80` and `443`.
-2. Create the deploy directory on the server, for example `/home/apps/farash`.
-3. Add these repository secrets in GitHub:
+2. Clone the repository on the server, for example under `/home/apps/farash`.
+3. On the server, create `deploy/.env` from `deploy/.env.example` and fill in
+   the real domain, PostgreSQL password and JWT secret. Never commit `.env`.
+4. Make sure the server can pull the GHCR images. If the packages are private,
+   log in once on the server with a token that has `read:packages`.
+5. Add these repository secrets in GitHub, matching the Nafir deploy setup:
 
    | Secret | Purpose |
    | --- | --- |
-   | `FARASH_SSH_HOST` | Server IP or hostname |
-   | `FARASH_SSH_USER` | SSH user that can run Docker |
-   | `FARASH_SSH_KEY` | Private key for that user |
-   | `FARASH_SSH_PORT` | SSH port, usually `22` |
-   | `FARASH_DEPLOY_PATH` | Server path, for example `/home/apps/farash` |
-   | `FARASH_DOMAIN` | Public domain, for example `farash.mhdolatabadi.ir` |
-   | `FARASH_POSTGRES_PASSWORD` | Long random PostgreSQL password |
-   | `FARASH_AUTH_JWT_SECRET` | Long random token secret |
-   | `FARASH_GHCR_TOKEN` | GitHub PAT with `read:packages` for GHCR pulls |
+   | `DEPLOY_HOST` | Server IP or hostname |
+   | `DEPLOY_USER` | SSH user that can run Docker |
+   | `DEPLOY_PATH` | Repository path on the server, for example `/home/apps/farash` |
+   | `DEPLOY_SSH_KEY` | Private key for that user |
+   | `DEPLOY_KNOWN_HOSTS` | Server SSH host key entry |
+   | `DEPLOY_PORT` | Optional SSH port; defaults to `22` |
 
-4. Optional repository variable:
-
-   | Variable | Default | Purpose |
-   | --- | --- | --- |
-   | `FARASH_AUTH_TOKEN_TTL_HOURS` | `24` | Access-token lifetime |
-
-5. Merge the production PR to `main`, or run **Deploy web** manually from GitHub
-   Actions. The workflow builds and pushes these images to GHCR:
+6. Merge to `main`, or run **Images** and then **Deploy** manually from GitHub
+   Actions. `Images` publishes immutable images:
 
    - `ghcr.io/mhdolatabadi/farash/api:<commit-sha>`
    - `ghcr.io/mhdolatabadi/farash/web:<commit-sha>`
 
-6. The workflow copies this directory to the server, writes `.env` from secrets,
-   pulls the images, runs `docker compose up -d --remove-orphans`, and checks:
+7. `Deploy` SSHes to the server and runs:
+
+   ```bash
+   bash "$DEPLOY_PATH/deploy/deploy.sh" <commit-sha>
+   ```
+
+   The script fetches that commit, sets `FARASH_IMAGE_TAG`, pulls the images,
+   runs `docker compose up -d --no-build --remove-orphans`, and checks:
 
    ```bash
    curl https://$FARASH_DOMAIN/api/v1/health
@@ -45,10 +46,12 @@ only on Docker's internal network.
 
 ## Manual fallback
 
-If the workflow is unavailable, copy this directory to the server, create `.env`
-from `.env.example`, then run:
+From the server repository checkout:
 
 ```bash
+cd deploy
+cp .env.example .env
+# edit .env
 docker compose up -d --build
 ```
 
