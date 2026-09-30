@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+
+	"github.com/mhdolatabadi/farash/server/internal/store"
 )
 
 type healthResponse struct {
@@ -31,8 +33,8 @@ func NewHandler(config Config) http.Handler {
 		mux.HandleFunc("POST /api/v1/auth/register", auth.register)
 		mux.HandleFunc("POST /api/v1/auth/login", auth.login)
 		mux.HandleFunc("GET /api/v1/me", auth.me)
-		if config.ProjectStore != nil {
-			projects := newProjectsHandler(auth, config.ProjectStore)
+		if projectData := projectStoreFor(config); projectData != nil {
+			projects := newProjectsHandler(auth, projectData)
 			mux.HandleFunc("GET /api/v1/projects", projects.list)
 			mux.HandleFunc("POST /api/v1/projects", projects.create)
 			mux.HandleFunc("PATCH /api/v1/projects/{id}", projects.update)
@@ -41,6 +43,22 @@ func NewHandler(config Config) http.Handler {
 	}
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) { writeError(w, http.StatusNotFound, "not_found") })
 	return cors(config.AllowedOrigin, mux)
+}
+
+func projectStoreFor(config Config) projectsStore {
+	if config.ProjectStore != nil {
+		return config.ProjectStore
+	}
+	if storeWithProjects, ok := config.Store.(interface {
+		EnsureInboxProject(context.Context, string) (store.Project, error)
+		ListProjects(context.Context, string) ([]store.Project, error)
+		CreateProject(context.Context, string, store.ProjectInput) (store.Project, error)
+		UpdateProject(context.Context, string, string, store.ProjectUpdate) (store.Project, error)
+		DeleteProject(context.Context, string, string) error
+	}); ok {
+		return storeWithProjects
+	}
+	return nil
 }
 
 func cors(allowedOrigin string, next http.Handler) http.Handler {
