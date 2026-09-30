@@ -39,8 +39,10 @@ func newDBAPI(t *testing.T) *dbAPI {
 	if err := store.Migrate(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
+	data := store.New(pool)
 	return &dbAPI{t: t, handler: NewHandler(Config{
-		Store:        store.New(pool),
+		Store:        data,
+		ProjectStore: data,
 		AuthSecret:   []byte("test-secret-test-secret-test-secret"),
 		AuthTokenTTL: time.Hour,
 	})}
