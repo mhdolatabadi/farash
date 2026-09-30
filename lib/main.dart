@@ -6,6 +6,7 @@ import 'package:farash/app/backend_gate.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/widgets/app_loading_screen.dart';
 import 'package:farash/features/auth/auth_screen.dart';
+import 'package:farash/features/auth/data/auth_models.dart';
 import 'package:farash/features/auth/session_store.dart';
 import 'package:farash/features/home/home_screen.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
