@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:farash/features/auth/data/auth_models.dart';
 
 class ApiException implements Exception {
   const ApiException(this.message, {this.statusCode, this.code});
@@ -17,34 +18,17 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
-class AuthUser {
-  const AuthUser({required this.id, required this.email});
-
-  final String id;
-  final String email;
-
-  factory AuthUser.fromJson(Map<String, dynamic> json) {
-    return AuthUser(id: json['id'] as String, email: json['email'] as String);
-  }
-}
-
-class AuthSession {
-  const AuthSession({required this.token, required this.user});
-
-  final String token;
-  final AuthUser user;
-
-  factory AuthSession.fromJson(Map<String, dynamic> json) {
-    return AuthSession(
-      token: json['token'] as String,
-      user: AuthUser.fromJson(json['user'] as Map<String, dynamic>),
-    );
-  }
+abstract interface class AuthApi {
+  @override
+  Future<AuthSession> register({required String email, required String password});
+  @override
+  Future<AuthSession> login({required String email, required String password});
+  Future<AuthUser> me(String token);
 }
 
 /// Talks to the Farash API. Feature interfaces are implemented here so that
 /// one HTTP client serves the whole app.
-class ApiClient {
+class ApiClient implements AuthApi {
   ApiClient(this.baseUri, {http.Client? client})
     : _client = client ?? http.Client();
 
@@ -81,6 +65,7 @@ class ApiClient {
     return AuthSession.fromJson(decoded as Map<String, dynamic>);
   }
 
+  @override
   Future<AuthUser> me(String token) async {
     final decoded = await _send('GET', '/api/v1/me', token: token);
     final json = decoded as Map<String, dynamic>;
