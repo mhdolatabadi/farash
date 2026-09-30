@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:farash/core/api/api_client.dart';
+import 'package:farash/features/auth/data/auth_models.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({
