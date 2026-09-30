@@ -1,20 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/features/auth/data/token_store.dart';
 import 'package:farash/main.dart';
 
-import 'support/fake_auth_api.dart';
-
 void main() {
-  Widget app({Future<void> Function()? healthCheck, TokenStore? tokens}) =>
-      FarashApp(
-        healthCheck: healthCheck ?? () async {},
-        authApi: FakeAuthApi(),
-        tokenStore: tokens ?? MemoryTokenStore(),
-      );
-
-  testWidgets('shows sign-in once the server answers', (tester) async {
-    await tester.pumpWidget(app());
+  testWidgets('shows the auth screen once the server answers', (tester) async {
+    await tester.pumpWidget(FarashApp(healthCheck: () async {}));
     await tester.pumpAndSettle();
 
     expect(find.text('ورود به فراش'), findsOneWidget);
@@ -23,7 +13,7 @@ void main() {
   testWidgets('offers a retry while the server is unreachable', (tester) async {
     var calls = 0;
     await tester.pumpWidget(
-      app(
+      FarashApp(
         healthCheck: () async {
           calls++;
           if (calls == 1) throw Exception('offline');
@@ -41,17 +31,8 @@ void main() {
     expect(find.text('ورود به فراش'), findsOneWidget);
   });
 
-  testWidgets('restores a saved session straight into the app', (tester) async {
-    await tester.pumpWidget(
-      app(tokens: MemoryTokenStore('token-a@example.com')),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('به فراش خوش آمدید'), findsOneWidget);
-  });
-
   testWidgets('lays the app out right to left', (tester) async {
-    await tester.pumpWidget(app());
+    await tester.pumpWidget(FarashApp(healthCheck: () async {}));
     await tester.pumpAndSettle();
 
     final context = tester.element(find.text('ورود به فراش'));

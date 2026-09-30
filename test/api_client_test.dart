@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -17,6 +19,71 @@ void main() {
     await client.checkHealth();
 
     expect(called.toString(), 'https://todo.example.com/farash/api/v1/health');
+  });
+
+  test('register decodes the returned auth session', () async {
+    late Map<String, dynamic> body;
+    final client = ApiClient(
+      Uri.parse('https://todo.example.com'),
+      client: MockClient((request) async {
+        body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(request.url.path, '/api/v1/auth/register');
+        return http.Response(
+          '{"token":"abc","user":{"id":"u1","email":"a@example.com"}}',
+          201,
+        );
+      }),
+    );
+
+    final session = await client.register(
+      email: 'a@example.com',
+      password: 'long-enough',
+    );
+
+    expect(body['email'], 'a@example.com');
+    expect(session.token, 'abc');
+    expect(session.user.email, 'a@example.com');
+  });
+
+  test('login sends credentials and decodes the returned session', () async {
+    late Uri called;
+    final client = ApiClient(
+      Uri.parse('https://todo.example.com'),
+      client: MockClient((request) async {
+        called = request.url;
+        return http.Response(
+          '{"token":"abc","user":{"id":"u1","email":"a@example.com"}}',
+          200,
+        );
+      }),
+    );
+
+    final session = await client.login(
+      email: 'a@example.com',
+      password: 'long-enough',
+    );
+
+    expect(called.path, '/api/v1/auth/login');
+    expect(session.user.id, 'u1');
+  });
+
+  test('me sends the bearer token', () async {
+    late String? authorization;
+    final client = ApiClient(
+      Uri.parse('https://todo.example.com'),
+      client: MockClient((request) async {
+        authorization = request.headers['Authorization'];
+        return http.Response(
+          '{"user":{"id":"u1","email":"a@example.com"}}',
+          200,
+        );
+      }),
+    );
+
+    final user = await client.me('token-123');
+
+    expect(authorization, 'Bearer token-123');
+    expect(user.email, 'a@example.com');
   });
 
   test('turns an error body into an ApiException with its code', () async {

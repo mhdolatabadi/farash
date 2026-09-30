@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:farash/features/auth/data/auth_models.dart';
 
 class ApiException implements Exception {
   const ApiException(this.message, {this.statusCode, this.code});
@@ -18,15 +17,37 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
-abstract interface class AuthApi {
-  Future<AuthSession> register(String email, String password);
-  Future<AuthSession> login(String email, String password);
-  Future<AuthUser> me(String token);
+class AuthUser {
+  const AuthUser({required this.id, required this.email});
+
+  final String id;
+  final String email;
+
+  factory AuthUser.fromJson(Map<String, dynamic> json) {
+    return AuthUser(
+      id: json['id'] as String,
+      email: json['email'] as String,
+    );
+  }
+}
+
+class AuthSession {
+  const AuthSession({required this.token, required this.user});
+
+  final String token;
+  final AuthUser user;
+
+  factory AuthSession.fromJson(Map<String, dynamic> json) {
+    return AuthSession(
+      token: json['token'] as String,
+      user: AuthUser.fromJson(json['user'] as Map<String, dynamic>),
+    );
+  }
 }
 
 /// Talks to the Farash API. Feature interfaces are implemented here so that
 /// one HTTP client serves the whole app.
-class ApiClient implements AuthApi {
+class ApiClient {
   ApiClient(this.baseUri, {http.Client? client})
     : _client = client ?? http.Client();
 
@@ -39,33 +60,34 @@ class ApiClient implements AuthApi {
     await _send('GET', '/api/v1/health');
   }
 
-  @override
-  Future<AuthSession> register(String email, String password) async =>
-      AuthSession.fromJson(
-        await _send(
-              'POST',
-              '/api/v1/auth/register',
-              body: {'email': email, 'password': password},
-            )
-            as Map<String, dynamic>,
-      );
+  Future<AuthSession> register({
+    required String email,
+    required String password,
+  }) async {
+    final decoded = await _send(
+      'POST',
+      '/api/v1/auth/register',
+      body: {'email': email, 'password': password},
+    );
+    return AuthSession.fromJson(decoded as Map<String, dynamic>);
+  }
 
-  @override
-  Future<AuthSession> login(String email, String password) async =>
-      AuthSession.fromJson(
-        await _send(
-              'POST',
-              '/api/v1/auth/login',
-              body: {'email': email, 'password': password},
-            )
-            as Map<String, dynamic>,
-      );
+  Future<AuthSession> login({
+    required String email,
+    required String password,
+  }) async {
+    final decoded = await _send(
+      'POST',
+      '/api/v1/auth/login',
+      body: {'email': email, 'password': password},
+    );
+    return AuthSession.fromJson(decoded as Map<String, dynamic>);
+  }
 
-  @override
   Future<AuthUser> me(String token) async {
-    final body =
-        await _send('GET', '/api/v1/me', token: token) as Map<String, dynamic>;
-    return AuthUser.fromJson(body['user'] as Map<String, dynamic>);
+    final decoded = await _send('GET', '/api/v1/me', token: token);
+    final json = decoded as Map<String, dynamic>;
+    return AuthUser.fromJson(json['user'] as Map<String, dynamic>);
   }
 
   Uri _uri(String path, [Map<String, String>? query]) => baseUri.replace(
@@ -123,6 +145,12 @@ class ApiClient implements AuthApi {
   }
 
   static String _messageFor(int status, String? code) {
+    if (code == 'email_taken') return 'این ایمیل قبلا ثبت شده است.';
+    if (code == 'invalid_credentials') return 'ایمیل یا رمز عبور درست نیست.';
+    if (code == 'invalid_email') return 'ایمیل را درست وارد کنید.';
+    if (code == 'invalid_password') {
+      return 'رمز عبور باید بین ۸ تا ۷۲ کاراکتر باشد.';
+    }
     if (status == 401) return 'نشست شما منقضی شده است. دوباره وارد شوید.';
     if (status == 404) return 'پیدا نشد.';
     if (status == 429) {
