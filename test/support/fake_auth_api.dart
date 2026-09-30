@@ -13,7 +13,10 @@ class FakeAuthApi implements AuthApi {
   Object? meError;
 
   @override
-  Future<AuthSession> login({required String email, required String password}) async {
+  Future<AuthSession> login({
+    required String email,
+    required String password,
+  }) async {
     if (accounts[email] != password) {
       throw const ApiException(
         'unauthorized',
@@ -25,7 +28,10 @@ class FakeAuthApi implements AuthApi {
   }
 
   @override
-  Future<AuthSession> register({required String email, required String password}) async {
+  Future<AuthSession> register({
+    required String email,
+    required String password,
+  }) async {
     if (accounts.containsKey(email)) {
       throw const ApiException(
         'conflict',
