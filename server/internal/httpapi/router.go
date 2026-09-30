@@ -31,15 +31,8 @@ func NewHandler(config Config) http.Handler {
 		mux.HandleFunc("POST /api/v1/auth/register", auth.register)
 		mux.HandleFunc("POST /api/v1/auth/login", auth.login)
 		mux.HandleFunc("GET /api/v1/me", auth.me)
-		// Named so it does not shadow the projectsStore type used below.
-		projectData := config.ProjectStore
-		if projectData == nil {
-			if storeWithProjects, ok := config.Store.(projectsStore); ok {
-				projectData = storeWithProjects
-			}
-		}
-		if projectData != nil {
-			projects := newProjectsHandler(auth, projectData)
+		if config.ProjectStore != nil {
+			projects := newProjectsHandler(auth, config.ProjectStore)
 			mux.HandleFunc("GET /api/v1/projects", projects.list)
 			mux.HandleFunc("POST /api/v1/projects", projects.create)
 			mux.HandleFunc("PATCH /api/v1/projects/{id}", projects.update)
