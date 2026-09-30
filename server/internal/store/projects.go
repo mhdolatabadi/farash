@@ -170,7 +170,9 @@ func (s *Store) ProjectByID(ctx context.Context, ownerID string, id string) (Pro
 		SELECT id, owner_id, parent_id, name, color, sort_order, is_favorite, is_archived, is_inbox, kind, 0
 		FROM projects WHERE owner_id = $1 AND id = $2
 	`, ownerID, id)
-	if err := scanProject(row, &project); err != nil { return Project{}, ErrProjectNotFound }
+	if err := scanProject(row, &project); err != nil {
+		return Project{}, ErrProjectNotFound
+	}
 	return project, nil
 }
 
