@@ -50,13 +50,15 @@ func run() error {
 	if err := store.Migrate(ctx, pool); err != nil {
 		return fmt.Errorf("migrate database: %w", err)
 	}
+	appStore := store.New(pool)
 
 	server := &http.Server{
 		Addr: ":" + port,
 		Handler: httpapi.NewHandler(httpapi.Config{
 			AllowedOrigin: os.Getenv("WEB_ORIGIN"),
 			Ping:          pool.Ping,
-			Store:         store.New(pool),
+			Store:         appStore,
+			ProjectStore:  appStore,
 			AuthSecret:    []byte(authSecret),
 			AuthTokenTTL:  authTokenTTL(),
 		}),
