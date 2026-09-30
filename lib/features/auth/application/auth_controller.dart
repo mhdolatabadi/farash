@@ -49,10 +49,10 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> login(String email, String password) =>
-      _start(_api.login(email.trim(), password));
+      _start(_api.login(email: email.trim(), password: password));
 
   Future<void> register(String email, String password) =>
-      _start(_api.register(email.trim(), password));
+      _start(_api.register(email: email.trim(), password: password));
 
   Future<void> logout() async {
     _token = null;
