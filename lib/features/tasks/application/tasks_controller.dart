@@ -25,6 +25,19 @@ class TasksController extends ChangeNotifier {
   bool _loading = false;
   bool _showCompleted = false;
   Object? _error;
+  bool _disposed = false;
+  int _loadGeneration = 0;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _loadGeneration++;
+    super.dispose();
+  }
+
+  void _publish() {
+    if (!_disposed) notifyListeners();
+  }
 
   /// Open tasks in their order, then completed ones when they are shown.
   List<Task> get tasks => [...openTasks, ...completedTasks];
@@ -65,24 +78,35 @@ class TasksController extends ChangeNotifier {
   Object? get error => _error;
 
   Future<void> load() async {
-    final token = this.token();
-    if (token == null) return;
+    final requestToken = token();
+    if (_disposed || requestToken == null) return;
+    final generation = ++_loadGeneration;
+    bool isCurrent() =>
+        !_disposed && generation == _loadGeneration && token() == requestToken;
     _loading = true;
     _error = null;
-    notifyListeners();
+    _publish();
     try {
-      final sections = _sectionsApi?.listSections(token, projectId);
-      _tasks = await _api.listTasks(
-        token,
+      final sections = _sectionsApi?.listSections(requestToken, projectId);
+      final loaded = await _api.listTasks(
+        requestToken,
         projectId,
         showCompleted: _showCompleted,
       );
-      _sections = sections == null ? const [] : await sections;
+      final loadedSections = sections == null
+          ? const <Section>[]
+          : await sections;
+      if (isCurrent()) {
+        _tasks = loaded;
+        _sections = loadedSections;
+      }
     } catch (error) {
-      _error = error;
+      if (isCurrent()) _error = error;
     } finally {
-      _loading = false;
-      notifyListeners();
+      if (isCurrent()) {
+        _loading = false;
+        _publish();
+      }
     }
   }
 
@@ -112,7 +136,7 @@ class TasksController extends ChangeNotifier {
       ),
     );
     _tasks = [..._tasks, task];
-    notifyListeners();
+    _publish();
     return task;
   }
 
@@ -144,7 +168,7 @@ class TasksController extends ChangeNotifier {
       for (final t in _tasks)
         if (t.id != task.id) t else if (!moved) updated,
     ];
-    notifyListeners();
+    _publish();
   }
 
   /// Checks a task off, or back on. Calling it again with the opposite value
@@ -165,7 +189,7 @@ class TasksController extends ChangeNotifier {
     if (!completed && !_tasks.any((t) => t.id == task.id)) {
       _tasks = [..._tasks, task.copyWith(clearCompletedAt: true)];
     }
-    notifyListeners();
+    _publish();
     try {
       final token = _requireToken();
       final saved = completed
@@ -181,10 +205,10 @@ class TasksController extends ChangeNotifier {
             if (t.id != saved.id) t,
         ];
       }
-      notifyListeners();
+      _publish();
     } catch (_) {
       _tasks = before;
-      notifyListeners();
+      _publish();
       rethrow;
     }
   }
@@ -196,12 +220,12 @@ class TasksController extends ChangeNotifier {
       for (final t in _tasks)
         if (t.id != task.id) t,
     ];
-    notifyListeners();
+    _publish();
     try {
       await _api.deleteTask(_requireToken(), task.id);
     } catch (_) {
       _tasks = before;
-      notifyListeners();
+      _publish();
       rethrow;
     }
   }
@@ -211,7 +235,7 @@ class TasksController extends ChangeNotifier {
     if (restored.projectId == projectId &&
         (!restored.isCompleted || _showCompleted)) {
       _tasks = [..._tasks, restored];
-      notifyListeners();
+      _publish();
     }
   }
 
@@ -230,14 +254,14 @@ class TasksController extends ChangeNotifier {
       for (final t in _tasks)
         order.containsKey(t.id) ? t.copyWith(sortOrder: order[t.id]) : t,
     ];
-    notifyListeners();
+    _publish();
     try {
       await _api.reorderTasks(_requireToken(), projectId, [
         for (final t in open) t.id,
       ]);
     } catch (_) {
       _tasks = before;
-      notifyListeners();
+      _publish();
       rethrow;
     }
   }
@@ -267,7 +291,7 @@ class TasksController extends ChangeNotifier {
         else
           t,
     ];
-    notifyListeners();
+    _publish();
     try {
       final token = _requireToken();
       if (sectionChanged) {
@@ -280,7 +304,7 @@ class TasksController extends ChangeNotifier {
       await _api.reorderTasks(token, projectId, orderedIds);
     } catch (_) {
       _tasks = before;
-      notifyListeners();
+      _publish();
       rethrow;
     }
   }
@@ -292,7 +316,7 @@ class TasksController extends ChangeNotifier {
       name.trim(),
     );
     _sections = [..._sections, section];
-    notifyListeners();
+    _publish();
     return section;
   }
 
@@ -317,7 +341,7 @@ class TasksController extends ChangeNotifier {
       );
     } catch (_) {
       _sections = before;
-      notifyListeners();
+      _publish();
       rethrow;
     }
   }
@@ -344,7 +368,7 @@ class TasksController extends ChangeNotifier {
         else if (!deleteTasks)
           t.copyWith(clearSection: true),
     ];
-    notifyListeners();
+    _publish();
   }
 
   /// Moves [section] to [newIndex] among the sections.
@@ -359,14 +383,14 @@ class TasksController extends ChangeNotifier {
       for (var i = 0; i < ordered.length; i++)
         ordered[i].copyWith(sortOrder: i),
     ];
-    notifyListeners();
+    _publish();
     try {
       await _requireSections().reorderSections(_requireToken(), projectId, [
         for (final s in ordered) s.id,
       ]);
     } catch (_) {
       _sections = before;
-      notifyListeners();
+      _publish();
       rethrow;
     }
   }
@@ -376,7 +400,7 @@ class TasksController extends ChangeNotifier {
       for (final s in _sections)
         if (s.id == updated.id) updated else s,
     ];
-    notifyListeners();
+    _publish();
   }
 
   SectionsApi _requireSections() {
