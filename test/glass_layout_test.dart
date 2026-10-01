@@ -90,6 +90,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       await _capture(tester, captureKey, layout.$1);
+      // With the keyboard up in landscape the header and quick add fill
+      // the viewport, so bring the task into view first, as a user scrolls.
+      await tester.ensureVisible(
+        find.text('ادامهٔ مطالعهٔ کتاب', skipOffstage: false),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('ادامهٔ مطالعهٔ کتاب'));
       await tester.pumpAndSettle();
       expect(find.byType(TaskDetailEditor), findsOneWidget);
