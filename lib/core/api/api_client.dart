@@ -77,6 +77,7 @@ abstract interface class ProjectsApi {
 class TaskDraft {
   const TaskDraft({
     this.projectId,
+    this.sectionId,
     this.title,
     this.description,
     this.priority,
@@ -84,6 +85,10 @@ class TaskDraft {
   });
 
   final String? projectId;
+
+  /// A section of the task's project; an empty string takes the task out of
+  /// its section.
+  final String? sectionId;
   final String? title;
 
   /// An empty string clears the description.
@@ -93,6 +98,7 @@ class TaskDraft {
 
   Map<String, Object?> toJson() => {
     'project_id': ?projectId,
+    'section_id': ?sectionId,
     'title': ?title,
     'description': ?description,
     if (priority != null) 'priority': priority!.level,
@@ -118,9 +124,32 @@ abstract interface class TasksApi {
   Future<void> reorderTasks(String token, String projectId, List<String> ids);
 }
 
+abstract interface class SectionsApi {
+  Future<List<Section>> listSections(String token, String projectId);
+  Future<Section> createSection(String token, String projectId, String name);
+  Future<Section> updateSection(
+    String token,
+    String id, {
+    String? name,
+    bool? isCollapsed,
+  });
+
+  /// Deletes a section; its tasks stay in the project unless [deleteTasks].
+  Future<void> deleteSection(
+    String token,
+    String id, {
+    bool deleteTasks = false,
+  });
+  Future<void> reorderSections(
+    String token,
+    String projectId,
+    List<String> ids,
+  );
+}
+
 /// Talks to the Farash API. Feature interfaces are implemented here so that
 /// one HTTP client serves the whole app.
-class ApiClient implements AuthApi, ProjectsApi, TasksApi {
+class ApiClient implements AuthApi, ProjectsApi, TasksApi, SectionsApi {
   ApiClient(this.baseUri, {http.Client? client})
     : _client = client ?? http.Client();
 
@@ -251,6 +280,83 @@ class ApiClient implements AuthApi, ProjectsApi, TasksApi {
       body: {'project_id': projectId, 'task_ids': ids},
     );
   }
+
+  @override
+  Future<List<Section>> listSections(String token, String projectId) async {
+    final body =
+        await _send(
+              'GET',
+              '/api/v1/sections',
+              token: token,
+              query: {'projectId': projectId},
+            )
+            as Map<String, dynamic>;
+    return [
+      for (final item in body['sections'] as List<dynamic>)
+        Section.fromJson(item as Map<String, dynamic>),
+    ];
+  }
+
+  @override
+  Future<Section> createSection(
+    String token,
+    String projectId,
+    String name,
+  ) async => _section(
+    await _send(
+      'POST',
+      '/api/v1/sections',
+      token: token,
+      body: {'project_id': projectId, 'name': name},
+    ),
+  );
+
+  @override
+  Future<Section> updateSection(
+    String token,
+    String id, {
+    String? name,
+    bool? isCollapsed,
+  }) async => _section(
+    await _send(
+      'PATCH',
+      '/api/v1/sections/${Uri.encodeComponent(id)}',
+      token: token,
+      body: {'name': ?name, 'is_collapsed': ?isCollapsed},
+    ),
+  );
+
+  @override
+  Future<void> deleteSection(
+    String token,
+    String id, {
+    bool deleteTasks = false,
+  }) async {
+    await _send(
+      'DELETE',
+      '/api/v1/sections/${Uri.encodeComponent(id)}',
+      token: token,
+      query: deleteTasks ? {'deleteTasks': 'true'} : null,
+    );
+  }
+
+  @override
+  Future<void> reorderSections(
+    String token,
+    String projectId,
+    List<String> ids,
+  ) async {
+    await _send(
+      'POST',
+      '/api/v1/sections/reorder',
+      token: token,
+      body: {'project_id': projectId, 'section_ids': ids},
+    );
+  }
+
+  static Section _section(Object? body) => Section.fromJson(
+    (body as Map<String, dynamic>)['section'] as Map<String, dynamic>,
+  );
 
   static String _taskPath(String id) =>
       '/api/v1/tasks/${Uri.encodeComponent(id)}';

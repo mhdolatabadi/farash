@@ -49,6 +49,7 @@ class _TaskDetailSheetState extends State<_TaskDetailSheet> {
   );
   late TaskPriority _priority = widget.task.priority;
   late String _projectId = widget.task.projectId;
+  late String? _sectionId = widget.controller.sectionOf(widget.task);
   bool _saving = false;
 
   @override
@@ -69,6 +70,7 @@ class _TaskDetailSheetState extends State<_TaskDetailSheet> {
         description: _description.text,
         priority: _priority,
         projectId: _projectId,
+        sectionId: _sectionId,
       );
       navigator.pop(TaskSheetResult.saved);
     } catch (error) {
@@ -163,8 +165,36 @@ class _TaskDetailSheetState extends State<_TaskDetailSheet> {
                         ),
                       ),
                   ],
-                  onChanged: (id) => setState(() => _projectId = id!),
+                  onChanged: (id) => setState(() {
+                    _projectId = id!;
+                    // Sections belong to one project.
+                    if (_projectId != widget.task.projectId) _sectionId = null;
+                  }),
                 ),
+              if (_projectId == widget.task.projectId &&
+                  widget.controller.sections.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String?>(
+                  initialValue: _sectionId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'بخش'),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('بدون بخش'),
+                    ),
+                    for (final section in widget.controller.sections)
+                      DropdownMenuItem<String?>(
+                        value: section.id,
+                        child: Text(
+                          section.name,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                  onChanged: (id) => setState(() => _sectionId = id),
+                ),
+              ],
               const SizedBox(height: 20),
               Row(
                 children: [

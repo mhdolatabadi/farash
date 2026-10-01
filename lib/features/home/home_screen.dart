@@ -18,12 +18,14 @@ class HomeScreen extends StatefulWidget {
     required this.projects,
     required this.tasksApi,
     required this.token,
+    this.sectionsApi,
   });
 
   final String email;
   final VoidCallback onLogout;
   final ProjectsController projects;
   final TasksApi tasksApi;
+  final SectionsApi? sectionsApi;
 
   /// The current access token; null once signed out.
   final String? Function() token;
@@ -89,6 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     key: ValueKey(selected.id),
                     project: selected,
                     api: widget.tasksApi,
+                    sectionsApi: widget.sectionsApi,
                     token: widget.token,
                     moveTargets: () => widget.projects.projects,
                   );

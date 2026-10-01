@@ -23,6 +23,7 @@ class FarashApp extends StatefulWidget {
     this.sessionStore,
     this.projectsApi,
     this.tasksApi,
+    this.sectionsApi,
   });
 
   /// Test overrides; by default the app talks to
@@ -32,6 +33,7 @@ class FarashApp extends StatefulWidget {
   final SessionStore? sessionStore;
   final ProjectsApi? projectsApi;
   final TasksApi? tasksApi;
+  final SectionsApi? sectionsApi;
 
   @override
   State<FarashApp> createState() => _FarashAppState();
@@ -53,6 +55,7 @@ class _FarashAppState extends State<FarashApp> {
       : ProjectsController(api: _projectsApi, token: () => _session?.token);
 
   late final TasksApi? _tasksApi = widget.tasksApi ?? _apiClient;
+  late final SectionsApi? _sectionsApi = widget.sectionsApi ?? _apiClient;
 
   AuthSession? _session;
   _SessionState _state = _SessionState.restoring;
@@ -130,6 +133,7 @@ class _FarashAppState extends State<FarashApp> {
         email: session.user.email,
         projects: projects,
         tasksApi: tasks,
+        sectionsApi: _sectionsApi,
         token: () => _session?.token,
         onLogout: _signOut,
       ),

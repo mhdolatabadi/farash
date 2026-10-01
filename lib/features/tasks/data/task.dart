@@ -6,6 +6,7 @@ class Task {
     required this.id,
     required this.projectId,
     required this.title,
+    this.sectionId,
     this.description = '',
     this.priority = TaskPriority.p4,
     this.sortOrder = 0,
@@ -15,6 +16,7 @@ class Task {
   factory Task.fromJson(Map<String, dynamic> json) => Task(
     id: json['id'] as String,
     projectId: json['project_id'] as String,
+    sectionId: json['section_id'] as String?,
     title: json['title'] as String,
     description: json['description'] as String? ?? '',
     priority: TaskPriority.fromLevel(json['priority'] as int? ?? 4),
@@ -26,6 +28,9 @@ class Task {
 
   final String id;
   final String projectId;
+
+  /// The section within the project, if any.
+  final String? sectionId;
   final String title;
 
   /// Markdown text; empty when there is none.
@@ -38,6 +43,8 @@ class Task {
 
   Task copyWith({
     String? projectId,
+    String? sectionId,
+    bool clearSection = false,
     String? title,
     String? description,
     TaskPriority? priority,
@@ -47,6 +54,7 @@ class Task {
   }) => Task(
     id: id,
     projectId: projectId ?? this.projectId,
+    sectionId: clearSection ? null : (sectionId ?? this.sectionId),
     title: title ?? this.title,
     description: description ?? this.description,
     priority: priority ?? this.priority,
@@ -71,4 +79,38 @@ enum TaskPriority {
 
   static TaskPriority fromLevel(int level) =>
       values.firstWhere((p) => p.level == level, orElse: () => p4);
+}
+
+/// A named group of tasks inside a project.
+class Section {
+  const Section({
+    required this.id,
+    required this.projectId,
+    required this.name,
+    this.sortOrder = 0,
+    this.isCollapsed = false,
+  });
+
+  factory Section.fromJson(Map<String, dynamic> json) => Section(
+    id: json['id'] as String,
+    projectId: json['project_id'] as String,
+    name: json['name'] as String,
+    sortOrder: json['sort_order'] as int? ?? 0,
+    isCollapsed: json['is_collapsed'] as bool? ?? false,
+  );
+
+  final String id;
+  final String projectId;
+  final String name;
+  final int sortOrder;
+  final bool isCollapsed;
+
+  Section copyWith({String? name, int? sortOrder, bool? isCollapsed}) =>
+      Section(
+        id: id,
+        projectId: projectId,
+        name: name ?? this.name,
+        sortOrder: sortOrder ?? this.sortOrder,
+        isCollapsed: isCollapsed ?? this.isCollapsed,
+      );
 }
