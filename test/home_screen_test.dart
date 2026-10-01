@@ -4,6 +4,7 @@ import 'package:farash/features/home/home_screen.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 
 import 'support/fake_projects_api.dart';
+import 'support/fake_tasks_api.dart';
 
 void main() {
   late FakeProjectsApi api;
@@ -23,6 +24,8 @@ void main() {
             email: 'a@example.com',
             onLogout: () {},
             projects: projects,
+            tasksApi: FakeTasksApi(),
+            token: () => 'token',
           ),
         ),
       ),

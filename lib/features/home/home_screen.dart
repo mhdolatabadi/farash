@@ -3,6 +3,8 @@ import 'package:farash/features/projects/application/projects_controller.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/projects/presentation/archived_projects_screen.dart';
 import 'package:farash/features/projects/presentation/project_sidebar.dart';
+import 'package:farash/core/api/api_client.dart';
+import 'package:farash/features/tasks/presentation/project_tasks_view.dart';
 
 /// Wide layouts keep the project list on screen; phones use a drawer.
 const sidebarBreakpoint = 840.0;
@@ -14,11 +16,17 @@ class HomeScreen extends StatefulWidget {
     required this.email,
     required this.onLogout,
     required this.projects,
+    required this.tasksApi,
+    required this.token,
   });
 
   final String email;
   final VoidCallback onLogout;
   final ProjectsController projects;
+  final TasksApi tasksApi;
+
+  /// The current access token; null once signed out.
+  final String? Function() token;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -74,10 +82,16 @@ class _HomeScreenState extends State<HomeScreen> {
           listenable: widget.projects,
           builder: (context, _) {
             final selected = _selected;
-            final page = _ProjectPage(
-              project: selected,
-              loading: widget.projects.isLoading && selected == null,
-            );
+            final page = selected == null
+                ? _ProjectPage(loading: widget.projects.isLoading)
+                : ProjectTasksView(
+                    // A new controller for each project.
+                    key: ValueKey(selected.id),
+                    project: selected,
+                    api: widget.tasksApi,
+                    token: widget.token,
+                    moveTargets: () => widget.projects.projects,
+                  );
             if (!wide) {
               return Scaffold(
                 key: _scaffoldKey,
@@ -139,40 +153,19 @@ class _AccountHeader extends StatelessWidget {
   }
 }
 
-/// The selected project's page; its tasks arrive with #5.
+/// Shown until the projects (and so the Inbox) have loaded.
 class _ProjectPage extends StatelessWidget {
-  const _ProjectPage({required this.project, required this.loading});
+  const _ProjectPage({required this.loading});
 
-  final Project? project;
   final bool loading;
 
   @override
   Widget build(BuildContext context) {
     if (loading) return const Center(child: CircularProgressIndicator());
-    final theme = Theme.of(context);
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              project?.isInbox ?? true
-                  ? Icons.inbox_outlined
-                  : Icons.checklist_rtl,
-              size: 48,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'هنوز کاری در «${project?.displayName ?? 'صندوق ورودی'}» نیست.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
+      child: Text(
+        'پروژه‌ها بارگذاری نشدند.',
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
       ),
     );
   }

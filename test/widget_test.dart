@@ -9,6 +9,7 @@ import 'package:farash/features/auth/session_store.dart';
 import 'package:farash/main.dart';
 
 import 'support/fake_projects_api.dart';
+import 'support/fake_tasks_api.dart';
 
 /// Answers the auth endpoints for one account, a@example.com / password1.
 ApiClient fakeServer({bool offline = false}) => ApiClient(
@@ -44,6 +45,7 @@ void main() {
     apiClient: api ?? fakeServer(),
     sessionStore: sessions ?? MemorySessionStore(),
     projectsApi: FakeProjectsApi(),
+    tasksApi: FakeTasksApi(),
   );
 
   testWidgets('shows the auth screen once the server answers', (tester) async {

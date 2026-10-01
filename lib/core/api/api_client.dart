@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:farash/features/auth/data/auth_models.dart';
 import 'package:farash/features/projects/data/project.dart';
+import 'package:farash/features/tasks/data/task.dart';
 
 class ApiException implements Exception {
   const ApiException(this.message, {this.statusCode, this.code});
@@ -72,9 +73,54 @@ abstract interface class ProjectsApi {
   Future<void> deleteProject(String token, String id);
 }
 
+/// Fields for a new task, or the fields to change on an existing one.
+class TaskDraft {
+  const TaskDraft({
+    this.projectId,
+    this.title,
+    this.description,
+    this.priority,
+    this.sortOrder,
+  });
+
+  final String? projectId;
+  final String? title;
+
+  /// An empty string clears the description.
+  final String? description;
+  final TaskPriority? priority;
+  final int? sortOrder;
+
+  Map<String, Object?> toJson() => {
+    'project_id': ?projectId,
+    'title': ?title,
+    'description': ?description,
+    if (priority != null) 'priority': priority!.level,
+    'sort_order': ?sortOrder,
+  };
+}
+
+abstract interface class TasksApi {
+  /// The project's tasks in order; completed ones only when asked.
+  Future<List<Task>> listTasks(
+    String token,
+    String projectId, {
+    bool showCompleted = false,
+  });
+  Future<Task> createTask(String token, TaskDraft draft);
+  Future<Task> updateTask(String token, String id, TaskDraft changes);
+  Future<Task> closeTask(String token, String id);
+  Future<Task> reopenTask(String token, String id);
+
+  /// Soft-deletes the task; [restoreTask] brings it back.
+  Future<void> deleteTask(String token, String id);
+  Future<Task> restoreTask(String token, String id);
+  Future<void> reorderTasks(String token, String projectId, List<String> ids);
+}
+
 /// Talks to the Farash API. Feature interfaces are implemented here so that
 /// one HTTP client serves the whole app.
-class ApiClient implements AuthApi, ProjectsApi {
+class ApiClient implements AuthApi, ProjectsApi, TasksApi {
   ApiClient(this.baseUri, {http.Client? client})
     : _client = client ?? http.Client();
 
@@ -134,6 +180,83 @@ class ApiClient implements AuthApi, ProjectsApi {
 
   static Project _project(Object? body) => Project.fromJson(
     (body as Map<String, dynamic>)['project'] as Map<String, dynamic>,
+  );
+
+  @override
+  Future<List<Task>> listTasks(
+    String token,
+    String projectId, {
+    bool showCompleted = false,
+  }) async {
+    final body =
+        await _send(
+              'GET',
+              '/api/v1/tasks',
+              token: token,
+              query: {
+                'projectId': projectId,
+                if (showCompleted) 'showCompleted': 'true',
+              },
+            )
+            as Map<String, dynamic>;
+    return [
+      for (final item in body['tasks'] as List<dynamic>)
+        Task.fromJson(item as Map<String, dynamic>),
+    ];
+  }
+
+  @override
+  Future<Task> createTask(String token, TaskDraft draft) async => _task(
+    await _send('POST', '/api/v1/tasks', token: token, body: draft.toJson()),
+  );
+
+  @override
+  Future<Task> updateTask(String token, String id, TaskDraft changes) async =>
+      _task(
+        await _send(
+          'PATCH',
+          _taskPath(id),
+          token: token,
+          body: changes.toJson(),
+        ),
+      );
+
+  @override
+  Future<Task> closeTask(String token, String id) async =>
+      _task(await _send('POST', '${_taskPath(id)}/close', token: token));
+
+  @override
+  Future<Task> reopenTask(String token, String id) async =>
+      _task(await _send('POST', '${_taskPath(id)}/reopen', token: token));
+
+  @override
+  Future<void> deleteTask(String token, String id) async {
+    await _send('DELETE', _taskPath(id), token: token);
+  }
+
+  @override
+  Future<Task> restoreTask(String token, String id) async =>
+      _task(await _send('POST', '${_taskPath(id)}/restore', token: token));
+
+  @override
+  Future<void> reorderTasks(
+    String token,
+    String projectId,
+    List<String> ids,
+  ) async {
+    await _send(
+      'POST',
+      '/api/v1/tasks/reorder',
+      token: token,
+      body: {'project_id': projectId, 'task_ids': ids},
+    );
+  }
+
+  static String _taskPath(String id) =>
+      '/api/v1/tasks/${Uri.encodeComponent(id)}';
+
+  static Task _task(Object? body) => Task.fromJson(
+    (body as Map<String, dynamic>)['task'] as Map<String, dynamic>,
   );
 
   @override
