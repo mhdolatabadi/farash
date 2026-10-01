@@ -485,7 +485,6 @@ class _QuickAddState extends State<_QuickAdd> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return GlassSurface(
       radius: 16,
       blur: 10,

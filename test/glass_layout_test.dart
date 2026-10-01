@@ -32,10 +32,14 @@ void main() {
     ('desktop', const Size(1440, 900), false, 1.0),
     ('desktop-dark', const Size(1440, 900), true, 1.0),
     ('landscape', const Size(700, 375), false, 1.0),
+    ('landscape-ime', const Size(700, 375), false, 1.0),
   ]) {
     testWidgets('glass layout and editor: ${layout.$1}', (tester) async {
       tester.view.physicalSize = layout.$2;
       tester.view.devicePixelRatio = 1;
+      if (layout.$1 == 'landscape-ime') {
+        tester.view.viewInsets = const FakeViewPadding(bottom: 160);
+      }
       addTearDown(tester.view.reset);
       final api = FakeTasksApi();
       api.seed('inbox', 'ادامهٔ مطالعهٔ کتاب', priority: TaskPriority.p1);

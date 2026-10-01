@@ -199,8 +199,9 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                     onChanged: (id) => setState(() {
                       _projectId = id!;
                       // Sections belong to one project.
-                      if (_projectId != widget.task.projectId)
+                      if (_projectId != widget.task.projectId) {
                         _sectionId = null;
+                      }
                     }),
                   ),
                 if (_projectId == widget.task.projectId &&

@@ -63,23 +63,36 @@ class GlassSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(radius),
-            color: (dark ? const Color(0xFF1B3037) : Colors.white).withValues(
-              alpha: dark ? 0.9 : 0.78,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: [
+          BoxShadow(
+            color: (dark ? Colors.black : const Color(0xFF33565C)).withValues(
+              alpha: dark ? 0.16 : 0.07,
             ),
-            border: Border.all(
-              color: (dark ? const Color(0xFF92BAB8) : Colors.white).withValues(
-                alpha: dark ? 0.22 : 0.88,
+            offset: const Offset(0, 10),
+            blurRadius: 28,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(radius),
+              color: (dark ? const Color(0xFF1B3037) : Colors.white).withValues(
+                alpha: dark ? 0.9 : 0.78,
+              ),
+              border: Border.all(
+                color: (dark ? const Color(0xFF92BAB8) : Colors.white)
+                    .withValues(alpha: dark ? 0.22 : 0.88),
               ),
             ),
+            child: Padding(padding: padding, child: child),
           ),
-          child: Padding(padding: padding, child: child),
         ),
       ),
     );

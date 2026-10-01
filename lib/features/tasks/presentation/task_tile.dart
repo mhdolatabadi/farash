@@ -69,7 +69,7 @@ class TaskTile extends StatelessWidget {
                 child: Text(
                   'P${task.priority.index + 1}',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: task.priority.color,
+                    color: theme.colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
