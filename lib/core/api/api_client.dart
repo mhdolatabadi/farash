@@ -78,6 +78,7 @@ class TaskDraft {
   const TaskDraft({
     this.projectId,
     this.sectionId,
+    this.parentId,
     this.title,
     this.description,
     this.priority,
@@ -89,6 +90,9 @@ class TaskDraft {
   /// A section of the task's project; an empty string takes the task out of
   /// its section.
   final String? sectionId;
+
+  /// The task to nest under; an empty string makes the task top-level.
+  final String? parentId;
   final String? title;
 
   /// An empty string clears the description.
@@ -99,6 +103,7 @@ class TaskDraft {
   Map<String, Object?> toJson() => {
     'project_id': ?projectId,
     'section_id': ?sectionId,
+    'parent_id': ?parentId,
     'title': ?title,
     'description': ?description,
     if (priority != null) 'priority': priority!.level,

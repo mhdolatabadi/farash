@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
+import 'package:farash/core/text/persian_digits.dart';
+import 'package:farash/features/tasks/data/checklist.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/features/tasks/presentation/task_messages.dart';
+import 'package:farash/features/tasks/presentation/task_tile.dart';
 
 /// What the detail sheet asks the list to do after it closes.
 enum TaskSheetResult { saved, deleted }
@@ -50,13 +53,67 @@ class _TaskDetailSheetState extends State<_TaskDetailSheet> {
   late TaskPriority _priority = widget.task.priority;
   late String _projectId = widget.task.projectId;
   late String? _sectionId = widget.controller.sectionOf(widget.task);
+  final _newSubtask = TextEditingController();
+  final _newItem = TextEditingController();
   bool _saving = false;
+
+  /// The task as the list has it now; subtasks and moves change it while
+  /// the sheet is open.
+  Task get _task => widget.controller.taskById(widget.task.id) ?? widget.task;
 
   @override
   void dispose() {
     _title.dispose();
     _description.dispose();
+    _newSubtask.dispose();
+    _newItem.dispose();
     super.dispose();
+  }
+
+  Future<void> _quietly(Future<void> Function() action) async {
+    try {
+      await action();
+    } catch (error) {
+      if (mounted) showTaskError(context, error);
+    }
+  }
+
+  /// Checklist changes save at once, like ticking a box should.
+  Future<void> _saveChecklist(String description) {
+    _description.text = description;
+    return _quietly(
+      () => widget.controller.saveDescription(widget.task, description),
+    );
+  }
+
+  Future<void> _addItem() async {
+    final text = _newItem.text.trim();
+    if (text.isEmpty) return;
+    _newItem.clear();
+    await _saveChecklist(addChecklistItem(_description.text, text));
+  }
+
+  Future<void> _addSubtask() async {
+    final title = _newSubtask.text.trim();
+    if (title.isEmpty) return;
+    try {
+      await widget.controller.add(title, parent: _task);
+      _newSubtask.clear();
+    } catch (error) {
+      if (mounted) showTaskError(context, error);
+    }
+  }
+
+  Future<void> _openSubtask(Task subtask) async {
+    final result = await showTaskDetailSheet(
+      context,
+      controller: widget.controller,
+      task: subtask,
+      projects: widget.projects,
+    );
+    if (result == TaskSheetResult.deleted) {
+      await _quietly(() => widget.controller.delete(subtask));
+    }
   }
 
   Future<void> _save() async {
@@ -130,6 +187,30 @@ class _TaskDetailSheetState extends State<_TaskDetailSheet> {
                   alignLabelWithHint: true,
                 ),
               ),
+              _Checklist(
+                description: _description,
+                newItem: _newItem,
+                onChanged: _saveChecklist,
+                onAdd: _addItem,
+              ),
+              const SizedBox(height: 12),
+              ListenableBuilder(
+                listenable: widget.controller,
+                builder: (context, _) => _Subtasks(
+                  controller: widget.controller,
+                  task: _task,
+                  newSubtask: _newSubtask,
+                  onAdd: _addSubtask,
+                  onOpen: _openSubtask,
+                  onToggle: (t) => _quietly(
+                    () => widget.controller.setCompleted(t, !t.isCompleted),
+                  ),
+                  onIndent: () =>
+                      _quietly(() => widget.controller.indent(_task)),
+                  onOutdent: () =>
+                      _quietly(() => widget.controller.outdent(_task)),
+                ),
+              ),
               const SizedBox(height: 12),
               Text('اولویت', style: theme.textTheme.labelLarge),
               const SizedBox(height: 8),
@@ -171,7 +252,9 @@ class _TaskDetailSheetState extends State<_TaskDetailSheet> {
                     if (_projectId != widget.task.projectId) _sectionId = null;
                   }),
                 ),
+              // A subtask stays in its parent's section.
               if (_projectId == widget.task.projectId &&
+                  widget.task.parentId == null &&
                   widget.controller.sections.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String?>(
@@ -252,6 +335,199 @@ class PriorityPicker extends StatelessWidget {
             avatar: Icon(Icons.flag, color: p.color, size: 18),
             label: Text(p.label),
             showCheckmark: false,
+          ),
+      ],
+    );
+  }
+}
+
+/// Checklist items found in the description, ticked in place, and a field
+/// that adds one.
+class _Checklist extends StatelessWidget {
+  const _Checklist({
+    required this.description,
+    required this.newItem,
+    required this.onChanged,
+    required this.onAdd,
+  });
+
+  final TextEditingController description;
+  final TextEditingController newItem;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ValueListenableBuilder(
+      valueListenable: description,
+      builder: (context, value, _) {
+        final items = parseChecklist(value.text);
+        final done = items.where((i) => i.done).length;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (items.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  'چک‌لیست ${persianDigits(done)}/${persianDigits(items.length)}',
+                  style: theme.textTheme.labelLarge,
+                ),
+              ),
+            for (final item in items)
+              CheckboxListTile(
+                key: ValueKey('checklist-${item.line}'),
+                value: item.done,
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text(
+                  item.text,
+                  style: item.done
+                      ? TextStyle(
+                          decoration: TextDecoration.lineThrough,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        )
+                      : null,
+                ),
+                onChanged: (checked) => onChanged(
+                  setChecklistItem(value.text, item.line, checked ?? false),
+                ),
+              ),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: newItem,
+                    maxLength: 500,
+                    buildCounter:
+                        (
+                          _, {
+                          required currentLength,
+                          required isFocused,
+                          maxLength,
+                        }) => null,
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      hintText: 'مورد تازهٔ چک‌لیست',
+                      isDense: true,
+                    ),
+                    onSubmitted: (_) => onAdd(),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'افزودن به چک‌لیست',
+                  onPressed: onAdd,
+                  icon: const Icon(Icons.add_task),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// The task's subtasks with progress, a field that adds one, and the
+/// actions that nest the task under the one above it or lift it a level.
+class _Subtasks extends StatelessWidget {
+  const _Subtasks({
+    required this.controller,
+    required this.task,
+    required this.newSubtask,
+    required this.onAdd,
+    required this.onOpen,
+    required this.onToggle,
+    required this.onIndent,
+    required this.onOutdent,
+  });
+
+  final TasksController controller;
+  final Task task;
+  final TextEditingController newSubtask;
+  final VoidCallback onAdd;
+  final ValueChanged<Task> onOpen;
+  final ValueChanged<Task> onToggle;
+  final VoidCallback onIndent;
+  final VoidCallback onOutdent;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final parent = controller.taskById(task.parentId);
+    final above = controller.indentTarget(task);
+    final children = controller.openChildren(task);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (parent != null)
+          Text(
+            'زیرکارِ «${parent.title}»',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        Wrap(
+          spacing: 8,
+          children: [
+            if (above != null && !task.isCompleted)
+              TextButton.icon(
+                onPressed: onIndent,
+                icon: const Icon(Icons.format_indent_increase),
+                label: const Text('زیرکارِ کار بالایی'),
+              ),
+            if (parent != null)
+              TextButton.icon(
+                onPressed: onOutdent,
+                icon: const Icon(Icons.format_indent_decrease),
+                label: const Text('یک سطح بیرون'),
+              ),
+          ],
+        ),
+        Text(
+          task.hasSubtasks
+              ? 'زیرکارها ${persianDigits(task.completedSubtaskCount)}/${persianDigits(task.subtaskCount)}'
+              : 'زیرکارها',
+          style: theme.textTheme.labelLarge,
+        ),
+        for (final child in children)
+          TaskTile(
+            key: ValueKey('subtask-${child.id}'),
+            task: child,
+            onToggle: () => onToggle(child),
+            onOpen: () => onOpen(child),
+          ),
+        if (!task.isCompleted)
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: newSubtask,
+                  maxLength: 500,
+                  buildCounter:
+                      (
+                        _, {
+                        required currentLength,
+                        required isFocused,
+                        maxLength,
+                      }) => null,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    hintText: 'زیرکار تازه',
+                    isDense: true,
+                  ),
+                  onSubmitted: (_) => onAdd(),
+                ),
+              ),
+              IconButton(
+                tooltip: 'افزودن زیرکار',
+                onPressed: onAdd,
+                icon: const Icon(Icons.subdirectory_arrow_left),
+              ),
+            ],
           ),
       ],
     );
