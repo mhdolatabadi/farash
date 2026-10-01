@@ -18,6 +18,7 @@ type Config struct {
 	Ping          func(context.Context) error
 	Store         userStore
 	ProjectStore  projectsStore
+	TaskStore     tasksStore
 	AuthSecret    []byte
 	AuthTokenTTL  time.Duration
 }
@@ -33,6 +34,19 @@ func NewHandler(config Config) http.Handler {
 		mux.HandleFunc("POST /api/v1/auth/register", auth.register)
 		mux.HandleFunc("POST /api/v1/auth/login", auth.login)
 		mux.HandleFunc("GET /api/v1/me", auth.me)
+		taskData := config.TaskStore
+		if taskData == nil {
+			taskData, _ = config.Store.(tasksStore)
+		}
+		if taskData != nil {
+			tasks := &tasksHandler{auth: auth, data: taskData}
+			mux.HandleFunc("GET /api/v1/tasks", tasks.handle)
+			mux.HandleFunc("POST /api/v1/tasks", tasks.handle)
+			mux.HandleFunc("PATCH /api/v1/tasks/{id}", tasks.handle)
+			mux.HandleFunc("DELETE /api/v1/tasks/{id}", tasks.handle)
+			mux.HandleFunc("POST /api/v1/tasks/reorder", tasks.handle)
+			mux.HandleFunc("POST /api/v1/tasks/{id}/{action}", tasks.handle)
+		}
 		if projectData := projectStoreFor(config); projectData != nil {
 			projects := newProjectsHandler(auth, projectData)
 			mux.HandleFunc("GET /api/v1/projects", projects.list)
