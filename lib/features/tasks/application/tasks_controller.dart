@@ -19,6 +19,19 @@ class TasksController extends ChangeNotifier {
   bool _loading = false;
   bool _showCompleted = false;
   Object? _error;
+  bool _disposed = false;
+  int _loadGeneration = 0;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _loadGeneration++;
+    super.dispose();
+  }
+
+  void _publish() {
+    if (!_disposed) notifyListeners();
+  }
 
   /// Open tasks in their order, then completed ones when they are shown.
   List<Task> get tasks => [...openTasks, ...completedTasks];
@@ -42,22 +55,28 @@ class TasksController extends ChangeNotifier {
   Object? get error => _error;
 
   Future<void> load() async {
-    final token = this.token();
-    if (token == null) return;
+    final requestToken = token();
+    if (_disposed || requestToken == null) return;
+    final generation = ++_loadGeneration;
+    bool isCurrent() =>
+        !_disposed && generation == _loadGeneration && token() == requestToken;
     _loading = true;
     _error = null;
-    notifyListeners();
+    _publish();
     try {
-      _tasks = await _api.listTasks(
-        token,
+      final loaded = await _api.listTasks(
+        requestToken,
         projectId,
         showCompleted: _showCompleted,
       );
+      if (isCurrent()) _tasks = loaded;
     } catch (error) {
-      _error = error;
+      if (isCurrent()) _error = error;
     } finally {
-      _loading = false;
-      notifyListeners();
+      if (isCurrent()) {
+        _loading = false;
+        _publish();
+      }
     }
   }
 
@@ -83,7 +102,7 @@ class TasksController extends ChangeNotifier {
       ),
     );
     _tasks = [..._tasks, task];
-    notifyListeners();
+    _publish();
     return task;
   }
 
@@ -111,7 +130,7 @@ class TasksController extends ChangeNotifier {
       for (final t in _tasks)
         if (t.id != task.id) t else if (!moved) updated,
     ];
-    notifyListeners();
+    _publish();
   }
 
   /// Checks a task off, or back on. Calling it again with the opposite value
@@ -132,7 +151,7 @@ class TasksController extends ChangeNotifier {
     if (!completed && !_tasks.any((t) => t.id == task.id)) {
       _tasks = [..._tasks, task.copyWith(clearCompletedAt: true)];
     }
-    notifyListeners();
+    _publish();
     try {
       final token = _requireToken();
       final saved = completed
@@ -148,10 +167,10 @@ class TasksController extends ChangeNotifier {
             if (t.id != saved.id) t,
         ];
       }
-      notifyListeners();
+      _publish();
     } catch (_) {
       _tasks = before;
-      notifyListeners();
+      _publish();
       rethrow;
     }
   }
@@ -163,12 +182,12 @@ class TasksController extends ChangeNotifier {
       for (final t in _tasks)
         if (t.id != task.id) t,
     ];
-    notifyListeners();
+    _publish();
     try {
       await _api.deleteTask(_requireToken(), task.id);
     } catch (_) {
       _tasks = before;
-      notifyListeners();
+      _publish();
       rethrow;
     }
   }
@@ -178,7 +197,7 @@ class TasksController extends ChangeNotifier {
     if (restored.projectId == projectId &&
         (!restored.isCompleted || _showCompleted)) {
       _tasks = [..._tasks, restored];
-      notifyListeners();
+      _publish();
     }
   }
 
@@ -197,14 +216,14 @@ class TasksController extends ChangeNotifier {
       for (final t in _tasks)
         order.containsKey(t.id) ? t.copyWith(sortOrder: order[t.id]) : t,
     ];
-    notifyListeners();
+    _publish();
     try {
       await _api.reorderTasks(_requireToken(), projectId, [
         for (final t in open) t.id,
       ]);
     } catch (_) {
       _tasks = before;
-      notifyListeners();
+      _publish();
       rethrow;
     }
   }
