@@ -22,6 +22,7 @@ class FarashApp extends StatefulWidget {
     this.apiClient,
     this.sessionStore,
     this.projectsApi,
+    this.tasksApi,
   });
 
   /// Test overrides; by default the app talks to
@@ -30,6 +31,7 @@ class FarashApp extends StatefulWidget {
   final ApiClient? apiClient;
   final SessionStore? sessionStore;
   final ProjectsApi? projectsApi;
+  final TasksApi? tasksApi;
 
   @override
   State<FarashApp> createState() => _FarashAppState();
@@ -49,6 +51,8 @@ class _FarashAppState extends State<FarashApp> {
   late final ProjectsController? _projects = _projectsApi == null
       ? null
       : ProjectsController(api: _projectsApi, token: () => _session?.token);
+
+  late final TasksApi? _tasksApi = widget.tasksApi ?? _apiClient;
 
   AuthSession? _session;
   _SessionState _state = _SessionState.restoring;
@@ -103,7 +107,10 @@ class _FarashAppState extends State<FarashApp> {
   Widget _signedInOrAuth() {
     final api = _apiClient;
     final projects = _projects;
-    if (api == null || projects == null) return const SizedBox.shrink();
+    final tasks = _tasksApi;
+    if (api == null || projects == null || tasks == null) {
+      return const SizedBox.shrink();
+    }
     if (!_restoreStarted) {
       _restoreStarted = true;
       WidgetsBinding.instance.addPostFrameCallback((_) => _restoreSession());
@@ -122,6 +129,8 @@ class _FarashAppState extends State<FarashApp> {
         key: ValueKey(session!.user.id),
         email: session.user.email,
         projects: projects,
+        tasksApi: tasks,
+        token: () => _session?.token,
         onLogout: _signOut,
       ),
     };
