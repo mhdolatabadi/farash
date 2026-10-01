@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/glass.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
@@ -113,7 +114,23 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     }
   });
 
+  Task? _editingTask;
+  var _editorKey = GlobalKey();
+
+  Future<void> _editorResult(TaskSheetResult? result) async {
+    final task = _editingTask;
+    setState(() => _editingTask = null);
+    if (result == TaskSheetResult.deleted && task != null) await _delete(task);
+  }
+
   Future<void> _open(Task task) async {
+    if ((context.size?.width ?? 0) >= 820) {
+      setState(() {
+        _editorKey = GlobalKey();
+        _editingTask = task;
+      });
+      return;
+    }
     final result = await showTaskDetailSheet(
       context,
       controller: _tasks,
@@ -222,7 +239,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
   @override
   Widget build(BuildContext context) {
     if (widget.project.isFolder) return const _FolderNotice();
-    return Column(
+    final list = Column(
       children: [
         Expanded(
           child: ListenableBuilder(
@@ -230,19 +247,45 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
             builder: (context, _) => _list(context),
           ),
         ),
-        _QuickAdd(
-          projectName: widget.project.displayName,
-          onAdd: (title, priority) async {
-            try {
-              await _tasks.add(title, priority: priority);
-              return true;
-            } catch (error) {
-              if (mounted) showTaskError(this.context, error);
-              return false;
-            }
-          },
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: _QuickAdd(
+            projectName: widget.project.displayName,
+            onAdd: (title, priority) async {
+              try {
+                await _tasks.add(title, priority: priority);
+                return true;
+              } catch (error) {
+                if (mounted) showTaskError(this.context, error);
+                return false;
+              }
+            },
+          ),
         ),
       ],
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final task = _editingTask;
+        if (task == null) return list;
+        final editor = TaskDetailEditor(
+          key: _editorKey,
+          controller: _tasks,
+          task: task,
+          projects: widget.moveTargets(),
+          onResult: _editorResult,
+        );
+        return Row(
+          children: [
+            if (constraints.maxWidth >= 820) ...[
+              Expanded(child: list),
+              const SizedBox(width: 12),
+              SizedBox(width: 380, child: editor),
+            ] else
+              Expanded(child: editor),
+          ],
+        );
+      },
     );
   }
 
@@ -442,16 +485,16 @@ class _QuickAddState extends State<_QuickAdd> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Material(
-      color: theme.colorScheme.surfaceContainerLow,
+    return GlassSurface(
+      radius: 16,
+      blur: 10,
       child: SafeArea(
         top: false,
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: _maxListWidth),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+              padding: const EdgeInsets.fromLTRB(8, 12, 8, 12),
               child: Row(
                 children: [
                   PopupMenuButton<TaskPriority>(

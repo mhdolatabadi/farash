@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/glass.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/features/auth/data/auth_models.dart';
 
@@ -72,7 +73,7 @@ class _AuthScreenState extends State<AuthScreen> {
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
-              child: Card(
+              child: GlassSurface(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Form(

@@ -12,10 +12,26 @@ abstract final class FarashTheme {
   static ThemeData dark() => _build(Brightness.dark);
 
   static ThemeData _build(Brightness brightness) {
-    final colors = ColorScheme.fromSeed(
+    final generated = ColorScheme.fromSeed(
       seedColor: seed,
       brightness: brightness,
       dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot,
+    );
+    final dark = brightness == Brightness.dark;
+    final colors = generated.copyWith(
+      primary: dark ? const Color(0xFF9ADACF) : const Color(0xFF17665E),
+      onPrimary: dark ? const Color(0xFF102D2B) : Colors.white,
+      surface: dark ? const Color(0xFF1B3037) : const Color(0xFFF5FAF8),
+      onSurface: dark ? const Color(0xFFEAF5F2) : const Color(0xFF163D42),
+      onSurfaceVariant: dark
+          ? const Color(0xFFBDD1CE)
+          : const Color(0xFF4A6869),
+      secondaryContainer: dark
+          ? const Color(0xFF355650)
+          : const Color(0xFFD1E9E4),
+      onSecondaryContainer: dark
+          ? const Color(0xFFEAF5F2)
+          : const Color(0xFF163D42),
     );
     final base = ThemeData(
       brightness: brightness,
@@ -32,9 +48,9 @@ abstract final class FarashTheme {
     );
 
     return base.copyWith(
-      scaffoldBackgroundColor: colors.surface,
+      scaffoldBackgroundColor: Colors.transparent,
       appBarTheme: AppBarTheme(
-        backgroundColor: colors.surface,
+        backgroundColor: Colors.transparent,
         foregroundColor: colors.onSurface,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
@@ -43,6 +59,21 @@ abstract final class FarashTheme {
           color: colors.onSurface,
           fontWeight: FontWeight.w700,
         ),
+      ),
+      drawerTheme: DrawerThemeData(
+        backgroundColor: colors.surface.withValues(alpha: 0.97),
+        surfaceTintColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.horizontal(left: Radius.circular(24)),
+        ),
+      ),
+      iconButtonTheme: const IconButtonThemeData(
+        style: ButtonStyle(minimumSize: WidgetStatePropertyAll(Size(48, 48))),
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: colors.primary,
+        selectionColor: colors.primary.withValues(alpha: 0.2),
+        selectionHandleColor: colors.primary,
       ),
       cardTheme: CardThemeData(
         elevation: 0,
@@ -104,7 +135,8 @@ abstract final class FarashTheme {
         behavior: SnackBarBehavior.floating,
         shape: controlShape,
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: colors.surface.withValues(alpha: 0.96),
         showDragHandle: true,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
