@@ -1,6 +1,8 @@
 package httpapi
 
 import (
+	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -141,5 +143,49 @@ func TestTaskReorderIsAtomic(t *testing.T) {
 	api.do("GET", "/api/v1/tasks?projectId="+project.ID, alice, nil, &list)
 	if len(list.Tasks) != 2 || list.Tasks[0].ID != b.ID || list.Tasks[1].ID != a.ID {
 		t.Fatalf("order changed after failed request: %+v", list)
+	}
+}
+
+// Embedding the interface supplies unused methods; only list is called here.
+type unavailableTasks struct{ tasksStore }
+
+func (unavailableTasks) ListTasks(context.Context, string, string, bool) ([]store.Task, error) {
+	return nil, errors.New("private database connection details")
+}
+
+func TestTaskStorageFailureDoesNotLeakDetails(t *testing.T) {
+	api := &dbAPI{t: t, handler: NewHandler(Config{
+		Store:      newFakeUsers(),
+		TaskStore:  unavailableTasks{},
+		AuthSecret: []byte("test-secret"),
+	})}
+	token := api.register("a@example.com")
+	var failure apiError
+	if code := api.do("GET", "/api/v1/tasks?projectId=x", token, nil, &failure); code != 500 || failure.Error != "task_write_failed" {
+		t.Fatalf("failure: %d %+v", code, failure)
+	}
+}
+
+func TestTaskTargetsMustBeActiveOwnedProjects(t *testing.T) {
+	api := newDBAPI(t)
+	alice := api.register("alice@example.com")
+	bob := api.register("bob@example.com")
+	task := api.createTask(alice, "", "x")
+	folder := api.createProject(alice, map[string]any{"name": "Folder", "kind": "folder"})
+	archived := api.createProject(alice, map[string]any{"name": "Archived"})
+	api.do("PATCH", "/api/v1/projects/"+archived.ID, alice, map[string]any{"is_archived": true}, nil)
+	foreign := api.createProject(bob, map[string]any{"name": "Private"})
+	for _, target := range []string{folder.ID, archived.ID, foreign.ID, "missing"} {
+		if code := api.do("PATCH", "/api/v1/tasks/"+task.ID, alice, map[string]any{"project_id": target}, nil); code != 404 {
+			t.Errorf("move to invalid target: %d", code)
+		}
+		if code := api.do("POST", "/api/v1/tasks", alice, map[string]any{"title": "x", "project_id": target}, nil); code != 404 {
+			t.Errorf("create in invalid target: %d", code)
+		}
+	}
+	for _, query := range []string{"", "?projectId=" + task.ProjectID + "&showCompleted=invalid"} {
+		if code := api.do("GET", "/api/v1/tasks"+query, alice, nil, nil); code != 400 {
+			t.Errorf("invalid list: %d", code)
+		}
 	}
 }
