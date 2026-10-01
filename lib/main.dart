@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:farash/app/app_configuration.dart';
 import 'package:farash/app/app_theme.dart';
+import 'package:farash/app/glass.dart';
 import 'package:farash/app/backend_gate.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/widgets/app_loading_screen.dart';
@@ -144,6 +145,7 @@ class _FarashAppState extends State<FarashApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Farash',
+      builder: (context, child) => GlassBackdrop(child: child!),
       debugShowCheckedModeBanner: false,
       // Persian first: right-to-left layout and Persian Material strings
       // whatever the device language is. English comes with settings (#26).

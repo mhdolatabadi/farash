@@ -42,10 +42,10 @@ class TaskTile extends StatelessWidget {
       onTap: onOpen,
       child: Padding(
         padding: EdgeInsetsDirectional.fromSTEB(
-          4 + subtaskIndent * depth,
-          4,
+          8 + subtaskIndent * depth,
           8,
-          4,
+          8,
+          8,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,6 +106,17 @@ class TaskTile extends StatelessWidget {
                 ),
               ),
             ),
+            if (task.priority != TaskPriority.p4)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(top: 15, end: 6),
+                child: Text(
+                  'P${task.priority.index + 1}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ?trailing,
           ],
         ),
@@ -211,7 +222,9 @@ class _PriorityCheck extends StatelessWidget {
           dimension: 48,
           child: Center(
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 150),
               width: 22,
               height: 22,
               decoration: BoxDecoration(
