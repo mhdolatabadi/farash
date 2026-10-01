@@ -19,6 +19,7 @@ type Config struct {
 	Store         userStore
 	ProjectStore  projectsStore
 	TaskStore     tasksStore
+	SectionStore  sectionsStore
 	AuthSecret    []byte
 	AuthTokenTTL  time.Duration
 }
@@ -46,6 +47,13 @@ func NewHandler(config Config) http.Handler {
 			mux.HandleFunc("DELETE /api/v1/tasks/{id}", tasks.handle)
 			mux.HandleFunc("POST /api/v1/tasks/reorder", tasks.handle)
 			mux.HandleFunc("POST /api/v1/tasks/{id}/{action}", tasks.handle)
+		}
+		sectionData := config.SectionStore
+		if sectionData == nil {
+			sectionData, _ = config.Store.(sectionsStore)
+		}
+		if sectionData != nil {
+			(&sectionsHandler{auth: auth, data: sectionData}).routes(mux)
 		}
 		if projectData := projectStoreFor(config); projectData != nil {
 			projects := newProjectsHandler(auth, projectData)

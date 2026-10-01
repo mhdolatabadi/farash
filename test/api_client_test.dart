@@ -177,4 +177,56 @@ void main() {
       'task_ids': ['t2', 't1'],
     });
   });
+
+  test('section calls follow the sections API contract', () async {
+    final requests = <http.Request>[];
+    const section = {
+      'id': 's1',
+      'project_id': 'p1',
+      'name': 'Backlog',
+      'sort_order': 0,
+      'is_collapsed': false,
+      'created_at': '2026-10-01T00:00:00Z',
+      'updated_at': '2026-10-01T00:00:00Z',
+    };
+    final client = ApiClient(
+      Uri.parse('https://todo.example.com'),
+      client: MockClient((request) async {
+        requests.add(request);
+        if (request.method == 'GET') {
+          return http.Response(
+            jsonEncode({
+              'sections': [section],
+            }),
+            200,
+          );
+        }
+        if (request.method == 'DELETE' ||
+            request.url.path.endsWith('reorder')) {
+          return http.Response('', 204);
+        }
+        return http.Response(jsonEncode({'section': section}), 200);
+      }),
+    );
+
+    final listed = await client.listSections('tok', 'p1');
+    await client.createSection('tok', 'p1', 'Backlog');
+    await client.updateSection('tok', 's1', isCollapsed: true);
+    await client.deleteSection('tok', 's1', deleteTasks: true);
+    await client.reorderSections('tok', 'p1', ['s2', 's1']);
+
+    expect(listed.single.name, 'Backlog');
+    expect(requests[0].url.queryParameters, {'projectId': 'p1'});
+    expect(jsonDecode(requests[1].body), {
+      'project_id': 'p1',
+      'name': 'Backlog',
+    });
+    expect(jsonDecode(requests[2].body), {'is_collapsed': true});
+    expect(requests[3].url.path, '/api/v1/sections/s1');
+    expect(requests[3].url.queryParameters, {'deleteTasks': 'true'});
+    expect(jsonDecode(requests[4].body), {
+      'project_id': 'p1',
+      'section_ids': ['s2', 's1'],
+    });
+  });
 }

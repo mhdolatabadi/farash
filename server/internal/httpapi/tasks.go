@@ -131,6 +131,9 @@ func decodeTaskRequest[T any](w http.ResponseWriter, r *http.Request) (T, bool) 
 }
 
 func writeTaskError(w http.ResponseWriter, err error) {
+	if writeSectionError(w, err) {
+		return
+	}
 	switch {
 	case errors.Is(err, store.ErrTaskNotFound):
 		writeError(w, http.StatusNotFound, "task_not_found")

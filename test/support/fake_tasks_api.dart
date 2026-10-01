@@ -26,10 +26,12 @@ class FakeTasksApi implements TasksApi {
     String title, {
     TaskPriority priority = TaskPriority.p4,
     bool completed = false,
+    String? sectionId,
   }) {
     final task = Task(
       id: 't${_nextId++}',
       projectId: projectId,
+      sectionId: sectionId,
       title: title,
       priority: priority,
       sortOrder: _tasks.where((t) => t.projectId == projectId).length,
@@ -86,6 +88,7 @@ class FakeTasksApi implements TasksApi {
     final task = Task(
       id: 't${_nextId++}',
       projectId: draft.projectId ?? 'inbox',
+      sectionId: draft.sectionId,
       title: draft.title!.trim(),
       description: draft.description ?? '',
       priority: draft.priority ?? TaskPriority.p4,
@@ -98,7 +101,16 @@ class FakeTasksApi implements TasksApi {
   @override
   Future<Task> updateTask(String token, String id, TaskDraft changes) async {
     _maybeFail();
-    final updated = _find(id).copyWith(
+    final current = _find(id);
+    // Like the API: "" leaves the section, a new project drops it.
+    final leaveSection =
+        changes.sectionId == '' ||
+        (changes.projectId != null &&
+            changes.projectId != current.projectId &&
+            changes.sectionId == null);
+    final updated = current.copyWith(
+      sectionId: changes.sectionId == '' ? null : changes.sectionId,
+      clearSection: leaveSection,
       projectId: changes.projectId,
       title: changes.title?.trim(),
       description: changes.description,
@@ -158,6 +170,15 @@ class FakeTasksApi implements TasksApi {
     reorders.add((projectId, List.of(ids)));
     for (var i = 0; i < ids.length; i++) {
       _replace(_find(ids[i]).copyWith(sortOrder: i));
+    }
+  }
+
+  /// What deleting a section does to its tasks.
+  void removeSection(String sectionId, {required bool deleteTasks}) {
+    for (final t in List.of(_tasks)) {
+      if (t.sectionId != sectionId) continue;
+      if (deleteTasks) _deleted.add(t.id);
+      _replace(t.copyWith(clearSection: true));
     }
   }
 }

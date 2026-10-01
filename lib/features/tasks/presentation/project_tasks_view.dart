@@ -3,6 +3,7 @@ import 'package:farash/core/api/api_client.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
 import 'package:farash/features/tasks/data/task.dart';
+import 'package:farash/features/tasks/presentation/section_dialogs.dart';
 import 'package:farash/features/tasks/presentation/task_detail_sheet.dart';
 import 'package:farash/features/tasks/presentation/task_messages.dart';
 import 'package:farash/features/tasks/presentation/task_tile.dart';
@@ -10,7 +11,7 @@ import 'package:farash/features/tasks/presentation/task_tile.dart';
 /// Readable width for the task list on wide screens.
 const _maxListWidth = 760.0;
 
-/// A project's tasks with quick add at the bottom.
+/// A project's tasks, grouped by section, with quick add at the bottom.
 class ProjectTasksView extends StatefulWidget {
   const ProjectTasksView({
     super.key,
@@ -18,10 +19,14 @@ class ProjectTasksView extends StatefulWidget {
     required this.api,
     required this.token,
     required this.moveTargets,
+    this.sectionsApi,
   });
 
   final Project project;
   final TasksApi api;
+
+  /// Null where sections are not available.
+  final SectionsApi? sectionsApi;
   final String? Function() token;
 
   /// The projects a task may move to.
@@ -31,9 +36,25 @@ class ProjectTasksView extends StatefulWidget {
   State<ProjectTasksView> createState() => _ProjectTasksViewState();
 }
 
+/// One row of the open list: a task, or the header of a section.
+sealed class _Row {
+  const _Row();
+}
+
+class _TaskRow extends _Row {
+  const _TaskRow(this.task);
+  final Task task;
+}
+
+class _HeaderRow extends _Row {
+  const _HeaderRow(this.section);
+  final Section section;
+}
+
 class _ProjectTasksViewState extends State<ProjectTasksView> {
   late final TasksController _tasks = TasksController(
     api: widget.api,
+    sectionsApi: widget.sectionsApi,
     token: widget.token,
     projectId: widget.project.id,
   );
@@ -102,6 +123,102 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     if (result == TaskSheetResult.deleted) await _delete(task);
   }
 
+  /// The open list: tasks without a section, then each section's header and
+  /// (unless it is collapsed) its tasks.
+  List<_Row> _rows() => [
+    for (final task in _tasks.openIn(null)) _TaskRow(task),
+    for (final section in _tasks.sections) ...[
+      _HeaderRow(section),
+      if (!section.isCollapsed)
+        for (final task in _tasks.openIn(section.id)) _TaskRow(task),
+    ],
+  ];
+
+  /// A dropped task joins the section whose header is above it.
+  void _onReorder(List<_Row> rows, int from, int to) {
+    final moved = rows[from];
+    if (moved is! _TaskRow) return;
+    final next = [...rows]..removeAt(from);
+    next.insert(to.clamp(0, next.length), moved);
+    final at = next.indexOf(moved);
+
+    Section? section;
+    for (var i = at; i >= 0; i--) {
+      final row = next[i];
+      if (row is _HeaderRow) {
+        section = row.section;
+        break;
+      }
+    }
+    // The tasks between that header (or the top) and the next header, in
+    // their new order.
+    final first = section == null
+        ? 0
+        : next.indexWhere(
+                (r) => r is _HeaderRow && r.section.id == section!.id,
+              ) +
+              1;
+    final ids = <String>[];
+    for (var i = first; i < next.length; i++) {
+      final row = next[i];
+      if (row is _HeaderRow) break;
+      if (row is _TaskRow) ids.add(row.task.id);
+    }
+    // A collapsed section's tasks are not on screen; keep them after it.
+    if (section != null && section.isCollapsed) {
+      for (final t in _tasks.openIn(section.id)) {
+        if (!ids.contains(t.id)) ids.add(t.id);
+      }
+    }
+    _run(() => _tasks.moveTask(moved.task, section?.id, ids));
+  }
+
+  Future<void> _addSection() async {
+    final name = await askSectionName(context, title: 'بخش تازه');
+    if (name != null) await _run(() => _tasks.addSection(name));
+  }
+
+  Future<void> _addTaskTo(Section section) async {
+    final title = await askTaskTitle(context, section.name);
+    if (title != null) {
+      await _run(() => _tasks.add(title, sectionId: section.id));
+    }
+  }
+
+  Future<void> _sectionAction(Section section, SectionAction action) async {
+    final ordered = _tasks.sections;
+    final index = ordered.indexWhere((s) => s.id == section.id);
+    switch (action) {
+      case SectionAction.rename:
+        final name = await askSectionName(
+          context,
+          title: 'تغییر نام بخش',
+          initial: section.name,
+        );
+        if (name != null) {
+          await _run(() => _tasks.renameSection(section, name));
+        }
+      case SectionAction.moveUp:
+        await _run(() => _tasks.moveSection(section, index - 1));
+      case SectionAction.moveDown:
+        await _run(() => _tasks.moveSection(section, index + 1));
+      case SectionAction.delete:
+        final choice = await confirmSectionDelete(
+          context,
+          section,
+          taskCount: _tasks.openIn(section.id).length,
+        );
+        if (choice != null) {
+          await _run(
+            () => _tasks.deleteSection(
+              section,
+              deleteTasks: choice == SectionDeleteChoice.withTasks,
+            ),
+          );
+        }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.project.isFolder) return const _FolderNotice();
@@ -150,8 +267,10 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
         ),
       );
     }
-    final open = _tasks.openTasks;
+    final rows = _rows();
     final done = _tasks.completedTasks;
+    final sectionsAvailable = widget.sectionsApi != null;
+    final sections = _tasks.sections;
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: _maxListWidth),
@@ -173,29 +292,24 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                   ),
                 ),
               ),
-              if (open.isEmpty && done.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        'هنوز کاری در «${widget.project.displayName}» نیست.',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+              if (rows.isEmpty && done.isEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+                    child: Text(
+                      'هنوز کاری در «${widget.project.displayName}» نیست.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
                 ),
               SliverReorderableList(
-                itemCount: open.length,
-                onReorderItem: (from, to) =>
-                    _run(() => _tasks.reorder(from, to)),
-                itemBuilder: (context, index) {
-                  final task = open[index];
-                  return Material(
+                itemCount: rows.length,
+                onReorderItem: (from, to) => _onReorder(rows, from, to),
+                itemBuilder: (context, index) => switch (rows[index]) {
+                  _TaskRow(:final task) => Material(
                     key: ValueKey(task.id),
                     color: Colors.transparent,
                     child: TaskTile(
@@ -216,9 +330,35 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                         ),
                       ),
                     ),
-                  );
+                  ),
+                  _HeaderRow(:final section) => SectionHeader(
+                    key: ValueKey('section-${section.id}'),
+                    section: section,
+                    taskCount: _tasks.openIn(section.id).length,
+                    isFirst: section.id == sections.first.id,
+                    isLast: section.id == sections.last.id,
+                    onToggle: () => _run(
+                      () => _tasks.setCollapsed(section, !section.isCollapsed),
+                    ),
+                    onAddTask: () => _addTaskTo(section),
+                    onAction: (action) => _sectionAction(section, action),
+                  ),
                 },
               ),
+              if (sectionsAvailable)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(8, 8, 8, 0),
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: TextButton.icon(
+                        onPressed: _addSection,
+                        icon: const Icon(Icons.playlist_add),
+                        label: const Text('افزودن بخش'),
+                      ),
+                    ),
+                  ),
+                ),
               if (done.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: Padding(

@@ -19,6 +19,7 @@ var (
 type Task struct {
 	ID          string     `json:"id"`
 	ProjectID   string     `json:"project_id"`
+	SectionID   *string    `json:"section_id"`
 	Title       string     `json:"title"`
 	Description string     `json:"description"`
 	Priority    int        `json:"priority"`
@@ -30,6 +31,7 @@ type Task struct {
 
 type TaskInput struct {
 	ProjectID   string `json:"project_id"`
+	SectionID   string `json:"section_id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Priority    int    `json:"priority"`
@@ -37,18 +39,22 @@ type TaskInput struct {
 }
 
 type TaskUpdate struct {
-	ProjectID   *string `json:"project_id"`
+	ProjectID *string `json:"project_id"`
+	// SectionID moves the task into a section of its (new) project; an empty
+	// string takes it out of its section. Moving to another project without
+	// a section_id also takes it out.
+	SectionID   *string `json:"section_id"`
 	Title       *string `json:"title"`
 	Description *string `json:"description"`
 	Priority    *int    `json:"priority"`
 	SortOrder   *int    `json:"sort_order"`
 }
 
-const taskColumns = `id, project_id, title, description, priority, sort_order, completed_at, created_at, updated_at`
+const taskColumns = `id, project_id, section_id, title, description, priority, sort_order, completed_at, created_at, updated_at`
 
 func scanTask(row projectScanner) (Task, error) {
 	var task Task
-	err := row.Scan(&task.ID, &task.ProjectID, &task.Title, &task.Description, &task.Priority, &task.SortOrder, &task.CompletedAt, &task.CreatedAt, &task.UpdatedAt)
+	err := row.Scan(&task.ID, &task.ProjectID, &task.SectionID, &task.Title, &task.Description, &task.Priority, &task.SortOrder, &task.CompletedAt, &task.CreatedAt, &task.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Task{}, ErrTaskNotFound
 	}
@@ -92,6 +98,32 @@ func (s *Store) CreateTask(ctx context.Context, owner string, input TaskInput) (
 	if !validTask(input.Title, input.Description, input.Priority) {
 		return Task{}, ErrInvalidTask
 	}
+	var section *string
+	if input.SectionID != "" {
+		tx, err := s.pool.Begin(ctx)
+		if err != nil {
+			return Task{}, err
+		}
+		defer tx.Rollback(ctx)
+		project, err := sectionProject(ctx, tx, owner, input.SectionID)
+		if err != nil {
+			return Task{}, err
+		}
+		if input.ProjectID == "" {
+			input.ProjectID = project
+		} else if input.ProjectID != project {
+			return Task{}, ErrInvalidSection
+		}
+		section = &input.SectionID
+		task, err := scanTask(tx.QueryRow(ctx, `INSERT INTO tasks (id, owner_id, project_id, section_id, title, description, priority, sort_order) SELECT $1,$2,id,$8,$4,$5,$6,$7 FROM projects WHERE owner_id=$2 AND id=$3 AND kind='project' AND NOT is_archived RETURNING `+taskColumns, newID(), owner, input.ProjectID, input.Title, input.Description, input.Priority, input.SortOrder, section))
+		if errors.Is(err, ErrTaskNotFound) {
+			return Task{}, ErrTaskProject
+		}
+		if err != nil {
+			return Task{}, err
+		}
+		return task, tx.Commit(ctx)
+	}
 	if input.ProjectID == "" {
 		inbox, err := s.EnsureInboxProject(ctx, owner)
 		if err != nil {
@@ -122,8 +154,29 @@ func (s *Store) UpdateTask(ctx context.Context, owner, id string, input TaskUpda
 		return Task{}, err
 	}
 	defer tx.Rollback(ctx)
-	if _, err := scanTask(tx.QueryRow(ctx, `SELECT `+taskColumns+` FROM tasks WHERE owner_id=$1 AND id=$2 AND deleted_at IS NULL FOR UPDATE`, owner, id)); err != nil {
+	current, err := scanTask(tx.QueryRow(ctx, `SELECT `+taskColumns+` FROM tasks WHERE owner_id=$1 AND id=$2 AND deleted_at IS NULL FOR UPDATE`, owner, id))
+	if err != nil {
 		return Task{}, err
+	}
+	project := current.ProjectID
+	if input.ProjectID != nil {
+		project = *input.ProjectID
+	}
+	section := current.SectionID
+	switch {
+	case input.SectionID != nil && *input.SectionID == "":
+		section = nil
+	case input.SectionID != nil:
+		sectionProjectID, err := sectionProject(ctx, tx, owner, *input.SectionID)
+		if err != nil {
+			return Task{}, err
+		}
+		if sectionProjectID != project {
+			return Task{}, ErrInvalidSection
+		}
+		section = input.SectionID
+	case project != current.ProjectID:
+		section = nil
 	}
 	if input.ProjectID != nil {
 		var project string
@@ -135,7 +188,7 @@ func (s *Store) UpdateTask(ctx context.Context, owner, id string, input TaskUpda
 			return Task{}, err
 		}
 	}
-	task, err := scanTask(tx.QueryRow(ctx, `UPDATE tasks SET project_id=COALESCE($3,project_id), title=COALESCE($4,title), description=COALESCE($5,description), priority=COALESCE($6,priority), sort_order=COALESCE($7,sort_order) WHERE owner_id=$1 AND id=$2 RETURNING `+taskColumns, owner, id, input.ProjectID, input.Title, input.Description, input.Priority, input.SortOrder))
+	task, err := scanTask(tx.QueryRow(ctx, `UPDATE tasks SET project_id=COALESCE($3,project_id), title=COALESCE($4,title), description=COALESCE($5,description), priority=COALESCE($6,priority), sort_order=COALESCE($7,sort_order), section_id=$8 WHERE owner_id=$1 AND id=$2 RETURNING `+taskColumns, owner, id, input.ProjectID, input.Title, input.Description, input.Priority, input.SortOrder, section))
 	if err != nil {
 		return Task{}, err
 	}
