@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/glass.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/projects/presentation/archived_projects_screen.dart';
@@ -98,29 +99,48 @@ class _HomeScreenState extends State<HomeScreen> {
             if (!wide) {
               return Scaffold(
                 key: _scaffoldKey,
-                appBar: AppBar(title: Text(selected?.displayName ?? 'فراش')),
+                appBar: AppBar(
+                  title: Text(selected?.displayName ?? 'فراش'),
+                  flexibleSpace: const GlassSurface(
+                    radius: 0,
+                    child: SizedBox.expand(),
+                  ),
+                ),
                 drawer: Drawer(child: _sidebar()),
-                body: page,
+                body: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                  child: GlassSurface(radius: 20, child: page),
+                ),
               );
             }
             return Scaffold(
               key: _scaffoldKey,
-              body: Row(
-                children: [
-                  SizedBox(width: 300, child: _sidebar()),
-                  const VerticalDivider(width: 1),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        AppBar(
-                          automaticallyImplyLeading: false,
-                          title: Text(selected?.displayName ?? 'فراش'),
+              body: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 280,
+                        child: GlassSurface(child: _sidebar()),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: GlassSurface(
+                          child: Column(
+                            children: [
+                              AppBar(
+                                automaticallyImplyLeading: false,
+                                title: Text(selected?.displayName ?? 'فراش'),
+                              ),
+                              Expanded(child: page),
+                            ],
+                          ),
                         ),
-                        Expanded(child: page),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             );
           },
@@ -138,20 +158,34 @@ class _AccountHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-      title: Text(
-        email,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        textDirection: TextDirection.ltr,
-        textAlign: TextAlign.start,
-      ),
-      trailing: IconButton(
-        tooltip: 'خروج',
-        icon: const Icon(Icons.logout),
-        onPressed: onLogout,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Text(
+            'فراش',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ),
+        ListTile(
+          leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+          title: Text(
+            email,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textDirection: TextDirection.ltr,
+            textAlign: TextAlign.start,
+          ),
+          trailing: IconButton(
+            tooltip: 'خروج',
+            icon: const Icon(Icons.logout),
+            onPressed: onLogout,
+          ),
+        ),
+      ],
     );
   }
 }

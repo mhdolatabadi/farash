@@ -24,6 +24,16 @@ jobs:
           fi
       - run: flutter analyze
       - run: flutter test
+        env:
+          CAPTURE_GLASS_UI: '1'
+      - name: Upload UI review captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: farash-ui-review
+          path: .impeccable/review/*.png
+          if-no-files-found: ignore
+          retention-days: 14
       - run: flutter build web --release --no-web-resources-cdn --dart-define=API_BASE_URL=https://todo.example.com
       - uses: actions/setup-java@v4
         with:

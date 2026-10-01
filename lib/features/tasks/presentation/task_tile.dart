@@ -25,7 +25,7 @@ class TaskTile extends StatelessWidget {
     return InkWell(
       onTap: onOpen,
       child: Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 8, 4),
+        padding: const EdgeInsetsDirectional.fromSTEB(8, 8, 8, 8),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -63,6 +63,17 @@ class TaskTile extends StatelessWidget {
                 ),
               ),
             ),
+            if (task.priority != TaskPriority.p4)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(top: 15, end: 6),
+                child: Text(
+                  'P${task.priority.index + 1}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: task.priority.color,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ?trailing,
           ],
         ),
@@ -91,7 +102,9 @@ class _PriorityCheck extends StatelessWidget {
           dimension: 48,
           child: Center(
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 150),
               width: 22,
               height: 22,
               decoration: BoxDecoration(
