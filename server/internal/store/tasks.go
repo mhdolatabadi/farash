@@ -20,6 +20,7 @@ type Task struct {
 	ID          string     `json:"id"`
 	ProjectID   string     `json:"project_id"`
 	SectionID   *string    `json:"section_id"`
+	ParentID    *string    `json:"parent_id"`
 	Title       string     `json:"title"`
 	Description string     `json:"description"`
 	Priority    int        `json:"priority"`
@@ -27,11 +28,18 @@ type Task struct {
 	CompletedAt *time.Time `json:"completed_at"`
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
+	// Live direct subtasks, so a list without completed tasks can still show
+	// progress such as 2/5.
+	SubtaskCount          int `json:"subtask_count"`
+	CompletedSubtaskCount int `json:"completed_subtask_count"`
 }
 
 type TaskInput struct {
-	ProjectID   string `json:"project_id"`
-	SectionID   string `json:"section_id"`
+	ProjectID string `json:"project_id"`
+	SectionID string `json:"section_id"`
+	// ParentID makes the task a subtask; it then lives in the parent's
+	// project and section.
+	ParentID    string `json:"parent_id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Priority    int    `json:"priority"`
@@ -43,18 +51,24 @@ type TaskUpdate struct {
 	// SectionID moves the task into a section of its (new) project; an empty
 	// string takes it out of its section. Moving to another project without
 	// a section_id also takes it out.
-	SectionID   *string `json:"section_id"`
+	SectionID *string `json:"section_id"`
+	// ParentID moves the task (with its subtasks) under another task; an
+	// empty string makes it top-level. Moving to another project or section
+	// without a parent_id also makes it top-level.
+	ParentID    *string `json:"parent_id"`
 	Title       *string `json:"title"`
 	Description *string `json:"description"`
 	Priority    *int    `json:"priority"`
 	SortOrder   *int    `json:"sort_order"`
 }
 
-const taskColumns = `id, project_id, section_id, title, description, priority, sort_order, completed_at, created_at, updated_at`
+const taskColumns = `id, project_id, section_id, parent_id, title, description, priority, sort_order, completed_at, created_at, updated_at,
+	(SELECT count(*)::int FROM tasks c WHERE c.owner_id=tasks.owner_id AND c.parent_id=tasks.id AND c.deleted_at IS NULL),
+	(SELECT count(*)::int FROM tasks c WHERE c.owner_id=tasks.owner_id AND c.parent_id=tasks.id AND c.deleted_at IS NULL AND c.completed_at IS NOT NULL)`
 
 func scanTask(row projectScanner) (Task, error) {
 	var task Task
-	err := row.Scan(&task.ID, &task.ProjectID, &task.SectionID, &task.Title, &task.Description, &task.Priority, &task.SortOrder, &task.CompletedAt, &task.CreatedAt, &task.UpdatedAt)
+	err := row.Scan(&task.ID, &task.ProjectID, &task.SectionID, &task.ParentID, &task.Title, &task.Description, &task.Priority, &task.SortOrder, &task.CompletedAt, &task.CreatedAt, &task.UpdatedAt, &task.SubtaskCount, &task.CompletedSubtaskCount)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Task{}, ErrTaskNotFound
 	}
@@ -98,44 +112,60 @@ func (s *Store) CreateTask(ctx context.Context, owner string, input TaskInput) (
 	if !validTask(input.Title, input.Description, input.Priority) {
 		return Task{}, ErrInvalidTask
 	}
-	var section *string
-	if input.SectionID != "" {
-		tx, err := s.pool.Begin(ctx)
-		if err != nil {
-			return Task{}, err
-		}
-		defer tx.Rollback(ctx)
-		project, err := sectionProject(ctx, tx, owner, input.SectionID)
-		if err != nil {
-			return Task{}, err
-		}
-		if input.ProjectID == "" {
-			input.ProjectID = project
-		} else if input.ProjectID != project {
-			return Task{}, ErrInvalidSection
-		}
-		section = &input.SectionID
-		task, err := scanTask(tx.QueryRow(ctx, `INSERT INTO tasks (id, owner_id, project_id, section_id, title, description, priority, sort_order) SELECT $1,$2,id,$8,$4,$5,$6,$7 FROM projects WHERE owner_id=$2 AND id=$3 AND kind='project' AND NOT is_archived RETURNING `+taskColumns, newID(), owner, input.ProjectID, input.Title, input.Description, input.Priority, input.SortOrder, section))
-		if errors.Is(err, ErrTaskNotFound) {
-			return Task{}, ErrTaskProject
-		}
-		if err != nil {
-			return Task{}, err
-		}
-		return task, tx.Commit(ctx)
-	}
-	if input.ProjectID == "" {
+	if input.ProjectID == "" && input.SectionID == "" && input.ParentID == "" {
 		inbox, err := s.EnsureInboxProject(ctx, owner)
 		if err != nil {
 			return Task{}, err
 		}
 		input.ProjectID = inbox.ID
 	}
-	task, err := scanTask(s.pool.QueryRow(ctx, `INSERT INTO tasks (id, owner_id, project_id, title, description, priority, sort_order) SELECT $1,$2,id,$4,$5,$6,$7 FROM projects WHERE owner_id=$2 AND id=$3 AND kind='project' AND NOT is_archived RETURNING `+taskColumns, newID(), owner, input.ProjectID, input.Title, input.Description, input.Priority, input.SortOrder))
-	if errors.Is(err, ErrTaskNotFound) {
-		return Task{}, ErrTaskProject
+	var task Task
+	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		var section, parent *string
+		switch {
+		case input.ParentID != "":
+			if err := lockTaskTree(ctx, tx, owner); err != nil {
+				return err
+			}
+			p, err := lockParent(ctx, tx, owner, input.ParentID)
+			if err != nil {
+				return err
+			}
+			if p.CompletedAt != nil || input.ProjectID != "" && input.ProjectID != p.ProjectID ||
+				input.SectionID != "" && (p.SectionID == nil || *p.SectionID != input.SectionID) {
+				return ErrInvalidParent
+			}
+			depth, err := taskDepth(ctx, tx, owner, p.ID)
+			if err != nil {
+				return err
+			}
+			if depth >= maxTaskDepth {
+				return ErrInvalidParent
+			}
+			input.ProjectID, section, parent = p.ProjectID, p.SectionID, &p.ID
+		case input.SectionID != "":
+			project, err := sectionProject(ctx, tx, owner, input.SectionID)
+			if err != nil {
+				return err
+			}
+			if input.ProjectID == "" {
+				input.ProjectID = project
+			} else if input.ProjectID != project {
+				return ErrInvalidSection
+			}
+			section = &input.SectionID
+		}
+		var err error
+		task, err = scanTask(tx.QueryRow(ctx, `INSERT INTO tasks (id, owner_id, project_id, section_id, parent_id, title, description, priority, sort_order) SELECT $1,$2,id,$8,$9,$4,$5,$6,$7 FROM projects WHERE owner_id=$2 AND id=$3 AND kind='project' AND NOT is_archived RETURNING `+taskColumns, newID(), owner, input.ProjectID, input.Title, input.Description, input.Priority, input.SortOrder, section, parent))
+		if errors.Is(err, ErrTaskNotFound) {
+			return ErrTaskProject
+		}
+		return err
+	})
+	if err != nil {
+		return Task{}, err
 	}
-	return task, err
+	return task, nil
 }
 
 func (s *Store) UpdateTask(ctx context.Context, owner, id string, input TaskUpdate) (Task, error) {
@@ -154,6 +184,11 @@ func (s *Store) UpdateTask(ctx context.Context, owner, id string, input TaskUpda
 		return Task{}, err
 	}
 	defer tx.Rollback(ctx)
+	if input.ParentID != nil && *input.ParentID != "" {
+		if err := lockTaskTree(ctx, tx, owner); err != nil {
+			return Task{}, err
+		}
+	}
 	current, err := scanTask(tx.QueryRow(ctx, `SELECT `+taskColumns+` FROM tasks WHERE owner_id=$1 AND id=$2 AND deleted_at IS NULL FOR UPDATE`, owner, id))
 	if err != nil {
 		return Task{}, err
@@ -163,7 +198,21 @@ func (s *Store) UpdateTask(ctx context.Context, owner, id string, input TaskUpda
 		project = *input.ProjectID
 	}
 	section := current.SectionID
+	parent := current.ParentID
 	switch {
+	case input.ParentID != nil && *input.ParentID != "":
+		p, err := lockParent(ctx, tx, owner, *input.ParentID)
+		if err != nil {
+			return Task{}, err
+		}
+		if err := checkNewParent(ctx, tx, owner, current, p); err != nil {
+			return Task{}, err
+		}
+		if input.ProjectID != nil && *input.ProjectID != p.ProjectID ||
+			input.SectionID != nil && !sameSection(sectionOrNil(*input.SectionID), p.SectionID) {
+			return Task{}, ErrInvalidParent
+		}
+		project, section, parent = p.ProjectID, p.SectionID, &p.ID
 	case input.SectionID != nil && *input.SectionID == "":
 		section = nil
 	case input.SectionID != nil:
@@ -178,9 +227,15 @@ func (s *Store) UpdateTask(ctx context.Context, owner, id string, input TaskUpda
 	case project != current.ProjectID:
 		section = nil
 	}
-	if input.ProjectID != nil {
-		var project string
-		err := tx.QueryRow(ctx, `SELECT id FROM projects WHERE owner_id=$1 AND id=$2 AND kind='project' AND NOT is_archived FOR KEY SHARE`, owner, *input.ProjectID).Scan(&project)
+	// Outdenting, or moving a subtask to another project or section on its
+	// own, makes it top-level.
+	if (input.ParentID == nil || *input.ParentID == "") &&
+		(input.ParentID != nil || project != current.ProjectID || !sameSection(section, current.SectionID)) {
+		parent = nil
+	}
+	if input.ProjectID != nil || project != current.ProjectID {
+		var found string
+		err := tx.QueryRow(ctx, `SELECT id FROM projects WHERE owner_id=$1 AND id=$2 AND kind='project' AND NOT is_archived FOR KEY SHARE`, owner, project).Scan(&found)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Task{}, ErrTaskProject
 		}
@@ -188,30 +243,118 @@ func (s *Store) UpdateTask(ctx context.Context, owner, id string, input TaskUpda
 			return Task{}, err
 		}
 	}
-	task, err := scanTask(tx.QueryRow(ctx, `UPDATE tasks SET project_id=COALESCE($3,project_id), title=COALESCE($4,title), description=COALESCE($5,description), priority=COALESCE($6,priority), sort_order=COALESCE($7,sort_order), section_id=$8 WHERE owner_id=$1 AND id=$2 RETURNING `+taskColumns, owner, id, input.ProjectID, input.Title, input.Description, input.Priority, input.SortOrder, section))
+	if err := moveSubtree(ctx, tx, owner, id, project, section); err != nil {
+		return Task{}, err
+	}
+	task, err := scanTask(tx.QueryRow(ctx, `UPDATE tasks SET project_id=$3, title=COALESCE($4,title), description=COALESCE($5,description), priority=COALESCE($6,priority), sort_order=COALESCE($7,sort_order), section_id=$8, parent_id=$9 WHERE owner_id=$1 AND id=$2 RETURNING `+taskColumns, owner, id, project, input.Title, input.Description, input.Priority, input.SortOrder, section, parent))
 	if err != nil {
 		return Task{}, err
 	}
 	return task, tx.Commit(ctx)
 }
 
+// CompleteTask closes a task with its open subtasks, or reopens it with the
+// subtasks that closed together with it and any completed ancestors.
 func (s *Store) CompleteTask(ctx context.Context, owner, id string, completed bool) (Task, error) {
-	return scanTask(s.pool.QueryRow(ctx, `UPDATE tasks SET completed_at=CASE WHEN $3 THEN COALESCE(completed_at,now()) ELSE NULL END WHERE owner_id=$1 AND id=$2 AND deleted_at IS NULL RETURNING `+taskColumns, owner, id, completed))
-}
-
-func (s *Store) DeleteTask(ctx context.Context, owner, id string) error {
-	tag, err := s.pool.Exec(ctx, `UPDATE tasks SET deleted_at=now() WHERE owner_id=$1 AND id=$2 AND deleted_at IS NULL`, owner, id)
-	if err != nil {
+	var task Task
+	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		var previous *time.Time
+		if err := tx.QueryRow(ctx, `SELECT completed_at FROM tasks WHERE owner_id=$1 AND id=$2 AND deleted_at IS NULL FOR UPDATE`, owner, id).Scan(&previous); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return ErrTaskNotFound
+			}
+			return err
+		}
+		if completed {
+			var at time.Time
+			if err := tx.QueryRow(ctx, `UPDATE tasks SET completed_at=COALESCE(completed_at,now()) WHERE owner_id=$1 AND id=$2 RETURNING completed_at`, owner, id).Scan(&at); err != nil {
+				return err
+			}
+			if err := closeSubtree(ctx, tx, owner, id, at); err != nil {
+				return err
+			}
+		} else {
+			if previous != nil {
+				if _, err := tx.Exec(ctx, `UPDATE tasks SET completed_at=NULL WHERE owner_id=$1 AND id=$2`, owner, id); err != nil {
+					return err
+				}
+				if err := reopenSubtree(ctx, tx, owner, id, *previous); err != nil {
+					return err
+				}
+			}
+			if err := reopenAncestors(ctx, tx, owner, id); err != nil {
+				return err
+			}
+		}
+		var err error
+		task, err = scanTask(tx.QueryRow(ctx, `SELECT `+taskColumns+` FROM tasks WHERE owner_id=$1 AND id=$2`, owner, id))
 		return err
+	})
+	if err != nil {
+		return Task{}, err
 	}
-	if tag.RowsAffected() == 0 {
-		return ErrTaskNotFound
-	}
-	return nil
+	return task, nil
 }
 
+// DeleteTask soft-deletes a task and its live subtasks at the same moment.
+func (s *Store) DeleteTask(ctx context.Context, owner, id string) error {
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		var at time.Time
+		err := tx.QueryRow(ctx, `UPDATE tasks SET deleted_at=now() WHERE owner_id=$1 AND id=$2 AND deleted_at IS NULL RETURNING deleted_at`, owner, id).Scan(&at)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrTaskNotFound
+		}
+		if err != nil {
+			return err
+		}
+		return deleteSubtree(ctx, tx, owner, id, at)
+	})
+}
+
+// RestoreTask brings back a deleted task with the subtasks deleted together
+// with it. If its parent is still deleted, or is completed while the task is
+// open, the task comes back top-level.
 func (s *Store) RestoreTask(ctx context.Context, owner, id string) (Task, error) {
-	return scanTask(s.pool.QueryRow(ctx, `UPDATE tasks SET deleted_at=NULL WHERE owner_id=$1 AND id=$2 AND deleted_at IS NOT NULL RETURNING `+taskColumns, owner, id))
+	var task Task
+	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		var at time.Time
+		err := tx.QueryRow(ctx, `SELECT deleted_at FROM tasks WHERE owner_id=$1 AND id=$2 AND deleted_at IS NOT NULL FOR UPDATE`, owner, id).Scan(&at)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrTaskNotFound
+		}
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `UPDATE tasks SET deleted_at=NULL WHERE owner_id=$1 AND id=$2`, owner, id); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `
+			UPDATE tasks t SET parent_id=NULL FROM tasks p
+			WHERE t.owner_id=$1 AND t.id=$2 AND p.owner_id=$1 AND p.id=t.parent_id
+			AND (p.deleted_at IS NOT NULL OR p.completed_at IS NOT NULL AND t.completed_at IS NULL)`, owner, id); err != nil {
+			return err
+		}
+		if err := restoreSubtree(ctx, tx, owner, id, at); err != nil {
+			return err
+		}
+		task, err = scanTask(tx.QueryRow(ctx, `SELECT `+taskColumns+` FROM tasks WHERE owner_id=$1 AND id=$2`, owner, id))
+		return err
+	})
+	if err != nil {
+		return Task{}, err
+	}
+	return task, nil
+}
+
+func sectionOrNil(id string) *string {
+	if id == "" {
+		return nil
+	}
+	return &id
+}
+
+func sameSection(a, b *string) bool {
+	return a == nil && b == nil || a != nil && b != nil && *a == *b
 }
 
 // Reorder applies a subset (for example the visible open tasks) atomically.

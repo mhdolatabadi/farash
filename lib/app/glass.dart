@@ -91,7 +91,12 @@ class GlassSurface extends StatelessWidget {
                     .withValues(alpha: dark ? 0.22 : 0.88),
               ),
             ),
-            child: Padding(padding: padding, child: child),
+            // List tiles and ink inside paint on this transparent Material,
+            // above the glass tint instead of under it.
+            child: Material(
+              type: MaterialType.transparency,
+              child: Padding(padding: padding, child: child),
+            ),
           ),
         ),
       ),

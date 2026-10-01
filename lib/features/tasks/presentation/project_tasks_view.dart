@@ -43,8 +43,11 @@ sealed class _Row {
 }
 
 class _TaskRow extends _Row {
-  const _TaskRow(this.task);
+  const _TaskRow(this.task, this.depth);
   final Task task;
+
+  /// 0 for a top-level task, 1 for its subtasks, and so on.
+  final int depth;
 }
 
 class _HeaderRow extends _Row {
@@ -141,23 +144,34 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
   }
 
   /// The open list: tasks without a section, then each section's header and
-  /// (unless it is collapsed) its tasks.
+  /// (unless it is collapsed) its tasks, each followed by its subtasks.
   List<_Row> _rows() => [
-    for (final task in _tasks.openIn(null)) _TaskRow(task),
+    for (final (task, depth) in _tasks.openTree(null)) _TaskRow(task, depth),
     for (final section in _tasks.sections) ...[
       _HeaderRow(section),
       if (!section.isCollapsed)
-        for (final task in _tasks.openIn(section.id)) _TaskRow(task),
+        for (final (task, depth) in _tasks.openTree(section.id))
+          _TaskRow(task, depth),
     ],
   ];
 
-  /// A dropped task joins the section whose header is above it.
+  /// A dropped task joins the section whose header is above it, at the level
+  /// of the task above it: as its sibling, or as the first subtask when the
+  /// row below is already one of that task's subtasks.
   void _onReorder(List<_Row> rows, int from, int to) {
     final moved = rows[from];
     if (moved is! _TaskRow) return;
     final next = [...rows]..removeAt(from);
     next.insert(to.clamp(0, next.length), moved);
     final at = next.indexOf(moved);
+    final above = at > 0 ? next[at - 1] : null;
+    final below = at + 1 < next.length ? next[at + 1] : null;
+    Task? parent;
+    if (above is _TaskRow) {
+      parent = below is _TaskRow && below.depth > above.depth
+          ? above.task
+          : _tasks.openParentOf(above.task);
+    }
 
     Section? section;
     for (var i = at; i >= 0; i--) {
@@ -167,8 +181,8 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
         break;
       }
     }
-    // The tasks between that header (or the top) and the next header, in
-    // their new order.
+    // The new siblings between that header (or the top) and the next
+    // header, in their new order.
     final first = section == null
         ? 0
         : next.indexWhere(
@@ -179,15 +193,18 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     for (var i = first; i < next.length; i++) {
       final row = next[i];
       if (row is _HeaderRow) break;
-      if (row is _TaskRow) ids.add(row.task.id);
+      if (row is _TaskRow &&
+          (row == moved || _tasks.openParentOf(row.task)?.id == parent?.id)) {
+        ids.add(row.task.id);
+      }
     }
     // A collapsed section's tasks are not on screen; keep them after it.
-    if (section != null && section.isCollapsed) {
+    if (parent == null && section != null && section.isCollapsed) {
       for (final t in _tasks.openIn(section.id)) {
         if (!ids.contains(t.id)) ids.add(t.id);
       }
     }
-    _run(() => _tasks.moveTask(moved.task, section?.id, ids));
+    _run(() => _tasks.moveTask(moved.task, section?.id, ids, parent: parent));
   }
 
   Future<void> _addSection() async {
@@ -352,11 +369,17 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                 itemCount: rows.length,
                 onReorderItem: (from, to) => _onReorder(rows, from, to),
                 itemBuilder: (context, index) => switch (rows[index]) {
-                  _TaskRow(:final task) => Material(
+                  _TaskRow(:final task, :final depth) => Material(
                     key: ValueKey(task.id),
                     color: Colors.transparent,
                     child: TaskTile(
                       task: task,
+                      depth: depth,
+                      folded: _tasks.openChildren(task).isEmpty
+                          ? null
+                          : _tasks.isFolded(task),
+                      onFold: () =>
+                          _tasks.setFolded(task, !_tasks.isFolded(task)),
                       onToggle: () => _toggle(task),
                       onOpen: () => _open(task),
                       trailing: ReorderableDragStartListener(

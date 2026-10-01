@@ -28,6 +28,9 @@ class TasksController extends ChangeNotifier {
   bool _disposed = false;
   int _loadGeneration = 0;
 
+  /// Tasks whose subtasks are folded away in the list.
+  final _foldedTasks = <String>{};
+
   @override
   void dispose() {
     _disposed = true;
@@ -65,11 +68,86 @@ class TasksController extends ChangeNotifier {
   /// without one.
   String? sectionOf(Task task) => sectionById(task.sectionId)?.id;
 
-  /// Open tasks of one section (null: tasks without a section), in order.
+  Task? taskById(String? id) =>
+      id == null ? null : _tasks.where((t) => t.id == id).firstOrNull;
+
+  /// The open parent a task shows under; null for a top-level task, or when
+  /// the parent is not in this list.
+  Task? openParentOf(Task task) {
+    final parent = taskById(task.parentId);
+    return parent == null || parent.isCompleted ? null : parent;
+  }
+
+  /// Open top-level tasks of one section (null: tasks without a section), in
+  /// order. Subtasks show under their parent; see [openChildren].
   List<Task> openIn(String? sectionId) => [
     for (final t in openTasks)
-      if (sectionOf(t) == sectionId) t,
+      if (openParentOf(t) == null && sectionOf(t) == sectionId) t,
   ];
+
+  /// Open subtasks of [task], in order.
+  List<Task> openChildren(Task task) => [
+    for (final t in openTasks)
+      if (t.parentId == task.id) t,
+  ];
+
+  /// Open tasks of a section as (task, depth) rows: each top-level task, then
+  /// its subtasks one level deeper unless it is folded.
+  List<(Task, int)> openTree(String? sectionId) {
+    final rows = <(Task, int)>[];
+    void visit(Task task, int depth) {
+      rows.add((task, depth));
+      if (isFolded(task)) return;
+      for (final child in openChildren(task)) {
+        visit(child, depth + 1);
+      }
+    }
+
+    for (final task in openIn(sectionId)) {
+      visit(task, 0);
+    }
+    return rows;
+  }
+
+  bool isFolded(Task task) => _foldedTasks.contains(task.id);
+
+  /// Shows or hides a task's subtasks in the list.
+  void setFolded(Task task, bool folded) {
+    if (folded ? _foldedTasks.add(task.id) : _foldedTasks.remove(task.id)) {
+      _publish();
+    }
+  }
+
+  /// Every loaded task below [task].
+  List<Task> descendantsOf(Task task) {
+    final found = <Task>[];
+    var level = [task.id];
+    // Bounded like the API's five levels, so damaged data cannot loop.
+    for (var depth = 0; depth < 16 && level.isNotEmpty; depth++) {
+      final next = [
+        for (final t in _tasks)
+          if (level.contains(t.parentId)) t,
+      ];
+      found.addAll(next);
+      level = [for (final t in next) t.id];
+    }
+    return found;
+  }
+
+  List<Task> _ancestorsOf(Task task) {
+    final found = <Task>[];
+    var parent = taskById(task.parentId);
+    while (parent != null && found.length < 16) {
+      found.add(parent);
+      parent = taskById(parent.parentId);
+    }
+    return found;
+  }
+
+  bool _inTree(Task task) =>
+      task.parentId != null ||
+      task.hasSubtasks ||
+      _tasks.any((t) => t.parentId == task.id);
 
   bool get isLoading => _loading;
   bool get showCompleted => _showCompleted;
@@ -110,32 +188,70 @@ class TasksController extends ChangeNotifier {
     }
   }
 
+  /// Reloads the tasks without the loading state, after a change whose
+  /// effects reach other tasks (subtasks closing with their parent, progress
+  /// counts). A failure keeps what is shown.
+  Future<void> _refresh() async {
+    final requestToken = token();
+    if (_disposed || requestToken == null) return;
+    final generation = ++_loadGeneration;
+    try {
+      final loaded = await _api.listTasks(
+        requestToken,
+        projectId,
+        showCompleted: _showCompleted,
+      );
+      if (!_disposed &&
+          generation == _loadGeneration &&
+          token() == requestToken) {
+        _tasks = loaded;
+        _loading = false;
+        _error = null;
+        _publish();
+      }
+    } catch (_) {
+      // The optimistic state stays; the next load corrects it.
+    }
+  }
+
   Future<void> setShowCompleted(bool show) async {
     if (show == _showCompleted) return;
     _showCompleted = show;
     await load();
   }
 
-  /// Adds a task at the end of the open list.
+  /// Adds a task at the end of the open list, or of [parent]'s subtasks.
   Future<Task> add(
     String title, {
     TaskPriority priority = TaskPriority.p4,
     String? sectionId,
+    Task? parent,
   }) async {
-    final open = openTasks;
+    final siblings = parent == null ? openTasks : openChildren(parent);
     final task = await _api.createTask(
       _requireToken(),
       TaskDraft(
-        projectId: projectId,
-        sectionId: sectionId,
+        // A subtask takes its parent's project and section.
+        projectId: parent == null ? projectId : null,
+        sectionId: parent == null ? sectionId : null,
+        parentId: parent?.id,
         title: title.trim(),
         priority: priority,
-        sortOrder: open.isEmpty
+        sortOrder: siblings.isEmpty
             ? 0
-            : open.map((t) => t.sortOrder).reduce((a, b) => a > b ? a : b) + 1,
+            : siblings.map((t) => t.sortOrder).reduce((a, b) => a > b ? a : b) +
+                  1,
       ),
     );
-    _tasks = [..._tasks, task];
+    _tasks = [
+      for (final t in _tasks)
+        if (t.id == parent?.id)
+          t.copyWith(subtaskCount: t.subtaskCount + 1)
+        else
+          t,
+      task,
+    ];
+    if (parent != null) _foldedTasks.remove(parent.id);
     _publish();
     return task;
   }
@@ -169,6 +285,22 @@ class TasksController extends ChangeNotifier {
         if (t.id != task.id) t else if (!moved) updated,
     ];
     _publish();
+    // Subtasks follow their parent to its new place.
+    if (_inTree(task)) await _refresh();
+  }
+
+  /// Saves a new description on its own, as ticking a checklist item does.
+  Future<void> saveDescription(Task task, String description) async {
+    final saved = await _api.updateTask(
+      _requireToken(),
+      task.id,
+      TaskDraft(description: description),
+    );
+    _tasks = [
+      for (final t in _tasks)
+        if (t.id == saved.id) saved else t,
+    ];
+    _publish();
   }
 
   /// Checks a task off, or back on. Calling it again with the opposite value
@@ -176,10 +308,23 @@ class TasksController extends ChangeNotifier {
   Future<void> setCompleted(Task task, bool completed) async {
     final before = _tasks;
     final now = DateTime.now();
+    final tree = _inTree(task);
+    // Closing a task closes its open subtasks; reopening a subtask reopens
+    // its parents. The API does the same, and the refresh below confirms it.
+    final cascade = {
+      for (final t in completed ? descendantsOf(task) : _ancestorsOf(task))
+        if (t.isCompleted != completed) t.id,
+    };
+    final changes = task.isCompleted != completed;
     _tasks = [
       for (final t in _tasks)
-        if (t.id != task.id)
-          t
+        if (t.id != task.id && !cascade.contains(t.id))
+          t.id == task.parentId && changes
+              ? t.copyWith(
+                  completedSubtaskCount:
+                      t.completedSubtaskCount + (completed ? 1 : -1),
+                )
+              : t
         else
           completed
               ? t.copyWith(completedAt: now)
@@ -202,10 +347,13 @@ class TasksController extends ChangeNotifier {
       if (completed && !_showCompleted) {
         _tasks = [
           for (final t in _tasks)
-            if (t.id != saved.id) t,
+            if (t.id != saved.id && !cascade.contains(t.id)) t,
         ];
       }
       _publish();
+      if (tree || saved.hasSubtasks || saved.parentId != null) {
+        await _refresh();
+      }
     } catch (_) {
       _tasks = before;
       _publish();
@@ -213,12 +361,20 @@ class TasksController extends ChangeNotifier {
     }
   }
 
-  /// Removes a task; [undoDelete] restores it.
+  /// Removes a task with its subtasks; [undoDelete] restores them.
   Future<void> delete(Task task) async {
     final before = _tasks;
+    final gone = {task.id, for (final t in descendantsOf(task)) t.id};
     _tasks = [
       for (final t in _tasks)
-        if (t.id != task.id) t,
+        if (t.id == task.parentId)
+          t.copyWith(
+            subtaskCount: t.subtaskCount - 1,
+            completedSubtaskCount:
+                t.completedSubtaskCount - (task.isCompleted ? 1 : 0),
+          )
+        else if (!gone.contains(t.id))
+          t,
     ];
     _publish();
     try {
@@ -232,6 +388,10 @@ class TasksController extends ChangeNotifier {
 
   Future<void> undoDelete(Task task) async {
     final restored = await _api.restoreTask(_requireToken(), task.id);
+    if (restored.parentId != null || restored.hasSubtasks) {
+      await _refresh();
+      return;
+    }
     if (restored.projectId == projectId &&
         (!restored.isCompleted || _showCompleted)) {
       _tasks = [..._tasks, restored];
@@ -266,35 +426,64 @@ class TasksController extends ChangeNotifier {
     }
   }
 
-  /// Puts [task] into [sectionId] (null: no section), with [orderedIds] the
-  /// open tasks of that section in their new order.
+  /// Puts [task] into [sectionId] (null: no section) under [parent] (null:
+  /// top-level), with [orderedIds] its new open siblings in order. Its
+  /// subtasks go with it.
   Future<void> moveTask(
     Task task,
     String? sectionId,
-    List<String> orderedIds,
-  ) async {
+    List<String> orderedIds, {
+    Task? parent,
+  }) async {
+    if (parent != null &&
+        (parent.id == task.id ||
+            descendantsOf(task).any((t) => t.id == parent.id))) {
+      return;
+    }
     final before = _tasks;
     final order = {
       for (var i = 0; i < orderedIds.length; i++) orderedIds[i]: i,
     };
-    final sectionChanged = sectionOf(task) != sectionId;
+    final targetSection = parent == null ? sectionId : parent.sectionId;
+    final parentChanged = task.parentId != parent?.id;
+    final sectionChanged = sectionOf(task) != targetSection;
+    final moving = {task.id, for (final t in descendantsOf(task)) t.id};
     _tasks = [
       for (final t in _tasks)
         if (t.id == task.id)
           t.copyWith(
-            sectionId: sectionId,
-            clearSection: sectionId == null,
+            sectionId: targetSection,
+            clearSection: targetSection == null,
+            parentId: parent?.id,
+            clearParent: parent == null,
             sortOrder: order[t.id],
+          )
+        else if (moving.contains(t.id))
+          t.copyWith(
+            sectionId: targetSection,
+            clearSection: targetSection == null,
           )
         else if (order.containsKey(t.id))
           t.copyWith(sortOrder: order[t.id])
         else
           t,
     ];
+    if (parent != null) _foldedTasks.remove(parent.id);
     _publish();
     try {
       final token = _requireToken();
-      if (sectionChanged) {
+      if (parentChanged) {
+        await _api.updateTask(
+          token,
+          task.id,
+          parent != null
+              ? TaskDraft(parentId: parent.id)
+              : TaskDraft(
+                  parentId: '',
+                  sectionId: sectionChanged ? (sectionId ?? '') : null,
+                ),
+        );
+      } else if (sectionChanged) {
         await _api.updateTask(
           token,
           task.id,
@@ -307,6 +496,44 @@ class TasksController extends ChangeNotifier {
       _publish();
       rethrow;
     }
+    if (parentChanged) await _refresh();
+  }
+
+  /// The open task right above [task] at its level, which it can nest
+  /// under; null when it is the first.
+  Task? indentTarget(Task task) {
+    final parent = openParentOf(task);
+    final siblings = parent == null
+        ? openIn(sectionOf(task))
+        : openChildren(parent);
+    final index = siblings.indexWhere((t) => t.id == task.id);
+    return index > 0 ? siblings[index - 1] : null;
+  }
+
+  /// Nests [task] as the last subtask of the task above it.
+  Future<void> indent(Task task) async {
+    final target = indentTarget(task);
+    if (target == null) return;
+    await moveTask(task, sectionOf(task), [
+      for (final t in openChildren(target)) t.id,
+      task.id,
+    ], parent: target);
+  }
+
+  /// Moves [task] one level up, right after its current parent.
+  Future<void> outdent(Task task) async {
+    final parent = openParentOf(task);
+    if (parent == null) return;
+    final grandparent = openParentOf(parent);
+    final siblings = grandparent == null
+        ? openIn(sectionOf(parent))
+        : openChildren(grandparent);
+    final ids = [
+      for (final t in siblings)
+        if (t.id != task.id) t.id,
+    ];
+    ids.insert(ids.indexOf(parent.id) + 1, task.id);
+    await moveTask(task, sectionOf(parent), ids, parent: grandparent);
   }
 
   Future<Section> addSection(String name) async {

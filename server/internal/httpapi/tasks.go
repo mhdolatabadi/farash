@@ -141,6 +141,10 @@ func writeTaskError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "project_not_found")
 	case errors.Is(err, store.ErrInvalidTask):
 		writeError(w, http.StatusBadRequest, "invalid_task")
+	case errors.Is(err, store.ErrParentNotFound):
+		writeError(w, http.StatusNotFound, "parent_not_found")
+	case errors.Is(err, store.ErrInvalidParent):
+		writeError(w, http.StatusBadRequest, "invalid_parent")
 	case errors.Is(err, store.ErrTaskOrder):
 		writeError(w, http.StatusBadRequest, "invalid_task_order")
 	default:
