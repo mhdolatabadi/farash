@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:farash/core/calendar/calendar_scope.dart';
+import 'package:farash/core/calendar/calendar_settings_dialog.dart';
 import 'package:farash/app/glass.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 import 'package:farash/features/projects/data/project.dart';
@@ -179,10 +181,21 @@ class _AccountHeader extends StatelessWidget {
             textDirection: TextDirection.ltr,
             textAlign: TextAlign.start,
           ),
-          trailing: IconButton(
-            tooltip: 'خروج',
-            icon: const Icon(Icons.logout),
-            onPressed: onLogout,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: 'تنظیمات تقویم',
+                icon: const Icon(Icons.calendar_month_outlined),
+                onPressed: () =>
+                    showCalendarSettings(context, CalendarScope.of(context)),
+              ),
+              IconButton(
+                tooltip: 'خروج',
+                icon: const Icon(Icons.logout),
+                onPressed: onLogout,
+              ),
+            ],
           ),
         ),
       ],

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:farash/app/glass.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
+import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/tasks/data/checklist.dart';
 import 'package:farash/features/tasks/data/task.dart';
+import 'package:farash/features/tasks/presentation/due_picker.dart';
 import 'package:farash/features/tasks/presentation/task_messages.dart';
 import 'package:farash/features/tasks/presentation/task_tile.dart';
 
@@ -57,6 +59,13 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
   late TaskPriority _priority = widget.task.priority;
   late String _projectId = widget.task.projectId;
   late String? _sectionId = widget.controller.sectionOf(widget.task);
+  late TaskDates _dates = widget.task.dates;
+
+  Future<void> _pickDates() async {
+    final picked = await showDuePicker(context, initial: _dates);
+    if (picked != null && mounted) setState(() => _dates = picked);
+  }
+
   final _newSubtask = TextEditingController();
   final _newItem = TextEditingController();
   bool _saving = false;
@@ -132,6 +141,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
         priority: _priority,
         projectId: _projectId,
         sectionId: _sectionId,
+        dates: _dates,
       );
       if (mounted) _close(TaskSheetResult.saved);
     } catch (error) {
@@ -242,6 +252,8 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                         _quietly(() => widget.controller.outdent(_task)),
                   ),
                 ),
+                const SizedBox(height: 12),
+                _ScheduleRow(dates: _dates, onTap: _pickDates),
                 const SizedBox(height: 12),
                 Text('اولویت', style: theme.textTheme.labelLarge),
                 const SizedBox(height: 8),
@@ -564,6 +576,47 @@ class _Subtasks extends StatelessWidget {
             ],
           ),
       ],
+    );
+  }
+}
+
+/// The dates in one line; tapping opens the scheduler.
+class _ScheduleRow extends StatelessWidget {
+  const _ScheduleRow({required this.dates, required this.onTap});
+
+  final TaskDates dates;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final text = describeDates(dates, CalendarScope.of(context));
+    return Semantics(
+      button: true,
+      label: 'زمان‌بندی: $text',
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Row(
+            children: [
+              Icon(Icons.event, color: theme.colorScheme.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  text,
+                  style: theme.textTheme.bodyLarge,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const Icon(Icons.chevron_left),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

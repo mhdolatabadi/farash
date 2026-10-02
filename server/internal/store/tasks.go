@@ -26,8 +26,13 @@ type Task struct {
 	Priority    int        `json:"priority"`
 	SortOrder   int        `json:"sort_order"`
 	CompletedAt *time.Time `json:"completed_at"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	// Due is null for a task without a date.
+	Due *Due `json:"due"`
+	// Deadline is a YYYY-MM-DD day the task must be done by.
+	Deadline        *string   `json:"deadline"`
+	DurationMinutes *int      `json:"duration_minutes"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 	// Live direct subtasks, so a list without completed tasks can still show
 	// progress such as 2/5.
 	SubtaskCount          int `json:"subtask_count"`
@@ -39,11 +44,14 @@ type TaskInput struct {
 	SectionID string `json:"section_id"`
 	// ParentID makes the task a subtask; it then lives in the parent's
 	// project and section.
-	ParentID    string `json:"parent_id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Priority    int    `json:"priority"`
-	SortOrder   int    `json:"sort_order"`
+	ParentID        string    `json:"parent_id"`
+	Title           string    `json:"title"`
+	Description     string    `json:"description"`
+	Priority        int       `json:"priority"`
+	SortOrder       int       `json:"sort_order"`
+	Due             *DueInput `json:"due"`
+	Deadline        *string   `json:"deadline"`
+	DurationMinutes *int      `json:"duration_minutes"`
 }
 
 type TaskUpdate struct {
@@ -60,17 +68,30 @@ type TaskUpdate struct {
 	Description *string `json:"description"`
 	Priority    *int    `json:"priority"`
 	SortOrder   *int    `json:"sort_order"`
+	// Due, Deadline and DurationMinutes are left alone when absent and
+	// cleared by null. Clearing the due, or making it all-day, also clears
+	// the duration unless one is sent.
+	Due             Optional[DueInput] `json:"due"`
+	Deadline        Optional[string]   `json:"deadline"`
+	DurationMinutes Optional[int]      `json:"duration_minutes"`
 }
 
-const taskColumns = `id, project_id, section_id, parent_id, title, description, priority, sort_order, completed_at, created_at, updated_at,
+const taskColumns = `id, project_id, section_id, parent_id, title, description, priority, sort_order, completed_at,
+	to_char(due_date, 'YYYY-MM-DD'), due_at, due_timezone, to_char(deadline, 'YYYY-MM-DD'), duration_minutes, created_at, updated_at,
 	(SELECT count(*)::int FROM tasks c WHERE c.owner_id=tasks.owner_id AND c.parent_id=tasks.id AND c.deleted_at IS NULL),
 	(SELECT count(*)::int FROM tasks c WHERE c.owner_id=tasks.owner_id AND c.parent_id=tasks.id AND c.deleted_at IS NULL AND c.completed_at IS NOT NULL)`
 
 func scanTask(row projectScanner) (Task, error) {
 	var task Task
-	err := row.Scan(&task.ID, &task.ProjectID, &task.SectionID, &task.ParentID, &task.Title, &task.Description, &task.Priority, &task.SortOrder, &task.CompletedAt, &task.CreatedAt, &task.UpdatedAt, &task.SubtaskCount, &task.CompletedSubtaskCount)
+	var dueDate, dueZone *string
+	var dueAt *time.Time
+	err := row.Scan(&task.ID, &task.ProjectID, &task.SectionID, &task.ParentID, &task.Title, &task.Description, &task.Priority, &task.SortOrder, &task.CompletedAt,
+		&dueDate, &dueAt, &dueZone, &task.Deadline, &task.DurationMinutes, &task.CreatedAt, &task.UpdatedAt, &task.SubtaskCount, &task.CompletedSubtaskCount)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Task{}, ErrTaskNotFound
+	}
+	if dueDate != nil {
+		task.Due = &Due{Date: *dueDate, Datetime: dueAt, Timezone: dueZone}
 	}
 	return task, err
 }
@@ -112,6 +133,21 @@ func (s *Store) CreateTask(ctx context.Context, owner string, input TaskInput) (
 	if !validTask(input.Title, input.Description, input.Priority) {
 		return Task{}, ErrInvalidTask
 	}
+	var due *Due
+	if input.Due != nil {
+		normalized, err := normalizeDue(*input.Due)
+		if err != nil {
+			return Task{}, err
+		}
+		due = &normalized
+	}
+	if input.Deadline != nil && !validDate(*input.Deadline) {
+		return Task{}, ErrInvalidDeadline
+	}
+	if !validDuration(input.DurationMinutes, due) {
+		return Task{}, ErrInvalidDuration
+	}
+	dueDate, dueAt, dueZone := dueColumns(due)
 	if input.ProjectID == "" && input.SectionID == "" && input.ParentID == "" {
 		inbox, err := s.EnsureInboxProject(ctx, owner)
 		if err != nil {
@@ -156,7 +192,9 @@ func (s *Store) CreateTask(ctx context.Context, owner string, input TaskInput) (
 			section = &input.SectionID
 		}
 		var err error
-		task, err = scanTask(tx.QueryRow(ctx, `INSERT INTO tasks (id, owner_id, project_id, section_id, parent_id, title, description, priority, sort_order) SELECT $1,$2,id,$8,$9,$4,$5,$6,$7 FROM projects WHERE owner_id=$2 AND id=$3 AND kind='project' AND NOT is_archived RETURNING `+taskColumns, newID(), owner, input.ProjectID, input.Title, input.Description, input.Priority, input.SortOrder, section, parent))
+		task, err = scanTask(tx.QueryRow(ctx, `INSERT INTO tasks (id, owner_id, project_id, section_id, parent_id, title, description, priority, sort_order, due_date, due_at, due_timezone, deadline, duration_minutes)
+			SELECT $1,$2,id,$8,$9,$4,$5,$6,$7,$10::date,$11,$12,$13::date,$14 FROM projects WHERE owner_id=$2 AND id=$3 AND kind='project' AND NOT is_archived RETURNING `+taskColumns,
+			newID(), owner, input.ProjectID, input.Title, input.Description, input.Priority, input.SortOrder, section, parent, dueDate, dueAt, dueZone, input.Deadline, input.DurationMinutes))
 		if errors.Is(err, ErrTaskNotFound) {
 			return ErrTaskProject
 		}
@@ -178,6 +216,17 @@ func (s *Store) UpdateTask(ctx context.Context, owner, id string, input TaskUpda
 	}
 	if input.Description != nil && len([]rune(*input.Description)) > 20000 || input.Priority != nil && (*input.Priority < 1 || *input.Priority > 4) {
 		return Task{}, ErrInvalidTask
+	}
+	var newDue *Due
+	if input.Due.Value != nil {
+		normalized, err := normalizeDue(*input.Due.Value)
+		if err != nil {
+			return Task{}, err
+		}
+		newDue = &normalized
+	}
+	if input.Deadline.Value != nil && !validDate(*input.Deadline.Value) {
+		return Task{}, ErrInvalidDeadline
 	}
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
@@ -243,10 +292,30 @@ func (s *Store) UpdateTask(ctx context.Context, owner, id string, input TaskUpda
 			return Task{}, err
 		}
 	}
+	due, deadline, duration := current.Due, current.Deadline, current.DurationMinutes
+	if input.Due.Set {
+		due = newDue
+		// A due that loses its time loses its duration, unless one is sent.
+		if due == nil || due.Datetime == nil {
+			duration = nil
+		}
+	}
+	if input.Deadline.Set {
+		deadline = input.Deadline.Value
+	}
+	if input.DurationMinutes.Set {
+		duration = input.DurationMinutes.Value
+	}
+	if !validDuration(duration, due) {
+		return Task{}, ErrInvalidDuration
+	}
+	dueDate, dueAt, dueZone := dueColumns(due)
 	if err := moveSubtree(ctx, tx, owner, id, project, section); err != nil {
 		return Task{}, err
 	}
-	task, err := scanTask(tx.QueryRow(ctx, `UPDATE tasks SET project_id=$3, title=COALESCE($4,title), description=COALESCE($5,description), priority=COALESCE($6,priority), sort_order=COALESCE($7,sort_order), section_id=$8, parent_id=$9 WHERE owner_id=$1 AND id=$2 RETURNING `+taskColumns, owner, id, project, input.Title, input.Description, input.Priority, input.SortOrder, section, parent))
+	task, err := scanTask(tx.QueryRow(ctx, `UPDATE tasks SET project_id=$3, title=COALESCE($4,title), description=COALESCE($5,description), priority=COALESCE($6,priority), sort_order=COALESCE($7,sort_order), section_id=$8, parent_id=$9,
+		due_date=$10::date, due_at=$11, due_timezone=$12, deadline=$13::date, duration_minutes=$14
+		WHERE owner_id=$1 AND id=$2 RETURNING `+taskColumns, owner, id, project, input.Title, input.Description, input.Priority, input.SortOrder, section, parent, dueDate, dueAt, dueZone, deadline, duration))
 	if err != nil {
 		return Task{}, err
 	}

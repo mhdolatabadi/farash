@@ -134,6 +134,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('خانه').last);
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('ذخیره'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('ذخیره'));
     await tester.pumpAndSettle();
 

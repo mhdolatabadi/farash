@@ -12,6 +12,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   flutter_secure_storage: ^11.2.0
+  flutter_timezone: ^5.1.0
   http: ^1.2.2
 
 dev_dependencies:

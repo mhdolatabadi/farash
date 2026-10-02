@@ -30,6 +30,7 @@ class FakeTasksApi implements TasksApi {
     bool completed = false,
     String? sectionId,
     Task? parent,
+    TaskDates? dates,
   }) {
     final task = Task(
       id: 't${_nextId++}',
@@ -40,6 +41,9 @@ class FakeTasksApi implements TasksApi {
       priority: priority,
       sortOrder: _tasks.where((t) => t.projectId == projectId).length,
       completedAt: completed ? DateTime(2026) : null,
+      due: dates?.due,
+      deadline: dates?.deadline,
+      durationMinutes: dates?.durationMinutes,
     );
     _tasks.add(task);
     return task;
@@ -128,6 +132,9 @@ class FakeTasksApi implements TasksApi {
       description: draft.description ?? '',
       priority: draft.priority ?? TaskPriority.p4,
       sortOrder: draft.sortOrder ?? 0,
+      due: draft.dates?.due,
+      deadline: draft.dates?.deadline,
+      durationMinutes: draft.dates?.durationMinutes,
     );
     _tasks.add(task);
     return _counted(task);
@@ -151,6 +158,7 @@ class FakeTasksApi implements TasksApi {
       description: changes.description,
       priority: changes.priority,
       sortOrder: changes.sortOrder,
+      dates: changes.dates,
     );
     // Like the API: a parent_id nests the task in the parent's place; "" or
     // a move elsewhere on its own makes it top-level.
@@ -267,6 +275,34 @@ class FakeTasksApi implements TasksApi {
     for (var i = 0; i < ids.length; i++) {
       _replace(_find(ids[i]).copyWith(sortOrder: i));
     }
+  }
+
+  /// Every bulk reschedule the app sent: (ids, due).
+  final reschedules = <(List<String>, TaskDue?)>[];
+
+  @override
+  Future<List<Task>> rescheduleTasks(
+    String token,
+    List<String> ids,
+    TaskDue? due,
+  ) async {
+    _maybeFail();
+    final tasks = [for (final id in ids) _find(id)];
+    reschedules.add((List.of(ids), due));
+    return [
+      for (final t in tasks)
+        () {
+          final updated = t.copyWith(
+            dates: TaskDates(
+              due: due,
+              deadline: t.deadline,
+              durationMinutes: t.durationMinutes,
+            ),
+          );
+          _replace(updated);
+          return _counted(updated);
+        }(),
+    ];
   }
 
   /// What deleting a section does to its tasks.
