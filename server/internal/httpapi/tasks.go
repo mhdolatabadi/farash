@@ -18,6 +18,7 @@ type tasksStore interface {
 	DeleteTask(context.Context, string, string) error
 	RestoreTask(context.Context, string, string) (store.Task, error)
 	ReorderTasks(context.Context, string, string, []string) error
+	RescheduleTasks(context.Context, string, []string, *store.DueInput) ([]store.Task, error)
 }
 
 type tasksHandler struct {
@@ -83,6 +84,21 @@ func (h *tasksHandler) handle(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusNoContent)
 		return
+	case r.URL.Path == "/api/v1/tasks/reschedule":
+		input, ok := decodeTaskRequest[struct {
+			TaskIDs []string        `json:"task_ids"`
+			Due     *store.DueInput `json:"due"`
+		}](w, r)
+		if !ok {
+			return
+		}
+		tasks, err := h.data.RescheduleTasks(r.Context(), owner, input.TaskIDs, input.Due)
+		if err != nil {
+			writeTaskError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string][]store.Task{"tasks": tasks})
+		return
 	case id != "":
 		switch r.PathValue("action") {
 		case "close":
@@ -145,6 +161,14 @@ func writeTaskError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "parent_not_found")
 	case errors.Is(err, store.ErrInvalidParent):
 		writeError(w, http.StatusBadRequest, "invalid_parent")
+	case errors.Is(err, store.ErrInvalidDue):
+		writeError(w, http.StatusBadRequest, "invalid_due")
+	case errors.Is(err, store.ErrInvalidDeadline):
+		writeError(w, http.StatusBadRequest, "invalid_deadline")
+	case errors.Is(err, store.ErrInvalidDuration):
+		writeError(w, http.StatusBadRequest, "invalid_duration")
+	case errors.Is(err, store.ErrTaskIDs):
+		writeError(w, http.StatusBadRequest, "invalid_task_ids")
 	case errors.Is(err, store.ErrTaskOrder):
 		writeError(w, http.StatusBadRequest, "invalid_task_order")
 	default:

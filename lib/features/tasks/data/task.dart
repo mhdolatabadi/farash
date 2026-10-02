@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:farash/features/tasks/data/task_dates.dart';
+
+export 'package:farash/features/tasks/data/task_dates.dart';
 
 /// A task, as the API returns it.
 class Task {
@@ -14,6 +17,9 @@ class Task {
     this.completedAt,
     this.subtaskCount = 0,
     this.completedSubtaskCount = 0,
+    this.due,
+    this.deadline,
+    this.durationMinutes,
   });
 
   factory Task.fromJson(Map<String, dynamic> json) => Task(
@@ -30,6 +36,11 @@ class Task {
         : DateTime.parse(json['completed_at'] as String),
     subtaskCount: json['subtask_count'] as int? ?? 0,
     completedSubtaskCount: json['completed_subtask_count'] as int? ?? 0,
+    due: json['due'] == null
+        ? null
+        : TaskDue.fromJson(json['due'] as Map<String, dynamic>),
+    deadline: json['deadline'] as String?,
+    durationMinutes: json['duration_minutes'] as int?,
   );
 
   final String id;
@@ -53,6 +64,15 @@ class Task {
   final int subtaskCount;
   final int completedSubtaskCount;
 
+  final TaskDue? due;
+
+  /// YYYY-MM-DD the task must be done by.
+  final String? deadline;
+  final int? durationMinutes;
+
+  TaskDates get dates =>
+      TaskDates(due: due, deadline: deadline, durationMinutes: durationMinutes);
+
   bool get isCompleted => completedAt != null;
   bool get hasSubtasks => subtaskCount > 0;
 
@@ -70,6 +90,7 @@ class Task {
     bool clearCompletedAt = false,
     int? subtaskCount,
     int? completedSubtaskCount,
+    TaskDates? dates,
   }) => Task(
     id: id,
     projectId: projectId ?? this.projectId,
@@ -82,6 +103,11 @@ class Task {
     completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
     subtaskCount: subtaskCount ?? this.subtaskCount,
     completedSubtaskCount: completedSubtaskCount ?? this.completedSubtaskCount,
+    due: dates == null ? due : dates.due,
+    deadline: dates == null ? deadline : dates.deadline,
+    durationMinutes: dates == null
+        ? durationMinutes
+        : (dates.due?.isTimed == true ? dates.durationMinutes : null),
   );
 }
 

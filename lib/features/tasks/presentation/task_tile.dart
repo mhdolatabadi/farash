@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:farash/core/calendar/calendar_scope.dart';
+import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/tasks/data/checklist.dart';
 import 'package:farash/features/tasks/data/task.dart';
@@ -18,6 +20,8 @@ class TaskTile extends StatelessWidget {
     this.depth = 0,
     this.folded,
     this.onFold,
+    this.onLongPress,
+    this.selected = false,
   });
 
   final Task task;
@@ -32,14 +36,22 @@ class TaskTile extends StatelessWidget {
   final bool? folded;
   final VoidCallback? onFold;
 
+  /// Starts selecting several tasks.
+  final VoidCallback? onLongPress;
+
+  /// Picked for a bulk change.
+  final bool selected;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final done = task.isCompleted;
     final firstLine = descriptionPreview(task.description);
     final checklist = parseChecklist(task.description);
-    return InkWell(
+    final dated = task.due != null || task.deadline != null;
+    final row = InkWell(
       onTap: onOpen,
+      onLongPress: onLongPress,
       child: Padding(
         padding: EdgeInsetsDirectional.fromSTEB(
           8 + subtaskIndent * depth,
@@ -80,7 +92,7 @@ class TaskTile extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (task.hasSubtasks || checklist.isNotEmpty) ...[
+                    if (task.hasSubtasks || checklist.isNotEmpty || dated) ...[
                       const SizedBox(height: 2),
                       Wrap(
                         spacing: 12,
@@ -99,6 +111,7 @@ class TaskTile extends StatelessWidget {
                               done: checklist.where((i) => i.done).length,
                               total: checklist.length,
                             ),
+                          if (dated) TaskDateLabels(task: task),
                         ],
                       ),
                     ],
@@ -122,6 +135,7 @@ class TaskTile extends StatelessWidget {
         ),
       ),
     );
+    return Semantics(selected: selected, child: row);
   }
 }
 
@@ -198,6 +212,77 @@ class _Count extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The due day (with time and duration) and the deadline; red once they
+/// have passed on an open task.
+class TaskDateLabels extends StatelessWidget {
+  const TaskDateLabels({super.key, required this.task, this.now});
+
+  final Task task;
+  final DateTime? now;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final settings = CalendarScope.of(context);
+    final current = now ?? DateTime.now();
+    final due = task.due;
+    final deadline = task.deadline == null
+        ? null
+        : parseDateKey(task.deadline!);
+
+    Widget label(IconData icon, String text, String name, bool late) {
+      final overdue = late && !task.isCompleted;
+      final color = overdue
+          ? theme.colorScheme.error
+          : theme.colorScheme.onSurfaceVariant;
+      return Semantics(
+        label: '${overdue ? 'دیرشده، ' : ''}$name: $text',
+        excludeSemantics: true,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelMedium?.copyWith(color: color),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: 12,
+      children: [
+        if (due != null)
+          label(
+            due.isTimed ? Icons.schedule : Icons.event,
+            [
+              relativeDay(due.day, settings, today: current),
+              if (due.isTimed) formatTime(due.localTime!),
+              if (task.durationMinutes != null)
+                '· ${formatDuration(task.durationMinutes!)}',
+            ].join(' '),
+            'موعد',
+            due.isOverdue(current),
+          ),
+        if (deadline != null)
+          label(
+            Icons.hourglass_bottom,
+            'مهلت ${formatDate(deadline, settings, today: current)}',
+            'مهلت',
+            deadline.isBefore(dayOf(current)),
+          ),
+      ],
     );
   }
 }

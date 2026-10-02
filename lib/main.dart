@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:farash/core/calendar/calendar_scope.dart';
+import 'package:farash/core/calendar/calendar_settings.dart';
 import 'package:farash/app/app_configuration.dart';
 import 'package:farash/app/app_theme.dart';
 import 'package:farash/app/glass.dart';
@@ -25,6 +27,7 @@ class FarashApp extends StatefulWidget {
     this.projectsApi,
     this.tasksApi,
     this.sectionsApi,
+    this.calendarSettings,
   });
 
   /// Test overrides; by default the app talks to
@@ -35,6 +38,7 @@ class FarashApp extends StatefulWidget {
   final ProjectsApi? projectsApi;
   final TasksApi? tasksApi;
   final SectionsApi? sectionsApi;
+  final CalendarSettings? calendarSettings;
 
   @override
   State<FarashApp> createState() => _FarashAppState();
@@ -57,6 +61,9 @@ class _FarashAppState extends State<FarashApp> {
 
   late final TasksApi? _tasksApi = widget.tasksApi ?? _apiClient;
   late final SectionsApi? _sectionsApi = widget.sectionsApi ?? _apiClient;
+  late final CalendarSettings _calendar =
+      widget.calendarSettings ??
+      (CalendarSettings(store: SecureCalendarSettingsStore())..load());
 
   AuthSession? _session;
   _SessionState _state = _SessionState.restoring;
@@ -145,7 +152,10 @@ class _FarashAppState extends State<FarashApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Farash',
-      builder: (context, child) => GlassBackdrop(child: child!),
+      builder: (context, child) => CalendarScope(
+        settings: _calendar,
+        child: GlassBackdrop(child: child!),
+      ),
       debugShowCheckedModeBanner: false,
       // Persian first: right-to-left layout and Persian Material strings
       // whatever the device language is. English comes with settings (#26).

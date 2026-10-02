@@ -46,6 +46,7 @@ func NewHandler(config Config) http.Handler {
 			mux.HandleFunc("PATCH /api/v1/tasks/{id}", tasks.handle)
 			mux.HandleFunc("DELETE /api/v1/tasks/{id}", tasks.handle)
 			mux.HandleFunc("POST /api/v1/tasks/reorder", tasks.handle)
+			mux.HandleFunc("POST /api/v1/tasks/reschedule", tasks.handle)
 			mux.HandleFunc("POST /api/v1/tasks/{id}/{action}", tasks.handle)
 		}
 		sectionData := config.SectionStore

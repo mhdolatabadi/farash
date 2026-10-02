@@ -4,6 +4,8 @@ import 'package:farash/core/api/api_client.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
 import 'package:farash/features/tasks/data/task.dart';
+import 'package:farash/core/text/persian_digits.dart';
+import 'package:farash/features/tasks/presentation/due_picker.dart';
 import 'package:farash/features/tasks/presentation/section_dialogs.dart';
 import 'package:farash/features/tasks/presentation/task_detail_sheet.dart';
 import 'package:farash/features/tasks/presentation/task_messages.dart';
@@ -119,6 +121,36 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
 
   Task? _editingTask;
   var _editorKey = GlobalKey();
+
+  /// Tasks picked for a bulk change; a long press starts picking.
+  final _selected = <String>{};
+
+  List<Task> get _selectedTasks => [
+    for (final t in _tasks.tasks)
+      if (_selected.contains(t.id)) t,
+  ];
+
+  void _toggleSelected(Task task) => setState(() {
+    if (!_selected.remove(task.id)) _selected.add(task.id);
+  });
+
+  Future<void> _rescheduleSelected() async {
+    final tasks = _selectedTasks;
+    if (tasks.isEmpty) return;
+    final dues = {for (final t in tasks) t.due};
+    final picked = await showDuePicker(
+      context,
+      dueOnly: true,
+      initial: TaskDates(due: dues.length == 1 ? dues.single : null),
+    );
+    if (picked == null || !mounted) return;
+    await _run(() async {
+      await _tasks.reschedule(tasks, picked.due);
+      if (!mounted) return;
+      setState(_selected.clear);
+      _snack('تاریخ ${persianDigits(tasks.length)} کار تغییر کرد.');
+    });
+  }
 
   Future<void> _editorResult(TaskSheetResult? result) async {
     final task = _editingTask;
@@ -341,15 +373,21 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                  child: Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: FilterChip(
-                      label: const Text('نمایش انجام‌شده‌ها'),
-                      selected: _tasks.showCompleted,
-                      onSelected: (show) =>
-                          _run(() => _tasks.setShowCompleted(show)),
-                    ),
-                  ),
+                  child: _selectedTasks.isNotEmpty
+                      ? _SelectionBar(
+                          count: _selectedTasks.length,
+                          onReschedule: _rescheduleSelected,
+                          onCancel: () => setState(_selected.clear),
+                        )
+                      : Align(
+                          alignment: AlignmentDirectional.centerEnd,
+                          child: FilterChip(
+                            label: const Text('نمایش انجام‌شده‌ها'),
+                            selected: _tasks.showCompleted,
+                            onSelected: (show) =>
+                                _run(() => _tasks.setShowCompleted(show)),
+                          ),
+                        ),
                 ),
               ),
               if (rows.isEmpty && done.isEmpty)
@@ -371,8 +409,12 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                 itemBuilder: (context, index) => switch (rows[index]) {
                   _TaskRow(:final task, :final depth) => Material(
                     key: ValueKey(task.id),
-                    color: Colors.transparent,
+                    color: _selected.contains(task.id)
+                        ? theme.colorScheme.secondaryContainer
+                        : Colors.transparent,
                     child: TaskTile(
+                      selected: _selected.contains(task.id),
+                      onLongPress: () => _toggleSelected(task),
                       task: task,
                       depth: depth,
                       folded: _tasks.openChildren(task).isEmpty
@@ -381,7 +423,9 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                       onFold: () =>
                           _tasks.setFolded(task, !_tasks.isFolded(task)),
                       onToggle: () => _toggle(task),
-                      onOpen: () => _open(task),
+                      onOpen: () => _selectedTasks.isNotEmpty
+                          ? _toggleSelected(task)
+                          : _open(task),
                       trailing: ReorderableDragStartListener(
                         index: index,
                         child: Tooltip(
@@ -459,6 +503,44 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Shown instead of the filter while tasks are picked.
+class _SelectionBar extends StatelessWidget {
+  const _SelectionBar({
+    required this.count,
+    required this.onReschedule,
+    required this.onCancel,
+  });
+
+  final int count;
+  final VoidCallback onReschedule;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        IconButton(
+          tooltip: 'لغو انتخاب',
+          onPressed: onCancel,
+          icon: const Icon(Icons.close),
+        ),
+        Expanded(
+          child: Text(
+            '${persianDigits(count)} کار انتخاب شد',
+            style: Theme.of(context).textTheme.titleSmall,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        FilledButton.tonalIcon(
+          onPressed: onReschedule,
+          icon: const Icon(Icons.event),
+          label: const Text('تغییر تاریخ'),
+        ),
+      ],
     );
   }
 }

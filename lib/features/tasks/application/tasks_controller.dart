@@ -265,6 +265,7 @@ class TasksController extends ChangeNotifier {
     required TaskPriority priority,
     required String projectId,
     String? sectionId,
+    TaskDates? dates,
   }) async {
     final moved = projectId != this.projectId;
     final sectionChanged = !moved && sectionId != sectionOf(task);
@@ -278,6 +279,7 @@ class TasksController extends ChangeNotifier {
         projectId: moved ? projectId : null,
         // The API takes the task out of its section when it changes project.
         sectionId: sectionChanged ? (sectionId ?? '') : null,
+        dates: dates == null || dates == task.dates ? null : dates,
       ),
     );
     _tasks = [
@@ -287,6 +289,40 @@ class TasksController extends ChangeNotifier {
     _publish();
     // Subtasks follow their parent to its new place.
     if (_inTree(task)) await _refresh();
+  }
+
+  /// Gives [tasks] the same [due] (null: no date) at once, keeping their
+  /// other fields. Shows at once and rolls back if the API refuses it.
+  Future<void> reschedule(List<Task> tasks, TaskDue? due) async {
+    if (tasks.isEmpty) return;
+    final before = _tasks;
+    final ids = {for (final t in tasks) t.id};
+    _tasks = [
+      for (final t in _tasks)
+        if (ids.contains(t.id))
+          t.copyWith(
+            dates: TaskDates(
+              due: due,
+              deadline: t.deadline,
+              durationMinutes: t.durationMinutes,
+            ),
+          )
+        else
+          t,
+    ];
+    _publish();
+    try {
+      final saved = await _api.rescheduleTasks(_requireToken(), [
+        for (final t in tasks) t.id,
+      ], due);
+      final byId = {for (final t in saved) t.id: t};
+      _tasks = [for (final t in _tasks) byId[t.id] ?? t];
+      _publish();
+    } catch (_) {
+      _tasks = before;
+      _publish();
+      rethrow;
+    }
   }
 
   /// Saves a new description on its own, as ticking a checklist item does.

@@ -79,6 +79,7 @@ class TaskDraft {
     this.projectId,
     this.sectionId,
     this.parentId,
+    this.dates,
     this.title,
     this.description,
     this.priority,
@@ -93,6 +94,9 @@ class TaskDraft {
 
   /// The task to nest under; an empty string makes the task top-level.
   final String? parentId;
+
+  /// Sets due, deadline and duration together; null leaves them alone.
+  final TaskDates? dates;
   final String? title;
 
   /// An empty string clears the description.
@@ -104,6 +108,7 @@ class TaskDraft {
     'project_id': ?projectId,
     'section_id': ?sectionId,
     'parent_id': ?parentId,
+    ...?dates?.toJson(),
     'title': ?title,
     'description': ?description,
     if (priority != null) 'priority': priority!.level,
@@ -127,6 +132,14 @@ abstract interface class TasksApi {
   Future<void> deleteTask(String token, String id);
   Future<Task> restoreTask(String token, String id);
   Future<void> reorderTasks(String token, String projectId, List<String> ids);
+
+  /// Gives all [ids] the same [due] (null: no date), keeping their other
+  /// fields; returns them in the same order.
+  Future<List<Task>> rescheduleTasks(
+    String token,
+    List<String> ids,
+    TaskDue? due,
+  );
 }
 
 abstract interface class SectionsApi {
@@ -284,6 +297,26 @@ class ApiClient implements AuthApi, ProjectsApi, TasksApi, SectionsApi {
       token: token,
       body: {'project_id': projectId, 'task_ids': ids},
     );
+  }
+
+  @override
+  Future<List<Task>> rescheduleTasks(
+    String token,
+    List<String> ids,
+    TaskDue? due,
+  ) async {
+    final body =
+        await _send(
+              'POST',
+              '/api/v1/tasks/reschedule',
+              token: token,
+              body: {'task_ids': ids, 'due': due?.toJson()},
+            )
+            as Map<String, dynamic>;
+    return [
+      for (final item in body['tasks'] as List<dynamic>)
+        Task.fromJson(item as Map<String, dynamic>),
+    ];
   }
 
   @override
