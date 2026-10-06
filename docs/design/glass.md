@@ -9,7 +9,8 @@ No generated search/settings icons are introduced without their functionality.
 
 ## Direction contract
 THESIS: a luminous, quiet desk for capturing and arranging real tasks.
-OWN-WORLD: pale mist and ivory, deep teal ink, milky translucent navigation and
+OWN-WORLD: warm ivory with a pomegranate primary and straw accent (#43; teal
+until then), milky translucent navigation and
 workspace panes, soft offset elevation, Vazirmatn and Persian RTL.
 STORY: select a project, read its list, capture at the bottom, edit beside it.
 FIRST VIEWPORT: a right project pane and centered readable list on desktop;
@@ -39,3 +40,20 @@ Same world, firmer hierarchy:
 - **Sidebar:** the app name sits over the account email, one account menu
   replaces the separate calendar and logout icons, and row menus show on hover
   for pointers.
+
+## Palette and motion (#43)
+- **Palette:** every color comes from `lib/app/palette.dart`. Pomegranate
+  ships in light and dark: primary `#A6324A` / `#FFB0BE`, accent `#9C5C14` /
+  `#EDBB72`, on ivory `#FFFBF8` / plum-dark `#2A1B1F`. A test keeps the text
+  roles at 4.5:1 or better.
+- **Color with meaning:**
+  - Today's due date uses the primary color, tomorrow the accent, overdue the
+    error color.
+  - Each project's color or icon sits beside its title.
+- **Motion** (`lib/app/motion.dart`): 160 ms for small state changes and
+  280 ms for rows and pages, easing out on entry and in on exit.
+  - A checked row pops its check, lingers 220 ms, then folds away.
+  - New rows grow in.
+  - Changing project fades through.
+  - The subtask chevron turns, and send wakes up when there is text.
+  - With reduced motion every one of these is instant.

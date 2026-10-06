@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/motion.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
@@ -164,11 +165,9 @@ class _SubtaskProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final count = _Count(
-      icon: folded == null
-          ? Icons.subdirectory_arrow_left
-          : folded!
-          ? Icons.expand_more
-          : Icons.expand_less,
+      icon: folded == null ? Icons.subdirectory_arrow_left : Icons.expand_less,
+      // The chevron turns as the subtasks fold.
+      iconTurns: folded == true ? 0.5 : 0,
       label: 'زیرکار',
       done: task.completedSubtaskCount,
       total: task.subtaskCount,
@@ -194,6 +193,7 @@ class _SubtaskProgress extends StatelessWidget {
 
 class _Count extends StatelessWidget {
   const _Count({
+    this.iconTurns = 0,
     required this.icon,
     required this.label,
     required this.done,
@@ -201,6 +201,7 @@ class _Count extends StatelessWidget {
   });
 
   final IconData icon;
+  final double iconTurns;
   final String label;
   final int done;
   final int total;
@@ -216,7 +217,12 @@ class _Count extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
+          AnimatedRotation(
+            turns: iconTurns,
+            duration: Motion.of(context, Motion.quick),
+            curve: Motion.enter,
+            child: Icon(icon, size: 16, color: color),
+          ),
           const SizedBox(width: 4),
           Text(
             text,
@@ -247,11 +253,19 @@ class TaskDateLabels extends StatelessWidget {
         ? null
         : parseDateKey(task.deadline!);
 
-    Widget label(IconData icon, String text, String name, bool late) {
+    Widget label(
+      IconData icon,
+      String text,
+      String name,
+      bool late, {
+      Color? tone,
+    }) {
       final overdue = late && !task.isCompleted;
       final color = overdue
           ? theme.colorScheme.error
-          : theme.colorScheme.onSurfaceVariant;
+          : task.isCompleted
+          ? theme.colorScheme.onSurfaceVariant
+          : tone ?? theme.colorScheme.onSurfaceVariant;
       return Semantics(
         label: '${overdue ? 'دیرشده، ' : ''}$name: $text',
         excludeSemantics: true,
@@ -287,6 +301,13 @@ class TaskDateLabels extends StatelessWidget {
             ].join(' '),
             'موعد',
             due.isOverdue(current),
+            // Today in the brand color, tomorrow in the accent; later dates
+            // stay quiet so the near ones stand out.
+            tone: switch (daysBetween(current, due.day)) {
+              0 => theme.colorScheme.primary,
+              1 => theme.colorScheme.tertiary,
+              _ => null,
+            },
           ),
         if (deadline != null)
           label(
@@ -334,9 +355,25 @@ class _PriorityCheck extends StatelessWidget {
                       ),
                 border: Border.all(color: color, width: 2),
               ),
-              child: done
-                  ? const Icon(Icons.check, size: 14, color: Colors.white)
-                  : null,
+              // The check pops in rather than appearing.
+              child: AnimatedSwitcher(
+                duration: Motion.of(context, Motion.quick),
+                transitionBuilder: (child, animation) => ScaleTransition(
+                  scale: CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutBack,
+                  ),
+                  child: child,
+                ),
+                child: done
+                    ? const Icon(
+                        Icons.check,
+                        key: ValueKey('checked'),
+                        size: 14,
+                        color: Colors.white,
+                      )
+                    : const SizedBox.shrink(key: ValueKey('open')),
+              ),
             ),
           ),
         ),

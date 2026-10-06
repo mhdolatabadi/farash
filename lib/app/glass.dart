@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:farash/app/palette.dart';
 
 /// Ambient illumination behind the semantic application surfaces.
 class GlassBackdrop extends StatelessWidget {
@@ -8,15 +9,13 @@ class GlassBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    final glass = FarashGlassColors.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
-          colors: dark
-              ? const [Color(0xFF193B40), Color(0xFF101E25), Color(0xFF23343B)]
-              : const [Color(0xFFD7EEEB), Color(0xFFF5F8F3), Color(0xFFDAE9ED)],
+          colors: glass.backdrop,
         ),
       ),
       child: Stack(
@@ -29,11 +28,7 @@ class GlassBackdrop extends StatelessWidget {
                   gradient: RadialGradient(
                     center: const Alignment(-0.8, 0.1),
                     radius: 1,
-                    colors: [
-                      (dark ? const Color(0xFF53847C) : Colors.white)
-                          .withValues(alpha: dark ? 0.18 : 0.7),
-                      Colors.transparent,
-                    ],
+                    colors: [glass.glow, glass.glow.withValues(alpha: 0)],
                   ),
                 ),
               ),
@@ -62,15 +57,13 @@ class GlassSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    final glass = FarashGlassColors.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
         boxShadow: [
           BoxShadow(
-            color: (dark ? Colors.black : const Color(0xFF33565C)).withValues(
-              alpha: dark ? 0.16 : 0.07,
-            ),
+            color: glass.shadow,
             offset: const Offset(0, 10),
             blurRadius: 28,
           ),
@@ -83,13 +76,8 @@ class GlassSurface extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(radius),
-              color: (dark ? const Color(0xFF1B3037) : Colors.white).withValues(
-                alpha: dark ? 0.9 : 0.78,
-              ),
-              border: Border.all(
-                color: (dark ? const Color(0xFF92BAB8) : Colors.white)
-                    .withValues(alpha: dark ? 0.22 : 0.88),
-              ),
+              color: glass.pane,
+              border: Border.all(color: glass.paneBorder),
             ),
             // List tiles and ink inside paint on this transparent Material,
             // above the glass tint instead of under it.

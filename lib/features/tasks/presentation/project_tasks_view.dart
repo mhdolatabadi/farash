@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:farash/app/glass.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
 import 'package:farash/features/tasks/data/task.dart';
+import 'package:farash/app/motion.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/core/widgets/hover_reveal.dart';
 import 'package:farash/features/tasks/presentation/due_picker.dart';
@@ -103,9 +106,26 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     }
   }
 
+  /// Rows folding away after a check, with what waits on them.
+  final _leaving = <String, Completer<void>>{};
+
+  /// Rows just added, which grow in.
+  final _entering = <String>{};
+
   Future<void> _toggle(Task task) => _run(() async {
     final completing = !task.isCompleted;
-    await _tasks.setCompleted(task, completing);
+    if (completing &&
+        !Motion.reduced(context) &&
+        !_leaving.containsKey(task.id)) {
+      final exited = Completer<void>();
+      setState(() => _leaving[task.id] = exited);
+      await exited.future;
+    }
+    try {
+      await _tasks.setCompleted(task, completing);
+    } finally {
+      if (mounted && _leaving.remove(task.id) != null) setState(() {});
+    }
     if (completing && mounted) {
       _snack(
         '«${task.title}» انجام شد.',
@@ -307,7 +327,8 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
             projectName: widget.project.displayName,
             onAdd: (title, priority) async {
               try {
-                await _tasks.add(title, priority: priority);
+                final task = await _tasks.add(title, priority: priority);
+                if (mounted) setState(() => _entering.add(task.id));
                 return true;
               } catch (error) {
                 if (mounted) showTaskError(this.context, error);
@@ -406,6 +427,16 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                         title: widget.showTitle
                             ? widget.project.displayName
                             : null,
+                        mark: widget.project.isInbox
+                            ? Icon(
+                                Icons.inbox_outlined,
+                                color: theme.colorScheme.primary,
+                              )
+                            : Icon(
+                                Icons.circle,
+                                size: 14,
+                                color: widget.project.swatch,
+                              ),
                         openCount: _tasks.openTasks.length,
                         showCompleted: _tasks.showCompleted,
                         onShowCompleted: (show) =>
@@ -447,30 +478,38 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                 itemCount: rows.length,
                 onReorderItem: (from, to) => _onReorder(rows, from, to),
                 itemBuilder: (context, index) => switch (rows[index]) {
-                  _TaskRow(:final task, :final depth) => Material(
+                  _TaskRow(:final task, :final depth) => RowMotion(
                     key: ValueKey(task.id),
-                    color: _selected.contains(task.id)
-                        ? theme.colorScheme.secondaryContainer
-                        : Colors.transparent,
-                    child: HoverRegion(
-                      child: TaskTile(
-                        selected: _selected.contains(task.id),
-                        onLongPress: () => _toggleSelected(task),
-                        task: task,
-                        depth: depth,
-                        folded: _tasks.openChildren(task).isEmpty
-                            ? null
-                            : _tasks.isFolded(task),
-                        onFold: () =>
-                            _tasks.setFolded(task, !_tasks.isFolded(task)),
-                        onToggle: () => _toggle(task),
-                        onOpen: () => _selectedTasks.isNotEmpty
-                            ? _toggleSelected(task)
-                            : _open(task),
-                        // Beside the checkbox where a pointer reveals it
-                        // on hover; at the row's end on touch screens.
-                        leading: touch ? null : handle(index),
-                        trailing: touch ? handle(index) : null,
+                    entering: _entering.remove(task.id),
+                    leaving: _leaving.containsKey(task.id),
+                    onExited: () => _leaving[task.id]?.complete(),
+                    child: Material(
+                      color: _selected.contains(task.id)
+                          ? theme.colorScheme.secondaryContainer
+                          : Colors.transparent,
+                      child: HoverRegion(
+                        child: TaskTile(
+                          selected: _selected.contains(task.id),
+                          onLongPress: () => _toggleSelected(task),
+                          // A row folding away shows as checked meanwhile.
+                          task: _leaving.containsKey(task.id)
+                              ? task.copyWith(completedAt: DateTime.now())
+                              : task,
+                          depth: depth,
+                          folded: _tasks.openChildren(task).isEmpty
+                              ? null
+                              : _tasks.isFolded(task),
+                          onFold: () =>
+                              _tasks.setFolded(task, !_tasks.isFolded(task)),
+                          onToggle: () => _toggle(task),
+                          onOpen: () => _selectedTasks.isNotEmpty
+                              ? _toggleSelected(task)
+                              : _open(task),
+                          // Beside the checkbox where a pointer reveals it
+                          // on hover; at the row's end on touch screens.
+                          leading: touch ? null : handle(index),
+                          trailing: touch ? handle(index) : null,
+                        ),
                       ),
                     ),
                   ),
@@ -545,12 +584,16 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
 class _ListHeader extends StatelessWidget {
   const _ListHeader({
     required this.title,
+    required this.mark,
     required this.openCount,
     required this.showCompleted,
     required this.onShowCompleted,
   });
 
   final String? title;
+
+  /// The project's icon or color, beside the title.
+  final Widget mark;
   final int openCount;
   final bool showCompleted;
   final ValueChanged<bool> onShowCompleted;
@@ -565,17 +608,25 @@ class _ListHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (title != null)
-          Semantics(
-            header: true,
-            child: Text(
-              title!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
+          Row(
+            children: [
+              mark,
+              const SizedBox(width: 10),
+              Flexible(
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    title!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         Text(
           count,
@@ -797,17 +848,34 @@ class _QuickAddState extends State<_QuickAdd> {
                     ),
                     Padding(
                       padding: const EdgeInsetsDirectional.only(end: 4),
-                      child: IconButton.filled(
-                        tooltip: 'افزودن کار',
-                        onPressed: _busy ? null : _submit,
-                        icon: _busy
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.arrow_upward),
+                      // Send wakes up once there is something to add.
+                      child: ValueListenableBuilder(
+                        valueListenable: _text,
+                        builder: (context, value, button) {
+                          final ready = value.text.trim().isNotEmpty;
+                          return AnimatedScale(
+                            scale: ready ? 1 : 0.86,
+                            duration: Motion.of(context, Motion.quick),
+                            curve: Motion.enter,
+                            child: AnimatedOpacity(
+                              opacity: ready || _busy ? 1 : 0.55,
+                              duration: Motion.of(context, Motion.quick),
+                              child: button,
+                            ),
+                          );
+                        },
+                        child: IconButton.filled(
+                          tooltip: 'افزودن کار',
+                          onPressed: _busy ? null : _submit,
+                          icon: _busy
+                              ? const SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.arrow_upward),
+                        ),
                       ),
                     ),
                   ],
