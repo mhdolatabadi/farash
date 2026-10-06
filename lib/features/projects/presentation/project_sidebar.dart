@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/core/widgets/hover_reveal.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/projects/presentation/project_editor.dart';
@@ -242,63 +243,69 @@ class _ProjectTile extends StatelessWidget {
     final index = siblings.indexWhere((p) => p.id == project.id);
     return Padding(
       padding: EdgeInsetsDirectional.only(start: 16.0 * depth),
-      child: ListTile(
-        selected: selected,
-        onTap: onTap,
-        leading: icon != null
-            ? Icon(icon)
-            : project.isFolder
-            ? Icon(Icons.folder_outlined, color: project.swatch)
-            : Icon(Icons.circle, size: 12, color: project.swatch),
-        title: Text(
-          project.displayName,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: PopupMenuButton<_ProjectAction>(
-          tooltip: 'گزینه‌های پروژه',
-          onSelected: (action) => _run(context, action),
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: _ProjectAction.edit,
-              child: Text('ویرایش'),
-            ),
-            PopupMenuItem(
-              value: _ProjectAction.favorite,
-              child: Text(
-                project.isFavorite
-                    ? 'حذف از علاقه‌مندی‌ها'
-                    : 'افزودن به علاقه‌مندی‌ها',
-              ),
-            ),
-            if (!project.isInbox) ...[
-              PopupMenuItem(
-                value: _ProjectAction.addChild,
-                child: Text(
-                  project.isFolder ? 'افزودن پروژه به پوشه' : 'افزودن زیرپروژه',
-                ),
-              ),
-              if (index > 0)
+      child: HoverRegion(
+        child: ListTile(
+          selected: selected,
+          onTap: onTap,
+          leading: icon != null
+              ? Icon(icon)
+              : project.isFolder
+              ? Icon(Icons.folder_outlined, color: project.swatch)
+              : Icon(Icons.circle, size: 12, color: project.swatch),
+          title: Text(
+            project.displayName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: HoverReveal(
+            child: PopupMenuButton<_ProjectAction>(
+              tooltip: 'گزینه‌های پروژه',
+              onSelected: (action) => _run(context, action),
+              itemBuilder: (context) => [
                 const PopupMenuItem(
-                  value: _ProjectAction.moveUp,
-                  child: Text('انتقال به بالا'),
+                  value: _ProjectAction.edit,
+                  child: Text('ویرایش'),
                 ),
-              if (index >= 0 && index < siblings.length - 1)
-                const PopupMenuItem(
-                  value: _ProjectAction.moveDown,
-                  child: Text('انتقال به پایین'),
+                PopupMenuItem(
+                  value: _ProjectAction.favorite,
+                  child: Text(
+                    project.isFavorite
+                        ? 'حذف از علاقه‌مندی‌ها'
+                        : 'افزودن به علاقه‌مندی‌ها',
+                  ),
                 ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: _ProjectAction.archive,
-                child: Text('بایگانی'),
-              ),
-              const PopupMenuItem(
-                value: _ProjectAction.delete,
-                child: Text('حذف'),
-              ),
-            ],
-          ],
+                if (!project.isInbox) ...[
+                  PopupMenuItem(
+                    value: _ProjectAction.addChild,
+                    child: Text(
+                      project.isFolder
+                          ? 'افزودن پروژه به پوشه'
+                          : 'افزودن زیرپروژه',
+                    ),
+                  ),
+                  if (index > 0)
+                    const PopupMenuItem(
+                      value: _ProjectAction.moveUp,
+                      child: Text('انتقال به بالا'),
+                    ),
+                  if (index >= 0 && index < siblings.length - 1)
+                    const PopupMenuItem(
+                      value: _ProjectAction.moveDown,
+                      child: Text('انتقال به پایین'),
+                    ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: _ProjectAction.archive,
+                    child: Text('بایگانی'),
+                  ),
+                  const PopupMenuItem(
+                    value: _ProjectAction.delete,
+                    child: Text('حذف'),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -5,6 +5,7 @@ import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/core/text/persian_digits.dart';
+import 'package:farash/core/widgets/hover_reveal.dart';
 import 'package:farash/features/tasks/presentation/due_picker.dart';
 import 'package:farash/features/tasks/presentation/section_dialogs.dart';
 import 'package:farash/features/tasks/presentation/task_detail_sheet.dart';
@@ -23,6 +24,7 @@ class ProjectTasksView extends StatefulWidget {
     required this.token,
     required this.moveTargets,
     this.sectionsApi,
+    this.showTitle = false,
   });
 
   final Project project;
@@ -34,6 +36,9 @@ class ProjectTasksView extends StatefulWidget {
 
   /// The projects a task may move to.
   final List<Project> Function() moveTargets;
+
+  /// Shows the project name as the list's heading, where no app bar does.
+  final bool showTitle;
 
   @override
   State<ProjectTasksView> createState() => _ProjectTasksViewState();
@@ -361,6 +366,23 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     }
     final rows = _rows();
     final done = _tasks.completedTasks;
+    final touch = HoverReveal.isTouch(context);
+    Widget handle(int index) => HoverReveal(
+      child: ReorderableDragStartListener(
+        index: index,
+        child: Tooltip(
+          message: 'جابه‌جا کردن',
+          child: SizedBox.square(
+            dimension: 48,
+            child: Icon(
+              Icons.drag_indicator,
+              size: 20,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
+            ),
+          ),
+        ),
+      ),
+    );
     final sectionsAvailable = widget.sectionsApi != null;
     final sections = _tasks.sections;
     return Center(
@@ -371,35 +393,53 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                  child: _selectedTasks.isNotEmpty
-                      ? _SelectionBar(
+                child: _selectedTasks.isNotEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
+                        child: _SelectionBar(
                           count: _selectedTasks.length,
                           onReschedule: _rescheduleSelected,
                           onCancel: () => setState(_selected.clear),
-                        )
-                      : Align(
-                          alignment: AlignmentDirectional.centerEnd,
-                          child: FilterChip(
-                            label: const Text('نمایش انجام‌شده‌ها'),
-                            selected: _tasks.showCompleted,
-                            onSelected: (show) =>
-                                _run(() => _tasks.setShowCompleted(show)),
-                          ),
                         ),
-                ),
+                      )
+                    : _ListHeader(
+                        title: widget.showTitle
+                            ? widget.project.displayName
+                            : null,
+                        openCount: _tasks.openTasks.length,
+                        showCompleted: _tasks.showCompleted,
+                        onShowCompleted: (show) =>
+                            _run(() => _tasks.setShowCompleted(show)),
+                      ),
               ),
               if (rows.isEmpty && done.isEmpty)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
-                    child: Text(
-                      'هنوز کاری در «${widget.project.displayName}» نیست.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                    padding: const EdgeInsets.fromLTRB(24, 56, 24, 24),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.task_alt,
+                          size: 44,
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.45,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'هنوز کاری در «${widget.project.displayName}» نیست.',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'کار تازه را در نوار پایین بنویسید.',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -412,32 +452,25 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                     color: _selected.contains(task.id)
                         ? theme.colorScheme.secondaryContainer
                         : Colors.transparent,
-                    child: TaskTile(
-                      selected: _selected.contains(task.id),
-                      onLongPress: () => _toggleSelected(task),
-                      task: task,
-                      depth: depth,
-                      folded: _tasks.openChildren(task).isEmpty
-                          ? null
-                          : _tasks.isFolded(task),
-                      onFold: () =>
-                          _tasks.setFolded(task, !_tasks.isFolded(task)),
-                      onToggle: () => _toggle(task),
-                      onOpen: () => _selectedTasks.isNotEmpty
-                          ? _toggleSelected(task)
-                          : _open(task),
-                      trailing: ReorderableDragStartListener(
-                        index: index,
-                        child: Tooltip(
-                          message: 'جابه‌جا کردن',
-                          child: SizedBox.square(
-                            dimension: 48,
-                            child: Icon(
-                              Icons.drag_indicator,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
+                    child: HoverRegion(
+                      child: TaskTile(
+                        selected: _selected.contains(task.id),
+                        onLongPress: () => _toggleSelected(task),
+                        task: task,
+                        depth: depth,
+                        folded: _tasks.openChildren(task).isEmpty
+                            ? null
+                            : _tasks.isFolded(task),
+                        onFold: () =>
+                            _tasks.setFolded(task, !_tasks.isFolded(task)),
+                        onToggle: () => _toggle(task),
+                        onOpen: () => _selectedTasks.isNotEmpty
+                            ? _toggleSelected(task)
+                            : _open(task),
+                        // Beside the checkbox where a pointer reveals it
+                        // on hover; at the row's end on touch screens.
+                        leading: touch ? null : handle(index),
+                        trailing: touch ? handle(index) : null,
                       ),
                     ),
                   ),
@@ -507,6 +540,106 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
   }
 }
 
+/// The list's heading: the project name where no app bar shows it, how
+/// many tasks are open, and the completed-tasks filter beside them.
+class _ListHeader extends StatelessWidget {
+  const _ListHeader({
+    required this.title,
+    required this.openCount,
+    required this.showCompleted,
+    required this.onShowCompleted,
+  });
+
+  final String? title;
+  final int openCount;
+  final bool showCompleted;
+  final ValueChanged<bool> onShowCompleted;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final count = openCount == 0
+        ? 'کار بازی نمانده'
+        : '${persianDigits(openCount)} کار باز';
+    final heading = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (title != null)
+          Semantics(
+            header: true,
+            child: Text(
+              title!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ),
+        Text(
+          count,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+    Widget filter({required bool compact}) => Tooltip(
+      message: 'نمایش انجام‌شده‌ها',
+      excludeFromSemantics: !compact,
+      child: FilterChip(
+        label: Text(compact ? 'انجام‌شده‌ها' : 'نمایش انجام‌شده‌ها'),
+        avatar: Icon(
+          showCompleted ? Icons.visibility : Icons.visibility_outlined,
+          size: 18,
+        ),
+        showCheckmark: false,
+        selected: showCompleted,
+        visualDensity: VisualDensity.compact,
+        materialTapTargetSize: MaterialTapTargetSize.padded,
+        onSelected: onShowCompleted,
+      ),
+    );
+    return Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(
+        20,
+        title == null ? 12 : 24,
+        12,
+        8,
+      ),
+      // One calm row, with a shorter filter label on narrow phones; with
+      // large text the filter moves under the heading instead of squeezing
+      // the title.
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final scale = MediaQuery.textScalerOf(context).scale(1);
+          if (constraints.maxWidth < 300 * scale) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                heading,
+                const SizedBox(height: 8),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: filter(compact: true),
+                ),
+              ],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(child: heading),
+              filter(compact: constraints.maxWidth < 360),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
 /// Shown instead of the filter while tasks are picked.
 class _SelectionBar extends StatelessWidget {
   const _SelectionBar({
@@ -561,7 +694,9 @@ class _QuickAdd extends StatefulWidget {
 
 class _QuickAddState extends State<_QuickAdd> {
   final _text = TextEditingController();
-  final _focus = FocusNode();
+  late final FocusNode _focus = FocusNode()
+    ..addListener(() => setState(() => _focused = _focus.hasFocus));
+  bool _focused = false;
   TaskPriority _priority = TaskPriority.p4;
   bool _busy = false;
 
@@ -590,6 +725,7 @@ class _QuickAddState extends State<_QuickAdd> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GlassSurface(
       radius: 16,
       blur: 10,
@@ -599,65 +735,116 @@ class _QuickAddState extends State<_QuickAdd> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: _maxListWidth),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(8, 12, 8, 12),
-              child: Row(
-                children: [
-                  PopupMenuButton<TaskPriority>(
-                    tooltip: 'اولویت: ${_priority.label}',
-                    initialValue: _priority,
-                    icon: Icon(Icons.flag, color: _priority.color),
-                    onSelected: (p) => setState(() => _priority = p),
-                    itemBuilder: (context) => [
-                      for (final p in TaskPriority.values)
-                        PopupMenuItem(
-                          value: p,
-                          child: Row(
-                            children: [
-                              Icon(Icons.flag, color: p.color),
-                              const SizedBox(width: 8),
-                              Text(p.label),
-                            ],
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+              child: _CaptureField(
+                focused: _focused,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _text,
+                        focusNode: _focus,
+                        textInputAction: TextInputAction.send,
+                        maxLength: 500,
+                        buildCounter:
+                            (
+                              _, {
+                              required currentLength,
+                              required isFocused,
+                              maxLength,
+                            }) => null,
+                        decoration: InputDecoration(
+                          hintText: 'کار تازه در «${widget.projectName}»',
+                          filled: false,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding: const EdgeInsetsDirectional.fromSTEB(
+                            16,
+                            14,
+                            4,
+                            14,
                           ),
                         ),
-                    ],
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _text,
-                      focusNode: _focus,
-                      textInputAction: TextInputAction.send,
-                      maxLength: 500,
-                      buildCounter:
-                          (
-                            _, {
-                            required currentLength,
-                            required isFocused,
-                            maxLength,
-                          }) => null,
-                      decoration: InputDecoration(
-                        hintText: 'کار تازه در «${widget.projectName}»',
-                        isDense: true,
+                        onSubmitted: (_) => _submit(),
                       ),
-                      onSubmitted: (_) => _submit(),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton.filled(
-                    tooltip: 'افزودن کار',
-                    onPressed: _busy ? null : _submit,
-                    icon: _busy
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.add),
-                  ),
-                ],
+                    PopupMenuButton<TaskPriority>(
+                      tooltip: 'اولویت: ${_priority.label}',
+                      initialValue: _priority,
+                      icon: Icon(
+                        _priority == TaskPriority.p4
+                            ? Icons.outlined_flag
+                            : Icons.flag,
+                        color: _priority == TaskPriority.p4
+                            ? theme.colorScheme.onSurfaceVariant
+                            : _priority.color,
+                      ),
+                      onSelected: (p) => setState(() => _priority = p),
+                      itemBuilder: (context) => [
+                        for (final p in TaskPriority.values)
+                          PopupMenuItem(
+                            value: p,
+                            child: Row(
+                              children: [
+                                Icon(Icons.flag, color: p.color),
+                                const SizedBox(width: 8),
+                                Text(p.label),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(end: 4),
+                      child: IconButton.filled(
+                        tooltip: 'افزودن کار',
+                        onPressed: _busy ? null : _submit,
+                        icon: _busy
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.arrow_upward),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// One rounded surface for the capture row: the field, its priority and
+/// the send button read as a single control.
+class _CaptureField extends StatelessWidget {
+  const _CaptureField({required this.focused, required this.child});
+
+  final bool focused;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return AnimatedContainer(
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 150),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHighest.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: focused ? colors.primary : colors.outlineVariant,
+          width: focused ? 1.5 : 1,
+        ),
+      ),
+      child: child,
     );
   }
 }

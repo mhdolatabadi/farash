@@ -23,3 +23,19 @@ no hardware/emulator claim. Reduced motion skips authored entrance/selection mot
 ## Implementation constraints
 48px controls, no per-row backdrop blur, 760px list measure, safe areas,
 contrast over near-opaque text surfaces, preserve sections/reorder/undo/auth.
+
+## Refinement pass (#41)
+Same world, firmer hierarchy:
+- **List:** the project name heads the list in large type with its open count,
+  and the completed filter sits beside it. The phone app bar keeps only
+  navigation.
+- **Rows:** separated by a hairline from the title's edge. Priority shows only
+  as the checkbox color. The drag handle is muted; on pointer screens it shows
+  beside the checkbox on hover, and on touch screens it stays at the row's end.
+- **Capture:** one rounded field holds the text, priority and send.
+- **Editor:** a borderless heading title and notes, then property rows
+  (schedule, priority as one segmented row, project, section). Checklist and
+  subtask fields open on demand. Counters appear only near the limit.
+- **Sidebar:** the app name sits over the account email, one account menu
+  replaces the separate calendar and logout icons, and row menus show on hover
+  for pointers.

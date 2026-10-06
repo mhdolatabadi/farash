@@ -128,7 +128,9 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.menu));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('خروج'));
+    await tester.tap(find.byTooltip('حساب و تنظیمات'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('خروج'));
     await tester.pumpAndSettle();
 
     expect(find.text('ورود به فراش'), findsOneWidget);

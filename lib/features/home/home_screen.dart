@@ -97,12 +97,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     sectionsApi: widget.sectionsApi,
                     token: widget.token,
                     moveTargets: () => widget.projects.projects,
+                    showTitle: true,
                   );
             if (!wide) {
               return Scaffold(
                 key: _scaffoldKey,
+                // The list heads itself with the project name in large
+                // type; the bar keeps navigation only.
                 appBar: AppBar(
-                  title: Text(selected?.displayName ?? 'فراش'),
+                  title: selected == null ? const Text('فراش') : null,
                   flexibleSpace: const GlassSurface(
                     radius: 0,
                     child: SizedBox.expand(),
@@ -127,19 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: GlassSurface(child: _sidebar()),
                       ),
                       const SizedBox(width: 16),
-                      Expanded(
-                        child: GlassSurface(
-                          child: Column(
-                            children: [
-                              AppBar(
-                                automaticallyImplyLeading: false,
-                                title: Text(selected?.displayName ?? 'فراش'),
-                              ),
-                              Expanded(child: page),
-                            ],
-                          ),
-                        ),
-                      ),
+                      Expanded(child: GlassSurface(child: page)),
                     ],
                   ),
                 ),
@@ -152,6 +143,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+enum _AccountAction { calendar, logout }
+
+/// The app's name with the account beneath it, and one menu for the
+/// account's actions, so the email keeps its width.
 class _AccountHeader extends StatelessWidget {
   const _AccountHeader({required this.email, required this.onLogout});
 
@@ -160,45 +155,62 @@ class _AccountHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          child: Text(
-            'فراش',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 0, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'فراش',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  email,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textDirection: TextDirection.ltr,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        ListTile(
-          leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-          title: Text(
-            email,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textDirection: TextDirection.ltr,
-            textAlign: TextAlign.start,
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                tooltip: 'تنظیمات تقویم',
-                icon: const Icon(Icons.calendar_month_outlined),
-                onPressed: () =>
-                    showCalendarSettings(context, CalendarScope.of(context)),
+          PopupMenuButton<_AccountAction>(
+            tooltip: 'حساب و تنظیمات',
+            icon: const Icon(Icons.account_circle_outlined),
+            onSelected: (action) => switch (action) {
+              _AccountAction.calendar => showCalendarSettings(
+                context,
+                CalendarScope.of(context),
               ),
-              IconButton(
-                tooltip: 'خروج',
-                icon: const Icon(Icons.logout),
-                onPressed: onLogout,
+              _AccountAction.logout => onLogout(),
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: _AccountAction.calendar,
+                child: ListTile(
+                  leading: Icon(Icons.calendar_month_outlined),
+                  title: Text('تنظیمات تقویم'),
+                ),
+              ),
+              PopupMenuItem(
+                value: _AccountAction.logout,
+                child: ListTile(
+                  leading: Icon(Icons.logout),
+                  title: Text('خروج'),
+                ),
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
