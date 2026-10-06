@@ -17,7 +17,7 @@ double _contrast(Color a, Color b) {
 }
 
 void main() {
-  group('pomegranate palette', () {
+  group('moshajjar palette', () {
     for (final brightness in Brightness.values) {
       test('text keeps 4.5:1 contrast ($brightness)', () {
         final theme = brightness == Brightness.dark
@@ -43,10 +43,13 @@ void main() {
 
     test('the theme and the glass read the same palette', () {
       final theme = FarashTheme.light();
-      expect(theme.colorScheme.primary, const Color(0xFFA6324A));
+      expect(theme.colorScheme.primary, const Color(0xFF8A5A12));
+      expect(FarashTheme.dark().colorScheme.primary, const Color(0xFFE8B66B));
+      // Pomegranate is kept for overdue alone.
+      expect(theme.colorScheme.error, FarashPalette.moshajjar.light.overdue);
       expect(
         theme.extension<FarashGlassColors>()!.colors,
-        FarashPalette.pomegranate.light,
+        FarashPalette.moshajjar.light,
       );
     });
   });

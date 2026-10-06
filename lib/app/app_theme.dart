@@ -3,7 +3,7 @@ import 'package:farash/app/palette.dart';
 
 abstract final class FarashTheme {
   /// The palette the app ships with.
-  static const palette = FarashPalette.pomegranate;
+  static const palette = FarashPalette.moshajjar;
 
   static const _controlRadius = 12.0;
   static const _surfaceRadius = 16.0;
@@ -25,6 +25,7 @@ abstract final class FarashTheme {
       primary: p.primary,
       onPrimary: p.onPrimary,
       tertiary: p.accent,
+      error: p.overdue,
       surface: p.surface,
       onSurface: p.onSurface,
       onSurfaceVariant: p.onSurfaceVariant,
@@ -45,7 +46,22 @@ abstract final class FarashTheme {
       borderSide: BorderSide(color: colors.outlineVariant),
     );
 
+    // Headings are set in Naskh, the hand of the house; everything read in
+    // passing stays in Vazirmatn.
+    TextStyle? naskh(TextStyle? style) => style?.copyWith(
+      fontFamily: 'FarashNaskh',
+      fontFamilyFallback: const ['Vazirmatn'],
+      height: 1.35,
+    );
+    final text = base.textTheme.copyWith(
+      displaySmall: naskh(base.textTheme.displaySmall),
+      headlineLarge: naskh(base.textTheme.headlineLarge),
+      headlineMedium: naskh(base.textTheme.headlineMedium),
+      headlineSmall: naskh(base.textTheme.headlineSmall),
+    );
+
     return base.copyWith(
+      textTheme: text,
       extensions: [FarashGlassColors(p)],
       scaffoldBackgroundColor: Colors.transparent,
       appBarTheme: AppBarTheme(
@@ -118,6 +134,21 @@ abstract final class FarashTheme {
             base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
         ),
+      ),
+      // Honey (primary) means "now" and the one primary action, so
+      // secondary text actions and chip icons take the ink instead.
+      textButtonTheme: TextButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
+          foregroundColor: WidgetStatePropertyAll(colors.onSurface),
+          iconColor: WidgetStatePropertyAll(colors.onSurfaceVariant),
+          shape: WidgetStatePropertyAll(controlShape),
+        ),
+      ),
+      chipTheme: base.chipTheme.copyWith(
+        iconTheme: IconThemeData(color: colors.onSurfaceVariant, size: 18),
+        selectedColor: colors.secondaryContainer,
+        checkmarkColor: colors.onSecondaryContainer,
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: ButtonStyle(

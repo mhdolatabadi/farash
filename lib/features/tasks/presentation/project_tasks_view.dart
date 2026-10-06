@@ -7,6 +7,7 @@ import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/app/motion.dart';
+import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/core/widgets/hover_reveal.dart';
 import 'package:farash/features/tasks/presentation/due_picker.dart';
@@ -448,7 +449,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                           mark: widget.project.isInbox
                               ? Icon(
                                   Icons.inbox_outlined,
-                                  color: theme.colorScheme.primary,
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 )
                               : Icon(
                                   Icons.circle,
@@ -456,6 +457,11 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                                   color: widget.project.swatch,
                                 ),
                           openCount: _tasks.openTasks.length,
+                          // The time the open tasks ask for, where they say.
+                          plannedMinutes: _tasks.openTasks.fold<int>(
+                            0,
+                            (sum, t) => sum + (t.durationMinutes ?? 0),
+                          ),
                           showCompleted: _tasks.showCompleted,
                           onShowCompleted: (show) =>
                               _run(() => _tasks.setShowCompleted(show)),
@@ -470,9 +476,8 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                           Icon(
                             Icons.task_alt,
                             size: 44,
-                            color: theme.colorScheme.primary.withValues(
-                              alpha: 0.45,
-                            ),
+                            color: theme.colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.45),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -513,6 +518,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                             task: _leaving.containsKey(task.id)
                                 ? task.copyWith(completedAt: DateTime.now())
                                 : task,
+                            stamped: _leaving.containsKey(task.id),
                             depth: depth,
                             folded: _tasks.openChildren(task).isEmpty
                                 ? null
@@ -606,6 +612,7 @@ class _ListHeader extends StatelessWidget {
     required this.title,
     required this.mark,
     required this.openCount,
+    this.plannedMinutes = 0,
     required this.showCompleted,
     required this.onShowCompleted,
   });
@@ -615,15 +622,19 @@ class _ListHeader extends StatelessWidget {
   /// The project's icon or color, beside the title.
   final Widget mark;
   final int openCount;
+  final int plannedMinutes;
   final bool showCompleted;
   final ValueChanged<bool> onShowCompleted;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final count = openCount == 0
+    final tasks = openCount == 0
         ? 'کار بازی نمانده'
         : '${persianDigits(openCount)} کار باز';
+    final count = plannedMinutes == 0
+        ? tasks
+        : '$tasks · ${formatDuration(plannedMinutes)}';
     final heading = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -24,6 +24,7 @@ class TaskTile extends StatelessWidget {
     this.onFold,
     this.onLongPress,
     this.selected = false,
+    this.stamped = false,
   });
 
   final Task task;
@@ -46,6 +47,10 @@ class TaskTile extends StatelessWidget {
 
   /// Picked for a bulk change.
   final bool selected;
+
+  /// Just checked off and about to fold away: stamped «انجام شد», so
+  /// nothing leaves the list without saying so.
+  final bool stamped;
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +103,12 @@ class TaskTile extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (task.hasSubtasks || checklist.isNotEmpty || dated) ...[
+                    if (stamped) ...[
+                      const SizedBox(height: 4),
+                      const _DoneStamp(),
+                    ] else if (task.hasSubtasks ||
+                        checklist.isNotEmpty ||
+                        dated) ...[
                       const SizedBox(height: 2),
                       Wrap(
                         spacing: 12,
@@ -230,6 +240,40 @@ class _Count extends StatelessWidget {
             style: theme.textTheme.labelMedium?.copyWith(color: color),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// «انجام شد», pressed like a rubber stamp in the lamplight color.
+class _DoneStamp extends StatelessWidget {
+  const _DoneStamp();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 1.25, end: 1),
+        duration: Motion.of(context, Motion.quick),
+        curve: Curves.easeOutBack,
+        builder: (context, scale, child) =>
+            Transform.scale(scale: scale, child: child),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+          decoration: BoxDecoration(
+            border: Border.all(color: theme.colorScheme.primary, width: 1.2),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            'انجام شد',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
       ),
     );
   }

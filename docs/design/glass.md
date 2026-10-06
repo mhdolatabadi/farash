@@ -1,5 +1,7 @@
 # Calm glass redesign (#34)
 
+> Superseded by `docs/design/surfaces/app.md` («شیشهٔ مشجر», #47). Kept as the record of #34.
+
 ## Approval
 The user requested glass, chose light/calm, chose image-first, then said
 “continue” after the A + C recommendation. Build A's quiet project workspace

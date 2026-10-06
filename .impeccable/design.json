@@ -1,27 +1,207 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-06T13:49:24.884076+00:00",
+  "generatedAt": "2026-10-06T21:04:17.942257+00:00",
   "title": "Design System: Farash",
   "extensions": {
     "colorMeta": {
       "primary": {
         "role": "primary",
-        "displayName": "Primary",
-        "canonical": "#A6324A",
+        "displayName": "Lamplight Honey",
+        "canonical": "#E8B66B",
         "tonalRamp": [
-          "oklch(15% 0.1514 12.51)",
-          "oklch(26% 0.1514 12.51)",
-          "oklch(37% 0.1514 12.51)",
-          "oklch(48% 0.1514 12.51)",
-          "oklch(59% 0.1514 12.51)",
-          "oklch(70% 0.1514 12.51)",
-          "oklch(81% 0.1514 12.51)",
-          "oklch(95% 0.1514 12.51)"
+          "oklch(15% 0.1096 76.30)",
+          "oklch(26% 0.1096 76.30)",
+          "oklch(37% 0.1096 76.30)",
+          "oklch(48% 0.1096 76.30)",
+          "oklch(59% 0.1096 76.30)",
+          "oklch(70% 0.1096 76.30)",
+          "oklch(81% 0.1096 76.30)",
+          "oklch(95% 0.1096 76.30)"
         ]
       },
       "on-primary": {
         "role": "primary",
-        "displayName": "On Primary",
+        "displayName": "Honey Ink",
+        "canonical": "#21170A",
+        "tonalRamp": [
+          "oklch(15% 0.0279 72.66)",
+          "oklch(26% 0.0279 72.66)",
+          "oklch(37% 0.0279 72.66)",
+          "oklch(48% 0.0279 72.66)",
+          "oklch(59% 0.0279 72.66)",
+          "oklch(70% 0.0279 72.66)",
+          "oklch(81% 0.0279 72.66)",
+          "oklch(95% 0.0279 72.66)"
+        ]
+      },
+      "accent": {
+        "role": "tertiary",
+        "displayName": "Sage (tomorrow)",
+        "canonical": "#A9C4B2",
+        "tonalRamp": [
+          "oklch(15% 0.0386 156.24)",
+          "oklch(26% 0.0386 156.24)",
+          "oklch(37% 0.0386 156.24)",
+          "oklch(48% 0.0386 156.24)",
+          "oklch(59% 0.0386 156.24)",
+          "oklch(70% 0.0386 156.24)",
+          "oklch(81% 0.0386 156.24)",
+          "oklch(95% 0.0386 156.24)"
+        ]
+      },
+      "overdue": {
+        "role": "error",
+        "displayName": "Pomegranate (overdue)",
+        "canonical": "#EF8C8F",
+        "tonalRamp": [
+          "oklch(15% 0.1206 18.43)",
+          "oklch(26% 0.1206 18.43)",
+          "oklch(37% 0.1206 18.43)",
+          "oklch(48% 0.1206 18.43)",
+          "oklch(59% 0.1206 18.43)",
+          "oklch(70% 0.1206 18.43)",
+          "oklch(81% 0.1206 18.43)",
+          "oklch(95% 0.1206 18.43)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Night Sheet",
+        "canonical": "#141B36",
+        "tonalRamp": [
+          "oklch(15% 0.0531 270.82)",
+          "oklch(26% 0.0531 270.82)",
+          "oklch(37% 0.0531 270.82)",
+          "oklch(48% 0.0531 270.82)",
+          "oklch(59% 0.0531 270.82)",
+          "oklch(70% 0.0531 270.82)",
+          "oklch(81% 0.0531 270.82)",
+          "oklch(95% 0.0531 270.82)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Lamp-lit Ink",
+        "canonical": "#F3ECE2",
+        "tonalRamp": [
+          "oklch(15% 0.0153 77.07)",
+          "oklch(26% 0.0153 77.07)",
+          "oklch(37% 0.0153 77.07)",
+          "oklch(48% 0.0153 77.07)",
+          "oklch(59% 0.0153 77.07)",
+          "oklch(70% 0.0153 77.07)",
+          "oklch(81% 0.0153 77.07)",
+          "oklch(95% 0.0153 77.07)"
+        ]
+      },
+      "muted-ink": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#B9B2A6",
+        "tonalRamp": [
+          "oklch(15% 0.0186 81.32)",
+          "oklch(26% 0.0186 81.32)",
+          "oklch(37% 0.0186 81.32)",
+          "oklch(48% 0.0186 81.32)",
+          "oklch(59% 0.0186 81.32)",
+          "oklch(70% 0.0186 81.32)",
+          "oklch(81% 0.0186 81.32)",
+          "oklch(95% 0.0186 81.32)"
+        ]
+      },
+      "selected": {
+        "role": "secondary",
+        "displayName": "Selected Night",
+        "canonical": "#26305A",
+        "tonalRamp": [
+          "oklch(15% 0.0757 271.51)",
+          "oklch(26% 0.0757 271.51)",
+          "oklch(37% 0.0757 271.51)",
+          "oklch(48% 0.0757 271.51)",
+          "oklch(59% 0.0757 271.51)",
+          "oklch(70% 0.0757 271.51)",
+          "oklch(81% 0.0757 271.51)",
+          "oklch(95% 0.0757 271.51)"
+        ]
+      },
+      "on-selected": {
+        "role": "secondary",
+        "displayName": "On Selected",
+        "canonical": "#F3ECE2",
+        "tonalRamp": [
+          "oklch(15% 0.0153 77.07)",
+          "oklch(26% 0.0153 77.07)",
+          "oklch(37% 0.0153 77.07)",
+          "oklch(48% 0.0153 77.07)",
+          "oklch(59% 0.0153 77.07)",
+          "oklch(70% 0.0153 77.07)",
+          "oklch(81% 0.0153 77.07)",
+          "oklch(95% 0.0153 77.07)"
+        ]
+      },
+      "backdrop-1": {
+        "role": "neutral",
+        "displayName": "Indigo Sky",
+        "canonical": "#17204A",
+        "tonalRamp": [
+          "oklch(15% 0.0786 270.95)",
+          "oklch(26% 0.0786 270.95)",
+          "oklch(37% 0.0786 270.95)",
+          "oklch(48% 0.0786 270.95)",
+          "oklch(59% 0.0786 270.95)",
+          "oklch(70% 0.0786 270.95)",
+          "oklch(81% 0.0786 270.95)",
+          "oklch(95% 0.0786 270.95)"
+        ]
+      },
+      "backdrop-2": {
+        "role": "neutral",
+        "displayName": "Night",
+        "canonical": "#0F1530",
+        "tonalRamp": [
+          "oklch(15% 0.0540 271.53)",
+          "oklch(26% 0.0540 271.53)",
+          "oklch(37% 0.0540 271.53)",
+          "oklch(48% 0.0540 271.53)",
+          "oklch(59% 0.0540 271.53)",
+          "oklch(70% 0.0540 271.53)",
+          "oklch(81% 0.0540 271.53)",
+          "oklch(95% 0.0540 271.53)"
+        ]
+      },
+      "backdrop-3": {
+        "role": "neutral",
+        "displayName": "Deep Night",
+        "canonical": "#0A0E1F",
+        "tonalRamp": [
+          "oklch(15% 0.0361 272.08)",
+          "oklch(26% 0.0361 272.08)",
+          "oklch(37% 0.0361 272.08)",
+          "oklch(48% 0.0361 272.08)",
+          "oklch(59% 0.0361 272.08)",
+          "oklch(70% 0.0361 272.08)",
+          "oklch(81% 0.0361 272.08)",
+          "oklch(95% 0.0361 272.08)"
+        ]
+      },
+      "day-primary": {
+        "role": "primary",
+        "displayName": "Day Lamplight Honey",
+        "canonical": "#8A5A12",
+        "tonalRamp": [
+          "oklch(15% 0.1025 70.83)",
+          "oklch(26% 0.1025 70.83)",
+          "oklch(37% 0.1025 70.83)",
+          "oklch(48% 0.1025 70.83)",
+          "oklch(59% 0.1025 70.83)",
+          "oklch(70% 0.1025 70.83)",
+          "oklch(81% 0.1025 70.83)",
+          "oklch(95% 0.1025 70.83)"
+        ]
+      },
+      "day-on-primary": {
+        "role": "primary",
+        "displayName": "Day Honey Ink",
         "canonical": "#FFFFFF",
         "tonalRamp": [
           "oklch(15% 0.0000 89.88)",
@@ -34,437 +214,162 @@
           "oklch(95% 0.0000 89.88)"
         ]
       },
-      "accent": {
+      "day-accent": {
         "role": "tertiary",
-        "displayName": "Accent",
-        "canonical": "#9C5C14",
+        "displayName": "Day Sage (tomorrow)",
+        "canonical": "#3F6B52",
         "tonalRamp": [
-          "oklch(15% 0.1153 62.24)",
-          "oklch(26% 0.1153 62.24)",
-          "oklch(37% 0.1153 62.24)",
-          "oklch(48% 0.1153 62.24)",
-          "oklch(59% 0.1153 62.24)",
-          "oklch(70% 0.1153 62.24)",
-          "oklch(81% 0.1153 62.24)",
-          "oklch(95% 0.1153 62.24)"
+          "oklch(15% 0.0638 158.02)",
+          "oklch(26% 0.0638 158.02)",
+          "oklch(37% 0.0638 158.02)",
+          "oklch(48% 0.0638 158.02)",
+          "oklch(59% 0.0638 158.02)",
+          "oklch(70% 0.0638 158.02)",
+          "oklch(81% 0.0638 158.02)",
+          "oklch(95% 0.0638 158.02)"
         ]
       },
-      "surface": {
+      "day-overdue": {
+        "role": "error",
+        "displayName": "Day Pomegranate (overdue)",
+        "canonical": "#B3343F",
+        "tonalRamp": [
+          "oklch(15% 0.1627 20.24)",
+          "oklch(26% 0.1627 20.24)",
+          "oklch(37% 0.1627 20.24)",
+          "oklch(48% 0.1627 20.24)",
+          "oklch(59% 0.1627 20.24)",
+          "oklch(70% 0.1627 20.24)",
+          "oklch(81% 0.1627 20.24)",
+          "oklch(95% 0.1627 20.24)"
+        ]
+      },
+      "day-surface": {
         "role": "neutral",
-        "displayName": "Surface",
-        "canonical": "#FFFBF8",
+        "displayName": "Day Night Sheet",
+        "canonical": "#FBF8F2",
         "tonalRamp": [
-          "oklch(15% 0.0058 59.65)",
-          "oklch(26% 0.0058 59.65)",
-          "oklch(37% 0.0058 59.65)",
-          "oklch(48% 0.0058 59.65)",
-          "oklch(59% 0.0058 59.65)",
-          "oklch(70% 0.0058 59.65)",
-          "oklch(81% 0.0058 59.65)",
-          "oklch(95% 0.0058 59.65)"
+          "oklch(15% 0.0086 84.57)",
+          "oklch(26% 0.0086 84.57)",
+          "oklch(37% 0.0086 84.57)",
+          "oklch(48% 0.0086 84.57)",
+          "oklch(59% 0.0086 84.57)",
+          "oklch(70% 0.0086 84.57)",
+          "oklch(81% 0.0086 84.57)",
+          "oklch(95% 0.0086 84.57)"
         ]
       },
-      "ink": {
+      "day-ink": {
         "role": "neutral",
-        "displayName": "Ink",
-        "canonical": "#2D1C20",
+        "displayName": "Day Lamp-lit Ink",
+        "canonical": "#1E2230",
         "tonalRamp": [
-          "oklch(15% 0.0276 3.82)",
-          "oklch(26% 0.0276 3.82)",
-          "oklch(37% 0.0276 3.82)",
-          "oklch(48% 0.0276 3.82)",
-          "oklch(59% 0.0276 3.82)",
-          "oklch(70% 0.0276 3.82)",
-          "oklch(81% 0.0276 3.82)",
-          "oklch(95% 0.0276 3.82)"
+          "oklch(15% 0.0272 272.01)",
+          "oklch(26% 0.0272 272.01)",
+          "oklch(37% 0.0272 272.01)",
+          "oklch(48% 0.0272 272.01)",
+          "oklch(59% 0.0272 272.01)",
+          "oklch(70% 0.0272 272.01)",
+          "oklch(81% 0.0272 272.01)",
+          "oklch(95% 0.0272 272.01)"
         ]
       },
-      "muted-ink": {
+      "day-muted-ink": {
         "role": "neutral",
-        "displayName": "Muted Ink",
-        "canonical": "#6E5A5D",
+        "displayName": "Day Muted Ink",
+        "canonical": "#5A5E6B",
         "tonalRamp": [
-          "oklch(15% 0.0265 7.95)",
-          "oklch(26% 0.0265 7.95)",
-          "oklch(37% 0.0265 7.95)",
-          "oklch(48% 0.0265 7.95)",
-          "oklch(59% 0.0265 7.95)",
-          "oklch(70% 0.0265 7.95)",
-          "oklch(81% 0.0265 7.95)",
-          "oklch(95% 0.0265 7.95)"
+          "oklch(15% 0.0214 272.01)",
+          "oklch(26% 0.0214 272.01)",
+          "oklch(37% 0.0214 272.01)",
+          "oklch(48% 0.0214 272.01)",
+          "oklch(59% 0.0214 272.01)",
+          "oklch(70% 0.0214 272.01)",
+          "oklch(81% 0.0214 272.01)",
+          "oklch(95% 0.0214 272.01)"
         ]
       },
-      "selected": {
+      "day-selected": {
+        "role": "secondary",
+        "displayName": "Day Selected Night",
+        "canonical": "#EDE5D5",
+        "tonalRamp": [
+          "oklch(15% 0.0230 84.59)",
+          "oklch(26% 0.0230 84.59)",
+          "oklch(37% 0.0230 84.59)",
+          "oklch(48% 0.0230 84.59)",
+          "oklch(59% 0.0230 84.59)",
+          "oklch(70% 0.0230 84.59)",
+          "oklch(81% 0.0230 84.59)",
+          "oklch(95% 0.0230 84.59)"
+        ]
+      },
+      "day-on-selected": {
+        "role": "secondary",
+        "displayName": "Day On Selected",
+        "canonical": "#1E2230",
+        "tonalRamp": [
+          "oklch(15% 0.0272 272.01)",
+          "oklch(26% 0.0272 272.01)",
+          "oklch(37% 0.0272 272.01)",
+          "oklch(48% 0.0272 272.01)",
+          "oklch(59% 0.0272 272.01)",
+          "oklch(70% 0.0272 272.01)",
+          "oklch(81% 0.0272 272.01)",
+          "oklch(95% 0.0272 272.01)"
+        ]
+      },
+      "day-backdrop-1": {
         "role": "neutral",
-        "displayName": "Selected",
-        "canonical": "#F5DFE2",
+        "displayName": "Day Indigo Sky",
+        "canonical": "#E9ECF3",
         "tonalRamp": [
-          "oklch(15% 0.0245 8.19)",
-          "oklch(26% 0.0245 8.19)",
-          "oklch(37% 0.0245 8.19)",
-          "oklch(48% 0.0245 8.19)",
-          "oklch(59% 0.0245 8.19)",
-          "oklch(70% 0.0245 8.19)",
-          "oklch(81% 0.0245 8.19)",
-          "oklch(95% 0.0245 8.19)"
+          "oklch(15% 0.0100 267.36)",
+          "oklch(26% 0.0100 267.36)",
+          "oklch(37% 0.0100 267.36)",
+          "oklch(48% 0.0100 267.36)",
+          "oklch(59% 0.0100 267.36)",
+          "oklch(70% 0.0100 267.36)",
+          "oklch(81% 0.0100 267.36)",
+          "oklch(95% 0.0100 267.36)"
         ]
       },
-      "on-selected": {
+      "day-backdrop-2": {
         "role": "neutral",
-        "displayName": "On Selected",
-        "canonical": "#5C1023",
+        "displayName": "Day Night",
+        "canonical": "#F6F2EA",
         "tonalRamp": [
-          "oklch(15% 0.1077 11.93)",
-          "oklch(26% 0.1077 11.93)",
-          "oklch(37% 0.1077 11.93)",
-          "oklch(48% 0.1077 11.93)",
-          "oklch(59% 0.1077 11.93)",
-          "oklch(70% 0.1077 11.93)",
-          "oklch(81% 0.1077 11.93)",
-          "oklch(95% 0.1077 11.93)"
+          "oklch(15% 0.0115 84.58)",
+          "oklch(26% 0.0115 84.58)",
+          "oklch(37% 0.0115 84.58)",
+          "oklch(48% 0.0115 84.58)",
+          "oklch(59% 0.0115 84.58)",
+          "oklch(70% 0.0115 84.58)",
+          "oklch(81% 0.0115 84.58)",
+          "oklch(95% 0.0115 84.58)"
         ]
       },
-      "glow": {
+      "day-backdrop-3": {
         "role": "neutral",
-        "displayName": "Glow",
-        "canonical": "rgba(255, 255, 255, 0.701961)",
+        "displayName": "Day Deep Night",
+        "canonical": "#EFE3CF",
         "tonalRamp": [
-          "oklch(15% 0.0000 89.88)",
-          "oklch(26% 0.0000 89.88)",
-          "oklch(37% 0.0000 89.88)",
-          "oklch(48% 0.0000 89.88)",
-          "oklch(59% 0.0000 89.88)",
-          "oklch(70% 0.0000 89.88)",
-          "oklch(81% 0.0000 89.88)",
-          "oklch(95% 0.0000 89.88)"
-        ]
-      },
-      "pane": {
-        "role": "neutral",
-        "displayName": "Pane",
-        "canonical": "rgba(255, 255, 255, 0.721569)",
-        "tonalRamp": [
-          "oklch(15% 0.0000 89.88)",
-          "oklch(26% 0.0000 89.88)",
-          "oklch(37% 0.0000 89.88)",
-          "oklch(48% 0.0000 89.88)",
-          "oklch(59% 0.0000 89.88)",
-          "oklch(70% 0.0000 89.88)",
-          "oklch(81% 0.0000 89.88)",
-          "oklch(95% 0.0000 89.88)"
-        ]
-      },
-      "pane-border": {
-        "role": "neutral",
-        "displayName": "Pane Border",
-        "canonical": "rgba(255, 255, 255, 0.901961)",
-        "tonalRamp": [
-          "oklch(15% 0.0000 89.88)",
-          "oklch(26% 0.0000 89.88)",
-          "oklch(37% 0.0000 89.88)",
-          "oklch(48% 0.0000 89.88)",
-          "oklch(59% 0.0000 89.88)",
-          "oklch(70% 0.0000 89.88)",
-          "oklch(81% 0.0000 89.88)",
-          "oklch(95% 0.0000 89.88)"
-        ]
-      },
-      "shadow": {
-        "role": "neutral",
-        "displayName": "Shadow",
-        "canonical": "rgba(45, 28, 32, 0.078431)",
-        "tonalRamp": [
-          "oklch(15% 0.0276 3.82)",
-          "oklch(26% 0.0276 3.82)",
-          "oklch(37% 0.0276 3.82)",
-          "oklch(48% 0.0276 3.82)",
-          "oklch(59% 0.0276 3.82)",
-          "oklch(70% 0.0276 3.82)",
-          "oklch(81% 0.0276 3.82)",
-          "oklch(95% 0.0276 3.82)"
-        ]
-      },
-      "backdrop-1": {
-        "role": "neutral",
-        "displayName": "Backdrop 1",
-        "canonical": "#F4DFDF",
-        "tonalRamp": [
-          "oklch(15% 0.0231 17.58)",
-          "oklch(26% 0.0231 17.58)",
-          "oklch(37% 0.0231 17.58)",
-          "oklch(48% 0.0231 17.58)",
-          "oklch(59% 0.0231 17.58)",
-          "oklch(70% 0.0231 17.58)",
-          "oklch(81% 0.0231 17.58)",
-          "oklch(95% 0.0231 17.58)"
-        ]
-      },
-      "backdrop-2": {
-        "role": "neutral",
-        "displayName": "Backdrop 2",
-        "canonical": "#FDF9F4",
-        "tonalRamp": [
-          "oklch(15% 0.0079 73.75)",
-          "oklch(26% 0.0079 73.75)",
-          "oklch(37% 0.0079 73.75)",
-          "oklch(48% 0.0079 73.75)",
-          "oklch(59% 0.0079 73.75)",
-          "oklch(70% 0.0079 73.75)",
-          "oklch(81% 0.0079 73.75)",
-          "oklch(95% 0.0079 73.75)"
-        ]
-      },
-      "backdrop-3": {
-        "role": "neutral",
-        "displayName": "Backdrop 3",
-        "canonical": "#F1E6D2",
-        "tonalRamp": [
-          "oklch(15% 0.0291 82.60)",
-          "oklch(26% 0.0291 82.60)",
-          "oklch(37% 0.0291 82.60)",
-          "oklch(48% 0.0291 82.60)",
-          "oklch(59% 0.0291 82.60)",
-          "oklch(70% 0.0291 82.60)",
-          "oklch(81% 0.0291 82.60)",
-          "oklch(95% 0.0291 82.60)"
-        ]
-      },
-      "dark-primary": {
-        "role": "primary",
-        "displayName": "Dark Primary",
-        "canonical": "#FFB0BE",
-        "tonalRamp": [
-          "oklch(15% 0.0938 7.63)",
-          "oklch(26% 0.0938 7.63)",
-          "oklch(37% 0.0938 7.63)",
-          "oklch(48% 0.0938 7.63)",
-          "oklch(59% 0.0938 7.63)",
-          "oklch(70% 0.0938 7.63)",
-          "oklch(81% 0.0938 7.63)",
-          "oklch(95% 0.0938 7.63)"
-        ]
-      },
-      "dark-on-primary": {
-        "role": "primary",
-        "displayName": "Dark On Primary",
-        "canonical": "#5C1023",
-        "tonalRamp": [
-          "oklch(15% 0.1077 11.93)",
-          "oklch(26% 0.1077 11.93)",
-          "oklch(37% 0.1077 11.93)",
-          "oklch(48% 0.1077 11.93)",
-          "oklch(59% 0.1077 11.93)",
-          "oklch(70% 0.1077 11.93)",
-          "oklch(81% 0.1077 11.93)",
-          "oklch(95% 0.1077 11.93)"
-        ]
-      },
-      "dark-accent": {
-        "role": "tertiary",
-        "displayName": "Dark Accent",
-        "canonical": "#EDBB72",
-        "tonalRamp": [
-          "oklch(15% 0.1076 75.77)",
-          "oklch(26% 0.1076 75.77)",
-          "oklch(37% 0.1076 75.77)",
-          "oklch(48% 0.1076 75.77)",
-          "oklch(59% 0.1076 75.77)",
-          "oklch(70% 0.1076 75.77)",
-          "oklch(81% 0.1076 75.77)",
-          "oklch(95% 0.1076 75.77)"
-        ]
-      },
-      "dark-surface": {
-        "role": "neutral",
-        "displayName": "Dark Surface",
-        "canonical": "#2A1B1F",
-        "tonalRamp": [
-          "oklch(15% 0.0247 1.56)",
-          "oklch(26% 0.0247 1.56)",
-          "oklch(37% 0.0247 1.56)",
-          "oklch(48% 0.0247 1.56)",
-          "oklch(59% 0.0247 1.56)",
-          "oklch(70% 0.0247 1.56)",
-          "oklch(81% 0.0247 1.56)",
-          "oklch(95% 0.0247 1.56)"
-        ]
-      },
-      "dark-ink": {
-        "role": "neutral",
-        "displayName": "Dark Ink",
-        "canonical": "#F6E8EA",
-        "tonalRamp": [
-          "oklch(15% 0.0154 7.49)",
-          "oklch(26% 0.0154 7.49)",
-          "oklch(37% 0.0154 7.49)",
-          "oklch(48% 0.0154 7.49)",
-          "oklch(59% 0.0154 7.49)",
-          "oklch(70% 0.0154 7.49)",
-          "oklch(81% 0.0154 7.49)",
-          "oklch(95% 0.0154 7.49)"
-        ]
-      },
-      "dark-muted-ink": {
-        "role": "neutral",
-        "displayName": "Dark Muted Ink",
-        "canonical": "#CDB8BB",
-        "tonalRamp": [
-          "oklch(15% 0.0243 7.84)",
-          "oklch(26% 0.0243 7.84)",
-          "oklch(37% 0.0243 7.84)",
-          "oklch(48% 0.0243 7.84)",
-          "oklch(59% 0.0243 7.84)",
-          "oklch(70% 0.0243 7.84)",
-          "oklch(81% 0.0243 7.84)",
-          "oklch(95% 0.0243 7.84)"
-        ]
-      },
-      "dark-selected": {
-        "role": "neutral",
-        "displayName": "Dark Selected",
-        "canonical": "#4E2A32",
-        "tonalRamp": [
-          "oklch(15% 0.0544 6.13)",
-          "oklch(26% 0.0544 6.13)",
-          "oklch(37% 0.0544 6.13)",
-          "oklch(48% 0.0544 6.13)",
-          "oklch(59% 0.0544 6.13)",
-          "oklch(70% 0.0544 6.13)",
-          "oklch(81% 0.0544 6.13)",
-          "oklch(95% 0.0544 6.13)"
-        ]
-      },
-      "dark-on-selected": {
-        "role": "neutral",
-        "displayName": "Dark On Selected",
-        "canonical": "#F6E8EA",
-        "tonalRamp": [
-          "oklch(15% 0.0154 7.49)",
-          "oklch(26% 0.0154 7.49)",
-          "oklch(37% 0.0154 7.49)",
-          "oklch(48% 0.0154 7.49)",
-          "oklch(59% 0.0154 7.49)",
-          "oklch(70% 0.0154 7.49)",
-          "oklch(81% 0.0154 7.49)",
-          "oklch(95% 0.0154 7.49)"
-        ]
-      },
-      "dark-glow": {
-        "role": "neutral",
-        "displayName": "Dark Glow",
-        "canonical": "rgba(140, 58, 76, 0.200000)",
-        "tonalRamp": [
-          "oklch(15% 0.1126 8.94)",
-          "oklch(26% 0.1126 8.94)",
-          "oklch(37% 0.1126 8.94)",
-          "oklch(48% 0.1126 8.94)",
-          "oklch(59% 0.1126 8.94)",
-          "oklch(70% 0.1126 8.94)",
-          "oklch(81% 0.1126 8.94)",
-          "oklch(95% 0.1126 8.94)"
-        ]
-      },
-      "dark-pane": {
-        "role": "neutral",
-        "displayName": "Dark Pane",
-        "canonical": "rgba(42, 27, 31, 0.901961)",
-        "tonalRamp": [
-          "oklch(15% 0.0247 1.56)",
-          "oklch(26% 0.0247 1.56)",
-          "oklch(37% 0.0247 1.56)",
-          "oklch(48% 0.0247 1.56)",
-          "oklch(59% 0.0247 1.56)",
-          "oklch(70% 0.0247 1.56)",
-          "oklch(81% 0.0247 1.56)",
-          "oklch(95% 0.0247 1.56)"
-        ]
-      },
-      "dark-pane-border": {
-        "role": "neutral",
-        "displayName": "Dark Pane Border",
-        "canonical": "rgba(255, 176, 190, 0.160784)",
-        "tonalRamp": [
-          "oklch(15% 0.0938 7.63)",
-          "oklch(26% 0.0938 7.63)",
-          "oklch(37% 0.0938 7.63)",
-          "oklch(48% 0.0938 7.63)",
-          "oklch(59% 0.0938 7.63)",
-          "oklch(70% 0.0938 7.63)",
-          "oklch(81% 0.0938 7.63)",
-          "oklch(95% 0.0938 7.63)"
-        ]
-      },
-      "dark-shadow": {
-        "role": "neutral",
-        "displayName": "Dark Shadow",
-        "canonical": "rgba(0, 0, 0, 0.301961)",
-        "tonalRamp": [
-          "oklch(15% 0.0000 0.00)",
-          "oklch(26% 0.0000 0.00)",
-          "oklch(37% 0.0000 0.00)",
-          "oklch(48% 0.0000 0.00)",
-          "oklch(59% 0.0000 0.00)",
-          "oklch(70% 0.0000 0.00)",
-          "oklch(81% 0.0000 0.00)",
-          "oklch(95% 0.0000 0.00)"
-        ]
-      },
-      "dark-backdrop-1": {
-        "role": "neutral",
-        "displayName": "Dark Backdrop 1",
-        "canonical": "#3A1A22",
-        "tonalRamp": [
-          "oklch(15% 0.0513 5.26)",
-          "oklch(26% 0.0513 5.26)",
-          "oklch(37% 0.0513 5.26)",
-          "oklch(48% 0.0513 5.26)",
-          "oklch(59% 0.0513 5.26)",
-          "oklch(70% 0.0513 5.26)",
-          "oklch(81% 0.0513 5.26)",
-          "oklch(95% 0.0513 5.26)"
-        ]
-      },
-      "dark-backdrop-2": {
-        "role": "neutral",
-        "displayName": "Dark Backdrop 2",
-        "canonical": "#1A1114",
-        "tonalRamp": [
-          "oklch(15% 0.0160 356.90)",
-          "oklch(26% 0.0160 356.90)",
-          "oklch(37% 0.0160 356.90)",
-          "oklch(48% 0.0160 356.90)",
-          "oklch(59% 0.0160 356.90)",
-          "oklch(70% 0.0160 356.90)",
-          "oklch(81% 0.0160 356.90)",
-          "oklch(95% 0.0160 356.90)"
-        ]
-      },
-      "dark-backdrop-3": {
-        "role": "neutral",
-        "displayName": "Dark Backdrop 3",
-        "canonical": "#2B2216",
-        "tonalRamp": [
-          "oklch(15% 0.0250 74.32)",
-          "oklch(26% 0.0250 74.32)",
-          "oklch(37% 0.0250 74.32)",
-          "oklch(48% 0.0250 74.32)",
-          "oklch(59% 0.0250 74.32)",
-          "oklch(70% 0.0250 74.32)",
-          "oklch(81% 0.0250 74.32)",
-          "oklch(95% 0.0250 74.32)"
+          "oklch(15% 0.0297 80.66)",
+          "oklch(26% 0.0297 80.66)",
+          "oklch(37% 0.0297 80.66)",
+          "oklch(48% 0.0297 80.66)",
+          "oklch(59% 0.0297 80.66)",
+          "oklch(70% 0.0297 80.66)",
+          "oklch(81% 0.0297 80.66)",
+          "oklch(95% 0.0297 80.66)"
         ]
       }
     },
     "shadows": [
       {
-        "name": "glass-light",
-        "value": "0 10px 28px rgba(45, 28, 32, 0.078431)",
-        "purpose": "Ambient light pane elevation."
-      },
-      {
-        "name": "glass-dark",
-        "value": "0 10px 28px rgba(0, 0, 0, 0.301961)",
-        "purpose": "Ambient dark pane elevation."
+        "name": "pane",
+        "value": "0 12px 32px rgba(0, 0, 0, 0.35)",
+        "purpose": "Large glass panes over the night ground (day: rgba(30, 34, 48, 0.08))."
       }
     ],
     "motion": [
@@ -502,6 +407,16 @@
         "name": "reduced",
         "value": "0ms",
         "purpose": "All authored motion when disabled."
+      },
+      {
+        "name": "lamp-move",
+        "value": "900ms cubic-bezier(0.65, 0, 0.35, 1)",
+        "purpose": "The lamp behind the glass travels when the project changes."
+      },
+      {
+        "name": "stamp",
+        "value": "160ms easeOutBack, scale 1.25 to 1",
+        "purpose": "The «انجام شد» stamp presses onto a completed row before it folds."
       }
     ],
     "breakpoints": [
@@ -528,7 +443,10 @@
     ],
     "glass": {
       "blurSigma": 16,
-      "inkLayer": "Transparent Material above pane tint."
+      "paneRadius": 24,
+      "relief": "Pressed-pebble pattern: staggered 13px grid of 1.6px domes, lit top-left and shaded bottom-right, drawn once per pane on its own layer.",
+      "litEdge": "Top 20% of each pane carries a relief-colored gradient: the lamp catching the glass edge.",
+      "lamp": "Radial honey glow (radius 0.75) behind every pane; moves to a stable spot per project over 900ms easeInOutCubic; still under reduced motion."
     },
     "captureLayout": {
       "normal": "Below list in layout.",
@@ -536,7 +454,7 @@
       "state": "GlobalKey preserves draft.",
       "status": "Compact capture stays mounted above loading/error slivers; empty copy is direction-independent."
     },
-    "implementation": "Flutter Material 3; panel snippets are illustrative, generated Material field colors are approximations, and synthesized OKLCH ramps are inspection aids rather than shipping tokens.",
+    "implementation": "Flutter Material 3; lib/app/palette.dart (FarashPalette.moshajjar) is the single color source; panel snippets are illustrative and synthesized OKLCH ramps are inspection aids rather than shipping tokens.",
     "editorLayout": {
       "propertyRow": "Nonexpanding property heading stacks above control when available width <480px.",
       "priority": "Minimum48x48px targets; vertical when width <320px and textScaler.scale(14)>18.",
@@ -545,103 +463,102 @@
   },
   "components": [
     {
-      "name": "Primary Button",
+      "name": "Primary Action",
       "kind": "button",
-      "description": "Primary Button — illustrative HTML representation of the Flutter primitive.",
-      "html": "<button class=\"ds-base ds-focus ds-btn\">ذخیره</button>",
-      "css": ".ds-base{font-family:Vazirmatn,sans-serif;direction:rtl;color:#2D1C20}.ds-focus:focus-visible{outline:2px solid #A6324A;outline-offset:3px}.ds-btn{background:#A6324A;color:white;border:0;border-radius:12px;min-height:48px;padding:0 24px;font-weight:700}.ds-btn:hover{filter:brightness(.95)}.ds-btn:active{filter:brightness(.9)}",
-      "refersTo": "button-primary"
+      "refersTo": "button-primary",
+      "description": "The one primary action of a view (save, send): lamplight honey on honey ink.",
+      "html": "<button class=\"ds-btn-primary\">ذخیره</button>",
+      "css": ".ds-btn-primary{background:#E8B66B;color:#21170A;border:none;border-radius:12px;min-height:48px;padding:0 24px;font:700 14px Vazirmatn,sans-serif;transition:filter .16s}.ds-btn-primary:hover{filter:brightness(1.06)}.ds-btn-primary:focus-visible{outline:2px solid #F3ECE2;outline-offset:2px}"
     },
     {
-      "name": "Outlined Button",
+      "name": "Secondary Text Action",
       "kind": "button",
-      "description": "Outlined Button — illustrative HTML representation of the Flutter primitive.",
-      "html": "<button class=\"ds-base ds-focus ds-out\">انصراف</button>",
-      "css": ".ds-base{font-family:Vazirmatn,sans-serif;direction:rtl;color:#2D1C20}.ds-focus:focus-visible{outline:2px solid #A6324A;outline-offset:3px}.ds-out{background:transparent;color:#A6324A;border:1px solid #6E5A5D;border-radius:12px;min-height:48px;padding:0 24px}.ds-out:hover{background:#F5DFE2}.ds-out:active{filter:brightness(.95)}"
-    },
-    {
-      "name": "Task Input",
-      "kind": "input",
-      "description": "Task Input — illustrative HTML representation of the Flutter primitive.",
-      "html": "<input class=\"ds-base ds-input\" aria-label=\"عنوان\" value=\"برنامه فردا\">",
-      "css": ".ds-base{font-family:Vazirmatn,sans-serif;direction:rtl;color:#2D1C20}.ds-focus:focus-visible{outline:2px solid #A6324A;outline-offset:3px}.ds-input{padding:14px 16px;border-radius:12px;border:1px solid #6E5A5D;background:#FFFBF8}.ds-input:hover{border-color:#A6324A}.ds-input:focus-visible{outline:2px solid #A6324A}",
-      "refersTo": "input"
-    },
-    {
-      "name": "Selected Project",
-      "kind": "nav",
-      "description": "Selected Project — illustrative HTML representation of the Flutter primitive.",
-      "html": "<button class=\"ds-base ds-focus ds-nav\" aria-current=\"page\">صندوق ورودی</button>",
-      "css": ".ds-base{font-family:Vazirmatn,sans-serif;direction:rtl;color:#2D1C20}.ds-focus:focus-visible{outline:2px solid #A6324A;outline-offset:3px}.ds-nav{background:#F5DFE2;color:#5C1023;border:0;border-radius:12px;min-height:48px;padding:12px 16px}.ds-nav:hover{filter:brightness(.97)}.ds-nav:active{filter:brightness(.94)}",
-      "refersTo": "navigation-selected"
+      "refersTo": "button-text",
+      "description": "Add checklist, add subtask: ink, never honey.",
+      "html": "<button class=\"ds-btn-text\">افزودن زیرکار</button>",
+      "css": ".ds-btn-text{background:none;color:#F3ECE2;border:none;border-radius:12px;min-height:48px;padding:0 12px;font:500 14px Vazirmatn,sans-serif}.ds-btn-text:hover{background:rgba(243,236,226,.08)}.ds-btn-text:focus-visible{outline:2px solid #E8B66B}"
     },
     {
       "name": "Glass Pane",
       "kind": "card",
-      "description": "Glass Pane — illustrative HTML representation of the Flutter primitive.",
-      "html": "<section class=\"ds-base ds-pane\">کارهای امروز</section>",
-      "css": ".ds-base{font-family:Vazirmatn,sans-serif;direction:rtl;color:#2D1C20}.ds-focus:focus-visible{outline:2px solid #A6324A;outline-offset:3px}.ds-pane{background:rgba(255, 255, 255, 0.721569);border:1px solid rgba(255, 255, 255, 0.901961);backdrop-filter:blur(16px);border-radius:24px;padding:24px;box-shadow:0 10px 28px rgba(45, 28, 32, 0.078431)}.ds-pane:focus-within{border-color:#A6324A}",
-      "refersTo": "glass-pane"
+      "refersTo": "glass-pane",
+      "description": "Patterned privacy glass over the night ground; holds lists, sidebar and editor.",
+      "html": "<div class=\"ds-pane\"><div class=\"ds-pane-body\">۳ کار باز</div></div>",
+      "css": ".ds-pane{position:relative;border-radius:24px;padding:20px;color:#F3ECE2;background:radial-gradient(circle at 30% 30%,rgba(255,244,226,.03) 0 1.6px,transparent 2px) 0 0/13px 13px,linear-gradient(180deg,rgba(255,244,226,.03),transparent 20%),rgba(232,228,240,.06);border:1px solid rgba(255,236,206,.15);box-shadow:0 12px 32px rgba(0,0,0,.35);backdrop-filter:blur(16px)}"
     },
     {
-      "name": "Today Date",
+      "name": "Capture Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "One rounded field with priority and the honey send.",
+      "html": "<div class=\"ds-capture\"><span>کار تازه در «صندوق ورودی»</span><button aria-label=\"افزودن کار\">↑</button></div>",
+      "css": ".ds-capture{display:flex;align-items:center;gap:8px;border-radius:16px;padding:6px;background:rgba(243,236,226,.06);border:1px solid rgba(255,236,206,.15);color:#B9B2A6;font:400 15px Vazirmatn,sans-serif}.ds-capture span{flex:1;padding:0 12px}.ds-capture button{width:44px;height:44px;border-radius:50%;border:none;background:#E8B66B;color:#21170A;font-weight:800}"
+    },
+    {
+      "name": "Done Stamp",
       "kind": "chip",
-      "description": "Today Date — illustrative HTML representation of the Flutter primitive.",
-      "html": "<span class=\"ds-base ds-date\">امروز</span>",
-      "css": ".ds-base{font-family:Vazirmatn,sans-serif;direction:rtl;color:#2D1C20}.ds-focus:focus-visible{outline:2px solid #A6324A;outline-offset:3px}.ds-date{font-size:12px;color:#A6324A}"
+      "refersTo": "done-stamp",
+      "description": "Pressed onto a checked row before it folds; nothing vanishes unannounced.",
+      "html": "<span class=\"ds-stamp\">انجام شد</span>",
+      "css": ".ds-stamp{display:inline-block;border:1.2px solid #E8B66B;color:#E8B66B;border-radius:6px;padding:0 8px;font:700 12px Vazirmatn,sans-serif}"
     },
     {
-      "name": "Task Row",
+      "name": "Date Labels",
       "kind": "custom",
-      "description": "Task Row — illustrative HTML representation of the Flutter primitive.",
-      "html": "<div class=\"ds-base ds-row\"><button class=\"ds-focus ds-check\" aria-label=\"انجام کار\">○</button><span>مرور برنامه</span></div>",
-      "css": ".ds-base{font-family:Vazirmatn,sans-serif;direction:rtl;color:#2D1C20}.ds-focus:focus-visible{outline:2px solid #A6324A;outline-offset:3px}.ds-row{display:flex;align-items:center;padding:4px 8px;border-bottom:1px solid #F5DFE2}.ds-check{width:48px;height:48px;border:0;border-radius:24px;background:transparent;color:#A6324A;font-size:24px}.ds-check:hover{background:#F5DFE2}.ds-check:active{filter:brightness(.9)}"
+      "refersTo": "date-labels",
+      "description": "Today honey, tomorrow sage, later muted, overdue pomegranate.",
+      "html": "<span class=\"ds-d ds-now\">امروز ۲۲:۰۰</span> <span class=\"ds-d ds-next\">فردا</span> <span class=\"ds-d ds-late\">دیرشده · ۱۲ مهر</span>",
+      "css": ".ds-d{font:500 12px Vazirmatn,sans-serif}.ds-now{color:#E8B66B}.ds-next{color:#A9C4B2}.ds-late{color:#EF8C8F}"
+    },
+    {
+      "name": "Navigation Item",
+      "kind": "nav",
+      "refersTo": "navigation-selected",
+      "description": "Sidebar project row; selection is a night tone, not honey.",
+      "html": "<div class=\"ds-nav ds-on\">صندوق ورودی</div><div class=\"ds-nav\">کار</div>",
+      "css": ".ds-nav{min-height:48px;display:flex;align-items:center;padding:0 16px;border-radius:12px;color:#F3ECE2;font:500 15px Vazirmatn,sans-serif}.ds-nav:hover{background:rgba(243,236,226,.06)}.ds-on{background:#26305A}"
     }
   ],
   "narrative": {
-    "northStar": "The Quiet Desk",
-    "overview": "A luminous, quiet desk for capturing and arranging real tasks. The current pomegranate world pairs warm ivory and straw illumination with milky glass panes and plum ink. The user-approved calm glass direction remains the foundation; the current palette and stronger hierarchy come from the implemented refinements.\n\nPersian RTL and bundled Vazirmatn define the app's identity across Android and Web. Semantic task content, clear project hierarchy and reversible actions remain central. The comparison board is a reference, not shipping artwork.",
+    "northStar": "شیشهٔ مشجر — patterned privacy glass at night",
+    "overview": "The day's tasks are seen through the pressed, patterned glass of an Iranian home's door at night. Indigo night lies in front; a lamp-lit room glows behind the glass. Panes are frosted with a faint pebble relief and a lit top edge, and the lamp itself moves when the project changes.\n\nHoney lamplight carries exactly one meaning: now (today's dates, the stamp of a just-finished task, and the single primary action). Sage marks tomorrow, pomegranate marks overdue, and everything else stays in lamp-lit ink. Night is the designed default; day is the same door by daylight.",
     "keyCharacteristics": [
-      "Warm ivory glass with pomegranate actions and straw accents.",
-      "Strong project headings above restrained task rows.",
-      "Persian-first reading and semantic controls.",
-      "Short purposeful motion with instant reduced-motion behavior."
+      "Indigo night ground with a moving honey lamp behind the glass.",
+      "Frosted panes with a faint pressed-pebble relief and a lit top edge.",
+      "Naskh headings, Vazirmatn reading text, tabular figures.",
+      "Honey means now; sage tomorrow; pomegranate overdue.",
+      "Checked tasks are stamped «انجام شد» before they fold."
     ],
     "rules": [
       {
-        "name": "The Meaningful Color Rule.",
-        "body": "Keep temporal color and project identity tied to actual task data; priority is represented by the check color, not a decorative P badge.",
-        "section": "Colors"
+        "name": "The One Lamp Rule",
+        "body": "Honey (primary) is spent only on \"now\": today, the done stamp and the one primary action. Secondary actions, icons and selection use ink or night tones.",
+        "section": "colors"
       },
       {
-        "name": "The Persian Reading Rule.",
-        "body": "Preserve RTL and directional spacing, while explicitly isolating account email as LTR.",
-        "section": "Typography"
+        "name": "The Faint Relief Rule",
+        "body": "The pebble relief stays at a few percent alpha; text must always sit on calm glass.",
+        "section": "elevation"
       },
       {
-        "name": "The Reachable Control Rule.",
-        "body": "Preserve (48px) action targets for completion, icon actions and primary buttons, even when the visual check is smaller.",
-        "section": "Layout"
-      },
-      {
-        "name": "The Bounded Glass Rule.",
-        "body": "Blur large workspace and navigation panes, never every task row.",
-        "section": "Elevation & Depth"
+        "name": "The Bounded Glass Rule",
+        "body": "Blur large panes only, never each row.",
+        "section": "elevation"
       }
     ],
     "dos": [
-      "Do preserve Persian RTL and bundled Vazirmatn.",
-      "Do use the pomegranate palette source for light and dark roles.",
-      "Do keep task content, dates and controls semantic.",
-      "Do preserve capture drafts when adapting to keyboard-constrained height.",
-      "Do honor reduced motion for authored animations."
+      "Do take every color from FarashPalette.moshajjar.",
+      "Do keep honey for now and the primary action.",
+      "Do set headings in Naskh and reading text in Vazirmatn.",
+      "Do stamp completions before folding them.",
+      "Do honor reduced motion (the lamp holds still)."
     ],
     "donts": [
+      "Don't spend honey on secondary buttons, icons or selection.",
+      "Don't raise the relief until it reads as a perforated sheet.",
       "Don't blur each task row.",
-      "Don't restore obsolete teal tokens or priority P badges.",
-      "Don't ship the comparison board as interface artwork.",
-      "Don't introduce controls for unimplemented features.",
-      "Don't claim hardware or accessibility-service validation from source inspection."
+      "Don't restore the pomegranate or teal worlds' tokens.",
+      "Don't introduce controls for unimplemented features."
     ]
   }
 }
