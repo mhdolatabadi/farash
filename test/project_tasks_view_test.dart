@@ -119,7 +119,7 @@ void main() {
       find.widgetWithText(TextFormField, 'توضیحات'),
       'جزئیات',
     );
-    await tester.tap(find.text('اولویت ۲'));
+    await tester.tap(find.byTooltip('اولویت ۲'));
     await tester.tap(find.text('ذخیره'));
     await tester.pumpAndSettle();
 

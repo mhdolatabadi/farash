@@ -17,6 +17,7 @@ class TaskTile extends StatelessWidget {
     required this.onToggle,
     required this.onOpen,
     this.trailing,
+    this.leading,
     this.depth = 0,
     this.folded,
     this.onFold,
@@ -28,6 +29,9 @@ class TaskTile extends StatelessWidget {
   final VoidCallback onToggle;
   final VoidCallback onOpen;
   final Widget? trailing;
+
+  /// Shown before the checkbox, such as a drag handle on wide screens.
+  final Widget? leading;
 
   /// 0 for a top-level task, 1 for its subtasks, and so on.
   final int depth;
@@ -55,18 +59,19 @@ class TaskTile extends StatelessWidget {
       child: Padding(
         padding: EdgeInsetsDirectional.fromSTEB(
           8 + subtaskIndent * depth,
-          8,
-          8,
-          8,
+          4,
+          4,
+          4,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            ?leading,
             _PriorityCheck(task: task, onToggle: onToggle),
             const SizedBox(width: 4),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 13),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -119,23 +124,31 @@ class TaskTile extends StatelessWidget {
                 ),
               ),
             ),
-            if (task.priority != TaskPriority.p4)
-              Padding(
-                padding: const EdgeInsetsDirectional.only(top: 15, end: 6),
-                child: Text(
-                  'P${task.priority.index + 1}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
             ?trailing,
           ],
         ),
       ),
     );
-    return Semantics(selected: selected, child: row);
+    return Semantics(
+      selected: selected,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          row,
+          // A hairline from the title's edge keeps rows apart without boxes.
+          Padding(
+            padding: EdgeInsetsDirectional.only(
+              start: 56 + subtaskIndent * depth,
+              end: 12,
+            ),
+            child: Divider(
+              height: 1,
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

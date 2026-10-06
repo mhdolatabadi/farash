@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:farash/features/tasks/presentation/project_tasks_view.dart';
 import 'package:farash/features/home/home_screen.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 
@@ -36,7 +37,13 @@ void main() {
   testWidgets('opens on the Inbox', (tester) async {
     await pumpHome(tester, size: const Size(400, 800));
 
-    expect(find.widgetWithText(AppBar, 'صندوق ورودی'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ProjectTasksView),
+        matching: find.text('صندوق ورودی'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('هنوز کاری در «صندوق ورودی» نیست.'), findsOneWidget);
   });
 
@@ -56,7 +63,13 @@ void main() {
     expect(api.all.last.name, 'کار');
     expect(api.all.last.color, '#2563eb');
     // The new project is selected and the drawer closed.
-    expect(find.widgetWithText(AppBar, 'کار'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ProjectTasksView),
+        matching: find.text('کار'),
+      ),
+      findsOneWidget,
+    );
     expect(find.byType(Drawer), findsNothing);
   });
 
@@ -113,7 +126,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.all.where((p) => p.name == 'Work'), isEmpty);
-    expect(find.widgetWithText(AppBar, 'صندوق ورودی'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ProjectTasksView),
+        matching: find.text('صندوق ورودی'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('the Inbox menu has no rename, archive or delete', (

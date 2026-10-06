@@ -115,6 +115,9 @@ void main() {
 
     await tester.tap(find.text('B'));
     await tester.pumpAndSettle();
+    // The subtask field opens on demand.
+    await tester.tap(find.text('افزودن زیرکار'));
+    await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextField, 'زیرکار تازه'), 'B1');
     await tester.tap(find.byTooltip('افزودن زیرکار'));
     await tester.pumpAndSettle();

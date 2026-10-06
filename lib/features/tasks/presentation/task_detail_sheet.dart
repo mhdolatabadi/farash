@@ -151,6 +151,44 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
     }
   }
 
+  /// A field without a box: the sheet's structure comes from spacing and
+  /// dividers, so the title and notes read as content.
+  static InputDecoration _bare(ThemeData theme, String label) =>
+      InputDecoration(
+        labelText: label,
+        filled: false,
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        floatingLabelStyle: theme.textTheme.labelLarge?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
+
+  /// A dropdown that reads as the value of a property row.
+  static const _bareChoice = InputDecoration(
+    filled: false,
+    isDense: true,
+    border: InputBorder.none,
+    enabledBorder: InputBorder.none,
+    focusedBorder: InputBorder.none,
+    contentPadding: EdgeInsets.symmetric(vertical: 12),
+  );
+
+  /// Counters only matter close to the limit.
+  static Widget? _counterNearLimit(
+    BuildContext context, {
+    required int currentLength,
+    required bool isFocused,
+    required int? maxLength,
+  }) => maxLength == null || currentLength < maxLength * 0.9
+      ? null
+      : Text(
+          '${persianDigits(currentLength)}/${persianDigits(maxLength)}',
+          style: Theme.of(context).textTheme.labelSmall,
+        );
+
   void _close(TaskSheetResult? result) {
     if (widget.onResult != null) {
       widget.onResult!(result);
@@ -194,7 +232,9 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                     Expanded(
                       child: Text(
                         'جزئیات کار',
-                        style: theme.textTheme.titleLarge,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                     IconButton(
@@ -204,37 +244,124 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                // The title reads as the sheet's heading, not a form box.
                 TextFormField(
                   controller: _title,
                   maxLength: 500,
+                  buildCounter: _counterNearLimit,
                   minLines: 1,
                   maxLines: 4,
-                  style: theme.textTheme.titleMedium,
-                  decoration: const InputDecoration(labelText: 'عنوان'),
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                  decoration: _bare(theme, 'عنوان'),
                   validator: (value) => (value ?? '').trim().isEmpty
                       ? 'عنوان کار را بنویسید.'
                       : null,
                 ),
-                const SizedBox(height: 8),
                 TextFormField(
                   controller: _description,
                   maxLength: 20000,
-                  minLines: 3,
+                  buildCounter: _counterNearLimit,
+                  minLines: 2,
                   maxLines: 10,
                   keyboardType: TextInputType.multiline,
-                  decoration: const InputDecoration(
-                    labelText: 'توضیحات',
-                    alignLabelWithHint: true,
+                  style: theme.textTheme.bodyLarge,
+                  decoration: _bare(theme, 'توضیحات'),
+                ),
+                const SizedBox(height: 8),
+                const Divider(),
+                const SizedBox(height: 4),
+                _ScheduleRow(dates: _dates, onTap: _pickDates),
+                _PropertyRow(
+                  icon: Icons.flag_outlined,
+                  label: 'اولویت',
+                  child: PriorityPicker(
+                    value: _priority,
+                    onChanged: (p) => setState(() => _priority = p),
                   ),
                 ),
+                const SizedBox(height: 8),
+                if (targets.isNotEmpty)
+                  _PropertyRow(
+                    icon: Icons.folder_outlined,
+                    label: 'پروژه',
+                    expand: true,
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _projectId,
+                      isExpanded: true,
+                      decoration: _bareChoice,
+                      items: [
+                        for (final p in targets)
+                          DropdownMenuItem(
+                            value: p.id,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  p.isInbox
+                                      ? Icons.inbox_outlined
+                                      : Icons.circle,
+                                  size: p.isInbox ? 18 : 10,
+                                  color: p.isInbox ? null : p.swatch,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    p.displayName,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                      onChanged: (id) => setState(() {
+                        _projectId = id!;
+                        // Sections belong to one project.
+                        if (_projectId != widget.task.projectId) {
+                          _sectionId = null;
+                        }
+                      }),
+                    ),
+                  ),
+                // A subtask stays in its parent's section.
+                if (_projectId == widget.task.projectId &&
+                    widget.task.parentId == null &&
+                    widget.controller.sections.isNotEmpty) ...[
+                  _PropertyRow(
+                    icon: Icons.view_agenda_outlined,
+                    label: 'بخش',
+                    expand: true,
+                    child: DropdownButtonFormField<String?>(
+                      initialValue: _sectionId,
+                      isExpanded: true,
+                      decoration: _bareChoice,
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('بدون بخش'),
+                        ),
+                        for (final section in widget.controller.sections)
+                          DropdownMenuItem<String?>(
+                            value: section.id,
+                            child: Text(
+                              section.name,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                      onChanged: (id) => setState(() => _sectionId = id),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                const Divider(),
                 _Checklist(
                   description: _description,
                   newItem: _newItem,
                   onChanged: _saveChecklist,
                   onAdd: _addItem,
                 ),
-                const SizedBox(height: 12),
                 ListenableBuilder(
                   listenable: widget.controller,
                   builder: (context, _) => _Subtasks(
@@ -252,78 +379,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                         _quietly(() => widget.controller.outdent(_task)),
                   ),
                 ),
-                const SizedBox(height: 12),
-                _ScheduleRow(dates: _dates, onTap: _pickDates),
-                const SizedBox(height: 12),
-                Text('اولویت', style: theme.textTheme.labelLarge),
-                const SizedBox(height: 8),
-                PriorityPicker(
-                  value: _priority,
-                  onChanged: (p) => setState(() => _priority = p),
-                ),
                 const SizedBox(height: 16),
-                if (targets.isNotEmpty)
-                  DropdownButtonFormField<String>(
-                    initialValue: _projectId,
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'پروژه'),
-                    items: [
-                      for (final p in targets)
-                        DropdownMenuItem(
-                          value: p.id,
-                          child: Row(
-                            children: [
-                              Icon(
-                                p.isInbox ? Icons.inbox_outlined : Icons.circle,
-                                size: p.isInbox ? 18 : 10,
-                                color: p.isInbox ? null : p.swatch,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  p.displayName,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                    onChanged: (id) => setState(() {
-                      _projectId = id!;
-                      // Sections belong to one project.
-                      if (_projectId != widget.task.projectId) {
-                        _sectionId = null;
-                      }
-                    }),
-                  ),
-                // A subtask stays in its parent's section.
-                if (_projectId == widget.task.projectId &&
-                    widget.task.parentId == null &&
-                    widget.controller.sections.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String?>(
-                    initialValue: _sectionId,
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'بخش'),
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('بدون بخش'),
-                      ),
-                      for (final section in widget.controller.sections)
-                        DropdownMenuItem<String?>(
-                          value: section.id,
-                          child: Text(
-                            section.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                    ],
-                    onChanged: (id) => setState(() => _sectionId = id),
-                  ),
-                ],
-                const SizedBox(height: 20),
                 Row(
                   children: [
                     TextButton.icon(
@@ -370,26 +426,97 @@ class PriorityPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
+    return SegmentedButton<TaskPriority>(
+      showSelectedIcon: false,
+      style: const ButtonStyle(
+        visualDensity: VisualDensity.standard,
+        tapTargetSize: MaterialTapTargetSize.padded,
+      ),
+      segments: [
         for (final p in TaskPriority.values)
-          ChoiceChip(
-            selected: p == value,
-            onSelected: (_) => onChanged(p),
-            avatar: Icon(Icons.flag, color: p.color, size: 18),
-            label: Text(p.label),
-            showCheckmark: false,
+          ButtonSegment(
+            value: p,
+            tooltip: p.label,
+            icon: Icon(
+              p == TaskPriority.p4 ? Icons.outlined_flag : Icons.flag,
+              color: p.color,
+            ),
+            label: Text(persianDigits(p.level)),
           ),
+      ],
+      selected: {value},
+      onSelectionChanged: (s) => onChanged(s.single),
+    );
+  }
+}
+
+/// A section title in the editor, with an optional count beside it.
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 4),
+      child: Text(
+        text,
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+/// A one-line field with its add button, for checklist items and
+/// subtasks.
+class _InlineAdd extends StatelessWidget {
+  const _InlineAdd({
+    required this.controller,
+    required this.hint,
+    required this.tooltip,
+    required this.icon,
+    required this.onAdd,
+    this.autofocus = false,
+  });
+
+  final TextEditingController controller;
+  final String hint;
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onAdd;
+  final bool autofocus;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: controller,
+            autofocus: autofocus,
+            maxLength: 500,
+            buildCounter:
+                (_, {required currentLength, required isFocused, maxLength}) =>
+                    null,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(hintText: hint, isDense: true),
+            onSubmitted: (_) => onAdd(),
+          ),
+        ),
+        IconButton(tooltip: tooltip, onPressed: onAdd, icon: Icon(icon)),
       ],
     );
   }
 }
 
-/// Checklist items found in the description, ticked in place, and a field
-/// that adds one.
-class _Checklist extends StatelessWidget {
+/// Checklist items found in the description, ticked in place. The field
+/// that adds one opens on demand, so an empty checklist takes one line.
+class _Checklist extends StatefulWidget {
   const _Checklist({
     required this.description,
     required this.newItem,
@@ -403,28 +530,43 @@ class _Checklist extends StatelessWidget {
   final VoidCallback onAdd;
 
   @override
+  State<_Checklist> createState() => _ChecklistState();
+}
+
+class _ChecklistState extends State<_Checklist> {
+  bool _adding = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ValueListenableBuilder(
-      valueListenable: description,
+      valueListenable: widget.description,
       builder: (context, value, _) {
         final items = parseChecklist(value.text);
         final done = items.where((i) => i.done).length;
+        if (items.isEmpty && !_adding) {
+          return Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: () => setState(() => _adding = true),
+              icon: const Icon(Icons.checklist),
+              label: const Text('افزودن چک‌لیست'),
+            ),
+          );
+        }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (items.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  'چک‌لیست ${persianDigits(done)}/${persianDigits(items.length)}',
-                  style: theme.textTheme.labelLarge,
-                ),
-              ),
+            _SectionHeading(
+              items.isEmpty
+                  ? 'چک‌لیست'
+                  : 'چک‌لیست ${persianDigits(done)}/${persianDigits(items.length)}',
+            ),
             for (final item in items)
               CheckboxListTile(
                 key: ValueKey('checklist-${item.line}'),
                 value: item.done,
+                dense: true,
                 contentPadding: EdgeInsets.zero,
                 controlAffinity: ListTileControlAffinity.leading,
                 title: Text(
@@ -436,37 +578,17 @@ class _Checklist extends StatelessWidget {
                         )
                       : null,
                 ),
-                onChanged: (checked) => onChanged(
+                onChanged: (checked) => widget.onChanged(
                   setChecklistItem(value.text, item.line, checked ?? false),
                 ),
               ),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: newItem,
-                    maxLength: 500,
-                    buildCounter:
-                        (
-                          _, {
-                          required currentLength,
-                          required isFocused,
-                          maxLength,
-                        }) => null,
-                    textInputAction: TextInputAction.done,
-                    decoration: const InputDecoration(
-                      hintText: 'مورد تازهٔ چک‌لیست',
-                      isDense: true,
-                    ),
-                    onSubmitted: (_) => onAdd(),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'افزودن به چک‌لیست',
-                  onPressed: onAdd,
-                  icon: const Icon(Icons.add_task),
-                ),
-              ],
+            _InlineAdd(
+              controller: widget.newItem,
+              hint: 'مورد تازهٔ چک‌لیست',
+              tooltip: 'افزودن به چک‌لیست',
+              icon: Icons.add_task,
+              onAdd: widget.onAdd,
+              autofocus: items.isEmpty,
             ),
           ],
         );
@@ -475,9 +597,9 @@ class _Checklist extends StatelessWidget {
   }
 }
 
-/// The task's subtasks with progress, a field that adds one, and the
-/// actions that nest the task under the one above it or lift it a level.
-class _Subtasks extends StatelessWidget {
+/// The task's subtasks with progress, a field that adds one (opened on
+/// demand), and the actions that nest the task or lift it a level.
+class _Subtasks extends StatefulWidget {
   const _Subtasks({
     required this.controller,
     required this.task,
@@ -499,83 +621,123 @@ class _Subtasks extends StatelessWidget {
   final VoidCallback onOutdent;
 
   @override
+  State<_Subtasks> createState() => _SubtasksState();
+}
+
+class _SubtasksState extends State<_Subtasks> {
+  bool _adding = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final parent = controller.taskById(task.parentId);
-    final above = controller.indentTarget(task);
-    final children = controller.openChildren(task);
+    final task = widget.task;
+    final parent = widget.controller.taskById(task.parentId);
+    final above = widget.controller.indentTarget(task);
+    final children = widget.controller.openChildren(task);
+    final showList = task.hasSubtasks || children.isNotEmpty || _adding;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (showList) ...[
+          _SectionHeading(
+            task.hasSubtasks
+                ? 'زیرکارها ${persianDigits(task.completedSubtaskCount)}/${persianDigits(task.subtaskCount)}'
+                : 'زیرکارها',
+          ),
+          for (final child in children)
+            TaskTile(
+              key: ValueKey('subtask-${child.id}'),
+              task: child,
+              onToggle: () => widget.onToggle(child),
+              onOpen: () => widget.onOpen(child),
+            ),
+          if (!task.isCompleted)
+            _InlineAdd(
+              controller: widget.newSubtask,
+              hint: 'زیرکار تازه',
+              tooltip: 'افزودن زیرکار',
+              icon: Icons.subdirectory_arrow_left,
+              onAdd: widget.onAdd,
+              autofocus: _adding && children.isEmpty,
+            ),
+        ],
         if (parent != null)
-          Text(
-            'زیرکارِ «${parent.title}»',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'زیرکارِ «${parent.title}»',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         Wrap(
-          spacing: 8,
+          spacing: 4,
           children: [
+            if (!showList && !task.isCompleted)
+              TextButton.icon(
+                onPressed: () => setState(() => _adding = true),
+                icon: const Icon(Icons.subdirectory_arrow_left),
+                label: const Text('افزودن زیرکار'),
+              ),
             if (above != null && !task.isCompleted)
               TextButton.icon(
-                onPressed: onIndent,
+                onPressed: widget.onIndent,
                 icon: const Icon(Icons.format_indent_increase),
                 label: const Text('زیرکارِ کار بالایی'),
               ),
             if (parent != null)
               TextButton.icon(
-                onPressed: onOutdent,
+                onPressed: widget.onOutdent,
                 icon: const Icon(Icons.format_indent_decrease),
                 label: const Text('یک سطح بیرون'),
               ),
           ],
         ),
-        Text(
-          task.hasSubtasks
-              ? 'زیرکارها ${persianDigits(task.completedSubtaskCount)}/${persianDigits(task.subtaskCount)}'
-              : 'زیرکارها',
-          style: theme.textTheme.labelLarge,
-        ),
-        for (final child in children)
-          TaskTile(
-            key: ValueKey('subtask-${child.id}'),
-            task: child,
-            onToggle: () => onToggle(child),
-            onOpen: () => onOpen(child),
-          ),
-        if (!task.isCompleted)
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: newSubtask,
-                  maxLength: 500,
-                  buildCounter:
-                      (
-                        _, {
-                        required currentLength,
-                        required isFocused,
-                        maxLength,
-                      }) => null,
-                  textInputAction: TextInputAction.done,
-                  decoration: const InputDecoration(
-                    hintText: 'زیرکار تازه',
-                    isDense: true,
-                  ),
-                  onSubmitted: (_) => onAdd(),
-                ),
-              ),
-              IconButton(
-                tooltip: 'افزودن زیرکار',
-                onPressed: onAdd,
-                icon: const Icon(Icons.subdirectory_arrow_left),
-              ),
-            ],
-          ),
       ],
+    );
+  }
+}
+
+/// A labelled property of the task: an icon, its name, and the control.
+class _PropertyRow extends StatelessWidget {
+  const _PropertyRow({
+    required this.icon,
+    required this.label,
+    required this.child,
+    this.expand = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final Widget child;
+
+  /// Lets the control take the row's remaining width, as a dropdown does.
+  final bool expand;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Text(label, style: theme.textTheme.bodyLarge),
+          const SizedBox(width: 12),
+          Expanded(
+            child: expand
+                ? child
+                : Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: FittedBox(fit: BoxFit.scaleDown, child: child),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -602,7 +764,7 @@ class _ScheduleRow extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 48),
           child: Row(
             children: [
-              Icon(Icons.event, color: theme.colorScheme.primary),
+              Icon(Icons.event, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
