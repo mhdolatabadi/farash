@@ -806,12 +806,13 @@ class _QuickAddState extends State<_QuickAdd> {
                         focusNode: _focus,
                         textInputAction: TextInputAction.send,
                         maxLength: 500,
-                        buildCounter: (
-                          _, {
-                          required currentLength,
-                          required isFocused,
-                          maxLength,
-                        }) => null,
+                        buildCounter:
+                            (
+                              _, {
+                              required currentLength,
+                              required isFocused,
+                              maxLength,
+                            }) => null,
                         decoration: InputDecoration(
                           hintText: 'کار تازه در «${widget.projectName}»',
                           filled: false,
