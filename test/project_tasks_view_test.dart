@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:farash/features/projects/data/project.dart';
@@ -39,6 +41,76 @@ void main() {
   }
 
   setUp(() => api = FakeTasksApi());
+
+  for (final fail in [false, true]) {
+    testWidgets('compact empty reload preserves draft and priority: $fail', (
+      tester,
+    ) async {
+      final delayed = _DelayedTasksApi();
+      api = delayed;
+      await pumpView(tester, size: const Size(700, 200));
+      await tester.tap(find.byTooltip('اولویت: اولویت ۴'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('اولویت ۲').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byType(TextField, skipOffstage: false),
+        'پیش‌نویس',
+      );
+      await tester.ensureVisible(find.byType(FilterChip));
+      await tester.pumpAndSettle();
+      final reload = Completer<void>();
+      delayed.pending = reload;
+      if (fail) delayed.failNext = Exception('offline');
+      await tester.tap(find.byType(FilterChip));
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(find.byType(TextField, skipOffstage: false))
+            .controller!
+            .text,
+        'پیش‌نویس',
+      );
+      expect(
+        find.byTooltip('اولویت: اولویت ۲', skipOffstage: false),
+        findsOneWidget,
+      );
+      reload.complete();
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextField>(find.byType(TextField, skipOffstage: false))
+            .controller!
+            .text,
+        'پیش‌نویس',
+      );
+      expect(
+        find.byTooltip('اولویت: اولویت ۲', skipOffstage: false),
+        findsOneWidget,
+      );
+      if (fail) {
+        await tester.ensureVisible(find.text('تلاش دوباره'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('تلاش دوباره'));
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<TextField>(find.byType(TextField, skipOffstage: false))
+              .controller!
+              .text,
+          'پیش‌نویس',
+        );
+      }
+      await tester.ensureVisible(find.byType(TextField, skipOffstage: false));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(TextField));
+      await tester.testTextInput.receiveAction(TextInputAction.send);
+      await tester.pumpAndSettle();
+      expect(api.byTitle('پیش‌نویس').priority, TaskPriority.p2);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('quick add needs one field and one action', (tester) async {
     await pumpView(tester);
@@ -194,4 +266,20 @@ void main() {
     final quickAddTop = tester.getTopLeft(find.byType(TextField)).dy;
     expect(lastBottom, lessThanOrEqualTo(quickAddTop));
   });
+}
+
+class _DelayedTasksApi extends FakeTasksApi {
+  Completer<void>? pending;
+
+  @override
+  Future<List<Task>> listTasks(
+    String token,
+    String projectId, {
+    bool showCompleted = false,
+  }) async {
+    final wait = pending;
+    pending = null;
+    if (wait != null) await wait.future;
+    return super.listTasks(token, projectId, showCompleted: showCompleted);
+  }
 }

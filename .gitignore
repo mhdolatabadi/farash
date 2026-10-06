@@ -59,4 +59,5 @@ android/app/*.jks
 android/app/*.keystore
 
 # Widget-test UI captures (CAPTURE_GLASS_UI=1)
-.impeccable/
+.impeccable/*
+!.impeccable/design.json

@@ -57,3 +57,19 @@ Same world, firmer hierarchy:
   - Changing project fades through.
   - The subtask chevron turns, and send wakes up when there is text.
   - With reduced motion every one of these is instant.
+
+## Compact-height capture
+When available project-pane height falls below 240px, capture moves from its
+normal bottom layout position to the top of the same CustomScrollView as tasks.
+A GlobalKey preserves the draft across relocation. This keeps landscape-keyboard
+layouts scrollable without reserving a fixed capture footer. GlassSurface's
+transparent Material lets ListTile ink paint above the pane tint. These notes
+describe source behavior and make no CI, hardware or accessibility-service claim.
+
+## Editor and status adaptations
+Nonexpanding property rows stack heading and control below 480px available width.
+PriorityPicker retains minimum 48px targets and switches to vertical below 320px
+when textScaler.scale(14) exceeds 18px; typography is not fitted down. Compact
+capture remains mounted above loading/error slivers, and empty-state copy is
+direction-independent. These are implementation descriptions, not validation
+results.

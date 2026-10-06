@@ -37,9 +37,6 @@ void main() {
     testWidgets('glass layout and editor: ${layout.$1}', (tester) async {
       tester.view.physicalSize = layout.$2;
       tester.view.devicePixelRatio = 1;
-      if (layout.$1 == 'landscape-ime') {
-        tester.view.viewInsets = const FakeViewPadding(bottom: 160);
-      }
       addTearDown(tester.view.reset);
       final api = FakeTasksApi();
       api.seed('inbox', 'ادامهٔ مطالعهٔ کتاب', priority: TaskPriority.p1);
@@ -89,17 +86,39 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      if (layout.$1 == 'landscape-ime') {
+        await tester.enterText(find.byType(TextField), 'پیش‌نویس محفوظ');
+        tester.view.viewInsets = const FakeViewPadding(bottom: 160);
+        await tester.pumpAndSettle();
+        expect(find.text('پیش‌نویس محفوظ'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }
       await _capture(tester, captureKey, layout.$1);
-      // With the keyboard up in landscape the header and quick add fill
-      // the viewport, so bring the task into view first, as a user scrolls.
-      await tester.ensureVisible(
-        find.text('ادامهٔ مطالعهٔ کتاب', skipOffstage: false),
-      );
-      await tester.pumpAndSettle();
+      if (layout.$1 == 'landscape-ime') {
+        await tester.scrollUntilVisible(
+          find.text('ادامهٔ مطالعهٔ کتاب'),
+          60,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        await _capture(tester, captureKey, '${layout.$1}-tasks');
+      }
       await tester.tap(find.text('ادامهٔ مطالعهٔ کتاب'));
       await tester.pumpAndSettle();
       expect(find.byType(TaskDetailEditor), findsOneWidget);
       expect(tester.takeException(), isNull);
+      if (layout.$1 == 'phone-dark-large') {
+        for (final priority in TaskPriority.values) {
+          final segment = find.byTooltip(priority.label);
+          await tester.ensureVisible(segment);
+          final size = tester.getRect(segment).size;
+          expect(size.width, greaterThanOrEqualTo(48));
+          expect(size.height, greaterThanOrEqualTo(48));
+        }
+        await tester.ensureVisible(find.byTooltip(TaskPriority.p2.label));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip(TaskPriority.p2.label));
+      }
       await tester.ensureVisible(find.text('ذخیره'));
       await tester.pumpAndSettle();
       await _capture(tester, captureKey, '${layout.$1}-editor');
@@ -111,6 +130,9 @@ void main() {
       await tester.tap(find.text('ذخیره'));
       await tester.pumpAndSettle();
       expect(api.byTitle('عنوان جدید').title, 'عنوان جدید');
+      if (layout.$1 == 'phone-dark-large') {
+        expect(api.byTitle('عنوان جدید').priority, TaskPriority.p2);
+      }
       expect(find.byType(TaskDetailEditor), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
