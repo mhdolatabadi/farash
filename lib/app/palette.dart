@@ -19,6 +19,9 @@ class FarashColors {
     required this.pane,
     required this.paneBorder,
     required this.shadow,
+    required this.overdue,
+    required this.relief,
+    required this.reliefShade,
   });
 
   final Color primary;
@@ -44,6 +47,13 @@ class FarashColors {
   final Color pane;
   final Color paneBorder;
   final Color shadow;
+
+  /// Overdue dates, and nothing else.
+  final Color overdue;
+
+  /// The pressed-pebble pattern of the glass: a lit and a shaded side.
+  final Color relief;
+  final Color reliefShade;
 }
 
 @immutable
@@ -61,38 +71,47 @@ class FarashPalette {
   FarashColors of(Brightness brightness) =>
       brightness == Brightness.dark ? dark : light;
 
-  /// Pomegranate (#43): a warm red primary on ivory with a straw accent.
-  static const pomegranate = FarashPalette(
-    name: 'pomegranate',
+  /// شیشهٔ مشجر (#47): patterned privacy glass at night. Indigo night in
+  /// front, honey lamplight behind; honey means only "now", sage marks
+  /// tomorrow and pomegranate marks overdue. Night is the designed default,
+  /// day the same door by daylight.
+  static const moshajjar = FarashPalette(
+    name: 'moshajjar',
     light: FarashColors(
-      primary: Color(0xFFA6324A),
+      primary: Color(0xFF8A5A12),
       onPrimary: Colors.white,
-      accent: Color(0xFF9C5C14),
-      surface: Color(0xFFFFFBF8),
-      onSurface: Color(0xFF2D1C20),
-      onSurfaceVariant: Color(0xFF6E5A5D),
-      selected: Color(0xFFF5DFE2),
-      onSelected: Color(0xFF5C1023),
-      backdrop: [Color(0xFFF4DFDF), Color(0xFFFDF9F4), Color(0xFFF1E6D2)],
-      glow: Color(0xB3FFFFFF),
-      pane: Color(0xB8FFFFFF),
-      paneBorder: Color(0xE6FFFFFF),
-      shadow: Color(0x142D1C20),
+      accent: Color(0xFF3F6B52),
+      surface: Color(0xFFFBF8F2),
+      onSurface: Color(0xFF1E2230),
+      onSurfaceVariant: Color(0xFF5A5E6B),
+      selected: Color(0xFFEDE5D5),
+      onSelected: Color(0xFF1E2230),
+      backdrop: [Color(0xFFE9ECF3), Color(0xFFF6F2EA), Color(0xFFEFE3CF)],
+      glow: Color(0x73F0C27A),
+      pane: Color(0x99FFFFFF),
+      paneBorder: Color(0xD9FFFFFF),
+      shadow: Color(0x141E2230),
+      overdue: Color(0xFFB3343F),
+      relief: Color(0x0FFFFFFF),
+      reliefShade: Color(0x081E2230),
     ),
     dark: FarashColors(
-      primary: Color(0xFFFFB0BE),
-      onPrimary: Color(0xFF5C1023),
-      accent: Color(0xFFEDBB72),
-      surface: Color(0xFF2A1B1F),
-      onSurface: Color(0xFFF6E8EA),
-      onSurfaceVariant: Color(0xFFCDB8BB),
-      selected: Color(0xFF4E2A32),
-      onSelected: Color(0xFFF6E8EA),
-      backdrop: [Color(0xFF3A1A22), Color(0xFF1A1114), Color(0xFF2B2216)],
-      glow: Color(0x338C3A4C),
-      pane: Color(0xE62A1B1F),
-      paneBorder: Color(0x29FFB0BE),
-      shadow: Color(0x4D000000),
+      primary: Color(0xFFE8B66B),
+      onPrimary: Color(0xFF21170A),
+      accent: Color(0xFFA9C4B2),
+      surface: Color(0xFF141B36),
+      onSurface: Color(0xFFF3ECE2),
+      onSurfaceVariant: Color(0xFFB9B2A6),
+      selected: Color(0xFF26305A),
+      onSelected: Color(0xFFF3ECE2),
+      backdrop: [Color(0xFF17204A), Color(0xFF0F1530), Color(0xFF0A0E1F)],
+      glow: Color(0x52E8B66B),
+      pane: Color(0x0FE8E4F0),
+      paneBorder: Color(0x26FFECCE),
+      shadow: Color(0x59000000),
+      overdue: Color(0xFFEF8C8F),
+      relief: Color(0x08FFF4E2),
+      reliefShade: Color(0x12000000),
     ),
   );
 }
@@ -105,7 +124,7 @@ class FarashGlassColors extends ThemeExtension<FarashGlassColors> {
 
   static FarashColors of(BuildContext context) =>
       Theme.of(context).extension<FarashGlassColors>()?.colors ??
-      FarashPalette.pomegranate.of(Theme.of(context).brightness);
+      FarashPalette.moshajjar.of(Theme.of(context).brightness);
 
   @override
   FarashGlassColors copyWith({FarashColors? colors}) =>

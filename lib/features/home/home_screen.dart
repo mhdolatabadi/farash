@@ -52,6 +52,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Project? get _selected =>
       widget.projects.byId(_selectedId) ?? widget.projects.inbox;
 
+  /// The project the lamp was last placed for.
+  String? _lampFor;
+
+  /// Moves the lamp behind the glass when the project changes, after the
+  /// frame so the backdrop never rebuilds mid-build.
+  void _placeLamp(Project? project) {
+    if (project == null || project.id == _lampFor) return;
+    _lampFor = project.id;
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => GlassLamp.placeFor(project.id),
+    );
+  }
+
   void _select(Project project) {
     setState(() => _selectedId = project.id);
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
@@ -88,6 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
           listenable: widget.projects,
           builder: (context, _) {
             final selected = _selected;
+            _placeLamp(selected);
             final Widget content = selected == null
                 ? _ProjectPage(loading: widget.projects.isLoading)
                 : ProjectTasksView(

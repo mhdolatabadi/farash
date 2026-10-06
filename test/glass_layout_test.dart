@@ -21,6 +21,9 @@ void main() {
     final font = FontLoader('Vazirmatn')
       ..addFont(rootBundle.load('assets/fonts/Vazirmatn-Regular.ttf'));
     await font.load();
+    final naskh = FontLoader('FarashNaskh')
+      ..addFont(rootBundle.load('assets/fonts/NotoNaskhArabic-Bold.ttf'));
+    await naskh.load();
     final icons = FontLoader('MaterialIcons')
       ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
     await icons.load();

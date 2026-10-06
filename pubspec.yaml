@@ -34,3 +34,7 @@ flutter:
           weight: 500
         - asset: assets/fonts/Vazirmatn-Bold.ttf
           weight: 700
+    - family: FarashNaskh
+      fonts:
+        - asset: assets/fonts/NotoNaskhArabic-Bold.ttf
+          weight: 700

@@ -1,46 +1,49 @@
 ---
 name: Farash
-description: A warm, luminous Persian task workspace.
+description: Patterned privacy glass at night: the day's tasks behind the lamp-lit glass of an Iranian home.
 colors:
-  primary: "#A6324A"
-  on-primary: "#FFFFFF"
-  accent: "#9C5C14"
-  surface: "#FFFBF8"
-  ink: "#2D1C20"
-  muted-ink: "#6E5A5D"
-  selected: "#F5DFE2"
-  on-selected: "#5C1023"
-  glow: "rgba(255, 255, 255, 0.701961)"
-  pane: "rgba(255, 255, 255, 0.721569)"
-  pane-border: "rgba(255, 255, 255, 0.901961)"
-  shadow: "rgba(45, 28, 32, 0.078431)"
-  backdrop-1: "#F4DFDF"
-  backdrop-2: "#FDF9F4"
-  backdrop-3: "#F1E6D2"
-  dark-primary: "#FFB0BE"
-  dark-on-primary: "#5C1023"
-  dark-accent: "#EDBB72"
-  dark-surface: "#2A1B1F"
-  dark-ink: "#F6E8EA"
-  dark-muted-ink: "#CDB8BB"
-  dark-selected: "#4E2A32"
-  dark-on-selected: "#F6E8EA"
-  dark-glow: "rgba(140, 58, 76, 0.200000)"
-  dark-pane: "rgba(42, 27, 31, 0.901961)"
-  dark-pane-border: "rgba(255, 176, 190, 0.160784)"
-  dark-shadow: "rgba(0, 0, 0, 0.301961)"
-  dark-backdrop-1: "#3A1A22"
-  dark-backdrop-2: "#1A1114"
-  dark-backdrop-3: "#2B2216"
+  primary: "#E8B66B"
+  on-primary: "#21170A"
+  accent: "#A9C4B2"
+  overdue: "#EF8C8F"
+  surface: "#141B36"
+  ink: "#F3ECE2"
+  muted-ink: "#B9B2A6"
+  selected: "#26305A"
+  on-selected: "#F3ECE2"
+  backdrop-1: "#17204A"
+  backdrop-2: "#0F1530"
+  backdrop-3: "#0A0E1F"
+  glow: "rgba(232, 182, 107, 0.32)"
+  pane: "rgba(232, 228, 240, 0.06)"
+  pane-border: "rgba(255, 236, 206, 0.15)"
+  relief: "rgba(255, 244, 226, 0.03)"
+  relief-shade: "rgba(0, 0, 0, 0.07)"
+  shadow: "rgba(0, 0, 0, 0.35)"
+  day-primary: "#8A5A12"
+  day-on-primary: "#FFFFFF"
+  day-accent: "#3F6B52"
+  day-overdue: "#B3343F"
+  day-surface: "#FBF8F2"
+  day-ink: "#1E2230"
+  day-muted-ink: "#5A5E6B"
+  day-selected: "#EDE5D5"
+  day-on-selected: "#1E2230"
+  day-backdrop-1: "#E9ECF3"
+  day-backdrop-2: "#F6F2EA"
+  day-backdrop-3: "#EFE3CF"
+  day-glow: "rgba(240, 194, 122, 0.45)"
+  day-pane: "rgba(255, 255, 255, 0.60)"
+  day-pane-border: "rgba(255, 255, 255, 0.85)"
+  day-relief: "rgba(255, 255, 255, 0.06)"
+  day-relief-shade: "rgba(30, 34, 48, 0.03)"
+  day-shadow: "rgba(30, 34, 48, 0.08)"
 typography:
-  project-headline:
-    fontFamily: "Vazirmatn"
-    fontSize: "24px"
-    fontWeight: 800
-  editor-heading:
-    fontFamily: "Vazirmatn"
+  heading:
+    fontFamily: "Noto Naskh Arabic (FarashNaskh), Vazirmatn"
     fontSize: "24px"
     fontWeight: 700
+    lineHeight: 1.35
   body:
     fontFamily: "Vazirmatn"
     fontSize: "16px"
@@ -68,8 +71,12 @@ components:
     textColor: "{colors.on-primary}"
     rounded: "{rounded.control}"
     height: "48px"
-  input:
+  button-text:
+    textColor: "{colors.ink}"
     rounded: "{rounded.control}"
+    height: "48px"
+  input:
+    rounded: "{rounded.card}"
     padding: "14px 16px"
     textColor: "{colors.ink}"
   navigation-selected:
@@ -79,35 +86,52 @@ components:
   glass-pane:
     backgroundColor: "{colors.pane}"
     rounded: "{rounded.pane}"
+  done-stamp:
+    textColor: "{colors.primary}"
+    rounded: "6px"
 ---
 
 # Design System: Farash
 
 ## Overview
 
-**Creative North Star: "The Quiet Desk"**
+**Creative North Star: «شیشهٔ مشجر» (patterned privacy glass at night)**
 
-A luminous, quiet desk for capturing and arranging real tasks. The current pomegranate world pairs warm ivory and straw illumination with milky glass panes and plum ink. The user-approved calm glass direction remains the foundation; the current palette and stronger hierarchy come from the implemented refinements.
+The day's tasks are seen through the pressed, patterned glass of an Iranian home's door at night. Indigo night lies in front, and a lamp-lit room glows behind the glass. Panes are frosted with a faint pebble relief and a lit top edge, and the lamp moves to a new place when the project changes. The world was chosen in #47 through the impeccable direction roll (seed 3a5bd5db, candidate 7). The direction contract lives in `docs/design/surfaces/app.md`.
 
-Persian RTL and bundled Vazirmatn define the app's identity across Android and Web. Semantic task content, clear project hierarchy and reversible actions remain central. The comparison board is a reference, not shipping artwork.
+Night is the designed default; day is the same door by daylight. Persian RTL, bundled Vazirmatn and the reversible, semantic task model remain from earlier worlds.
 
 **Key Characteristics:**
-- Warm ivory glass with pomegranate actions and straw accents.
-- Strong project headings above restrained task rows.
-- Persian-first reading and semantic controls.
-- Short purposeful motion with instant reduced-motion behavior.
+- Indigo night ground with a moving honey lamp behind the glass.
+- Frosted panes with a faint pressed-pebble relief and a lit top edge.
+- Naskh headings, Vazirmatn reading text, tabular figures.
+- Honey means now; sage means tomorrow; pomegranate means overdue.
+- Checked tasks are stamped «انجام شد» before they fold away.
 
 ## Colors
 
-Primary is pomegranate for actions and today's due date. The straw accent supplies tomorrow's date; overdue dates use the generated Material error role. Plum ink and muted ink distinguish titles from metadata. Selected navigation uses a rose tonal surface. Dark mode uses pale pink actions and straw on plum-dark panes.
+Every color comes from `FarashPalette.moshajjar` in `lib/app/palette.dart`, which feeds both the Material theme and the glass backdrop and panes.
 
-Frontmatter extracts the actual palette from lib/app/palette.dart, including ARGB alpha as CSS rgba. Remaining Material roles are generated with tonalSpot from the palette primary; do not assign invented fixed colors to those roles. Project colors and icons remain meaningful per-project identifiers.
+- **Honey** (`primary`, the lamplight) is spent only on "now": today's dates, the «انجام شد» stamp, and the single primary action of a view (save, send).
+- **Sage** (`tertiary`) marks tomorrow.
+- **Pomegranate** (`error`) marks overdue and nothing else.
+- **Ink:** lamp-lit ink for text and muted ink for metadata.
+- **Selection:** a deeper night tone. Secondary text actions and chip icons take the ink.
 
-**The Meaningful Color Rule.** Keep temporal color and project identity tied to actual task data; priority is represented by the check color, not a decorative P badge.
+Day mode keeps the same roles at contrast-safe values. A test holds every text role at 4.5:1 or better on its surface in both themes.
+
+**The One Lamp Rule.** If honey appears on something that is not "now" or the primary action, it is a bug.
 
 ## Typography
 
-Vazirmatn supplies all text through Material 3 roles. App identity and project list headings use headlineSmall with weight (800). The editor title uses headlineSmall with weight (700), reads as a borderless heading, and accepts up to four lines. Task titles use bodyLarge, up to three lines; description previews use bodySmall and one line. Metadata uses labelMedium. Counters appear near field limits rather than constantly.
+Headings (`displaySmall`, `headline*`) are set in Noto Naskh Arabic Bold, bundled as `FarashNaskh` (OFL), with Vazirmatn as fallback and a 1.35 line height. That covers the project heading, the app name and the editor's title.
+
+Everything read in passing stays in Vazirmatn through the Material 3 roles:
+- **Task titles:** bodyLarge, up to three lines.
+- **Previews:** bodySmall, one line.
+- **Metadata:** labelMedium.
+
+Counters appear only near field limits.
 
 **The Persian Reading Rule.** Preserve RTL and directional spacing, while explicitly isolating account email as LTR.
 
@@ -123,11 +147,17 @@ Capture normally occupies layout space below the list. The compact-height adapta
 
 ## Elevation & Depth
 
-GlassSurface bounds backdrop blur to large panes, with default sigma (16). Palette-defined pane tint, border and shadow govern both modes. An offset shadow (0px 10px, blur 28px) surrounds the clipped pane; transparent Material inside the decorated fill lets ListTile ink paint above the glass. Cards retain zero Material elevation. Code-native diagonal gradients and radial glow create ambient illumination.
+GlassSurface bounds blur (sigma 16) to the large panes and never blurs each row.
+- **Pane fill:** each pane takes the palette's pane tint and hairline border.
+- **Lit edge:** a gradient across the top fifth of the pane.
+- **Relief:** a pressed-pebble pattern on a staggered 13px grid of 1.6px domes, lit top-left and shaded bottom-right, painted once on its own layer so scrolling never repaints it.
+- **Shadow:** a soft offset shadow (0 12px, blur 32px) lifts the pane off the night.
 
-Motion uses (160ms) small state changes, (280ms) rows and pages, and a (220ms) completed-row linger before folding. Entry uses easeOutCubic; exit uses easeInCubic. New rows grow/fade/slide from a vertical offset (0.15); project changes fade through. Checks pop with easeOutBack, subtasks turn their chevron and send activates with text. Individual fill transitions still use (150ms). Authored durations become zero under reduced motion.
+GlassBackdrop paints the indigo ground and a honey radial glow (radius 0.75). The lamp moves to a stable position per project over 900ms (easeInOutCubic) and holds still under reduced motion.
 
-**The Bounded Glass Rule.** Blur large workspace and navigation panes, never every task row.
+Motion uses 160ms for small state changes, 280ms for rows and pages, and a 220ms linger for a completed row, which is stamped «انجام شد» (160ms easeOutBack press) before it folds. Entry eases out (easeOutCubic) and exit eases in (easeInCubic). New rows grow in, project changes fade through, and checks pop. All authored durations become zero under reduced motion.
+
+**The Faint Relief Rule.** The relief stays at a few percent alpha; text always sits on calm glass.
 
 ## Shapes
 
@@ -146,15 +176,17 @@ The editor begins with borderless title and notes, followed by property rows for
 ## Do's and Don'ts
 
 ### Do:
-- Do preserve Persian RTL and bundled Vazirmatn.
-- Do use the pomegranate palette source for light and dark roles.
-- Do keep task content, dates and controls semantic.
+- Do take every color from `FarashPalette.moshajjar`.
+- Do keep honey for "now" and the primary action.
+- Do set headings in Naskh and reading text in Vazirmatn.
+- Do stamp completions before folding them.
 - Do preserve capture drafts when adapting to keyboard-constrained height.
-- Do honor reduced motion for authored animations.
+- Do honor reduced motion: the lamp and rows hold still.
 
 ### Don't:
+- Don't spend honey on secondary buttons, icons or selection.
+- Don't raise the relief until it reads as a perforated sheet.
 - Don't blur each task row.
-- Don't restore obsolete teal tokens or priority P badges.
-- Don't ship the comparison board as interface artwork.
+- Don't restore the pomegranate or teal worlds' tokens or priority P badges.
 - Don't introduce controls for unimplemented features.
 - Don't claim hardware or accessibility-service validation from source inspection.
