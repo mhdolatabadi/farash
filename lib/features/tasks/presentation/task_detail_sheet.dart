@@ -6,6 +6,7 @@ import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/tasks/data/checklist.dart';
 import 'package:farash/features/tasks/data/task.dart';
+import 'package:farash/features/tasks/presentation/priority_color.dart';
 import 'package:farash/features/tasks/presentation/due_picker.dart';
 import 'package:farash/features/tasks/presentation/task_messages.dart';
 import 'package:farash/features/tasks/presentation/task_tile.dart';
@@ -155,15 +156,12 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
   /// dividers, so the title and notes read as content.
   static InputDecoration _bare(ThemeData theme, String label) =>
       InputDecoration(
-        labelText: label,
+        hintText: label,
         filled: false,
         border: InputBorder.none,
         enabledBorder: InputBorder.none,
         focusedBorder: InputBorder.none,
         contentPadding: const EdgeInsets.symmetric(vertical: 8),
-        floatingLabelStyle: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
       );
 
   /// A dropdown that reads as the value of a property row.
@@ -211,204 +209,227 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
           .firstOrNull;
       if (current != null) targets.insert(0, current);
     }
-    return GlassSurface(
-      radius: 24,
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 16,
-          bottom: MediaQuery.viewInsetsOf(context).bottom + 24,
-        ),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'جزئیات کار',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+    // Beside the list the editor is a side sheet of glass; as a modal
+    // bottom sheet it is the sheet itself, over a scrim, with no pane of
+    // its own.
+    final side = widget.onResult != null;
+    final body = Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // A side sheet keeps its actions at the bottom edge; a bottom
+          // sheet is as tall as its content.
+          Flexible(
+            fit: side ? FlexFit.tight : FlexFit.loose,
+            child: SingleChildScrollView(
+              padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 12, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // The title is the sheet's heading, not a form box.
+                      Expanded(
+                        child: TextFormField(
+                          key: const ValueKey('task-title'),
+                          controller: _title,
+                          maxLength: 500,
+                          buildCounter: _counterNearLimit,
+                          minLines: 1,
+                          maxLines: 4,
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontFamily: 'Vazirmatn',
+                            fontWeight: FontWeight.w700,
+                          ),
+                          decoration: _bare(theme, 'عنوان کار'),
+                          validator: (value) => (value ?? '').trim().isEmpty
+                              ? 'عنوان کار را بنویسید.'
+                              : null,
                         ),
                       ),
-                    ),
-                    IconButton(
-                      tooltip: 'بستن ویرایشگر',
-                      onPressed: _saving ? null : () => _close(null),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-                // The title reads as the sheet's heading, not a form box.
-                TextFormField(
-                  controller: _title,
-                  maxLength: 500,
-                  buildCounter: _counterNearLimit,
-                  minLines: 1,
-                  maxLines: 4,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+                      IconButton(
+                        tooltip: 'بستن ویرایشگر',
+                        onPressed: _saving ? null : () => _close(null),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
                   ),
-                  decoration: _bare(theme, 'عنوان'),
-                  validator: (value) => (value ?? '').trim().isEmpty
-                      ? 'عنوان کار را بنویسید.'
-                      : null,
-                ),
-                TextFormField(
-                  controller: _description,
-                  maxLength: 20000,
-                  buildCounter: _counterNearLimit,
-                  minLines: 2,
-                  maxLines: 10,
-                  keyboardType: TextInputType.multiline,
-                  style: theme.textTheme.bodyLarge,
-                  decoration: _bare(theme, 'توضیحات'),
-                ),
-                const SizedBox(height: 8),
-                const Divider(),
-                const SizedBox(height: 4),
-                _ScheduleRow(dates: _dates, onTap: _pickDates),
-                _PropertyRow(
-                  icon: Icons.flag_outlined,
-                  label: 'اولویت',
-                  child: PriorityPicker(
-                    value: _priority,
-                    onChanged: (p) => setState(() => _priority = p),
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 12),
+                    child: TextFormField(
+                      controller: _description,
+                      maxLength: 20000,
+                      buildCounter: _counterNearLimit,
+                      minLines: 2,
+                      maxLines: 10,
+                      keyboardType: TextInputType.multiline,
+                      style: theme.textTheme.bodyLarge,
+                      decoration: _bare(theme, 'توضیحات'),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                if (targets.isNotEmpty)
+                  const SizedBox(height: 8),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  _ScheduleRow(dates: _dates, onTap: _pickDates),
                   _PropertyRow(
-                    icon: Icons.folder_outlined,
-                    label: 'پروژه',
-                    expand: true,
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _projectId,
-                      isExpanded: true,
-                      decoration: _bareChoice,
-                      items: [
-                        for (final p in targets)
-                          DropdownMenuItem(
-                            value: p.id,
-                            child: Row(
-                              children: [
-                                Icon(
-                                  p.isInbox
-                                      ? Icons.inbox_outlined
-                                      : Icons.circle,
-                                  size: p.isInbox ? 18 : 10,
-                                  color: p.isInbox ? null : p.swatch,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    p.displayName,
-                                    overflow: TextOverflow.ellipsis,
+                    icon: Icons.flag_outlined,
+                    label: 'اولویت',
+                    child: PriorityPicker(
+                      value: _priority,
+                      onChanged: (p) => setState(() => _priority = p),
+                    ),
+                  ),
+                  if (targets.isNotEmpty)
+                    _PropertyRow(
+                      icon: Icons.folder_outlined,
+                      label: 'پروژه',
+                      expand: true,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _projectId,
+                        isExpanded: true,
+                        decoration: _bareChoice,
+                        items: [
+                          for (final p in targets)
+                            DropdownMenuItem(
+                              value: p.id,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    p.isInbox
+                                        ? Icons.inbox_outlined
+                                        : Icons.circle,
+                                    size: p.isInbox ? 18 : 10,
+                                    color: p.isInbox ? null : p.swatch,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      p.displayName,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                      ],
-                      onChanged: (id) => setState(() {
-                        _projectId = id!;
-                        // Sections belong to one project.
-                        if (_projectId != widget.task.projectId) {
-                          _sectionId = null;
-                        }
-                      }),
+                        ],
+                        onChanged: (id) => setState(() {
+                          _projectId = id!;
+                          // Sections belong to one project.
+                          if (_projectId != widget.task.projectId) {
+                            _sectionId = null;
+                          }
+                        }),
+                      ),
                     ),
-                  ),
-                // A subtask stays in its parent's section.
-                if (_projectId == widget.task.projectId &&
-                    widget.task.parentId == null &&
-                    widget.controller.sections.isNotEmpty) ...[
-                  _PropertyRow(
-                    icon: Icons.view_agenda_outlined,
-                    label: 'بخش',
-                    expand: true,
-                    child: DropdownButtonFormField<String?>(
-                      initialValue: _sectionId,
-                      isExpanded: true,
-                      decoration: _bareChoice,
-                      items: [
-                        const DropdownMenuItem<String?>(
-                          value: null,
-                          child: Text('بدون بخش'),
-                        ),
-                        for (final section in widget.controller.sections)
-                          DropdownMenuItem<String?>(
-                            value: section.id,
-                            child: Text(
-                              section.name,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                  // A subtask stays in its parent's section.
+                  if (_projectId == widget.task.projectId &&
+                      widget.task.parentId == null &&
+                      widget.controller.sections.isNotEmpty)
+                    _PropertyRow(
+                      icon: Icons.view_agenda_outlined,
+                      label: 'بخش',
+                      expand: true,
+                      child: DropdownButtonFormField<String?>(
+                        initialValue: _sectionId,
+                        isExpanded: true,
+                        decoration: _bareChoice,
+                        items: [
+                          const DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('بدون بخش'),
                           ),
-                      ],
-                      onChanged: (id) => setState(() => _sectionId = id),
+                          for (final section in widget.controller.sections)
+                            DropdownMenuItem<String?>(
+                              value: section.id,
+                              child: Text(
+                                section.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                        onChanged: (id) => setState(() => _sectionId = id),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  const Divider(),
+                  const SizedBox(height: 4),
+                  _Checklist(
+                    description: _description,
+                    newItem: _newItem,
+                    onChanged: _saveChecklist,
+                    onAdd: _addItem,
+                  ),
+                  ListenableBuilder(
+                    listenable: widget.controller,
+                    builder: (context, _) => _Subtasks(
+                      controller: widget.controller,
+                      task: _task,
+                      newSubtask: _newSubtask,
+                      onAdd: _addSubtask,
+                      onOpen: _openSubtask,
+                      onToggle: (t) => _quietly(
+                        () => widget.controller.setCompleted(t, !t.isCompleted),
+                      ),
+                      onIndent: () =>
+                          _quietly(() => widget.controller.indent(_task)),
+                      onOutdent: () =>
+                          _quietly(() => widget.controller.outdent(_task)),
                     ),
                   ),
                 ],
-                const SizedBox(height: 12),
-                const Divider(),
-                _Checklist(
-                  description: _description,
-                  newItem: _newItem,
-                  onChanged: _saveChecklist,
-                  onAdd: _addItem,
-                ),
-                ListenableBuilder(
-                  listenable: widget.controller,
-                  builder: (context, _) => _Subtasks(
-                    controller: widget.controller,
-                    task: _task,
-                    newSubtask: _newSubtask,
-                    onAdd: _addSubtask,
-                    onOpen: _openSubtask,
-                    onToggle: (t) => _quietly(
-                      () => widget.controller.setCompleted(t, !t.isCompleted),
-                    ),
-                    onIndent: () =>
-                        _quietly(() => widget.controller.indent(_task)),
-                    onOutdent: () =>
-                        _quietly(() => widget.controller.outdent(_task)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    TextButton.icon(
-                      onPressed: _saving
-                          ? null
-                          : () => _close(TaskSheetResult.deleted),
-                      style: TextButton.styleFrom(
-                        foregroundColor: theme.colorScheme.error,
-                      ),
-                      icon: const Icon(Icons.delete_outline),
-                      label: const Text('حذف'),
-                    ),
-                    const Spacer(),
-                    FilledButton(
-                      onPressed: _saving ? null : _save,
-                      child: _saving
-                          ? const SizedBox.square(
-                              dimension: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('ذخیره'),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+          // The actions stay in reach however long the task is: delete
+          // apart at the start, the one primary action at the end.
+          DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: theme.colorScheme.outlineVariant),
+              ),
+            ),
+            child: Padding(
+              padding: EdgeInsetsDirectional.fromSTEB(
+                12,
+                8,
+                16,
+                8 + (side ? 0 : MediaQuery.paddingOf(context).bottom),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    tooltip: 'حذف کار',
+                    onPressed: _saving
+                        ? null
+                        : () => _close(TaskSheetResult.deleted),
+                    color: theme.colorScheme.error,
+                    icon: const Icon(Icons.delete_outline),
+                  ),
+                  const Spacer(),
+                  FilledButton(
+                    onPressed: _saving ? null : _save,
+                    child: _saving
+                        ? const SizedBox.square(
+                            dimension: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('ذخیره'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+    if (side) return GlassSurface(child: body);
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: body,
     );
   }
 }
@@ -438,6 +459,12 @@ class PriorityPicker extends StatelessWidget {
             visualDensity: VisualDensity.standard,
             tapTargetSize: MaterialTapTargetSize.padded,
             minimumSize: WidgetStatePropertyAll(Size(48, 48)),
+            // A stadium turns into an oval when the segments stack.
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+            ),
           ),
           segments: [
             for (final p in TaskPriority.values)
@@ -446,7 +473,8 @@ class PriorityPicker extends StatelessWidget {
                 tooltip: p.label,
                 icon: Icon(
                   p == TaskPriority.p4 ? Icons.outlined_flag : Icons.flag,
-                  color: p.color,
+                  size: 18,
+                  color: p.colorIn(context),
                 ),
                 label: Text(persianDigits(p.level)),
               ),
@@ -792,7 +820,8 @@ class _ScheduleRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Icon(Icons.chevron_left),
+              // Points toward the end in either direction.
+              const Icon(Icons.chevron_right),
             ],
           ),
         ),

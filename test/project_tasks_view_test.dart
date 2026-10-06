@@ -57,12 +57,12 @@ void main() {
         find.byType(TextField, skipOffstage: false),
         'پیش‌نویس',
       );
-      await tester.ensureVisible(find.byType(FilterChip));
+      await tester.ensureVisible(find.byTooltip('نمایش انجام‌شده‌ها'));
       await tester.pumpAndSettle();
       final reload = Completer<void>();
       delayed.pending = reload;
       if (fail) delayed.failNext = Exception('offline');
-      await tester.tap(find.byType(FilterChip));
+      await tester.tap(find.byTooltip('نمایش انجام‌شده‌ها'));
       await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(
@@ -170,7 +170,7 @@ void main() {
 
     expect(find.text('Done'), findsNothing);
 
-    await tester.tap(find.text('نمایش انجام‌شده‌ها'));
+    await tester.tap(find.byTooltip('نمایش انجام‌شده‌ها'));
     await tester.pumpAndSettle();
 
     expect(find.text('انجام‌شده'), findsOneWidget);
@@ -186,7 +186,7 @@ void main() {
 
     await tester.tap(find.text('A'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.widgetWithText(TextFormField, 'عنوان'), 'A2');
+    await tester.enterText(find.byKey(const ValueKey('task-title')), 'A2');
     await tester.enterText(
       find.widgetWithText(TextFormField, 'توضیحات'),
       'جزئیات',
@@ -217,7 +217,7 @@ void main() {
     // Delete A2, then undo.
     await tester.tap(find.text('A2'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('حذف'));
+    await tester.tap(find.byTooltip('حذف کار'));
     await tester.pumpAndSettle();
 
     expect(find.text('A2'), findsNothing);

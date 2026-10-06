@@ -5,6 +5,7 @@ import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/tasks/data/checklist.dart';
 import 'package:farash/features/tasks/data/task.dart';
+import 'package:farash/features/tasks/presentation/priority_color.dart';
 
 /// Indent per subtask level. Five levels stay usable at 320 px.
 const subtaskIndent = 20.0;
@@ -77,7 +78,7 @@ class TaskTile extends StatelessWidget {
             const SizedBox(width: 4),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 13),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -373,7 +374,7 @@ class _PriorityCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = task.priority.color;
+    final color = task.priority.colorIn(context);
     final done = task.isCompleted;
     return Semantics(
       checked: done,
@@ -410,11 +411,16 @@ class _PriorityCheck extends StatelessWidget {
                   child: child,
                 ),
                 child: done
-                    ? const Icon(
+                    ? Icon(
                         Icons.check,
-                        key: ValueKey('checked'),
+                        key: const ValueKey('checked'),
                         size: 14,
-                        color: Colors.white,
+                        // Light priority tones at night take a dark check.
+                        color:
+                            ThemeData.estimateBrightnessForColor(color) ==
+                                Brightness.dark
+                            ? Colors.white
+                            : const Color(0xFF14182B),
                       )
                     : const SizedBox.shrink(key: ValueKey('open')),
               ),

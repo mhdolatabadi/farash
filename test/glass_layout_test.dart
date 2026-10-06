@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:farash/app/app_theme.dart';
 import 'package:farash/app/glass.dart';
@@ -66,6 +67,10 @@ void main() {
           key: captureKey,
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
+            // As the app ships: Persian, so sheets and menus are RTL too.
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa')],
+            localizationsDelegates: GlobalMaterialLocalizations.delegates,
             theme: layout.$3 ? FarashTheme.dark() : FarashTheme.light(),
             builder: (context, child) => MediaQuery(
               data: MediaQuery.of(context).copyWith(
@@ -74,15 +79,12 @@ void main() {
               ),
               child: GlassBackdrop(child: child!),
             ),
-            home: Directionality(
-              textDirection: TextDirection.rtl,
-              child: HomeScreen(
-                email: 'demo@example.com',
-                projects: projects,
-                tasksApi: api,
-                token: () => 'token',
-                onLogout: () {},
-              ),
+            home: HomeScreen(
+              email: 'demo@example.com',
+              projects: projects,
+              tasksApi: api,
+              token: () => 'token',
+              onLogout: () {},
             ),
           ),
         ),
@@ -95,6 +97,36 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('پیش‌نویس محفوظ'), findsOneWidget);
         expect(tester.takeException(), isNull);
+      }
+      // One pane of glass per region, never glass on glass.
+      expect(
+        find.descendant(
+          of: find.byType(GlassSurface),
+          matching: find.byType(GlassSurface),
+        ),
+        findsNothing,
+      );
+      if (layout.$1 != 'landscape-ime') {
+        // The bar names the project wherever the list is.
+        expect(find.text('صندوق ورودی'), findsWidgets);
+        // The last task scrolls clear of the capture bar.
+        final last = find.text('خرید نان');
+        await tester.scrollUntilVisible(
+          last,
+          80,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+        await tester.pumpAndSettle();
+        final capture = tester.getRect(
+          find.ancestor(
+            of: find.byType(TextField),
+            matching: find.byType(GlassSurface),
+          ),
+        );
+        expect(tester.getRect(last).bottom, lessThanOrEqualTo(capture.top));
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, 800));
+        await tester.pumpAndSettle();
       }
       await _capture(tester, captureKey, layout.$1);
       if (layout.$1 == 'landscape-ime') {
@@ -126,7 +158,7 @@ void main() {
       await tester.pumpAndSettle();
       await _capture(tester, captureKey, '${layout.$1}-editor');
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'عنوان'),
+        find.byKey(const ValueKey('task-title')),
         'عنوان جدید',
       );
       await tester.ensureVisible(find.text('ذخیره'));

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-06T21:04:17.942257+00:00",
+  "generatedAt": "2026-10-06T21:34:41.774482+00:00",
   "title": "Design System: Farash",
   "extensions": {
     "colorMeta": {
@@ -67,126 +67,141 @@
       "surface": {
         "role": "neutral",
         "displayName": "Night Sheet",
-        "canonical": "#141B36",
+        "canonical": "#161B33",
         "tonalRamp": [
-          "oklch(15% 0.0531 270.82)",
-          "oklch(26% 0.0531 270.82)",
-          "oklch(37% 0.0531 270.82)",
-          "oklch(48% 0.0531 270.82)",
-          "oklch(59% 0.0531 270.82)",
-          "oklch(70% 0.0531 270.82)",
-          "oklch(81% 0.0531 270.82)",
-          "oklch(95% 0.0531 270.82)"
+          "oklch(15% 0.0470 273.29)",
+          "oklch(26% 0.0470 273.29)",
+          "oklch(37% 0.0470 273.29)",
+          "oklch(48% 0.0470 273.29)",
+          "oklch(59% 0.0470 273.29)",
+          "oklch(70% 0.0470 273.29)",
+          "oklch(81% 0.0470 273.29)",
+          "oklch(95% 0.0470 273.29)"
         ]
       },
       "ink": {
         "role": "neutral",
-        "displayName": "Lamp-lit Ink",
-        "canonical": "#F3ECE2",
+        "displayName": "Night Ink",
+        "canonical": "#F1EEF6",
         "tonalRamp": [
-          "oklch(15% 0.0153 77.07)",
-          "oklch(26% 0.0153 77.07)",
-          "oklch(37% 0.0153 77.07)",
-          "oklch(48% 0.0153 77.07)",
-          "oklch(59% 0.0153 77.07)",
-          "oklch(70% 0.0153 77.07)",
-          "oklch(81% 0.0153 77.07)",
-          "oklch(95% 0.0153 77.07)"
+          "oklch(15% 0.0111 303.11)",
+          "oklch(26% 0.0111 303.11)",
+          "oklch(37% 0.0111 303.11)",
+          "oklch(48% 0.0111 303.11)",
+          "oklch(59% 0.0111 303.11)",
+          "oklch(70% 0.0111 303.11)",
+          "oklch(81% 0.0111 303.11)",
+          "oklch(95% 0.0111 303.11)"
         ]
       },
       "muted-ink": {
         "role": "neutral",
-        "displayName": "Muted Ink",
-        "canonical": "#B9B2A6",
+        "displayName": "Muted Night Ink",
+        "canonical": "#B4B6C8",
         "tonalRamp": [
-          "oklch(15% 0.0186 81.32)",
-          "oklch(26% 0.0186 81.32)",
-          "oklch(37% 0.0186 81.32)",
-          "oklch(48% 0.0186 81.32)",
-          "oklch(59% 0.0186 81.32)",
-          "oklch(70% 0.0186 81.32)",
-          "oklch(81% 0.0186 81.32)",
-          "oklch(95% 0.0186 81.32)"
+          "oklch(15% 0.0255 280.74)",
+          "oklch(26% 0.0255 280.74)",
+          "oklch(37% 0.0255 280.74)",
+          "oklch(48% 0.0255 280.74)",
+          "oklch(59% 0.0255 280.74)",
+          "oklch(70% 0.0255 280.74)",
+          "oklch(81% 0.0255 280.74)",
+          "oklch(95% 0.0255 280.74)"
         ]
       },
       "selected": {
         "role": "secondary",
         "displayName": "Selected Night",
-        "canonical": "#26305A",
+        "canonical": "#2B3466",
         "tonalRamp": [
-          "oklch(15% 0.0757 271.51)",
-          "oklch(26% 0.0757 271.51)",
-          "oklch(37% 0.0757 271.51)",
-          "oklch(48% 0.0757 271.51)",
-          "oklch(59% 0.0757 271.51)",
-          "oklch(70% 0.0757 271.51)",
-          "oklch(81% 0.0757 271.51)",
-          "oklch(95% 0.0757 271.51)"
-        ]
-      },
-      "on-selected": {
-        "role": "secondary",
-        "displayName": "On Selected",
-        "canonical": "#F3ECE2",
-        "tonalRamp": [
-          "oklch(15% 0.0153 77.07)",
-          "oklch(26% 0.0153 77.07)",
-          "oklch(37% 0.0153 77.07)",
-          "oklch(48% 0.0153 77.07)",
-          "oklch(59% 0.0153 77.07)",
-          "oklch(70% 0.0153 77.07)",
-          "oklch(81% 0.0153 77.07)",
-          "oklch(95% 0.0153 77.07)"
-        ]
-      },
-      "backdrop-1": {
-        "role": "neutral",
-        "displayName": "Indigo Sky",
-        "canonical": "#17204A",
-        "tonalRamp": [
-          "oklch(15% 0.0786 270.95)",
-          "oklch(26% 0.0786 270.95)",
-          "oklch(37% 0.0786 270.95)",
-          "oklch(48% 0.0786 270.95)",
-          "oklch(59% 0.0786 270.95)",
-          "oklch(70% 0.0786 270.95)",
-          "oklch(81% 0.0786 270.95)",
-          "oklch(95% 0.0786 270.95)"
+          "oklch(15% 0.0876 273.28)",
+          "oklch(26% 0.0876 273.28)",
+          "oklch(37% 0.0876 273.28)",
+          "oklch(48% 0.0876 273.28)",
+          "oklch(59% 0.0876 273.28)",
+          "oklch(70% 0.0876 273.28)",
+          "oklch(81% 0.0876 273.28)",
+          "oklch(95% 0.0876 273.28)"
         ]
       },
       "backdrop-2": {
         "role": "neutral",
-        "displayName": "Night",
-        "canonical": "#0F1530",
+        "displayName": "Room Indigo",
+        "canonical": "#0D1129",
         "tonalRamp": [
-          "oklch(15% 0.0540 271.53)",
-          "oklch(26% 0.0540 271.53)",
-          "oklch(37% 0.0540 271.53)",
-          "oklch(48% 0.0540 271.53)",
-          "oklch(59% 0.0540 271.53)",
-          "oklch(70% 0.0540 271.53)",
-          "oklch(81% 0.0540 271.53)",
-          "oklch(95% 0.0540 271.53)"
+          "oklch(15% 0.0487 273.71)",
+          "oklch(26% 0.0487 273.71)",
+          "oklch(37% 0.0487 273.71)",
+          "oklch(48% 0.0487 273.71)",
+          "oklch(59% 0.0487 273.71)",
+          "oklch(70% 0.0487 273.71)",
+          "oklch(81% 0.0487 273.71)",
+          "oklch(95% 0.0487 273.71)"
         ]
       },
-      "backdrop-3": {
-        "role": "neutral",
-        "displayName": "Deep Night",
-        "canonical": "#0A0E1F",
+      "priority-1": {
+        "role": "priority",
+        "displayName": "Priority 1",
+        "canonical": "#F08A84",
         "tonalRamp": [
-          "oklch(15% 0.0361 272.08)",
-          "oklch(26% 0.0361 272.08)",
-          "oklch(37% 0.0361 272.08)",
-          "oklch(48% 0.0361 272.08)",
-          "oklch(59% 0.0361 272.08)",
-          "oklch(70% 0.0361 272.08)",
-          "oklch(81% 0.0361 272.08)",
-          "oklch(95% 0.0361 272.08)"
+          "oklch(15% 0.1253 24.10)",
+          "oklch(26% 0.1253 24.10)",
+          "oklch(37% 0.1253 24.10)",
+          "oklch(48% 0.1253 24.10)",
+          "oklch(59% 0.1253 24.10)",
+          "oklch(70% 0.1253 24.10)",
+          "oklch(81% 0.1253 24.10)",
+          "oklch(95% 0.1253 24.10)"
+        ]
+      },
+      "priority-2": {
+        "role": "priority",
+        "displayName": "Priority 2",
+        "canonical": "#F2A65A",
+        "tonalRamp": [
+          "oklch(15% 0.1287 63.94)",
+          "oklch(26% 0.1287 63.94)",
+          "oklch(37% 0.1287 63.94)",
+          "oklch(48% 0.1287 63.94)",
+          "oklch(59% 0.1287 63.94)",
+          "oklch(70% 0.1287 63.94)",
+          "oklch(81% 0.1287 63.94)",
+          "oklch(95% 0.1287 63.94)"
+        ]
+      },
+      "priority-3": {
+        "role": "priority",
+        "displayName": "Priority 3",
+        "canonical": "#8DB1F2",
+        "tonalRamp": [
+          "oklch(15% 0.1021 261.87)",
+          "oklch(26% 0.1021 261.87)",
+          "oklch(37% 0.1021 261.87)",
+          "oklch(48% 0.1021 261.87)",
+          "oklch(59% 0.1021 261.87)",
+          "oklch(70% 0.1021 261.87)",
+          "oklch(81% 0.1021 261.87)",
+          "oklch(95% 0.1021 261.87)"
+        ]
+      },
+      "priority-4": {
+        "role": "priority",
+        "displayName": "Priority 4",
+        "canonical": "#9096AE",
+        "tonalRamp": [
+          "oklch(15% 0.0360 274.32)",
+          "oklch(26% 0.0360 274.32)",
+          "oklch(37% 0.0360 274.32)",
+          "oklch(48% 0.0360 274.32)",
+          "oklch(59% 0.0360 274.32)",
+          "oklch(70% 0.0360 274.32)",
+          "oklch(81% 0.0360 274.32)",
+          "oklch(95% 0.0360 274.32)"
         ]
       },
       "day-primary": {
         "role": "primary",
-        "displayName": "Day Lamplight Honey",
+        "displayName": "Daylight Honey",
         "canonical": "#8A5A12",
         "tonalRamp": [
           "oklch(15% 0.1025 70.83)",
@@ -199,177 +214,57 @@
           "oklch(95% 0.1025 70.83)"
         ]
       },
-      "day-on-primary": {
-        "role": "primary",
-        "displayName": "Day Honey Ink",
-        "canonical": "#FFFFFF",
-        "tonalRamp": [
-          "oklch(15% 0.0000 89.88)",
-          "oklch(26% 0.0000 89.88)",
-          "oklch(37% 0.0000 89.88)",
-          "oklch(48% 0.0000 89.88)",
-          "oklch(59% 0.0000 89.88)",
-          "oklch(70% 0.0000 89.88)",
-          "oklch(81% 0.0000 89.88)",
-          "oklch(95% 0.0000 89.88)"
-        ]
-      },
-      "day-accent": {
-        "role": "tertiary",
-        "displayName": "Day Sage (tomorrow)",
-        "canonical": "#3F6B52",
-        "tonalRamp": [
-          "oklch(15% 0.0638 158.02)",
-          "oklch(26% 0.0638 158.02)",
-          "oklch(37% 0.0638 158.02)",
-          "oklch(48% 0.0638 158.02)",
-          "oklch(59% 0.0638 158.02)",
-          "oklch(70% 0.0638 158.02)",
-          "oklch(81% 0.0638 158.02)",
-          "oklch(95% 0.0638 158.02)"
-        ]
-      },
-      "day-overdue": {
-        "role": "error",
-        "displayName": "Day Pomegranate (overdue)",
-        "canonical": "#B3343F",
-        "tonalRamp": [
-          "oklch(15% 0.1627 20.24)",
-          "oklch(26% 0.1627 20.24)",
-          "oklch(37% 0.1627 20.24)",
-          "oklch(48% 0.1627 20.24)",
-          "oklch(59% 0.1627 20.24)",
-          "oklch(70% 0.1627 20.24)",
-          "oklch(81% 0.1627 20.24)",
-          "oklch(95% 0.1627 20.24)"
-        ]
-      },
       "day-surface": {
         "role": "neutral",
-        "displayName": "Day Night Sheet",
-        "canonical": "#FBF8F2",
+        "displayName": "Day Sheet",
+        "canonical": "#F8F7FB",
         "tonalRamp": [
-          "oklch(15% 0.0086 84.57)",
-          "oklch(26% 0.0086 84.57)",
-          "oklch(37% 0.0086 84.57)",
-          "oklch(48% 0.0086 84.57)",
-          "oklch(59% 0.0086 84.57)",
-          "oklch(70% 0.0086 84.57)",
-          "oklch(81% 0.0086 84.57)",
-          "oklch(95% 0.0086 84.57)"
+          "oklch(15% 0.0054 297.73)",
+          "oklch(26% 0.0054 297.73)",
+          "oklch(37% 0.0054 297.73)",
+          "oklch(48% 0.0054 297.73)",
+          "oklch(59% 0.0054 297.73)",
+          "oklch(70% 0.0054 297.73)",
+          "oklch(81% 0.0054 297.73)",
+          "oklch(95% 0.0054 297.73)"
         ]
       },
       "day-ink": {
         "role": "neutral",
-        "displayName": "Day Lamp-lit Ink",
-        "canonical": "#1E2230",
+        "displayName": "Day Ink",
+        "canonical": "#1B1E2C",
         "tonalRamp": [
-          "oklch(15% 0.0272 272.01)",
-          "oklch(26% 0.0272 272.01)",
-          "oklch(37% 0.0272 272.01)",
-          "oklch(48% 0.0272 272.01)",
-          "oklch(59% 0.0272 272.01)",
-          "oklch(70% 0.0272 272.01)",
-          "oklch(81% 0.0272 272.01)",
-          "oklch(95% 0.0272 272.01)"
+          "oklch(15% 0.0273 274.81)",
+          "oklch(26% 0.0273 274.81)",
+          "oklch(37% 0.0273 274.81)",
+          "oklch(48% 0.0273 274.81)",
+          "oklch(59% 0.0273 274.81)",
+          "oklch(70% 0.0273 274.81)",
+          "oklch(81% 0.0273 274.81)",
+          "oklch(95% 0.0273 274.81)"
         ]
       },
       "day-muted-ink": {
         "role": "neutral",
-        "displayName": "Day Muted Ink",
-        "canonical": "#5A5E6B",
+        "displayName": "Muted Day Ink",
+        "canonical": "#545A6D",
         "tonalRamp": [
-          "oklch(15% 0.0214 272.01)",
-          "oklch(26% 0.0214 272.01)",
-          "oklch(37% 0.0214 272.01)",
-          "oklch(48% 0.0214 272.01)",
-          "oklch(59% 0.0214 272.01)",
-          "oklch(70% 0.0214 272.01)",
-          "oklch(81% 0.0214 272.01)",
-          "oklch(95% 0.0214 272.01)"
-        ]
-      },
-      "day-selected": {
-        "role": "secondary",
-        "displayName": "Day Selected Night",
-        "canonical": "#EDE5D5",
-        "tonalRamp": [
-          "oklch(15% 0.0230 84.59)",
-          "oklch(26% 0.0230 84.59)",
-          "oklch(37% 0.0230 84.59)",
-          "oklch(48% 0.0230 84.59)",
-          "oklch(59% 0.0230 84.59)",
-          "oklch(70% 0.0230 84.59)",
-          "oklch(81% 0.0230 84.59)",
-          "oklch(95% 0.0230 84.59)"
-        ]
-      },
-      "day-on-selected": {
-        "role": "secondary",
-        "displayName": "Day On Selected",
-        "canonical": "#1E2230",
-        "tonalRamp": [
-          "oklch(15% 0.0272 272.01)",
-          "oklch(26% 0.0272 272.01)",
-          "oklch(37% 0.0272 272.01)",
-          "oklch(48% 0.0272 272.01)",
-          "oklch(59% 0.0272 272.01)",
-          "oklch(70% 0.0272 272.01)",
-          "oklch(81% 0.0272 272.01)",
-          "oklch(95% 0.0272 272.01)"
-        ]
-      },
-      "day-backdrop-1": {
-        "role": "neutral",
-        "displayName": "Day Indigo Sky",
-        "canonical": "#E9ECF3",
-        "tonalRamp": [
-          "oklch(15% 0.0100 267.36)",
-          "oklch(26% 0.0100 267.36)",
-          "oklch(37% 0.0100 267.36)",
-          "oklch(48% 0.0100 267.36)",
-          "oklch(59% 0.0100 267.36)",
-          "oklch(70% 0.0100 267.36)",
-          "oklch(81% 0.0100 267.36)",
-          "oklch(95% 0.0100 267.36)"
-        ]
-      },
-      "day-backdrop-2": {
-        "role": "neutral",
-        "displayName": "Day Night",
-        "canonical": "#F6F2EA",
-        "tonalRamp": [
-          "oklch(15% 0.0115 84.58)",
-          "oklch(26% 0.0115 84.58)",
-          "oklch(37% 0.0115 84.58)",
-          "oklch(48% 0.0115 84.58)",
-          "oklch(59% 0.0115 84.58)",
-          "oklch(70% 0.0115 84.58)",
-          "oklch(81% 0.0115 84.58)",
-          "oklch(95% 0.0115 84.58)"
-        ]
-      },
-      "day-backdrop-3": {
-        "role": "neutral",
-        "displayName": "Day Deep Night",
-        "canonical": "#EFE3CF",
-        "tonalRamp": [
-          "oklch(15% 0.0297 80.66)",
-          "oklch(26% 0.0297 80.66)",
-          "oklch(37% 0.0297 80.66)",
-          "oklch(48% 0.0297 80.66)",
-          "oklch(59% 0.0297 80.66)",
-          "oklch(70% 0.0297 80.66)",
-          "oklch(81% 0.0297 80.66)",
-          "oklch(95% 0.0297 80.66)"
+          "oklch(15% 0.0317 271.37)",
+          "oklch(26% 0.0317 271.37)",
+          "oklch(37% 0.0317 271.37)",
+          "oklch(48% 0.0317 271.37)",
+          "oklch(59% 0.0317 271.37)",
+          "oklch(70% 0.0317 271.37)",
+          "oklch(81% 0.0317 271.37)",
+          "oklch(95% 0.0317 271.37)"
         ]
       }
     },
     "shadows": [
       {
-        "name": "pane",
-        "value": "0 12px 32px rgba(0, 0, 0, 0.35)",
-        "purpose": "Large glass panes over the night ground (day: rgba(30, 34, 48, 0.08))."
+        "name": "floating-pane",
+        "value": "0 8px 24px rgba(0, 0, 0, 0.40)",
+        "purpose": "Floating glass panes: navigation pane, capture bar, side sheet (day: rgba(27, 30, 44, 0.10))."
       }
     ],
     "motion": [
@@ -417,6 +312,11 @@
         "name": "stamp",
         "value": "160ms easeOutBack, scale 1.25 to 1",
         "purpose": "The «انجام شد» stamp presses onto a completed row before it folds."
+      },
+      {
+        "name": "bar-glass",
+        "value": "160ms",
+        "purpose": "App bar glass fading in as content scrolls beneath."
       }
     ],
     "breakpoints": [
@@ -425,7 +325,7 @@
         "value": "840px viewport width"
       },
       {
-        "name": "inline-editor",
+        "name": "side-sheet-editor",
         "value": "820px project-pane width"
       },
       {
@@ -442,23 +342,32 @@
       }
     ],
     "glass": {
-      "blurSigma": 16,
+      "blurSigma": 20,
       "paneRadius": 24,
-      "relief": "Pressed-pebble pattern: staggered 13px grid of 1.6px domes, lit top-left and shaded bottom-right, drawn once per pane on its own layer.",
-      "litEdge": "Top 20% of each pane carries a relief-colored gradient: the lamp catching the glass edge.",
-      "lamp": "Radial honey glow (radius 0.75) behind every pane; moves to a stable spot per project over 900ms easeInOutCubic; still under reduced motion."
+      "captureRadius": 20,
+      "paneTint": "12% white at night, 60% by day, over the room",
+      "litEdge": "Top ~22% of a pane carries the edge color fading out.",
+      "rule": "Glass only where content passes beneath: app bar (once scrolled under), capture bar, navigation pane, editor side sheet. Never glass on glass.",
+      "room": "Vertical night gradient plus a fixed cool room light (bottom start, radius 0.9) and the honey lamp (radius 0.8) that moves per project over 900ms easeInOutCubic; still under reduced motion."
     },
     "captureLayout": {
-      "normal": "Below list in layout.",
-      "compact": "Above tasks in shared CustomScrollView.",
-      "state": "GlobalKey preserves draft.",
-      "status": "Compact capture stays mounted above loading/error slivers; empty copy is direction-independent."
+      "normal": "Floats over the list end, 12px inset, max 760px, above the safe area; the list measures it and pads its end so the last task scrolls clear.",
+      "compact": "Above tasks in the shared CustomScrollView; the app bar is a single non-pinned row.",
+      "state": "GlobalKey preserves draft."
     },
-    "implementation": "Flutter Material 3; lib/app/palette.dart (FarashPalette.moshajjar) is the single color source; panel snippets are illustrative and synthesized OKLCH ramps are inspection aids rather than shipping tokens.",
+    "implementation": "Flutter Material 3; lib/app/palette.dart (FarashPalette.nightGlass) is the single color source, priorities included; neutrals generated from an indigo seed. Panel snippets are illustrative; OKLCH ramps are inspection aids rather than shipping tokens.",
     "editorLayout": {
+      "wide": "Full-height 400px side sheet at the end edge, a single glass pane.",
+      "narrow": "Modal bottom sheet on the solid sheet surface, keyboard-aware.",
+      "actions": "Fixed action row: delete icon at the start, primary save at the end.",
       "propertyRow": "Nonexpanding property heading stacks above control when available width <480px.",
-      "priority": "Minimum48x48px targets; vertical when width <320px and textScaler.scale(14)>18.",
-      "text": "Configured font scales remain unchanged; no FittedBox."
+      "priority": "Minimum 48x48px targets; vertical when width <320px and textScaler.scale(14)>18."
+    },
+    "appBar": {
+      "pattern": "Material 3 medium top app bar as a SliverPersistentHeader",
+      "toolbar": "64px",
+      "expanded": "76px × text scale (≤2×)",
+      "titles": "Large Naskh title with mark and open count fades out over the first 60% of collapse; the toolbar title fades in after, so one title exists at a time."
     }
   },
   "components": [
@@ -482,17 +391,17 @@
       "name": "Glass Pane",
       "kind": "card",
       "refersTo": "glass-pane",
-      "description": "Patterned privacy glass over the night ground; holds lists, sidebar and editor.",
+      "description": "A frosted pane (blur 20, 12% white tint, 1px light border, lit top edge) used once per region where content passes beneath.",
       "html": "<div class=\"ds-pane\"><div class=\"ds-pane-body\">۳ کار باز</div></div>",
-      "css": ".ds-pane{position:relative;border-radius:24px;padding:20px;color:#F3ECE2;background:radial-gradient(circle at 30% 30%,rgba(255,244,226,.03) 0 1.6px,transparent 2px) 0 0/13px 13px,linear-gradient(180deg,rgba(255,244,226,.03),transparent 20%),rgba(232,228,240,.06);border:1px solid rgba(255,236,206,.15);box-shadow:0 12px 32px rgba(0,0,0,.35);backdrop-filter:blur(16px)}"
+      "css": ".ds-pane{background:rgba(255,255,255,.12);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.16);border-radius:24px;box-shadow:0 8px 24px rgba(0,0,0,.4);background-image:linear-gradient(to bottom,rgba(255,255,255,.14),transparent 22%)}"
     },
     {
       "name": "Capture Field",
       "kind": "input",
       "refersTo": "input",
-      "description": "One rounded field with priority and the honey send.",
-      "html": "<div class=\"ds-capture\"><span>کار تازه در «صندوق ورودی»</span><button aria-label=\"افزودن کار\">↑</button></div>",
-      "css": ".ds-capture{display:flex;align-items:center;gap:8px;border-radius:16px;padding:6px;background:rgba(243,236,226,.06);border:1px solid rgba(255,236,206,.15);color:#B9B2A6;font:400 15px Vazirmatn,sans-serif}.ds-capture span{flex:1;padding:0 12px}.ds-capture button{width:44px;height:44px;border-radius:50%;border:none;background:#E8B66B;color:#21170A;font-weight:800}"
+      "description": "The capture bar: one glass pane holding the field, priority menu and filled send; honey edge while focused.",
+      "html": "<div class=\"ds-capture\" dir=\"rtl\"><input placeholder=\"کار تازه در «صندوق ورودی»\"><button aria-label=\"افزودن کار\">↑</button></div>",
+      "css": ".ds-capture{display:flex;align-items:center;gap:4px;padding:4px 4px 4px 8px;background:rgba(255,255,255,.12);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.16);border-radius:20px;min-height:56px}.ds-capture:focus-within{border:1.5px solid #E8B66B}.ds-capture input{flex:1;background:none;border:0;color:#F1EEF6;font:16px Vazirmatn,sans-serif;padding:12px 16px}"
     },
     {
       "name": "Done Stamp",
@@ -517,48 +426,62 @@
       "description": "Sidebar project row; selection is a night tone, not honey.",
       "html": "<div class=\"ds-nav ds-on\">صندوق ورودی</div><div class=\"ds-nav\">کار</div>",
       "css": ".ds-nav{min-height:48px;display:flex;align-items:center;padding:0 16px;border-radius:12px;color:#F3ECE2;font:500 15px Vazirmatn,sans-serif}.ds-nav:hover{background:rgba(243,236,226,.06)}.ds-on{background:#26305A}"
+    },
+    {
+      "name": "Project App Bar",
+      "kind": "navigation",
+      "refersTo": "app-bar",
+      "description": "Material 3 medium top app bar: large Naskh project title with mark and open count, collapsing into a 64px toolbar whose glass fades in once tasks scroll beneath.",
+      "html": "<header class=\"ds-bar\" dir=\"rtl\"><h1>صندوق ورودی</h1><p>۳ کار باز</p></header>",
+      "css": ".ds-bar{padding:64px 20px 12px;color:#F1EEF6}.ds-bar h1{margin:0;font:700 24px/1.35 'Noto Naskh Arabic',Vazirmatn,serif}.ds-bar p{margin:0;color:#B4B6C8;font:14px Vazirmatn,sans-serif}"
     }
   ],
   "narrative": {
-    "northStar": "شیشهٔ مشجر — patterned privacy glass at night",
-    "overview": "The day's tasks are seen through the pressed, patterned glass of an Iranian home's door at night. Indigo night lies in front; a lamp-lit room glows behind the glass. Panes are frosted with a faint pebble relief and a lit top edge, and the lamp itself moves when the project changes.\n\nHoney lamplight carries exactly one meaning: now (today's dates, the stamp of a just-finished task, and the single primary action). Sage marks tomorrow, pomegranate marks overdue, and everything else stays in lamp-lit ink. Night is the designed default; day is the same door by daylight.",
+    "northStar": "شیشهٔ شب — night glass",
+    "overview": "A quiet indigo room at night, lit by a warm lamp that moves with the project and a cool light across the room. The list lives in the room; frosted glass appears only where content passes beneath it: the app bar once scrolled under, the floating capture bar, the navigation pane and the editor side sheet. The structure is plain Material 3 so a Todoist or TickTick user trusts it at once; the brand lives in the light, the Naskh project title and the done stamp.",
     "keyCharacteristics": [
-      "Indigo night ground with a moving honey lamp behind the glass.",
-      "Frosted panes with a faint pressed-pebble relief and a lit top edge.",
-      "Naskh headings, Vazirmatn reading text, tabular figures.",
-      "Honey means now; sage tomorrow; pomegranate overdue.",
-      "Checked tasks are stamped «انجام شد» before they fold."
+      "Two lights behind the glass: a moving honey lamp and a fixed cool room light.",
+      "Glass only over passing content; one pane per region, never glass on glass.",
+      "Medium top app bar naming the project in Naskh.",
+      "Full-bleed rows on phones; 760px measure on wide screens.",
+      "Honey means now; sage tomorrow; pomegranate overdue."
     ],
     "rules": [
       {
         "name": "The One Lamp Rule",
-        "body": "Honey (primary) is spent only on \"now\": today, the done stamp and the one primary action. Secondary actions, icons and selection use ink or night tones.",
-        "section": "colors"
+        "body": "Honey is spent only on now: today, the done stamp, the focused capture edge and the one primary action.",
+        "section": "Colors"
       },
       {
-        "name": "The Faint Relief Rule",
-        "body": "The pebble relief stays at a few percent alpha; text must always sit on calm glass.",
-        "section": "elevation"
+        "name": "The Single Pane Rule",
+        "body": "One pane of glass per region; a pane never contains another pane, a field box or a card.",
+        "section": "Elevation & Depth"
       },
       {
-        "name": "The Bounded Glass Rule",
-        "body": "Blur large panes only, never each row.",
-        "section": "elevation"
+        "name": "The Persian Reading Rule",
+        "body": "RTL and directional spacing everywhere; account email isolated LTR.",
+        "section": "Typography"
+      },
+      {
+        "name": "The Reachable Control Rule",
+        "body": "Every action target is at least 48px.",
+        "section": "Layout"
       }
     ],
     "dos": [
-      "Do take every color from FarashPalette.moshajjar.",
-      "Do keep honey for now and the primary action.",
-      "Do set headings in Naskh and reading text in Vazirmatn.",
-      "Do stamp completions before folding them.",
-      "Do honor reduced motion (the lamp holds still)."
+      "Take every color from FarashPalette.nightGlass, priorities included.",
+      "Use glass only where content passes beneath it, with light behind it.",
+      "Name the current project in the app bar on every width.",
+      "Edit in a side sheet on wide screens and a modal bottom sheet on phones.",
+      "Honor reduced motion."
     ],
     "donts": [
-      "Don't spend honey on secondary buttons, icons or selection.",
-      "Don't raise the relief until it reads as a perforated sheet.",
-      "Don't blur each task row.",
-      "Don't restore the pomegranate or teal worlds' tokens.",
-      "Don't introduce controls for unimplemented features."
+      "Nest glass in glass or box a field inside a pane.",
+      "Frame the whole phone screen in a pane.",
+      "Float the editor as a short card inside the list.",
+      "Add texture patterns to the glass.",
+      "Add eyebrow labels or tiny floating labels over the editor title.",
+      "Spend honey on secondary actions, icons or selection."
     ]
   }
 }

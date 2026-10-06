@@ -17,7 +17,7 @@ double _contrast(Color a, Color b) {
 }
 
 void main() {
-  group('moshajjar palette', () {
+  group('night glass palette', () {
     for (final brightness in Brightness.values) {
       test('text keeps 4.5:1 contrast ($brightness)', () {
         final theme = brightness == Brightness.dark
@@ -45,13 +45,49 @@ void main() {
       final theme = FarashTheme.light();
       expect(theme.colorScheme.primary, const Color(0xFF8A5A12));
       expect(FarashTheme.dark().colorScheme.primary, const Color(0xFFE8B66B));
-      // Pomegranate is kept for overdue alone.
-      expect(theme.colorScheme.error, FarashPalette.moshajjar.light.overdue);
+      expect(theme.colorScheme.error, FarashPalette.nightGlass.light.overdue);
       expect(
         theme.extension<FarashGlassColors>()!.colors,
-        FarashPalette.moshajjar.light,
+        FarashPalette.nightGlass.light,
       );
     });
+
+    for (final brightness in Brightness.values) {
+      test('text reads on glass and on sheets ($brightness)', () {
+        final theme = brightness == Brightness.dark
+            ? FarashTheme.dark()
+            : FarashTheme.light();
+        final c = theme.colorScheme;
+        final glass = FarashPalette.nightGlass.of(brightness);
+        // A pane over each stop of the backdrop, lights aside.
+        for (final ground in glass.backdrop) {
+          final pane = Color.alphaBlend(glass.pane, ground);
+          for (final (name, fg) in [
+            ('onSurface', c.onSurface),
+            ('onSurfaceVariant', c.onSurfaceVariant),
+            ('primary', c.primary),
+            ('error', c.error),
+          ]) {
+            expect(
+              _contrast(fg, pane),
+              greaterThanOrEqualTo(4.5),
+              reason: '$name on glass over $ground',
+            );
+          }
+          // Priority marks are not text; 3:1 keeps them visible.
+          for (final mark in glass.priorities) {
+            expect(_contrast(mark, pane), greaterThanOrEqualTo(3));
+          }
+        }
+        for (final sheet in [c.surfaceContainerLow, c.surfaceContainer]) {
+          expect(_contrast(c.onSurface, sheet), greaterThanOrEqualTo(4.5));
+          expect(
+            _contrast(c.onSurfaceVariant, sheet),
+            greaterThanOrEqualTo(4.5),
+          );
+        }
+      });
+    }
   });
 
   group('motion', () {

@@ -129,39 +129,36 @@ class _HomeScreenState extends State<HomeScreen> {
               child: content,
             );
             if (!wide) {
+              // Full bleed: the list carries its own collapsing app bar,
+              // with the drawer button, so nothing frames the list twice.
               return Scaffold(
                 key: _scaffoldKey,
-                // The list heads itself with the project name in large
-                // type; the bar keeps navigation only.
-                appBar: AppBar(
-                  title: selected == null ? const Text('فراش') : null,
-                  flexibleSpace: const GlassSurface(
-                    radius: 0,
-                    child: SizedBox.expand(),
-                  ),
-                ),
+                appBar: selected == null
+                    ? AppBar(title: const Text('فراش'))
+                    : null,
                 drawer: Drawer(child: _sidebar()),
-                body: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                  child: GlassSurface(radius: 20, child: page),
-                ),
+                body: page,
               );
             }
             return Scaffold(
               key: _scaffoldKey,
               body: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 280,
+                child: Row(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        12,
+                        12,
+                        0,
+                        12,
+                      ),
+                      child: SizedBox(
+                        width: 288,
                         child: GlassSurface(child: _sidebar()),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(child: GlassSurface(child: page)),
-                    ],
-                  ),
+                    ),
+                    Expanded(child: page),
+                  ],
                 ),
               ),
             );

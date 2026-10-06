@@ -3,7 +3,7 @@ import 'package:farash/app/palette.dart';
 
 abstract final class FarashTheme {
   /// The palette the app ships with.
-  static const palette = FarashPalette.moshajjar;
+  static const palette = FarashPalette.nightGlass;
 
   static const _controlRadius = 12.0;
   static const _surfaceRadius = 16.0;
@@ -16,8 +16,10 @@ abstract final class FarashTheme {
 
   static ThemeData _build(Brightness brightness, FarashPalette palette) {
     final p = palette.of(brightness);
+    // Neutrals (sheets, menus, dialogs, fields) come from the room's indigo,
+    // not from the honey, so every surface belongs to the same night.
     final generated = ColorScheme.fromSeed(
-      seedColor: p.primary,
+      seedColor: const Color(0xFF3A4A9A),
       brightness: brightness,
       dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot,
     );
@@ -75,11 +77,15 @@ abstract final class FarashTheme {
           fontWeight: FontWeight.w700,
         ),
       ),
+      // Drawers and sheets sit over a scrim, where glass would frost only
+      // the scrim; they are solid surfaces of the same night.
       drawerTheme: DrawerThemeData(
-        backgroundColor: colors.surface.withValues(alpha: 0.97),
+        backgroundColor: colors.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.horizontal(left: Radius.circular(24)),
+          borderRadius: BorderRadiusDirectional.horizontal(
+            end: Radius.circular(24),
+          ),
         ),
       ),
       iconButtonTheme: const IconButtonThemeData(
@@ -161,12 +167,17 @@ abstract final class FarashTheme {
         foregroundColor: colors.onPrimary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: colors.surfaceContainer,
+        surfaceTintColor: Colors.transparent,
+        shape: controlShape,
+      ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: controlShape,
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: colors.surface.withValues(alpha: 0.96),
+        backgroundColor: colors.surfaceContainerLow,
         showDragHandle: true,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
@@ -174,6 +185,8 @@ abstract final class FarashTheme {
         ),
       ),
       dialogTheme: DialogThemeData(
+        backgroundColor: colors.surfaceContainerLow,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
     );

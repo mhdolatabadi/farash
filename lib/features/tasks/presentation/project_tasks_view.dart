@@ -1,6 +1,10 @@
 import 'dart:async';
 
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:farash/app/palette.dart';
 import 'package:farash/app/glass.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/features/projects/data/project.dart';
@@ -11,6 +15,7 @@ import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/core/widgets/hover_reveal.dart';
 import 'package:farash/features/tasks/presentation/due_picker.dart';
+import 'package:farash/features/tasks/presentation/priority_color.dart';
 import 'package:farash/features/tasks/presentation/section_dialogs.dart';
 import 'package:farash/features/tasks/presentation/task_detail_sheet.dart';
 import 'package:farash/features/tasks/presentation/task_messages.dart';
@@ -312,6 +317,9 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     }
   }
 
+  /// The capture bar's height, so the list can scroll clear of it.
+  double _dockHeight = 0;
+
   @override
   Widget build(BuildContext context) {
     if (widget.project.isFolder) return const _FolderNotice();
@@ -320,37 +328,71 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
         // With a landscape keyboard, reserve no fixed footer: capture and
         // tasks share one scrollable viewport so neither can trap the other.
         final compact = constraints.maxHeight < 240;
-        final capture = Padding(
-          padding: const EdgeInsets.all(12),
-          child: _QuickAdd(
-            key: _captureKey,
-            projectName: widget.project.displayName,
-            onAdd: (title, priority) async {
-              try {
-                final task = await _tasks.add(title, priority: priority);
-                if (mounted) setState(() => _entering.add(task.id));
-                return true;
-              } catch (error) {
-                if (mounted) showTaskError(this.context, error);
-                return false;
-              }
-            },
-          ),
+        final capture = _QuickAdd(
+          key: _captureKey,
+          projectName: widget.project.displayName,
+          onAdd: (title, priority) async {
+            try {
+              final task = await _tasks.add(title, priority: priority);
+              if (mounted) setState(() => _entering.add(task.id));
+              return true;
+            } catch (error) {
+              if (mounted) showTaskError(this.context, error);
+              return false;
+            }
+          },
         );
+        final wide = constraints.maxWidth >= 820;
+        final task = _editingTask;
+        final listWidth = task != null && wide
+            ? constraints.maxWidth - _editorWidth - 12
+            : constraints.maxWidth;
         final taskList = ListenableBuilder(
           listenable: _tasks,
-          builder: (context, _) =>
-              _list(context, capture: compact ? capture : null),
+          builder: (context, _) => _list(
+            context,
+            width: listWidth,
+            compact: compact,
+            capture: compact
+                ? Padding(padding: const EdgeInsets.all(12), child: capture)
+                : null,
+          ),
         );
+        // The capture bar floats over the end of the list, which scrolls
+        // under its glass.
         final list = compact
             ? taskList
-            : Column(
+            : Stack(
                 children: [
-                  Expanded(child: taskList),
-                  capture,
+                  Positioned.fill(child: taskList),
+                  PositionedDirectional(
+                    start: 0,
+                    end: 0,
+                    bottom: 0,
+                    child: _MeasureSize(
+                      onChange: (size) {
+                        if (size.height != _dockHeight) {
+                          setState(() => _dockHeight = size.height);
+                        }
+                      },
+                      child: SafeArea(
+                        top: false,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxWidth: _maxListWidth,
+                              ),
+                              child: capture,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               );
-        final task = _editingTask;
         if (task == null) return list;
         final editor = TaskDetailEditor(
           key: _editorKey,
@@ -359,21 +401,29 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
           projects: widget.moveTargets(),
           onResult: _editorResult,
         );
+        if (!wide) return editor;
+        // A standard side sheet: full height at the end edge, beside the
+        // list rather than over it.
         return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (constraints.maxWidth >= 820) ...[
-              Expanded(child: list),
-              const SizedBox(width: 12),
-              SizedBox(width: 380, child: editor),
-            ] else
-              Expanded(child: editor),
+            Expanded(child: list),
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(0, 12, 12, 12),
+              child: SizedBox(width: _editorWidth, child: editor),
+            ),
           ],
         );
       },
     );
   }
 
-  Widget _list(BuildContext context, {Widget? capture}) {
+  Widget _list(
+    BuildContext context, {
+    required double width,
+    required bool compact,
+    Widget? capture,
+  }) {
     final theme = Theme.of(context);
     Widget? status;
     if (_tasks.isLoading && _tasks.tasks.isEmpty) {
@@ -394,7 +444,6 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
         ),
       );
     }
-    if (status != null && capture == null) return status;
     final rows = _rows();
     final done = _tasks.completedTasks;
     final touch = HoverReveal.isTouch(context);
@@ -408,7 +457,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
             child: Icon(
               Icons.drag_indicator,
               size: 20,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
             ),
           ),
         ),
@@ -416,307 +465,455 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     );
     final sectionsAvailable = widget.sectionsApi != null;
     final sections = _tasks.sections;
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: _maxListWidth),
-        child: RefreshIndicator(
-          onRefresh: _tasks.load,
-          child: CustomScrollView(
-            slivers: [
-              if (capture != null) SliverToBoxAdapter(child: capture),
-              if (status != null)
+    // Content keeps a readable width; the app bar's glass spans the whole
+    // column so the list can pass under it.
+    final inset = width > _maxListWidth ? (width - _maxListWidth) / 2 : 0.0;
+    Widget pad(Widget sliver) => SliverPadding(
+      padding: EdgeInsets.symmetric(horizontal: inset),
+      sliver: sliver,
+    );
+    final openCount = _tasks.openTasks.length;
+    final plannedMinutes = _tasks.openTasks.fold<int>(
+      0,
+      (sum, t) => sum + (t.durationMinutes ?? 0),
+    );
+    final countText = openCount == 0
+        ? 'کار بازی نمانده'
+        : plannedMinutes == 0
+        ? '${persianDigits(openCount)} کار باز'
+        : '${persianDigits(openCount)} کار باز · ${formatDuration(plannedMinutes)}';
+    final completedToggle = IconButton(
+      tooltip: _tasks.showCompleted
+          ? 'پنهان کردن انجام‌شده‌ها'
+          : 'نمایش انجام‌شده‌ها',
+      isSelected: _tasks.showCompleted,
+      icon: const Icon(Icons.visibility_outlined),
+      selectedIcon: const Icon(Icons.visibility),
+      onPressed: () =>
+          _run(() => _tasks.setShowCompleted(!_tasks.showCompleted)),
+    );
+    final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final selecting = _selectedTasks.isNotEmpty;
+    final selectionBar = Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+      child: _SelectionBar(
+        count: _selectedTasks.length,
+        onReschedule: _rescheduleSelected,
+        onCancel: () => setState(_selected.clear),
+      ),
+    );
+    return RefreshIndicator(
+      onRefresh: _tasks.load,
+      edgeOffset: widget.showTitle ? topPadding + _barHeight : 0,
+      child: CustomScrollView(
+        slivers: [
+          if (widget.showTitle)
+            SliverPersistentHeader(
+              pinned: !compact,
+              delegate: _ProjectBar(
+                title: widget.project.displayName,
+                subtitle: countText,
+                mark: widget.project.isInbox
+                    ? Icon(
+                        Icons.inbox_outlined,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      )
+                    : Icon(
+                        Icons.circle,
+                        size: 12,
+                        color: widget.project.swatch,
+                      ),
+                actions: [completedToggle],
+                topPadding: topPadding,
+                inset: inset,
+                expandedHeight: compact ? 0 : 76 * scale,
+              ),
+            ),
+          if (capture != null) pad(SliverToBoxAdapter(child: capture)),
+          if (selecting)
+            pad(SliverToBoxAdapter(child: selectionBar))
+          else if (!widget.showTitle)
+            pad(
+              SliverToBoxAdapter(
+                child: _ListHeader(count: countText, toggle: completedToggle),
+              ),
+            ),
+          if (status != null)
+            SliverFillRemaining(hasScrollBody: false, child: status)
+          else ...[
+            if (rows.isEmpty && done.isEmpty)
+              pad(
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: status,
-                  ),
-                )
-              else ...[
-                SliverToBoxAdapter(
-                  child: _selectedTasks.isNotEmpty
-                      ? Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
-                          child: _SelectionBar(
-                            count: _selectedTasks.length,
-                            onReschedule: _rescheduleSelected,
-                            onCancel: () => setState(_selected.clear),
+                    padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.task_alt,
+                          size: 48,
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.6,
                           ),
-                        )
-                      : _ListHeader(
-                          title: widget.showTitle
-                              ? widget.project.displayName
-                              : null,
-                          mark: widget.project.isInbox
-                              ? Icon(
-                                  Icons.inbox_outlined,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                )
-                              : Icon(
-                                  Icons.circle,
-                                  size: 14,
-                                  color: widget.project.swatch,
-                                ),
-                          openCount: _tasks.openTasks.length,
-                          // The time the open tasks ask for, where they say.
-                          plannedMinutes: _tasks.openTasks.fold<int>(
-                            0,
-                            (sum, t) => sum + (t.durationMinutes ?? 0),
-                          ),
-                          showCompleted: _tasks.showCompleted,
-                          onShowCompleted: (show) =>
-                              _run(() => _tasks.setShowCompleted(show)),
                         ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'هنوز کاری در «${widget.project.displayName}» نیست.',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'کار تازه را در کادر افزودن بنویسید.',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                if (rows.isEmpty && done.isEmpty)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 56, 24, 24),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.task_alt,
-                            size: 44,
-                            color: theme.colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.45),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'هنوز کاری در «${widget.project.displayName}» نیست.',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'کار تازه را در کادر افزودن بنویسید.',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                SliverReorderableList(
-                  itemCount: rows.length,
-                  onReorderItem: (from, to) => _onReorder(rows, from, to),
-                  itemBuilder: (context, index) => switch (rows[index]) {
-                    _TaskRow(:final task, :final depth) => RowMotion(
-                      key: ValueKey(task.id),
-                      entering: _entering.remove(task.id),
-                      leaving: _leaving.containsKey(task.id),
-                      onExited: () => _leaving[task.id]?.complete(),
-                      child: Material(
-                        color: _selected.contains(task.id)
-                            ? theme.colorScheme.secondaryContainer
-                            : Colors.transparent,
-                        child: HoverRegion(
-                          child: TaskTile(
-                            selected: _selected.contains(task.id),
-                            onLongPress: () => _toggleSelected(task),
-                            // A row folding away shows as checked meanwhile.
-                            task: _leaving.containsKey(task.id)
-                                ? task.copyWith(completedAt: DateTime.now())
-                                : task,
-                            stamped: _leaving.containsKey(task.id),
-                            depth: depth,
-                            folded: _tasks.openChildren(task).isEmpty
-                                ? null
-                                : _tasks.isFolded(task),
-                            onFold: () =>
-                                _tasks.setFolded(task, !_tasks.isFolded(task)),
-                            onToggle: () => _toggle(task),
-                            onOpen: () => _selectedTasks.isNotEmpty
-                                ? _toggleSelected(task)
-                                : _open(task),
-                            // Beside the checkbox where a pointer reveals it
-                            // on hover; at the row's end on touch screens.
-                            leading: touch ? null : handle(index),
-                            trailing: touch ? handle(index) : null,
-                          ),
-                        ),
-                      ),
-                    ),
-                    _HeaderRow(:final section) => SectionHeader(
-                      key: ValueKey('section-${section.id}'),
-                      section: section,
-                      taskCount: _tasks.openIn(section.id).length,
-                      isFirst: section.id == sections.first.id,
-                      isLast: section.id == sections.last.id,
-                      onToggle: () => _run(
-                        () =>
-                            _tasks.setCollapsed(section, !section.isCollapsed),
-                      ),
-                      onAddTask: () => _addTaskTo(section),
-                      onAction: (action) => _sectionAction(section, action),
-                    ),
-                  },
-                ),
-                if (sectionsAvailable)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(8, 8, 8, 0),
-                      child: Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: TextButton.icon(
-                          onPressed: _addSection,
-                          icon: const Icon(Icons.playlist_add),
-                          label: const Text('افزودن بخش'),
-                        ),
-                      ),
-                    ),
-                  ),
-                if (done.isNotEmpty) ...[
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                        16,
-                        16,
-                        16,
-                        4,
-                      ),
-                      child: Text(
-                        'انجام‌شده',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SliverList.list(
-                    children: [
-                      for (final task in done)
-                        TaskTile(
-                          key: ValueKey('done-${task.id}'),
-                          task: task,
+              ),
+            pad(
+              SliverReorderableList(
+                itemCount: rows.length,
+                onReorderItem: (from, to) => _onReorder(rows, from, to),
+                itemBuilder: (context, index) => switch (rows[index]) {
+                  _TaskRow(:final task, :final depth) => RowMotion(
+                    key: ValueKey(task.id),
+                    entering: _entering.remove(task.id),
+                    leaving: _leaving.containsKey(task.id),
+                    onExited: () => _leaving[task.id]?.complete(),
+                    child: Material(
+                      color: _selected.contains(task.id)
+                          ? theme.colorScheme.secondaryContainer
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      child: HoverRegion(
+                        child: TaskTile(
+                          selected: _selected.contains(task.id),
+                          onLongPress: () => _toggleSelected(task),
+                          // A row folding away shows as checked meanwhile.
+                          task: _leaving.containsKey(task.id)
+                              ? task.copyWith(completedAt: DateTime.now())
+                              : task,
+                          stamped: _leaving.containsKey(task.id),
+                          depth: depth,
+                          folded: _tasks.openChildren(task).isEmpty
+                              ? null
+                              : _tasks.isFolded(task),
+                          onFold: () =>
+                              _tasks.setFolded(task, !_tasks.isFolded(task)),
                           onToggle: () => _toggle(task),
-                          onOpen: () => _open(task),
+                          onOpen: () => _selectedTasks.isNotEmpty
+                              ? _toggleSelected(task)
+                              : _open(task),
+                          // Beside the checkbox where a pointer reveals it
+                          // on hover; at the row's end on touch screens.
+                          leading: touch ? null : handle(index),
+                          trailing: touch ? handle(index) : null,
                         ),
-                    ],
+                      ),
+                    ),
                   ),
-                ],
-                const SliverToBoxAdapter(child: SizedBox(height: 16)),
-              ],
+                  _HeaderRow(:final section) => SectionHeader(
+                    key: ValueKey('section-${section.id}'),
+                    section: section,
+                    taskCount: _tasks.openIn(section.id).length,
+                    isFirst: section.id == sections.first.id,
+                    isLast: section.id == sections.last.id,
+                    onToggle: () => _run(
+                      () => _tasks.setCollapsed(section, !section.isCollapsed),
+                    ),
+                    onAddTask: () => _addTaskTo(section),
+                    onAction: (action) => _sectionAction(section, action),
+                  ),
+                },
+              ),
+            ),
+            if (sectionsAvailable)
+              pad(
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(8, 8, 8, 0),
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: TextButton.icon(
+                        onPressed: _addSection,
+                        icon: const Icon(Icons.playlist_add),
+                        label: const Text('افزودن بخش'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            if (done.isNotEmpty) ...[
+              pad(
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      16,
+                      24,
+                      16,
+                      4,
+                    ),
+                    child: Text(
+                      'انجام‌شده',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              pad(
+                SliverList.list(
+                  children: [
+                    for (final task in done)
+                      TaskTile(
+                        key: ValueKey('done-${task.id}'),
+                        task: task,
+                        onToggle: () => _toggle(task),
+                        onOpen: () => _open(task),
+                      ),
+                  ],
+                ),
+              ),
             ],
+          ],
+          // Room to scroll the last task clear of the capture bar.
+          SliverToBoxAdapter(
+            child: SizedBox(height: (capture == null ? _dockHeight : 0) + 24),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-/// The list's heading: the project name where no app bar shows it, how
-/// many tasks are open, and the completed-tasks filter beside them.
-class _ListHeader extends StatelessWidget {
-  const _ListHeader({
+/// The side sheet's width beside the list.
+const _editorWidth = 400.0;
+
+/// The toolbar row of the project's app bar.
+const _barHeight = 64.0;
+
+/// A Material medium top app bar for the project: the name large under the
+/// toolbar, collapsing into the toolbar as the list scrolls, and frosted
+/// glass behind it once tasks pass beneath.
+class _ProjectBar extends SliverPersistentHeaderDelegate {
+  _ProjectBar({
     required this.title,
+    required this.subtitle,
     required this.mark,
-    required this.openCount,
-    this.plannedMinutes = 0,
-    required this.showCompleted,
-    required this.onShowCompleted,
+    required this.actions,
+    required this.topPadding,
+    required this.inset,
+    required this.expandedHeight,
   });
 
-  final String? title;
-
-  /// The project's icon or color, beside the title.
+  final String title;
+  final String subtitle;
   final Widget mark;
-  final int openCount;
-  final int plannedMinutes;
-  final bool showCompleted;
-  final ValueChanged<bool> onShowCompleted;
+  final List<Widget> actions;
+  final double topPadding;
+  final double inset;
+
+  /// Room for the large title under the toolbar; zero keeps one row.
+  final double expandedHeight;
+
+  @override
+  double get minExtent => topPadding + _barHeight;
+
+  @override
+  double get maxExtent => minExtent + expandedHeight;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final theme = Theme.of(context);
+    final glass = FarashGlassColors.of(context);
+    final collapsed = expandedHeight == 0
+        ? 1.0
+        : (shrinkOffset / expandedHeight).clamp(0.0, 1.0);
+    final under = overlapsContent || shrinkOffset > 0;
+    final scaffold = Scaffold.maybeOf(context);
+    final side = inset + 4;
+    final barTitle = expandedHeight == 0
+        ? 1.0
+        : ((collapsed - 0.6) / 0.4).clamp(0.0, 1.0);
+    final largeTitle = (1 - collapsed / 0.6).clamp(0.0, 1.0);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        AnimatedOpacity(
+          opacity: under ? 1 : 0,
+          duration: Motion.of(context, Motion.quick),
+          child: ClipRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: glass.pane,
+                  border: Border(bottom: BorderSide(color: glass.paneBorder)),
+                ),
+              ),
+            ),
+          ),
+        ),
+        PositionedDirectional(
+          top: topPadding,
+          start: side,
+          end: side,
+          height: _barHeight,
+          child: Row(
+            children: [
+              if (scaffold?.hasDrawer ?? false)
+                IconButton(
+                  tooltip: MaterialLocalizations.of(
+                    context,
+                  ).openAppDrawerTooltip,
+                  icon: const Icon(Icons.menu),
+                  onPressed: scaffold!.openDrawer,
+                )
+              else
+                const SizedBox(width: 12),
+              const SizedBox(width: 4),
+              // One title at a time: the toolbar's appears only as the
+              // large one fades away.
+              Expanded(
+                child: barTitle == 0
+                    ? const SizedBox.shrink()
+                    : Opacity(
+                        opacity: barTitle,
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+              ),
+              ...actions,
+            ],
+          ),
+        ),
+        if (expandedHeight > 0 && largeTitle > 0)
+          PositionedDirectional(
+            start: side + 16,
+            end: side + 16,
+            bottom: 12,
+            child: IgnorePointer(
+              ignoring: collapsed > 0.5,
+              child: Opacity(
+                opacity: largeTitle,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        mark,
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Semantics(
+                            header: true,
+                            child: Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  @override
+  bool shouldRebuild(_ProjectBar old) => true;
+}
+
+/// Reports its child's size after layout, so the list can leave room for
+/// the capture bar floating over it.
+class _MeasureSize extends SingleChildRenderObjectWidget {
+  const _MeasureSize({required this.onChange, required super.child});
+
+  final ValueChanged<Size> onChange;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderMeasureSize(onChange);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderMeasureSize render) {
+    render.onChange = onChange;
+  }
+}
+
+class _RenderMeasureSize extends RenderProxyBox {
+  _RenderMeasureSize(this.onChange);
+
+  ValueChanged<Size> onChange;
+  Size? _last;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    if (size == _last) return;
+    _last = size;
+    final measured = size;
+    WidgetsBinding.instance.addPostFrameCallback((_) => onChange(measured));
+  }
+}
+
+/// Where no app bar names the project: how many tasks are open, and the
+/// completed-tasks toggle beside them.
+class _ListHeader extends StatelessWidget {
+  const _ListHeader({required this.count, required this.toggle});
+
+  final String count;
+  final Widget toggle;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tasks = openCount == 0
-        ? 'کار بازی نمانده'
-        : '${persianDigits(openCount)} کار باز';
-    final count = plannedMinutes == 0
-        ? tasks
-        : '$tasks · ${formatDuration(plannedMinutes)}';
-    final heading = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (title != null)
-          Row(
-            children: [
-              mark,
-              const SizedBox(width: 10),
-              Flexible(
-                child: Semantics(
-                  header: true,
-                  child: Text(
-                    title!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        Text(
-          count,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-    Widget filter({required bool compact}) => Tooltip(
-      message: 'نمایش انجام‌شده‌ها',
-      excludeFromSemantics: !compact,
-      child: FilterChip(
-        label: Text(compact ? 'انجام‌شده‌ها' : 'نمایش انجام‌شده‌ها'),
-        avatar: Icon(
-          showCompleted ? Icons.visibility : Icons.visibility_outlined,
-          size: 18,
-        ),
-        showCheckmark: false,
-        selected: showCompleted,
-        visualDensity: VisualDensity.compact,
-        materialTapTargetSize: MaterialTapTargetSize.padded,
-        onSelected: onShowCompleted,
-      ),
-    );
     return Padding(
-      padding: EdgeInsetsDirectional.fromSTEB(
-        20,
-        title == null ? 12 : 24,
-        12,
-        8,
-      ),
-      // One calm row, with a shorter filter label on narrow phones; with
-      // large text the filter moves under the heading instead of squeezing
-      // the title.
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final scale = MediaQuery.textScalerOf(context).scale(1);
-          if (constraints.maxWidth < 300 * scale) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                heading,
-                const SizedBox(height: 8),
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: filter(compact: true),
-                ),
-              ],
-            );
-          }
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(child: heading),
-              filter(compact: constraints.maxWidth < 360),
-            ],
-          );
-        },
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 8, 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              count,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          toggle,
+        ],
       ),
     );
   }
@@ -808,142 +1005,96 @@ class _QuickAddState extends State<_QuickAdd> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // One pane of glass: the field, its priority and the send button read
+    // as a single control, edged in honey while it has focus.
     return GlassSurface(
-      radius: 16,
-      blur: 10,
-      child: SafeArea(
-        top: false,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _maxListWidth),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-              child: _CaptureField(
-                focused: _focused,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _text,
-                        focusNode: _focus,
-                        textInputAction: TextInputAction.send,
-                        maxLength: 500,
-                        buildCounter:
-                            (
-                              _, {
-                              required currentLength,
-                              required isFocused,
-                              maxLength,
-                            }) => null,
-                        decoration: InputDecoration(
-                          hintText: 'کار تازه در «${widget.projectName}»',
-                          filled: false,
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          contentPadding: const EdgeInsetsDirectional.fromSTEB(
-                            16,
-                            14,
-                            4,
-                            14,
-                          ),
-                        ),
-                        onSubmitted: (_) => _submit(),
-                      ),
-                    ),
-                    PopupMenuButton<TaskPriority>(
-                      tooltip: 'اولویت: ${_priority.label}',
-                      initialValue: _priority,
-                      icon: Icon(
-                        _priority == TaskPriority.p4
-                            ? Icons.outlined_flag
-                            : Icons.flag,
-                        color: _priority == TaskPriority.p4
-                            ? theme.colorScheme.onSurfaceVariant
-                            : _priority.color,
-                      ),
-                      onSelected: (p) => setState(() => _priority = p),
-                      itemBuilder: (context) => [
-                        for (final p in TaskPriority.values)
-                          PopupMenuItem(
-                            value: p,
-                            child: Row(
-                              children: [
-                                Icon(Icons.flag, color: p.color),
-                                const SizedBox(width: 8),
-                                Text(p.label),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                    Padding(
-                      padding: const EdgeInsetsDirectional.only(end: 4),
-                      // Send wakes up once there is something to add.
-                      child: ValueListenableBuilder(
-                        valueListenable: _text,
-                        builder: (context, value, button) {
-                          final ready = value.text.trim().isNotEmpty;
-                          return AnimatedScale(
-                            scale: ready ? 1 : 0.86,
-                            duration: Motion.of(context, Motion.quick),
-                            curve: Motion.enter,
-                            child: AnimatedOpacity(
-                              opacity: ready || _busy ? 1 : 0.55,
-                              duration: Motion.of(context, Motion.quick),
-                              child: button,
-                            ),
-                          );
-                        },
-                        child: IconButton.filled(
-                          tooltip: 'افزودن کار',
-                          onPressed: _busy ? null : _submit,
-                          icon: _busy
-                              ? const SizedBox.square(
-                                  dimension: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.arrow_upward),
-                        ),
-                      ),
-                    ),
-                  ],
+      radius: 20,
+      borderColor: _focused ? theme.colorScheme.primary : null,
+      padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 8, 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _text,
+              focusNode: _focus,
+              textInputAction: TextInputAction.send,
+              maxLength: 500,
+              buildCounter:
+                  (
+                    _, {
+                    required currentLength,
+                    required isFocused,
+                    maxLength,
+                  }) => null,
+              decoration: InputDecoration(
+                hintText: 'کار تازه در «${widget.projectName}»',
+                filled: false,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: const EdgeInsetsDirectional.fromSTEB(
+                  16,
+                  12,
+                  4,
+                  12,
                 ),
               ),
+              onSubmitted: (_) => _submit(),
             ),
           ),
-        ),
+          PopupMenuButton<TaskPriority>(
+            tooltip: 'اولویت: ${_priority.label}',
+            initialValue: _priority,
+            icon: Icon(
+              _priority == TaskPriority.p4 ? Icons.outlined_flag : Icons.flag,
+              color: _priority == TaskPriority.p4
+                  ? theme.colorScheme.onSurfaceVariant
+                  : _priority.colorIn(context),
+            ),
+            onSelected: (p) => setState(() => _priority = p),
+            itemBuilder: (context) => [
+              for (final p in TaskPriority.values)
+                PopupMenuItem(
+                  value: p,
+                  child: Row(
+                    children: [
+                      Icon(Icons.flag, color: p.colorIn(context)),
+                      const SizedBox(width: 12),
+                      Text(p.label),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          // Send wakes up once there is something to add.
+          ValueListenableBuilder(
+            valueListenable: _text,
+            builder: (context, value, button) {
+              final ready = value.text.trim().isNotEmpty;
+              return AnimatedScale(
+                scale: ready ? 1 : 0.86,
+                duration: Motion.of(context, Motion.quick),
+                curve: Motion.enter,
+                child: AnimatedOpacity(
+                  opacity: ready || _busy ? 1 : 0.55,
+                  duration: Motion.of(context, Motion.quick),
+                  child: button,
+                ),
+              );
+            },
+            child: IconButton.filled(
+              tooltip: 'افزودن کار',
+              onPressed: _busy ? null : _submit,
+              icon: _busy
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.arrow_upward),
+            ),
+          ),
+        ],
       ),
-    );
-  }
-}
-
-/// One rounded surface for the capture row: the field, its priority and
-/// the send button read as a single control.
-class _CaptureField extends StatelessWidget {
-  const _CaptureField({required this.focused, required this.child});
-
-  final bool focused;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return AnimatedContainer(
-      duration: MediaQuery.disableAnimationsOf(context)
-          ? Duration.zero
-          : const Duration(milliseconds: 150),
-      decoration: BoxDecoration(
-        color: colors.surfaceContainerHighest.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: focused ? colors.primary : colors.outlineVariant,
-          width: focused ? 1.5 : 1,
-        ),
-      ),
-      child: child,
     );
   }
 }
