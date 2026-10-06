@@ -116,6 +116,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
 
   Task? _editingTask;
   var _editorKey = GlobalKey();
+  final _captureKey = GlobalKey();
 
   Future<void> _editorResult(TaskSheetResult? result) async {
     final task = _editingTask;
@@ -239,17 +240,15 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
   @override
   Widget build(BuildContext context) {
     if (widget.project.isFolder) return const _FolderNotice();
-    final list = Column(
-      children: [
-        Expanded(
-          child: ListenableBuilder(
-            listenable: _tasks,
-            builder: (context, _) => _list(context),
-          ),
-        ),
-        Padding(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // With a landscape keyboard, reserve no fixed footer: capture and
+        // tasks share one scrollable viewport so neither can trap the other.
+        final compact = constraints.maxHeight < 240;
+        final capture = Padding(
           padding: const EdgeInsets.all(12),
           child: _QuickAdd(
+            key: _captureKey,
             projectName: widget.project.displayName,
             onAdd: (title, priority) async {
               try {
@@ -261,11 +260,20 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
               }
             },
           ),
-        ),
-      ],
-    );
-    return LayoutBuilder(
-      builder: (context, constraints) {
+        );
+        final taskList = ListenableBuilder(
+          listenable: _tasks,
+          builder: (context, _) =>
+              _list(context, capture: compact ? capture : null),
+        );
+        final list = compact
+            ? taskList
+            : Column(
+                children: [
+                  Expanded(child: taskList),
+                  capture,
+                ],
+              );
         final task = _editingTask;
         if (task == null) return list;
         final editor = TaskDetailEditor(
@@ -289,7 +297,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     );
   }
 
-  Widget _list(BuildContext context) {
+  Widget _list(BuildContext context, {Widget? capture}) {
     final theme = Theme.of(context);
     if (_tasks.isLoading && _tasks.tasks.isEmpty) {
       return const Center(child: CircularProgressIndicator());
@@ -321,6 +329,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
           onRefresh: _tasks.load,
           child: CustomScrollView(
             slivers: [
+              if (capture != null) SliverToBoxAdapter(child: capture),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
@@ -442,7 +451,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
 
 /// One field and one button, pinned under the list and above the keyboard.
 class _QuickAdd extends StatefulWidget {
-  const _QuickAdd({required this.projectName, required this.onAdd});
+  const _QuickAdd({super.key, required this.projectName, required this.onAdd});
 
   final String projectName;
 

@@ -91,7 +91,10 @@ class GlassSurface extends StatelessWidget {
                     .withValues(alpha: dark ? 0.22 : 0.88),
               ),
             ),
-            child: Padding(padding: padding, child: child),
+            child: Material(
+              type: MaterialType.transparency,
+              child: Padding(padding: padding, child: child),
+            ),
           ),
         ),
       ),

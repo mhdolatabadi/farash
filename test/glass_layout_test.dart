@@ -90,6 +90,15 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       await _capture(tester, captureKey, layout.$1);
+      if (layout.$1 == 'landscape-ime') {
+        await tester.scrollUntilVisible(
+          find.text('ادامهٔ مطالعهٔ کتاب'),
+          60,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        await _capture(tester, captureKey, '${layout.$1}-tasks');
+      }
       await tester.tap(find.text('ادامهٔ مطالعهٔ کتاب'));
       await tester.pumpAndSettle();
       expect(find.byType(TaskDetailEditor), findsOneWidget);

@@ -1,0 +1,437 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-01T17:20:57.393188+00:00",
+  "title": "Design System: Farash",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Primary",
+        "canonical": "#17665E",
+        "tonalRamp": [
+          "oklch(15% 0.0741 184.89)",
+          "oklch(26% 0.0741 184.89)",
+          "oklch(37% 0.0741 184.89)",
+          "oklch(48% 0.0741 184.89)",
+          "oklch(59% 0.0741 184.89)",
+          "oklch(70% 0.0741 184.89)",
+          "oklch(81% 0.0741 184.89)",
+          "oklch(95% 0.0741 184.89)"
+        ]
+      },
+      "on-primary": {
+        "role": "primary",
+        "displayName": "On Primary",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26% 0.0000 89.88)",
+          "oklch(37% 0.0000 89.88)",
+          "oklch(48% 0.0000 89.88)",
+          "oklch(59% 0.0000 89.88)",
+          "oklch(70% 0.0000 89.88)",
+          "oklch(81% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#163D42",
+        "tonalRamp": [
+          "oklch(15% 0.0443 206.74)",
+          "oklch(26% 0.0443 206.74)",
+          "oklch(37% 0.0443 206.74)",
+          "oklch(48% 0.0443 206.74)",
+          "oklch(59% 0.0443 206.74)",
+          "oklch(70% 0.0443 206.74)",
+          "oklch(81% 0.0443 206.74)",
+          "oklch(95% 0.0443 206.74)"
+        ]
+      },
+      "muted-ink": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#4A6869",
+        "tonalRamp": [
+          "oklch(15% 0.0350 198.67)",
+          "oklch(26% 0.0350 198.67)",
+          "oklch(37% 0.0350 198.67)",
+          "oklch(48% 0.0350 198.67)",
+          "oklch(59% 0.0350 198.67)",
+          "oklch(70% 0.0350 198.67)",
+          "oklch(81% 0.0350 198.67)",
+          "oklch(95% 0.0350 198.67)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "canonical": "#F5FAF8",
+        "tonalRamp": [
+          "oklch(15% 0.0059 170.45)",
+          "oklch(26% 0.0059 170.45)",
+          "oklch(37% 0.0059 170.45)",
+          "oklch(48% 0.0059 170.45)",
+          "oklch(59% 0.0059 170.45)",
+          "oklch(70% 0.0059 170.45)",
+          "oklch(81% 0.0059 170.45)",
+          "oklch(95% 0.0059 170.45)"
+        ]
+      },
+      "selected": {
+        "role": "neutral",
+        "displayName": "Selected",
+        "canonical": "#D1E9E4",
+        "tonalRamp": [
+          "oklch(15% 0.0262 181.82)",
+          "oklch(26% 0.0262 181.82)",
+          "oklch(37% 0.0262 181.82)",
+          "oklch(48% 0.0262 181.82)",
+          "oklch(59% 0.0262 181.82)",
+          "oklch(70% 0.0262 181.82)",
+          "oklch(81% 0.0262 181.82)",
+          "oklch(95% 0.0262 181.82)"
+        ]
+      },
+      "mist": {
+        "role": "neutral",
+        "displayName": "Mist",
+        "canonical": "#D7EEEB",
+        "tonalRamp": [
+          "oklch(15% 0.0245 187.30)",
+          "oklch(26% 0.0245 187.30)",
+          "oklch(37% 0.0245 187.30)",
+          "oklch(48% 0.0245 187.30)",
+          "oklch(59% 0.0245 187.30)",
+          "oklch(70% 0.0245 187.30)",
+          "oklch(81% 0.0245 187.30)",
+          "oklch(95% 0.0245 187.30)"
+        ]
+      },
+      "ivory": {
+        "role": "neutral",
+        "displayName": "Ivory",
+        "canonical": "#F5F8F3",
+        "tonalRamp": [
+          "oklch(15% 0.0073 132.41)",
+          "oklch(26% 0.0073 132.41)",
+          "oklch(37% 0.0073 132.41)",
+          "oklch(48% 0.0073 132.41)",
+          "oklch(59% 0.0073 132.41)",
+          "oklch(70% 0.0073 132.41)",
+          "oklch(81% 0.0073 132.41)",
+          "oklch(95% 0.0073 132.41)"
+        ]
+      },
+      "cool-mist": {
+        "role": "neutral",
+        "displayName": "Cool Mist",
+        "canonical": "#DAE9ED",
+        "tonalRamp": [
+          "oklch(15% 0.0169 215.46)",
+          "oklch(26% 0.0169 215.46)",
+          "oklch(37% 0.0169 215.46)",
+          "oklch(48% 0.0169 215.46)",
+          "oklch(59% 0.0169 215.46)",
+          "oklch(70% 0.0169 215.46)",
+          "oklch(81% 0.0169 215.46)",
+          "oklch(95% 0.0169 215.46)"
+        ]
+      },
+      "dark-primary": {
+        "role": "primary",
+        "displayName": "Dark Primary",
+        "canonical": "#9ADACF",
+        "tonalRamp": [
+          "oklch(15% 0.0667 182.81)",
+          "oklch(26% 0.0667 182.81)",
+          "oklch(37% 0.0667 182.81)",
+          "oklch(48% 0.0667 182.81)",
+          "oklch(59% 0.0667 182.81)",
+          "oklch(70% 0.0667 182.81)",
+          "oklch(81% 0.0667 182.81)",
+          "oklch(95% 0.0667 182.81)"
+        ]
+      },
+      "dark-on-primary": {
+        "role": "primary",
+        "displayName": "Dark On Primary",
+        "canonical": "#102D2B",
+        "tonalRamp": [
+          "oklch(15% 0.0350 189.28)",
+          "oklch(26% 0.0350 189.28)",
+          "oklch(37% 0.0350 189.28)",
+          "oklch(48% 0.0350 189.28)",
+          "oklch(59% 0.0350 189.28)",
+          "oklch(70% 0.0350 189.28)",
+          "oklch(81% 0.0350 189.28)",
+          "oklch(95% 0.0350 189.28)"
+        ]
+      },
+      "dark-ink": {
+        "role": "neutral",
+        "displayName": "Dark Ink",
+        "canonical": "#EAF5F2",
+        "tonalRamp": [
+          "oklch(15% 0.0123 178.02)",
+          "oklch(26% 0.0123 178.02)",
+          "oklch(37% 0.0123 178.02)",
+          "oklch(48% 0.0123 178.02)",
+          "oklch(59% 0.0123 178.02)",
+          "oklch(70% 0.0123 178.02)",
+          "oklch(81% 0.0123 178.02)",
+          "oklch(95% 0.0123 178.02)"
+        ]
+      },
+      "dark-muted-ink": {
+        "role": "neutral",
+        "displayName": "Dark Muted Ink",
+        "canonical": "#BDD1CE",
+        "tonalRamp": [
+          "oklch(15% 0.0220 185.92)",
+          "oklch(26% 0.0220 185.92)",
+          "oklch(37% 0.0220 185.92)",
+          "oklch(48% 0.0220 185.92)",
+          "oklch(59% 0.0220 185.92)",
+          "oklch(70% 0.0220 185.92)",
+          "oklch(81% 0.0220 185.92)",
+          "oklch(95% 0.0220 185.92)"
+        ]
+      },
+      "dark-surface": {
+        "role": "neutral",
+        "displayName": "Dark Surface",
+        "canonical": "#1B3037",
+        "tonalRamp": [
+          "oklch(15% 0.0297 221.14)",
+          "oklch(26% 0.0297 221.14)",
+          "oklch(37% 0.0297 221.14)",
+          "oklch(48% 0.0297 221.14)",
+          "oklch(59% 0.0297 221.14)",
+          "oklch(70% 0.0297 221.14)",
+          "oklch(81% 0.0297 221.14)",
+          "oklch(95% 0.0297 221.14)"
+        ]
+      },
+      "dark-selected": {
+        "role": "neutral",
+        "displayName": "Dark Selected",
+        "canonical": "#355650",
+        "tonalRamp": [
+          "oklch(15% 0.0401 181.57)",
+          "oklch(26% 0.0401 181.57)",
+          "oklch(37% 0.0401 181.57)",
+          "oklch(48% 0.0401 181.57)",
+          "oklch(59% 0.0401 181.57)",
+          "oklch(70% 0.0401 181.57)",
+          "oklch(81% 0.0401 181.57)",
+          "oklch(95% 0.0401 181.57)"
+        ]
+      },
+      "dark-backdrop-start": {
+        "role": "neutral",
+        "displayName": "Dark Backdrop Start",
+        "canonical": "#193B40",
+        "tonalRamp": [
+          "oklch(15% 0.0403 208.07)",
+          "oklch(26% 0.0403 208.07)",
+          "oklch(37% 0.0403 208.07)",
+          "oklch(48% 0.0403 208.07)",
+          "oklch(59% 0.0403 208.07)",
+          "oklch(70% 0.0403 208.07)",
+          "oklch(81% 0.0403 208.07)",
+          "oklch(95% 0.0403 208.07)"
+        ]
+      },
+      "dark-backdrop-middle": {
+        "role": "neutral",
+        "displayName": "Dark Backdrop Middle",
+        "canonical": "#101E25",
+        "tonalRamp": [
+          "oklch(15% 0.0237 230.89)",
+          "oklch(26% 0.0237 230.89)",
+          "oklch(37% 0.0237 230.89)",
+          "oklch(48% 0.0237 230.89)",
+          "oklch(59% 0.0237 230.89)",
+          "oklch(70% 0.0237 230.89)",
+          "oklch(81% 0.0237 230.89)",
+          "oklch(95% 0.0237 230.89)"
+        ]
+      },
+      "dark-backdrop-end": {
+        "role": "neutral",
+        "displayName": "Dark Backdrop End",
+        "canonical": "#23343B",
+        "tonalRamp": [
+          "oklch(15% 0.0255 225.40)",
+          "oklch(26% 0.0255 225.40)",
+          "oklch(37% 0.0255 225.40)",
+          "oklch(48% 0.0255 225.40)",
+          "oklch(59% 0.0255 225.40)",
+          "oklch(70% 0.0255 225.40)",
+          "oklch(81% 0.0255 225.40)",
+          "oklch(95% 0.0255 225.40)"
+        ]
+      },
+      "dark-glow": {
+        "role": "neutral",
+        "displayName": "Dark Glow",
+        "canonical": "#53847C",
+        "tonalRamp": [
+          "oklch(15% 0.0547 182.91)",
+          "oklch(26% 0.0547 182.91)",
+          "oklch(37% 0.0547 182.91)",
+          "oklch(48% 0.0547 182.91)",
+          "oklch(59% 0.0547 182.91)",
+          "oklch(70% 0.0547 182.91)",
+          "oklch(81% 0.0547 182.91)",
+          "oklch(95% 0.0547 182.91)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "App headline",
+        "purpose": "App identity."
+      },
+      "title": {
+        "displayName": "Project title",
+        "purpose": "Project and editor headings."
+      },
+      "body": {
+        "displayName": "Task body",
+        "purpose": "Readable task titles."
+      },
+      "label": {
+        "displayName": "Action label",
+        "purpose": "Bold primary action labels."
+      }
+    },
+    "shadows": [
+      {
+        "name": "glass-ambient",
+        "value": "0 10px 28px rgba(0,0,0,0.07); dark rgba(0,0,0,0.16)",
+        "purpose": "Ambient offset elevation under large panes."
+      }
+    ],
+    "motion": [
+      {
+        "name": "task-check",
+        "value": "150ms; 0ms when disableAnimations",
+        "purpose": "Authored completion selection."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "persistent-navigation",
+        "value": "840px"
+      },
+      {
+        "name": "inline-editor-project-pane",
+        "value": "820px"
+      }
+    ],
+    "glass": {
+      "blurSigma": 16,
+      "lightOpacity": 0.78,
+      "darkOpacity": 0.9,
+      "lightBorderOpacity": 0.88,
+      "darkBorderOpacity": 0.22
+    },
+    "implementation": "Flutter Material 3. HTML snippets are panel representations, not shipping Flutter components. Generated Material colors are illustrative in field snippets. Tonal ramps are synthesized OKLCH inspection aids, not application tokens."
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "description": "Teal Material action with a 48px minimum height.",
+      "html": "<button class=\"ds-base ds-focus ds-button\">ذخیره</button>",
+      "css": ".ds-base{font-family:Vazirmatn,sans-serif;direction:rtl;color:#163D42}.ds-focus:focus-visible{outline:2px solid #17665E;outline-offset:3px}.ds-button{background:#17665E;color:white;border:0;border-radius:12px;min-height:48px;padding:0 24px;font-weight:700}.ds-button:hover{filter:brightness(.95)}.ds-button:active{filter:brightness(.9)}",
+      "refersTo": "button-primary"
+    },
+    {
+      "name": "Outlined Button",
+      "kind": "button",
+      "description": "Secondary Material action.",
+      "html": "<button class=\"ds-base ds-focus ds-outline\">انصراف</button>",
+      "css": ".ds-base{font-family:Vazirmatn,sans-serif;direction:rtl;color:#163D42}.ds-focus:focus-visible{outline:2px solid #17665E;outline-offset:3px}.ds-outline{background:transparent;color:#17665E;border:1px solid #4A6869;border-radius:12px;min-height:48px;padding:0 24px}.ds-outline:hover{background:#D1E9E4}.ds-outline:active{background:#D7EEEB}"
+    },
+    {
+      "name": "Task Field",
+      "kind": "input",
+      "description": "Filled field with primary focus border.",
+      "html": "<label class=\"ds-base\">عنوان<input class=\"ds-base ds-input\" value=\"آماده‌کردن برنامه فردا\"></label>",
+      "css": ".ds-base{font-family:Vazirmatn,sans-serif;direction:rtl;color:#163D42}.ds-focus:focus-visible{outline:2px solid #17665E;outline-offset:3px}.ds-input{display:block;border:1px solid #4A6869;border-radius:12px;padding:14px 16px;background:#F5FAF8;color:#163D42}.ds-input:hover{border-color:#17665E}.ds-input:focus-visible{outline:2px solid #17665E;outline-offset:-2px}",
+      "refersTo": "input"
+    },
+    {
+      "name": "Selected Project",
+      "kind": "nav",
+      "description": "Tonal selected project row.",
+      "html": "<button class=\"ds-base ds-focus ds-nav\" aria-current=\"page\">صندوق ورودی</button>",
+      "css": ".ds-base{font-family:Vazirmatn,sans-serif;direction:rtl;color:#163D42}.ds-focus:focus-visible{outline:2px solid #17665E;outline-offset:3px}.ds-nav{background:#D1E9E4;border:0;border-radius:12px;padding:12px 16px;color:#163D42;min-height:48px}.ds-nav:hover{filter:brightness(.97)}.ds-nav:active{filter:brightness(.94)}",
+      "refersTo": "navigation-selected"
+    },
+    {
+      "name": "Glass Pane",
+      "kind": "card",
+      "description": "Large bounded translucent workspace pane.",
+      "html": "<section class=\"ds-base ds-pane\">کارهای امروز</section>",
+      "css": ".ds-base{font-family:Vazirmatn,sans-serif;direction:rtl;color:#163D42}.ds-focus:focus-visible{outline:2px solid #17665E;outline-offset:3px}.ds-pane{background:rgba(255,255,255,.78);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.88);border-radius:24px;padding:24px;box-shadow:0 10px 28px rgba(0,0,0,.07)}.ds-pane:focus-within{border-color:#17665E}",
+      "refersTo": "glass-pane"
+    },
+    {
+      "name": "Task Row",
+      "kind": "custom",
+      "description": "Flat semantic task content and completion target.",
+      "html": "<div class=\"ds-base ds-task\"><button class=\"ds-focus ds-check\" aria-label=\"انجام کار\">○</button><span>مرور برنامه امروز</span></div>",
+      "css": ".ds-base{font-family:Vazirmatn,sans-serif;direction:rtl;color:#163D42}.ds-focus:focus-visible{outline:2px solid #17665E;outline-offset:3px}.ds-task{display:flex;align-items:center;padding:8px;gap:4px}.ds-check{min-width:48px;min-height:48px;background:transparent;border:0;color:#17665E;font-size:24px;border-radius:24px}.ds-check:hover{background:#D1E9E4}.ds-check:active{background:#D7EEEB}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Desk",
+    "overview": "A luminous, quiet desk for capturing and arranging real tasks. Pale mist and ivory light surround milky panes; deep teal ink gives semantic task content clear hierarchy. This captures the user's light, calm glass direction and the implemented Flutter system, rather than the generated comparison image.\n\nPersian RTL and bundled Vazirmatn are durable identity commitments. Android and Web share the same visual vocabulary; the coordinated dark theme changes illumination and ink while keeping structure and controls consistent.",
+    "keyCharacteristics": [
+      "Milky large panes over code-native ambient illumination.",
+      "Readable task rows with restrained hierarchy.",
+      "Persian-first typography and directional layout.",
+      "Reversible actions and visible, semantic task controls."
+    ],
+    "rules": [
+      {
+        "name": "The Content First Rule.",
+        "body": "Keep task text on the near-opaque surface and use illumination behind it, never as a replacement for semantic content.",
+        "section": "Colors"
+      },
+      {
+        "name": "The Persian Reading Rule.",
+        "body": "Keep Persian content RTL, use directional spacing, and explicitly isolate account email as LTR.",
+        "section": "Typography"
+      },
+      {
+        "name": "The Reachable Control Rule.",
+        "body": "Maintain (48px) action targets for icon buttons, primary buttons and task completion; visual check circles may remain smaller inside those targets.",
+        "section": "Layout"
+      },
+      {
+        "name": "The Bounded Glass Rule.",
+        "body": "Blur the workspace and navigation surfaces, never each task row.",
+        "section": "Elevation & Depth"
+      }
+    ],
+    "dos": [
+      "Do preserve Persian RTL and bundled Vazirmatn.",
+      "Do keep task text, navigation and actions semantic.",
+      "Do use large, near-opaque glass panes and readable task measures.",
+      "Do preserve keyboard-aware capture and editor spacing.",
+      "Do honor reduced motion for authored selection animations."
+    ],
+    "donts": [
+      "Don't blur each task row.",
+      "Don't ship the generated comparison board as UI artwork.",
+      "Don't introduce decorative controls for unimplemented features.",
+      "Don't claim hardware performance or accessibility-service validation from source inspection."
+    ]
+  }
+}
