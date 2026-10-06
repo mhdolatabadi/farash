@@ -1,37 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/palette.dart';
 
 abstract final class FarashTheme {
-  /// Brand color: a deep teal, the check on the app icon.
-  static const seed = Color(0xFF0F8B7C);
+  /// The palette the app ships with.
+  static const palette = FarashPalette.pomegranate;
 
   static const _controlRadius = 12.0;
   static const _surfaceRadius = 16.0;
 
-  static ThemeData light() => _build(Brightness.light);
+  static ThemeData light([FarashPalette palette = FarashTheme.palette]) =>
+      _build(Brightness.light, palette);
 
-  static ThemeData dark() => _build(Brightness.dark);
+  static ThemeData dark([FarashPalette palette = FarashTheme.palette]) =>
+      _build(Brightness.dark, palette);
 
-  static ThemeData _build(Brightness brightness) {
+  static ThemeData _build(Brightness brightness, FarashPalette palette) {
+    final p = palette.of(brightness);
     final generated = ColorScheme.fromSeed(
-      seedColor: seed,
+      seedColor: p.primary,
       brightness: brightness,
       dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot,
     );
-    final dark = brightness == Brightness.dark;
     final colors = generated.copyWith(
-      primary: dark ? const Color(0xFF9ADACF) : const Color(0xFF17665E),
-      onPrimary: dark ? const Color(0xFF102D2B) : Colors.white,
-      surface: dark ? const Color(0xFF1B3037) : const Color(0xFFF5FAF8),
-      onSurface: dark ? const Color(0xFFEAF5F2) : const Color(0xFF163D42),
-      onSurfaceVariant: dark
-          ? const Color(0xFFBDD1CE)
-          : const Color(0xFF4A6869),
-      secondaryContainer: dark
-          ? const Color(0xFF355650)
-          : const Color(0xFFD1E9E4),
-      onSecondaryContainer: dark
-          ? const Color(0xFFEAF5F2)
-          : const Color(0xFF163D42),
+      primary: p.primary,
+      onPrimary: p.onPrimary,
+      tertiary: p.accent,
+      surface: p.surface,
+      onSurface: p.onSurface,
+      onSurfaceVariant: p.onSurfaceVariant,
+      secondaryContainer: p.selected,
+      onSecondaryContainer: p.onSelected,
     );
     final base = ThemeData(
       brightness: brightness,
@@ -48,6 +46,7 @@ abstract final class FarashTheme {
     );
 
     return base.copyWith(
+      extensions: [FarashGlassColors(p)],
       scaffoldBackgroundColor: Colors.transparent,
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,

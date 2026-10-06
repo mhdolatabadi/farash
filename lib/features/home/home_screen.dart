@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/motion.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/calendar_settings_dialog.dart';
 import 'package:farash/app/glass.dart';
@@ -87,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
           listenable: widget.projects,
           builder: (context, _) {
             final selected = _selected;
-            final page = selected == null
+            final Widget content = selected == null
                 ? _ProjectPage(loading: widget.projects.isLoading)
                 : ProjectTasksView(
                     // A new controller for each project.
@@ -99,6 +100,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     moveTargets: () => widget.projects.projects,
                     showTitle: true,
                   );
+            // Changing project fades through instead of cutting.
+            final page = AnimatedSwitcher(
+              duration: Motion.of(context, Motion.standard),
+              switchInCurve: Motion.enter,
+              switchOutCurve: Motion.exit,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: Tween(begin: 0.98, end: 1.0).animate(animation),
+                  child: child,
+                ),
+              ),
+              child: content,
+            );
             if (!wide) {
               return Scaffold(
                 key: _scaffoldKey,
