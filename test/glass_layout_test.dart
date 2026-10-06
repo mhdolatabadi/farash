@@ -111,11 +111,12 @@ void main() {
         for (final priority in TaskPriority.values) {
           final segment = find.byTooltip(priority.label);
           await tester.ensureVisible(segment);
-          final size = tester.getSize(segment);
+          final size = tester.getRect(segment).size;
           expect(size.width, greaterThanOrEqualTo(48));
           expect(size.height, greaterThanOrEqualTo(48));
         }
         await tester.ensureVisible(find.byTooltip(TaskPriority.p2.label));
+        await tester.pumpAndSettle();
         await tester.tap(find.byTooltip(TaskPriority.p2.label));
       }
       await tester.ensureVisible(find.text('ذخیره'));

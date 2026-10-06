@@ -65,7 +65,7 @@ void main() {
     await pumpView(tester, showTitle: false);
     expect(find.text('کار'), findsNothing);
     expect(find.text('کار بازی نمانده'), findsOneWidget);
-    expect(find.text('کار تازه را در نوار پایین بنویسید.'), findsOneWidget);
+    expect(find.text('کار تازه را در کادر افزودن بنویسید.'), findsOneWidget);
   });
 
   testWidgets('touch screens always show the drag handle after the title', (

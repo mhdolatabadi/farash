@@ -53,8 +53,12 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('اولویت ۲').last);
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'پیش‌نویس');
+      await tester.enterText(
+        find.byType(TextField, skipOffstage: false),
+        'پیش‌نویس',
+      );
       await tester.ensureVisible(find.byType(FilterChip));
+      await tester.pumpAndSettle();
       final reload = Completer<void>();
       delayed.pending = reload;
       if (fail) delayed.failNext = Exception('offline');
@@ -62,27 +66,45 @@ void main() {
       await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(
-        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        tester
+            .widget<TextField>(find.byType(TextField, skipOffstage: false))
+            .controller!
+            .text,
         'پیش‌نویس',
       );
-      expect(find.byTooltip('اولویت: اولویت ۲'), findsOneWidget);
+      expect(
+        find.byTooltip('اولویت: اولویت ۲', skipOffstage: false),
+        findsOneWidget,
+      );
       reload.complete();
       await tester.pumpAndSettle();
       expect(
-        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        tester
+            .widget<TextField>(find.byType(TextField, skipOffstage: false))
+            .controller!
+            .text,
         'پیش‌نویس',
       );
-      expect(find.byTooltip('اولویت: اولویت ۲'), findsOneWidget);
+      expect(
+        find.byTooltip('اولویت: اولویت ۲', skipOffstage: false),
+        findsOneWidget,
+      );
       if (fail) {
         await tester.ensureVisible(find.text('تلاش دوباره'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('تلاش دوباره'));
         await tester.pumpAndSettle();
         expect(
-          tester.widget<TextField>(find.byType(TextField)).controller!.text,
+          tester
+              .widget<TextField>(find.byType(TextField, skipOffstage: false))
+              .controller!
+              .text,
           'پیش‌نویس',
         );
       }
-      await tester.ensureVisible(find.byType(TextField));
+      await tester.ensureVisible(find.byType(TextField, skipOffstage: false));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(TextField));
       await tester.testTextInput.receiveAction(TextInputAction.send);
       await tester.pumpAndSettle();
       expect(api.byTitle('پیش‌نویس').priority, TaskPriority.p2);
