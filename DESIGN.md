@@ -117,7 +117,7 @@ Persistent navigation begins at a viewport width of (840px), with a (280px) side
 
 Editing uses available project-pane width: at (820px), a (380px) editor sits beside the list with a (12px) gap. Narrow initial openings use a scrollable bottom sheet; an already-open inline editor occupies the pane when narrowed. Editor padding includes keyboard insets.
 
-Capture normally occupies layout space below the list. The compact-height adaptation moves capture above tasks in their shared CustomScrollView when available project-pane height is below (240px); a GlobalKey preserves its draft across relocation.
+Capture normally occupies layout space below the list. The compact-height adaptation moves capture above tasks in their shared CustomScrollView when available project-pane height is below (240px); a GlobalKey preserves its draft across relocation. Compact capture remains mounted above loading and error slivers too; empty-state wording does not depend on text direction.
 
 **The Reachable Control Rule.** Preserve (48px) action targets for completion, icon actions and primary buttons, even when the visual check is smaller.
 
@@ -141,7 +141,7 @@ The capture bar is one rounded field holding task text, priority and send. Navig
 
 Task rows remain flat and show title, description preview, checklist/subtask counts and actual dates when present. Completion retains a strike-through and supporting-ink text. Subtasks indent directionally and fold through a chevron. Selection and row actions use semantic widgets.
 
-The editor begins with borderless title and notes, followed by property rows for schedule, segmented priority, project and section. Checklist and subtask fields open on demand. Close, save and deletion operate on actual task state. Authentication shares the glass vocabulary.
+The editor begins with borderless title and notes, followed by property rows for schedule, segmented priority, project and section. Nonexpanding property rows stack their heading above the control below (480px) available width. Priority segments retain a minimum (48px × 48px) target and switch to vertical when available width is below (320px) and the text scaler renders a (14px) label above (18px). Text uses its configured scale rather than fitting it down. Checklist and subtask fields open on demand. Close, save and deletion operate on actual task state. Authentication shares the glass vocabulary.
 
 ## Do's and Don'ts
 

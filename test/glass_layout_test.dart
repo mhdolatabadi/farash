@@ -107,6 +107,17 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(TaskDetailEditor), findsOneWidget);
       expect(tester.takeException(), isNull);
+      if (layout.$1 == 'phone-dark-large') {
+        for (final priority in TaskPriority.values) {
+          final segment = find.byTooltip(priority.label);
+          await tester.ensureVisible(segment);
+          final size = tester.getSize(segment);
+          expect(size.width, greaterThanOrEqualTo(48));
+          expect(size.height, greaterThanOrEqualTo(48));
+        }
+        await tester.ensureVisible(find.byTooltip(TaskPriority.p2.label));
+        await tester.tap(find.byTooltip(TaskPriority.p2.label));
+      }
       await tester.ensureVisible(find.text('ذخیره'));
       await tester.pumpAndSettle();
       await _capture(tester, captureKey, '${layout.$1}-editor');
@@ -118,6 +129,9 @@ void main() {
       await tester.tap(find.text('ذخیره'));
       await tester.pumpAndSettle();
       expect(api.byTitle('عنوان جدید').title, 'عنوان جدید');
+      if (layout.$1 == 'phone-dark-large') {
+        expect(api.byTitle('عنوان جدید').priority, TaskPriority.p2);
+      }
       expect(find.byType(TaskDetailEditor), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());

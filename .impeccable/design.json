@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-06T13:41:16.188331+00:00",
+  "generatedAt": "2026-10-06T13:49:24.884076+00:00",
   "title": "Design System: Farash",
   "extensions": {
     "colorMeta": {
@@ -516,6 +516,14 @@
       {
         "name": "compact-capture",
         "value": "project-pane height <240px"
+      },
+      {
+        "name": "stacked-property-row",
+        "value": "nonexpanding row available width <480px"
+      },
+      {
+        "name": "vertical-priority",
+        "value": "width <320px and textScaler.scale(14)>18"
       }
     ],
     "glass": {
@@ -525,9 +533,15 @@
     "captureLayout": {
       "normal": "Below list in layout.",
       "compact": "Above tasks in shared CustomScrollView.",
-      "state": "GlobalKey preserves draft."
+      "state": "GlobalKey preserves draft.",
+      "status": "Compact capture stays mounted above loading/error slivers; empty copy is direction-independent."
     },
-    "implementation": "Flutter Material 3; panel snippets are illustrative, generated Material field colors are approximations, and synthesized OKLCH ramps are inspection aids rather than shipping tokens."
+    "implementation": "Flutter Material 3; panel snippets are illustrative, generated Material field colors are approximations, and synthesized OKLCH ramps are inspection aids rather than shipping tokens.",
+    "editorLayout": {
+      "propertyRow": "Nonexpanding property heading stacks above control when available width <480px.",
+      "priority": "Minimum48x48px targets; vertical when width <320px and textScaler.scale(14)>18.",
+      "text": "Configured font scales remain unchanged; no FittedBox."
+    }
   },
   "components": [
     {

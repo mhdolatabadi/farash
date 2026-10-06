@@ -426,26 +426,35 @@ class PriorityPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SegmentedButton<TaskPriority>(
-      showSelectedIcon: false,
-      style: const ButtonStyle(
-        visualDensity: VisualDensity.standard,
-        tapTargetSize: MaterialTapTargetSize.padded,
-      ),
-      segments: [
-        for (final p in TaskPriority.values)
-          ButtonSegment(
-            value: p,
-            tooltip: p.label,
-            icon: Icon(
-              p == TaskPriority.p4 ? Icons.outlined_flag : Icons.flag,
-              color: p.color,
-            ),
-            label: Text(persianDigits(p.level)),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final vertical =
+            constraints.maxWidth < 320 &&
+            MediaQuery.textScalerOf(context).scale(14) > 18;
+        return SegmentedButton<TaskPriority>(
+          direction: vertical ? Axis.vertical : Axis.horizontal,
+          showSelectedIcon: false,
+          style: const ButtonStyle(
+            visualDensity: VisualDensity.standard,
+            tapTargetSize: MaterialTapTargetSize.padded,
+            minimumSize: WidgetStatePropertyAll(Size(48, 48)),
           ),
-      ],
-      selected: {value},
-      onSelectionChanged: (s) => onChanged(s.single),
+          segments: [
+            for (final p in TaskPriority.values)
+              ButtonSegment(
+                value: p,
+                tooltip: p.label,
+                icon: Icon(
+                  p == TaskPriority.p4 ? Icons.outlined_flag : Icons.flag,
+                  color: p.color,
+                ),
+                label: Text(persianDigits(p.level)),
+              ),
+          ],
+          selected: {value},
+          onSelectionChanged: (s) => onChanged(s.single),
+        );
+      },
     );
   }
 }
@@ -722,21 +731,30 @@ class _PropertyRow extends StatelessWidget {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Icon(icon, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 12),
-          Text(label, style: theme.textTheme.bodyLarge),
-          const SizedBox(width: 12),
-          Expanded(
-            child: expand
-                ? child
-                : Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: FittedBox(fit: BoxFit.scaleDown, child: child),
-                  ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final heading = Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 12),
+              Text(label, style: theme.textTheme.bodyLarge),
+            ],
+          );
+          if (!expand && constraints.maxWidth < 480) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [heading, const SizedBox(height: 8), child],
+            );
+          }
+          return Row(
+            children: [
+              heading,
+              const SizedBox(width: 12),
+              Expanded(child: child),
+            ],
+          );
+        },
       ),
     );
   }
