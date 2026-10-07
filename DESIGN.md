@@ -27,7 +27,7 @@ colors:
   priority-4: "#9A96B2"
   day-primary: "#5B45D6"
   day-on-primary: "#FFFFFF"
-  day-accent: "#1F7A5C"
+  day-accent: "#17634A"
   day-overdue: "#B3263A"
   day-surface: "#FBFAFE"
   day-ink: "#1D1B2E"
@@ -149,12 +149,16 @@ Every color comes from `FarashPalette.dew` in `lib/app/palette.dart`. The palett
   - the single primary action of a view
 - **Mint** (`tertiary`) marks tomorrow.
 - **Rose** (`error`) marks overdue and destructive actions.
-- **Date pills:** today, tomorrow and late dates sit in a 14% pill of their own color; later dates stay plain.
+- **Date pills:** today, tomorrow and late dates use their role color at 14%. By day the fill stays translucent; at night it is composited over the solid `surface` color, insulating the label from the room blooms. Later dates stay plain.
 - **Priorities:** red, orange, blue and grey, tuned per brightness, via `TaskPriority.colorIn(context)`.
 
-Tests hold contrast in both themes:
-- every text role at 4.5:1 or better on glass composited over each backdrop stop, and on the sheet surfaces
-- priority marks at 3:1 or better
+Contrast checks in `test/palette_and_motion_test.dart` cover both themes:
+- `onSurface`, `onSurfaceVariant`, primary, tertiary and error at 4.5:1 on the solid surface and glass composited over each backdrop stop, with blooms excluded from that base check
+- `onSurface` and `onSurfaceVariant` at 4.5:1 on the tested sheet surfaces, and `onPrimary` on primary
+- priority marks at 3:1 on those base glass composites
+- the rendered tomorrow pill at 4.5:1 on the sampled backdrop stops and individual lavender, mint and lamp composites
+
+These checks do not establish every text role over every ambient-light overlap. Widget/source evidence does not claim Android hardware or accessibility-service validation.
 
 **The One Accent Rule.** If violet appears on something that is neither "now" nor the primary action, it is a bug.
 
@@ -234,7 +238,8 @@ Solid surfaces (drawer, bottom sheets, dialogs, menus) sit over a scrim and use 
 **Capture bar.**
 - One glass pane holding the text field, the priority menu and the filled send button.
 - It is edged in violet while focused.
-- Send grows from a muted state once there is text.
+- Send keeps its target at least 48px in both dimensions and fades from 55% to full opacity once there is text; its target never scales.
+- A pending send disables duplicate submission. Text or priority changes made while it is pending preserve the newer draft; success clears only the unchanged submitted revision, and failure preserves it.
 
 **Task rows.**
 - Rows are flat. Each shows the title, a description preview, checklist and subtask counts, and dates.

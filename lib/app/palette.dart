@@ -93,7 +93,7 @@ class FarashPalette {
     light: FarashColors(
       primary: Color(0xFF5B45D6),
       onPrimary: Colors.white,
-      accent: Color(0xFF1F7A5C),
+      accent: Color(0xFF17634A),
       surface: Color(0xFFFBFAFE),
       onSurface: Color(0xFF1D1B2E),
       onSurfaceVariant: Color(0xFF5D5A73),

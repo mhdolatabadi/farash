@@ -340,7 +340,14 @@ class TaskDateLabels extends StatelessWidget {
         child: tinted
             ? DecoratedBox(
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.14),
+                  // Night metadata keeps its contrast even when a room
+                  // light is directly behind it. Day pills stay translucent.
+                  color: theme.brightness == Brightness.dark
+                      ? Color.alphaBlend(
+                          color.withValues(alpha: 0.14),
+                          theme.colorScheme.surface,
+                        )
+                      : color.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(99),
                 ),
                 child: Padding(

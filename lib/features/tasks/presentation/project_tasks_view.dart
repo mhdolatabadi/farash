@@ -1090,6 +1090,7 @@ class _QuickAddState extends State<_QuickAdd> {
     ..addListener(() => setState(() => _focused = _focus.hasFocus));
   bool _focused = false;
   TaskPriority _priority = TaskPriority.p4;
+  int _draftRevision = 0;
   bool _busy = false;
 
   @override
@@ -1102,12 +1103,13 @@ class _QuickAddState extends State<_QuickAdd> {
   Future<void> _submit() async {
     final title = _text.text.trim();
     if (title.isEmpty || _busy) return;
+    final revision = _draftRevision;
     setState(() => _busy = true);
     final added = await widget.onAdd(title, _priority);
     if (!mounted) return;
     setState(() {
       _busy = false;
-      if (added) {
+      if (added && revision == _draftRevision) {
         _text.clear();
         _priority = TaskPriority.p4;
       }
@@ -1153,6 +1155,7 @@ class _QuickAddState extends State<_QuickAdd> {
                 ),
               ),
               onSubmitted: (_) => _submit(),
+              onChanged: (_) => _draftRevision++,
             ),
           ),
           PopupMenuButton<TaskPriority>(
@@ -1164,7 +1167,10 @@ class _QuickAddState extends State<_QuickAdd> {
                   ? theme.colorScheme.onSurfaceVariant
                   : _priority.colorIn(context),
             ),
-            onSelected: (p) => setState(() => _priority = p),
+            onSelected: (p) => setState(() {
+              _priority = p;
+              _draftRevision++;
+            }),
             itemBuilder: (context) => [
               for (final p in TaskPriority.values)
                 PopupMenuItem(
@@ -1184,15 +1190,10 @@ class _QuickAddState extends State<_QuickAdd> {
             valueListenable: _text,
             builder: (context, value, button) {
               final ready = value.text.trim().isNotEmpty;
-              return AnimatedScale(
-                scale: ready ? 1 : 0.86,
+              return AnimatedOpacity(
+                opacity: ready || _busy ? 1 : 0.55,
                 duration: Motion.of(context, Motion.quick),
-                curve: Motion.enter,
-                child: AnimatedOpacity(
-                  opacity: ready || _busy ? 1 : 0.55,
-                  duration: Motion.of(context, Motion.quick),
-                  child: button,
-                ),
+                child: button,
               );
             },
             child: IconButton.filled(

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-07T17:03:54.070575+00:00",
+  "generatedAt": "2026-10-07T17:58:31.985716+00:00",
   "title": "Design System: Farash",
   "extensions": {
     "colorMeta": {
@@ -258,13 +258,18 @@
           "oklch(81% 0.0410 291.83)",
           "oklch(95% 0.0410 291.83)"
         ]
+      },
+      "day-accent": {
+        "role": "tertiary",
+        "displayName": "Day Mint (tomorrow)",
+        "canonical": "#17634A"
       }
     },
     "shadows": [
       {
         "name": "floating-pane",
-        "value": "0 8px 24px rgba(0, 0, 0, 0.40)",
-        "purpose": "Floating glass panes: navigation pane, capture bar, side sheet (day: rgba(27, 30, 44, 0.10))."
+        "value": "0 8px 24px rgba(0, 0, 0, 0.35)",
+        "purpose": "Floating glass panes (night); day uses rgba(80, 60, 140, 0.08)."
       }
     ],
     "motion": [
@@ -354,9 +359,10 @@
     "captureLayout": {
       "normal": "Floats over the list end, 12px inset, max 760px, above the safe area; the list measures it and pads its end so the last task scrolls clear.",
       "compact": "Above tasks in the shared CustomScrollView; the app bar is a single non-pinned row.",
-      "state": "GlobalKey preserves draft."
+      "state": "GlobalKey preserves draft across layout moves. Pending submission disables duplicate sends; draft revision tracks text and priority edits, so success clears only the unchanged submitted draft and failure preserves it.",
+      "send": "At least 48px in both dimensions in all states; opacity changes from 0.55 to 1 over quick motion, without scaling the target."
     },
-    "implementation": "Flutter Material 3; lib/app/palette.dart (FarashPalette.dew) is the single color source, priorities included; neutrals generated from an violet seed. Panel snippets are illustrative; OKLCH ramps are inspection aids rather than shipping tokens.",
+    "implementation": "Flutter Material 3; lib/app/palette.dart (FarashPalette.dew) is the single color source, priorities included; neutrals generated from a violet seed. Panel snippets are illustrative; OKLCH ramps are inspection aids rather than shipping tokens. Panel component snippets demonstrate the dark dew palette; day variants use the day frontmatter tokens.",
     "editorLayout": {
       "wide": "Full-height 400px side sheet at the end edge, a single glass pane.",
       "narrow": "Modal bottom sheet on the solid sheet surface, keyboard-aware.",
@@ -374,40 +380,41 @@
       "content": "Open tasks due today, late count and planned time; hidden when the day is clear.",
       "style": "Primary gradient 18%→6%, 1px primary 30% border, 20px radius."
     },
-    "datePills": "Today, tomorrow and overdue labels sit in a 14% pill of their own color; later dates plain."
+    "datePills": "Today, tomorrow and overdue use 14% of their role color: translucent by day, composited over solid surface at night to insulate labels from room blooms; radius 99px, padding 2px 8px. Later dates remain plain.",
+    "contrastEvidence": "Widget/source tests cover named text roles on solid surface and base glass over backdrop stops, sheet body roles, priority marks, and rendered tomorrow pills over sampled individual bloom composites. They do not prove all text roles over every ambient overlap. No Android hardware or accessibility-service validation claimed."
   },
   "components": [
     {
       "name": "Primary Action",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The one primary action of a view (save, send): lamplight honey on honey ink.",
+      "description": "The one primary action of a view (save, send): night violet on violet ink.",
       "html": "<button class=\"ds-btn-primary\">ذخیره</button>",
-      "css": ".ds-btn-primary{background:#E8B66B;color:#21170A;border:none;border-radius:12px;min-height:48px;padding:0 24px;font:700 14px Vazirmatn,sans-serif;transition:filter .16s}.ds-btn-primary:hover{filter:brightness(1.06)}.ds-btn-primary:focus-visible{outline:2px solid #F3ECE2;outline-offset:2px}"
+      "css": ".ds-btn-primary{background:#B4A7FF;color:#1B1340;border:none;border-radius:12px;min-height:48px;padding:0 24px;font:700 14px Vazirmatn,sans-serif;transition:filter .16s}.ds-btn-primary:hover{filter:brightness(1.06)}.ds-btn-primary:focus-visible{outline:2px solid #F1EEFA;outline-offset:2px}"
     },
     {
       "name": "Secondary Text Action",
       "kind": "button",
       "refersTo": "button-text",
-      "description": "Add checklist, add subtask: ink, never honey.",
+      "description": "Add checklist, add subtask: ink, never violet.",
       "html": "<button class=\"ds-btn-text\">افزودن زیرکار</button>",
-      "css": ".ds-btn-text{background:none;color:#F3ECE2;border:none;border-radius:12px;min-height:48px;padding:0 12px;font:500 14px Vazirmatn,sans-serif}.ds-btn-text:hover{background:rgba(243,236,226,.08)}.ds-btn-text:focus-visible{outline:2px solid #E8B66B}"
+      "css": ".ds-btn-text{background:none;color:#F1EEFA;border:none;border-radius:12px;min-height:48px;padding:0 12px;font:500 14px Vazirmatn,sans-serif}.ds-btn-text:hover{background:rgba(241,238,250,.08)}.ds-btn-text:focus-visible{outline:2px solid #B4A7FF}"
     },
     {
       "name": "Glass Pane",
       "kind": "card",
       "refersTo": "glass-pane",
-      "description": "A frosted pane (blur 20, 12% white tint, 1px light border, lit top edge) used once per region where content passes beneath.",
+      "description": "A frosted pane (blur 20, 10% night white tint (62% by day), 1px light border, lit top edge) used once per region where content passes beneath.",
       "html": "<div class=\"ds-pane\"><div class=\"ds-pane-body\">۳ کار باز</div></div>",
-      "css": ".ds-pane{background:rgba(255,255,255,.12);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.16);border-radius:24px;box-shadow:0 8px 24px rgba(0,0,0,.4);background-image:linear-gradient(to bottom,rgba(255,255,255,.14),transparent 22%)}"
+      "css": ".ds-pane{background:rgba(255,255,255,.10);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.14);border-radius:24px;box-shadow:0 8px 24px rgba(0,0,0,.35);background-image:linear-gradient(to bottom,rgba(255,255,255,.12),transparent 22%)}"
     },
     {
       "name": "Capture Field",
       "kind": "input",
-      "refersTo": "input",
-      "description": "The capture bar: one glass pane holding the field, priority menu and filled send; honey edge while focused.",
+      "refersTo": "capture-bar",
+      "description": "The capture bar: one glass pane holding the field, priority menu and filled send; violet edge while focused. Send has a fixed minimum 48px target and opacity-only readiness feedback.",
       "html": "<div class=\"ds-capture\" dir=\"rtl\"><input placeholder=\"کار تازه در «صندوق ورودی»\"><button aria-label=\"افزودن کار\">↑</button></div>",
-      "css": ".ds-capture{display:flex;align-items:center;gap:4px;padding:4px 4px 4px 8px;background:rgba(255,255,255,.12);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.16);border-radius:20px;min-height:56px}.ds-capture:focus-within{border:1.5px solid #E8B66B}.ds-capture input{flex:1;background:none;border:0;color:#F1EEF6;font:16px Vazirmatn,sans-serif;padding:12px 16px}"
+      "css": ".ds-capture{display:flex;align-items:center;gap:4px;padding:4px 4px 4px 8px;background:rgba(255,255,255,.10);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.14);border-radius:20px;min-height:56px}.ds-capture:focus-within{border:1.5px solid #B4A7FF}.ds-capture input{flex:1;background:none;border:0;color:#F1EEFA;font:16px Vazirmatn,sans-serif;padding:12px 16px} .ds-capture button{min-width:48px;min-height:48px;background:#B4A7FF;color:#1B1340;border:0;border-radius:12px;transition:opacity .16s}.ds-capture button:hover{filter:brightness(1.06)}.ds-capture button:focus-visible{outline:2px solid #F1EEFA;outline-offset:2px}"
     },
     {
       "name": "Done Stamp",
@@ -415,31 +422,30 @@
       "refersTo": "done-stamp",
       "description": "Pressed onto a checked row before it folds; nothing vanishes unannounced.",
       "html": "<span class=\"ds-stamp\">انجام شد</span>",
-      "css": ".ds-stamp{display:inline-block;border:1.2px solid #E8B66B;color:#E8B66B;border-radius:6px;padding:0 8px;font:700 12px Vazirmatn,sans-serif}"
+      "css": ".ds-stamp{display:inline-block;border:1.2px solid #B4A7FF;color:#B4A7FF;border-radius:6px;padding:0 8px;font:700 12px Vazirmatn,sans-serif}"
     },
     {
       "name": "Date Labels",
       "kind": "custom",
-      "refersTo": "date-labels",
-      "description": "Today honey, tomorrow sage, later muted, overdue pomegranate.",
+      "description": "Today violet, tomorrow mint, later muted, overdue rose. Night pills composite the 14% role tint over #1C1834; day pills keep a translucent tint.",
       "html": "<span class=\"ds-d ds-now\">امروز ۲۲:۰۰</span> <span class=\"ds-d ds-next\">فردا</span> <span class=\"ds-d ds-late\">دیرشده · ۱۲ مهر</span>",
-      "css": ".ds-d{font:500 12px Vazirmatn,sans-serif}.ds-now{color:#E8B66B}.ds-next{color:#A9C4B2}.ds-late{color:#EF8C8F}"
+      "css": ".ds-d{font:500 12px Vazirmatn,sans-serif;border-radius:99px;padding:2px 8px}.ds-now{color:#B4A7FF;background:color-mix(in srgb,#B4A7FF 14%,#1C1834)}.ds-next{color:#8FD9BF;background:color-mix(in srgb,#8FD9BF 14%,#1C1834)}.ds-late{color:#FF9AA6;background:color-mix(in srgb,#FF9AA6 14%,#1C1834)}"
     },
     {
       "name": "Navigation Item",
       "kind": "nav",
       "refersTo": "navigation-selected",
-      "description": "Sidebar project row; selection is a night tone, not honey.",
+      "description": "Sidebar project row; selection is a night tone, not the primary accent.",
       "html": "<div class=\"ds-nav ds-on\">صندوق ورودی</div><div class=\"ds-nav\">کار</div>",
-      "css": ".ds-nav{min-height:48px;display:flex;align-items:center;padding:0 16px;border-radius:12px;color:#F3ECE2;font:500 15px Vazirmatn,sans-serif}.ds-nav:hover{background:rgba(243,236,226,.06)}.ds-on{background:#26305A}"
+      "css": ".ds-nav{min-height:48px;display:flex;align-items:center;padding:0 16px;border-radius:12px;color:#F1EEFA;font:500 15px Vazirmatn,sans-serif}.ds-nav:hover{background:rgba(241,238,250,.06)}.ds-on{background:#332C66}"
     },
     {
       "name": "Project App Bar",
-      "kind": "navigation",
+      "kind": "nav",
       "refersTo": "app-bar",
       "description": "Material 3 medium top app bar: large Naskh project title with mark and open count, collapsing into a 64px toolbar whose glass fades in once tasks scroll beneath.",
       "html": "<header class=\"ds-bar\" dir=\"rtl\"><h1>صندوق ورودی</h1><p>۳ کار باز</p></header>",
-      "css": ".ds-bar{padding:64px 20px 12px;color:#F1EEF6}.ds-bar h1{margin:0;font:700 24px/1.35 'Noto Naskh Arabic',Vazirmatn,serif}.ds-bar p{margin:0;color:#B4B6C8;font:14px Vazirmatn,sans-serif}"
+      "css": ".ds-bar{padding:64px 20px 12px;color:#F1EEFA}.ds-bar h1{margin:0;font:700 24px/1.35 'Noto Naskh Arabic',Vazirmatn,serif}.ds-bar p{margin:0;color:#B9B4CF;font:14px Vazirmatn,sans-serif}"
     }
   ],
   "narrative": {

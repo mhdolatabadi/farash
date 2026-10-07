@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:farash/app/app_theme.dart';
 import 'package:farash/app/palette.dart';
 import 'package:farash/features/projects/data/project.dart';
+import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/features/tasks/presentation/project_tasks_view.dart';
+import 'package:farash/features/tasks/presentation/task_tile.dart';
 
 import 'support/fake_tasks_api.dart';
 
@@ -66,6 +68,7 @@ void main() {
             ('onSurface', c.onSurface),
             ('onSurfaceVariant', c.onSurfaceVariant),
             ('primary', c.primary),
+            ('tertiary', c.tertiary),
             ('error', c.error),
           ]) {
             expect(
@@ -86,6 +89,52 @@ void main() {
             greaterThanOrEqualTo(4.5),
           );
         }
+      });
+    }
+
+    for (final brightness in Brightness.values) {
+      testWidgets('rendered tomorrow pill keeps contrast ($brightness)', (
+        tester,
+      ) async {
+        final theme = brightness == Brightness.dark
+            ? FarashTheme.dark()
+            : FarashTheme.light();
+        final task = FakeTasksApi().seed(
+          'p1',
+          'کار فردا',
+          dates: TaskDates(
+            due: TaskDue.onDay(DateTime.now().add(const Duration(days: 1))),
+          ),
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: theme,
+            home: Scaffold(
+              body: TaskTile(task: task, onToggle: () {}, onOpen: () {}),
+            ),
+          ),
+        );
+        final label = find.text('فردا');
+        final ink = tester.widget<Text>(label).style!.color!;
+        final box = tester.widget<DecoratedBox>(
+          find.ancestor(of: label, matching: find.byType(DecoratedBox)).first,
+        );
+        final fill = (box.decoration as BoxDecoration).color!;
+        final glass = FarashPalette.dew.of(brightness);
+        for (final ground in [
+          ...glass.backdrop,
+          glass.light,
+          glass.mist,
+          glass.glow,
+        ]) {
+          final room = Color.alphaBlend(ground, glass.backdrop.first);
+          final pane = Color.alphaBlend(glass.pane, room);
+          expect(
+            _contrast(ink, Color.alphaBlend(fill, pane)),
+            greaterThanOrEqualTo(4.5),
+          );
+        }
+        expect(tester.takeException(), isNull);
       });
     }
   });
