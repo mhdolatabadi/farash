@@ -324,7 +324,7 @@ void main() {
       expect(api.byTitle('B').due, TaskDue.onDay(today));
       expect(api.byTitle('C').due, isNull);
       expect(find.text('تاریخ ۲ کار تغییر کرد.'), findsOneWidget);
-      expect(find.text('نمایش انجام‌شده‌ها'), findsOneWidget);
+      expect(find.byTooltip('نمایش انجام‌شده‌ها'), findsOneWidget);
     });
 
     testWidgets('Gregorian and a Monday week start come from settings', (

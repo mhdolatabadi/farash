@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:farash/app/app_theme.dart';
 import 'package:farash/app/palette.dart';
 import 'package:farash/features/projects/data/project.dart';
+import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/features/tasks/presentation/project_tasks_view.dart';
+import 'package:farash/features/tasks/presentation/task_tile.dart';
 
 import 'support/fake_tasks_api.dart';
 
@@ -17,7 +19,7 @@ double _contrast(Color a, Color b) {
 }
 
 void main() {
-  group('moshajjar palette', () {
+  group('dew palette', () {
     for (final brightness in Brightness.values) {
       test('text keeps 4.5:1 contrast ($brightness)', () {
         final theme = brightness == Brightness.dark
@@ -43,15 +45,98 @@ void main() {
 
     test('the theme and the glass read the same palette', () {
       final theme = FarashTheme.light();
-      expect(theme.colorScheme.primary, const Color(0xFF8A5A12));
-      expect(FarashTheme.dark().colorScheme.primary, const Color(0xFFE8B66B));
-      // Pomegranate is kept for overdue alone.
-      expect(theme.colorScheme.error, FarashPalette.moshajjar.light.overdue);
+      expect(theme.colorScheme.primary, const Color(0xFF5B45D6));
+      expect(FarashTheme.dark().colorScheme.primary, const Color(0xFFB4A7FF));
+      expect(theme.colorScheme.error, FarashPalette.dew.light.overdue);
       expect(
         theme.extension<FarashGlassColors>()!.colors,
-        FarashPalette.moshajjar.light,
+        FarashPalette.dew.light,
       );
     });
+
+    for (final brightness in Brightness.values) {
+      test('text reads on glass and on sheets ($brightness)', () {
+        final theme = brightness == Brightness.dark
+            ? FarashTheme.dark()
+            : FarashTheme.light();
+        final c = theme.colorScheme;
+        final glass = FarashPalette.dew.of(brightness);
+        // A pane over each stop of the backdrop, lights aside.
+        for (final ground in glass.backdrop) {
+          final pane = Color.alphaBlend(glass.pane, ground);
+          for (final (name, fg) in [
+            ('onSurface', c.onSurface),
+            ('onSurfaceVariant', c.onSurfaceVariant),
+            ('primary', c.primary),
+            ('tertiary', c.tertiary),
+            ('error', c.error),
+          ]) {
+            expect(
+              _contrast(fg, pane),
+              greaterThanOrEqualTo(4.5),
+              reason: '$name on glass over $ground',
+            );
+          }
+          // Priority marks are not text; 3:1 keeps them visible.
+          for (final mark in glass.priorities) {
+            expect(_contrast(mark, pane), greaterThanOrEqualTo(3));
+          }
+        }
+        for (final sheet in [c.surfaceContainerLow, c.surfaceContainer]) {
+          expect(_contrast(c.onSurface, sheet), greaterThanOrEqualTo(4.5));
+          expect(
+            _contrast(c.onSurfaceVariant, sheet),
+            greaterThanOrEqualTo(4.5),
+          );
+        }
+      });
+    }
+
+    for (final brightness in Brightness.values) {
+      testWidgets('rendered tomorrow pill keeps contrast ($brightness)', (
+        tester,
+      ) async {
+        final theme = brightness == Brightness.dark
+            ? FarashTheme.dark()
+            : FarashTheme.light();
+        final task = FakeTasksApi().seed(
+          'p1',
+          'کار فردا',
+          dates: TaskDates(
+            due: TaskDue.onDay(DateTime.now().add(const Duration(days: 1))),
+          ),
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: theme,
+            home: Scaffold(
+              body: TaskTile(task: task, onToggle: () {}, onOpen: () {}),
+            ),
+          ),
+        );
+        final label = find.text('فردا');
+        final ink = tester.widget<Text>(label).style!.color!;
+        final box = tester.widget<DecoratedBox>(
+          find.ancestor(of: label, matching: find.byType(DecoratedBox)).first,
+        );
+        final fill = (box.decoration as BoxDecoration).color!;
+        final glass = FarashPalette.dew.of(brightness);
+        for (final ground in [
+          ...glass.backdrop,
+          glass.light,
+          glass.mist,
+          glass.glow,
+        ]) {
+          final room = Color.alphaBlend(ground, glass.backdrop.first);
+          final pane = Color.alphaBlend(glass.pane, room);
+          expect(
+            _contrast(ink, Color.alphaBlend(fill, pane)),
+            greaterThanOrEqualTo(4.5),
+          );
+        }
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 
   group('motion', () {

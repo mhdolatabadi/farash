@@ -5,6 +5,7 @@ import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/tasks/data/checklist.dart';
 import 'package:farash/features/tasks/data/task.dart';
+import 'package:farash/features/tasks/presentation/priority_color.dart';
 
 /// Indent per subtask level. Five levels stay usable at 320 px.
 const subtaskIndent = 20.0;
@@ -25,6 +26,7 @@ class TaskTile extends StatelessWidget {
     this.onLongPress,
     this.selected = false,
     this.stamped = false,
+    this.divider = true,
   });
 
   final Task task;
@@ -52,6 +54,9 @@ class TaskTile extends StatelessWidget {
   /// nothing leaves the list without saying so.
   final bool stamped;
 
+  /// The hairline under the row; off for the last row of a group.
+  final bool divider;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -77,7 +82,7 @@ class TaskTile extends StatelessWidget {
             const SizedBox(width: 4),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 13),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -147,16 +152,17 @@ class TaskTile extends StatelessWidget {
         children: [
           row,
           // A hairline from the title's edge keeps rows apart without boxes.
-          Padding(
-            padding: EdgeInsetsDirectional.only(
-              start: 56 + subtaskIndent * depth,
-              end: 12,
+          if (divider)
+            Padding(
+              padding: EdgeInsetsDirectional.only(
+                start: 56 + subtaskIndent * depth,
+                end: 12,
+              ),
+              child: Divider(
+                height: 1,
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+              ),
             ),
-            child: Divider(
-              height: 1,
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
-          ),
         ],
       ),
     );
@@ -310,24 +316,49 @@ class TaskDateLabels extends StatelessWidget {
           : task.isCompleted
           ? theme.colorScheme.onSurfaceVariant
           : tone ?? theme.colorScheme.onSurfaceVariant;
+      final content = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(color: color),
+            ),
+          ),
+        ],
+      );
+      // Today, tomorrow and late dates sit in a tinted pill of their own
+      // color; the rest stay plain so the near ones stand out.
+      final tinted = !task.isCompleted && (overdue || tone != null);
       return Semantics(
         label: '${overdue ? 'دیرشده، ' : ''}$name: $text',
         excludeSemantics: true,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                text,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelMedium?.copyWith(color: color),
-              ),
-            ),
-          ],
-        ),
+        child: tinted
+            ? DecoratedBox(
+                decoration: BoxDecoration(
+                  // Night metadata keeps its contrast even when a room
+                  // light is directly behind it. Day pills stay translucent.
+                  color: theme.brightness == Brightness.dark
+                      ? Color.alphaBlend(
+                          color.withValues(alpha: 0.14),
+                          theme.colorScheme.surface,
+                        )
+                      : color.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  child: content,
+                ),
+              )
+            : content,
       );
     }
 
@@ -373,7 +404,7 @@ class _PriorityCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = task.priority.color;
+    final color = task.priority.colorIn(context);
     final done = task.isCompleted;
     return Semantics(
       checked: done,
@@ -410,11 +441,16 @@ class _PriorityCheck extends StatelessWidget {
                   child: child,
                 ),
                 child: done
-                    ? const Icon(
+                    ? Icon(
                         Icons.check,
-                        key: ValueKey('checked'),
+                        key: const ValueKey('checked'),
                         size: 14,
-                        color: Colors.white,
+                        // Light priority tones at night take a dark check.
+                        color:
+                            ThemeData.estimateBrightnessForColor(color) ==
+                                Brightness.dark
+                            ? Colors.white
+                            : const Color(0xFF14182B),
                       )
                     : const SizedBox.shrink(key: ValueKey('open')),
               ),

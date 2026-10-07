@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:farash/core/api/api_client.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/features/tasks/presentation/project_tasks_view.dart';
@@ -42,6 +43,65 @@ void main() {
 
   setUp(() => api = FakeTasksApi());
 
+  for (final changeText in [false, true]) {
+    testWidgets('pending add preserves newer draft: $changeText', (
+      tester,
+    ) async {
+      final delayed = _DelayedTasksApi();
+      api = delayed;
+      await pumpView(tester);
+      await tester.enterText(find.byType(TextField), 'کار نخست');
+      final pending = Completer<void>();
+      delayed.pendingCreate = pending;
+      await tester.tap(find.byTooltip('افزودن کار'));
+      await tester.pump();
+      if (changeText) {
+        await tester.enterText(find.byType(TextField), 'کار بعدی');
+      }
+      await tester.tap(find.byTooltip('اولویت: اولویت ۴'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('اولویت ۲').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      // A second submission cannot race the pending request.
+      await tester.tap(find.byType(TextField));
+      await tester.testTextInput.receiveAction(TextInputAction.send);
+      await tester.pump();
+      pending.complete();
+      await tester.pumpAndSettle();
+      expect(api.all.length, 1);
+      expect(api.byTitle('کار نخست').priority, TaskPriority.p4);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        changeText ? 'کار بعدی' : 'کار نخست',
+      );
+      expect(find.byTooltip('اولویت: اولویت ۲'), findsOneWidget);
+      await tester.tap(find.byTooltip('افزودن کار'));
+      await tester.pumpAndSettle();
+      expect(api.all.length, 2);
+      expect(api.all.last.priority, TaskPriority.p2);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        isEmpty,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('empty and ready send action keep a 48dp hit target', (
+    tester,
+  ) async {
+    await pumpView(tester);
+    for (final text in ['', 'کار تازه']) {
+      await tester.enterText(find.byType(TextField), text);
+      await tester.pumpAndSettle();
+      final rect = tester.getRect(find.byTooltip('افزودن کار'));
+      expect(rect.width, greaterThanOrEqualTo(48));
+      expect(rect.height, greaterThanOrEqualTo(48));
+    }
+  });
+
   for (final fail in [false, true]) {
     testWidgets('compact empty reload preserves draft and priority: $fail', (
       tester,
@@ -57,12 +117,12 @@ void main() {
         find.byType(TextField, skipOffstage: false),
         'پیش‌نویس',
       );
-      await tester.ensureVisible(find.byType(FilterChip));
+      await tester.ensureVisible(find.byTooltip('نمایش انجام‌شده‌ها'));
       await tester.pumpAndSettle();
       final reload = Completer<void>();
       delayed.pending = reload;
       if (fail) delayed.failNext = Exception('offline');
-      await tester.tap(find.byType(FilterChip));
+      await tester.tap(find.byTooltip('نمایش انجام‌شده‌ها'));
       await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(
@@ -170,7 +230,7 @@ void main() {
 
     expect(find.text('Done'), findsNothing);
 
-    await tester.tap(find.text('نمایش انجام‌شده‌ها'));
+    await tester.tap(find.byTooltip('نمایش انجام‌شده‌ها'));
     await tester.pumpAndSettle();
 
     expect(find.text('انجام‌شده'), findsOneWidget);
@@ -186,7 +246,7 @@ void main() {
 
     await tester.tap(find.text('A'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.widgetWithText(TextFormField, 'عنوان'), 'A2');
+    await tester.enterText(find.byKey(const ValueKey('task-title')), 'A2');
     await tester.enterText(
       find.widgetWithText(TextFormField, 'توضیحات'),
       'جزئیات',
@@ -217,7 +277,7 @@ void main() {
     // Delete A2, then undo.
     await tester.tap(find.text('A2'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('حذف'));
+    await tester.tap(find.byTooltip('حذف کار'));
     await tester.pumpAndSettle();
 
     expect(find.text('A2'), findsNothing);
@@ -270,6 +330,15 @@ void main() {
 
 class _DelayedTasksApi extends FakeTasksApi {
   Completer<void>? pending;
+  Completer<void>? pendingCreate;
+
+  @override
+  Future<Task> createTask(String token, TaskDraft draft) async {
+    final wait = pendingCreate;
+    pendingCreate = null;
+    if (wait != null) await wait.future;
+    return super.createTask(token, draft);
+  }
 
   @override
   Future<List<Task>> listTasks(

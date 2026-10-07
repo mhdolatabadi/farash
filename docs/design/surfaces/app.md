@@ -1,5 +1,45 @@
 # Surface brief: the Farash app (all screens)
 
+## Revision for #49: «شبنم», dew on glass (current)
+After the structural pass below, the owner said it still wasn't beautiful
+enough. On a decision page of three looks, they chose the Lamp night
+structure (a today strip and the list in one glass card) with the Glass day
+colors (peach, lavender and mint behind white glass, violet as the accent),
+plus a matching dark version. DESIGN.md records the result.
+
+### Structural pass
+The owner reviewed the #47 build and judged it not standard. An impeccable
+critique ran as two independent sub-agent assessments: a design review and
+detector plus capture evidence. It scored Consistency and Standards 1/4 and
+found these problems:
+- the phone screen framed in a pane
+- glass nested in glass
+- a phone bar with no title
+- the wide-screen editor as a short floating card
+- blur with nothing behind it to frost
+- off-palette priority colors
+- a test harness that rendered sheets LTR
+
+The redesign keeps product truth and the honey/sage/pomegranate meanings, and
+replaces the structure and the glass:
+- MODE: Operate. Material 3 governs structure; the brand is themed through it.
+- STRUCTURE:
+  - a medium top app bar that names the project
+  - a drawer on phones and a glass navigation pane at 840px and above
+  - full-bleed rows on phones, with a 760px measure on wide screens
+  - a capture bar floating over the list end
+  - an editor side sheet at 820px and above; below that, a modal bottom sheet
+- GLASS: only where content passes beneath it, one pane per region, never
+  nested. The panes are a 12% tint with blur 20 over a room lit by two
+  lights: a moving honey lamp and a fixed cool room light. The pebble
+  relief is removed.
+- DISCIPLINE KEPT: the One Lamp Rule, the done stamp, Naskh for the project
+  title only, 48px targets, and reduced motion.
+
+DESIGN.md and `.impeccable/design.json` record the shipped system. The
+contract below is the #47 record, superseded where it conflicts.
+
+
 ## Direction contract
 THESIS: the day's tasks seen through the pressed, patterned glass of an
 Iranian home's door at night: warm room light behind, cool night in front.
