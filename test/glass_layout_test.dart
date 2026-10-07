@@ -43,8 +43,21 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final api = FakeTasksApi();
-      api.seed('inbox', 'ادامهٔ مطالعهٔ کتاب', priority: TaskPriority.p1);
-      api.seed('inbox', 'مرور یادداشت‌ها');
+      final today = DateTime.now();
+      api.seed(
+        'inbox',
+        'ادامهٔ مطالعهٔ کتاب',
+        priority: TaskPriority.p1,
+        dates: TaskDates(due: TaskDue.onDay(today)),
+      );
+      api.seed(
+        'inbox',
+        'مرور یادداشت‌ها',
+        priority: TaskPriority.p3,
+        dates: TaskDates(
+          due: TaskDue.onDay(today.add(const Duration(days: 1))),
+        ),
+      );
       api.seed('inbox', 'خرید نان');
       final projects = ProjectsController(
         api: FakeProjectsApi(

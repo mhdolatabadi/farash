@@ -17,7 +17,7 @@ double _contrast(Color a, Color b) {
 }
 
 void main() {
-  group('night glass palette', () {
+  group('dew palette', () {
     for (final brightness in Brightness.values) {
       test('text keeps 4.5:1 contrast ($brightness)', () {
         final theme = brightness == Brightness.dark
@@ -43,12 +43,12 @@ void main() {
 
     test('the theme and the glass read the same palette', () {
       final theme = FarashTheme.light();
-      expect(theme.colorScheme.primary, const Color(0xFF8A5A12));
-      expect(FarashTheme.dark().colorScheme.primary, const Color(0xFFE8B66B));
-      expect(theme.colorScheme.error, FarashPalette.nightGlass.light.overdue);
+      expect(theme.colorScheme.primary, const Color(0xFF5B45D6));
+      expect(FarashTheme.dark().colorScheme.primary, const Color(0xFFB4A7FF));
+      expect(theme.colorScheme.error, FarashPalette.dew.light.overdue);
       expect(
         theme.extension<FarashGlassColors>()!.colors,
-        FarashPalette.nightGlass.light,
+        FarashPalette.dew.light,
       );
     });
 
@@ -58,7 +58,7 @@ void main() {
             ? FarashTheme.dark()
             : FarashTheme.light();
         final c = theme.colorScheme;
-        final glass = FarashPalette.nightGlass.of(brightness);
+        final glass = FarashPalette.dew.of(brightness);
         // A pane over each stop of the backdrop, lights aside.
         for (final ground in glass.backdrop) {
           final pane = Color.alphaBlend(glass.pane, ground);

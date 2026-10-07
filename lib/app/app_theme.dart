@@ -3,7 +3,7 @@ import 'package:farash/app/palette.dart';
 
 abstract final class FarashTheme {
   /// The palette the app ships with.
-  static const palette = FarashPalette.nightGlass;
+  static const palette = FarashPalette.dew;
 
   static const _controlRadius = 12.0;
   static const _surfaceRadius = 16.0;
@@ -16,10 +16,10 @@ abstract final class FarashTheme {
 
   static ThemeData _build(Brightness brightness, FarashPalette palette) {
     final p = palette.of(brightness);
-    // Neutrals (sheets, menus, dialogs, fields) come from the room's indigo,
-    // not from the honey, so every surface belongs to the same night.
+    // Neutrals (sheets, menus, dialogs, fields) come from the violet, so
+    // every solid surface belongs to the same room.
     final generated = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF3A4A9A),
+      seedColor: const Color(0xFF5B45D6),
       brightness: brightness,
       dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot,
     );

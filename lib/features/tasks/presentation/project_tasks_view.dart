@@ -418,6 +418,79 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     );
   }
 
+  /// What today asks of this project: the open tasks due today and those
+  /// already late, with their planned time. Only real counts; nothing when
+  /// the day is clear.
+  Widget? _todayStrip(BuildContext context) {
+    final theme = Theme.of(context);
+    final now = DateTime.now();
+    var today = 0, late = 0, minutes = 0;
+    for (final t in _tasks.openTasks) {
+      final due = t.due;
+      if (due == null) continue;
+      final offset = daysBetween(now, due.day);
+      if (offset > 0) continue;
+      if (offset < 0) {
+        late++;
+      } else {
+        today++;
+      }
+      minutes += t.durationMinutes ?? 0;
+    }
+    if (today == 0 && late == 0) return null;
+    final primary = theme.colorScheme.primary;
+    final parts = [
+      if (today > 0) '${persianDigits(today)} کار برای امروز',
+      if (late > 0) '${persianDigits(late)} دیرشده',
+      if (minutes > 0) formatDuration(minutes),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: AlignmentDirectional.centerStart,
+            end: AlignmentDirectional.centerEnd,
+            colors: [
+              primary.withValues(alpha: 0.18),
+              primary.withValues(alpha: 0.06),
+            ],
+          ),
+          border: Border.all(color: primary.withValues(alpha: 0.3)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Row(
+            children: [
+              Icon(Icons.wb_twilight, color: primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'امروز',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      parts.join(' · '),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _list(
     BuildContext context, {
     required double width,
@@ -465,6 +538,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     );
     final sectionsAvailable = widget.sectionsApi != null;
     final sections = _tasks.sections;
+    final glass = FarashGlassColors.of(context);
     // Content keeps a readable width; the app bar's glass spans the whole
     // column so the list can pass under it.
     final inset = width > _maxListWidth ? (width - _maxListWidth) / 2 : 0.0;
@@ -542,6 +616,8 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
           if (status != null)
             SliverFillRemaining(hasScrollBody: false, child: status)
           else ...[
+            if (widget.showTitle && !selecting && _todayStrip(context) != null)
+              pad(SliverToBoxAdapter(child: _todayStrip(context))),
             if (rows.isEmpty && done.isEmpty)
               pad(
                 SliverToBoxAdapter(
@@ -575,63 +651,91 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                   ),
                 ),
               ),
-            pad(
-              SliverReorderableList(
-                itemCount: rows.length,
-                onReorderItem: (from, to) => _onReorder(rows, from, to),
-                itemBuilder: (context, index) => switch (rows[index]) {
-                  _TaskRow(:final task, :final depth) => RowMotion(
-                    key: ValueKey(task.id),
-                    entering: _entering.remove(task.id),
-                    leaving: _leaving.containsKey(task.id),
-                    onExited: () => _leaving[task.id]?.complete(),
-                    child: Material(
-                      color: _selected.contains(task.id)
-                          ? theme.colorScheme.secondaryContainer
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      child: HoverRegion(
-                        child: TaskTile(
-                          selected: _selected.contains(task.id),
-                          onLongPress: () => _toggleSelected(task),
-                          // A row folding away shows as checked meanwhile.
-                          task: _leaving.containsKey(task.id)
-                              ? task.copyWith(completedAt: DateTime.now())
-                              : task,
-                          stamped: _leaving.containsKey(task.id),
-                          depth: depth,
-                          folded: _tasks.openChildren(task).isEmpty
-                              ? null
-                              : _tasks.isFolded(task),
-                          onFold: () =>
-                              _tasks.setFolded(task, !_tasks.isFolded(task)),
-                          onToggle: () => _toggle(task),
-                          onOpen: () => _selectedTasks.isNotEmpty
-                              ? _toggleSelected(task)
-                              : _open(task),
-                          // Beside the checkbox where a pointer reveals it
-                          // on hover; at the row's end on touch screens.
-                          leading: touch ? null : handle(index),
-                          trailing: touch ? handle(index) : null,
+            // The open list is one pane of glass in the room.
+            if (rows.isNotEmpty)
+              SliverPadding(
+                padding: EdgeInsets.symmetric(horizontal: inset + 12),
+                sliver: DecoratedSliver(
+                  decoration: BoxDecoration(
+                    color: glass.pane,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: glass.paneBorder),
+                    // By day a soft lift; at night the edge is enough.
+                    boxShadow: [
+                      if (theme.brightness == Brightness.light)
+                        BoxShadow(
+                          color: glass.shadow,
+                          offset: const Offset(0, 8),
+                          blurRadius: 24,
                         ),
-                      ),
+                    ],
+                  ),
+                  sliver: SliverPadding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    sliver: SliverReorderableList(
+                      itemCount: rows.length,
+                      onReorderItem: (from, to) => _onReorder(rows, from, to),
+                      itemBuilder: (context, index) => switch (rows[index]) {
+                        _TaskRow(:final task, :final depth) => RowMotion(
+                          key: ValueKey(task.id),
+                          entering: _entering.remove(task.id),
+                          leaving: _leaving.containsKey(task.id),
+                          onExited: () => _leaving[task.id]?.complete(),
+                          child: Material(
+                            color: _selected.contains(task.id)
+                                ? theme.colorScheme.secondaryContainer
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                            child: HoverRegion(
+                              child: TaskTile(
+                                selected: _selected.contains(task.id),
+                                onLongPress: () => _toggleSelected(task),
+                                // A row folding away shows as checked meanwhile.
+                                task: _leaving.containsKey(task.id)
+                                    ? task.copyWith(completedAt: DateTime.now())
+                                    : task,
+                                stamped: _leaving.containsKey(task.id),
+                                divider: index < rows.length - 1,
+                                depth: depth,
+                                folded: _tasks.openChildren(task).isEmpty
+                                    ? null
+                                    : _tasks.isFolded(task),
+                                onFold: () => _tasks.setFolded(
+                                  task,
+                                  !_tasks.isFolded(task),
+                                ),
+                                onToggle: () => _toggle(task),
+                                onOpen: () => _selectedTasks.isNotEmpty
+                                    ? _toggleSelected(task)
+                                    : _open(task),
+                                // Beside the checkbox where a pointer reveals it
+                                // on hover; at the row's end on touch screens.
+                                leading: touch ? null : handle(index),
+                                trailing: touch ? handle(index) : null,
+                              ),
+                            ),
+                          ),
+                        ),
+                        _HeaderRow(:final section) => SectionHeader(
+                          key: ValueKey('section-${section.id}'),
+                          section: section,
+                          taskCount: _tasks.openIn(section.id).length,
+                          isFirst: section.id == sections.first.id,
+                          isLast: section.id == sections.last.id,
+                          onToggle: () => _run(
+                            () => _tasks.setCollapsed(
+                              section,
+                              !section.isCollapsed,
+                            ),
+                          ),
+                          onAddTask: () => _addTaskTo(section),
+                          onAction: (action) => _sectionAction(section, action),
+                        ),
+                      },
                     ),
                   ),
-                  _HeaderRow(:final section) => SectionHeader(
-                    key: ValueKey('section-${section.id}'),
-                    section: section,
-                    taskCount: _tasks.openIn(section.id).length,
-                    isFirst: section.id == sections.first.id,
-                    isLast: section.id == sections.last.id,
-                    onToggle: () => _run(
-                      () => _tasks.setCollapsed(section, !section.isCollapsed),
-                    ),
-                    onAddTask: () => _addTaskTo(section),
-                    onAction: (action) => _sectionAction(section, action),
-                  ),
-                },
+                ),
               ),
-            ),
             if (sectionsAvailable)
               pad(
                 SliverToBoxAdapter(
@@ -829,6 +933,15 @@ class _ProjectBar extends SliverPersistentHeaderDelegate {
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w700,
+                                // At night the title catches the lamp.
+                                shadows: [
+                                  if (theme.brightness == Brightness.dark)
+                                    Shadow(
+                                      color: theme.colorScheme.primary
+                                          .withValues(alpha: 0.45),
+                                      blurRadius: 24,
+                                    ),
+                                ],
                               ),
                             ),
                           ),

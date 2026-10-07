@@ -1,6 +1,13 @@
 # Surface brief: the Farash app (all screens)
 
-## Revision for #49: night glass (current)
+## Revision for #49: «شبنم», dew on glass (current)
+After the structural pass below, the owner said it still wasn't beautiful
+enough. On a decision page of three looks, they chose the Lamp night
+structure (a today strip and the list in one glass card) with the Glass day
+colors (peach, lavender and mint behind white glass, violet as the accent),
+plus a matching dark version. DESIGN.md records the result.
+
+### Structural pass
 The owner reviewed the #47 build and judged it not standard. An impeccable
 critique ran as two independent sub-agent assessments: a design review and
 detector plus capture evidence. It scored Consistency and Standards 1/4 and

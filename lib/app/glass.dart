@@ -6,7 +6,7 @@ import 'package:farash/app/palette.dart';
 /// Where the room's lamp stands behind the glass. Choosing another project
 /// moves it, so the light itself shows that the place changed.
 abstract final class GlassLamp {
-  static final position = ValueNotifier<Alignment>(const Alignment(0.55, -0.7));
+  static final position = ValueNotifier<Alignment>(const Alignment(0.9, -0.9));
 
   /// A stable spot for [key] (a project id), kept in the upper half where
   /// the light falls behind the heading and the list.
@@ -19,9 +19,9 @@ abstract final class GlassLamp {
   }
 }
 
-/// The room behind the glass: a night gradient lit by two lights, the
-/// lamp (which moves with the project) and a cool light across the room.
-/// Panes frost this light, so the glass reads as glass.
+/// The room behind the glass: a soft gradient lit by three lights, a
+/// peach lamp that moves with the project, lavender across the room and
+/// mint near the floor. Panes frost this light, so the glass reads as glass.
 class GlassBackdrop extends StatelessWidget {
   const GlassBackdrop({super.key, required this.child});
   final Widget child;
@@ -51,21 +51,17 @@ class GlassBackdrop extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: bloom(
-                    const AlignmentDirectional(-0.9, 0.85).resolve(
-                      Directionality.maybeOf(context) ?? TextDirection.rtl,
-                    ),
-                    glass.light,
-                    0.9,
-                  ),
+          for (final (at, color, radius) in [
+            (const Alignment(-1, -0.1), glass.light, 0.95),
+            (const Alignment(0.4, 1.05), glass.mist, 0.85),
+          ])
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(gradient: bloom(at, color, radius)),
                 ),
               ),
             ),
-          ),
           Positioned.fill(
             child: IgnorePointer(
               child: ValueListenableBuilder(
@@ -79,7 +75,7 @@ class GlassBackdrop extends StatelessWidget {
                   curve: Curves.easeInOutCubic,
                   builder: (context, at, _) => DecoratedBox(
                     decoration: BoxDecoration(
-                      gradient: bloom(at, glass.glow, 0.8),
+                      gradient: bloom(at, glass.glow, 0.9),
                     ),
                   ),
                 ),
