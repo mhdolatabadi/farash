@@ -1198,6 +1198,9 @@ class _QuickAddState extends State<_QuickAdd> {
             },
             child: IconButton.filled(
               tooltip: 'افزودن کار',
+              style: const ButtonStyle(
+                minimumSize: WidgetStatePropertyAll(Size(48, 48)),
+              ),
               onPressed: _busy ? null : _submit,
               icon: _busy
                   ? const SizedBox.square(

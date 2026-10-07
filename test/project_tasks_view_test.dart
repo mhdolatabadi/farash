@@ -59,8 +59,10 @@ void main() {
         await tester.enterText(find.byType(TextField), 'کار بعدی');
       }
       await tester.tap(find.byTooltip('اولویت: اولویت ۴'));
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('اولویت ۲').last);
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       // A second submission cannot race the pending request.
       await tester.tap(find.byType(TextField));
