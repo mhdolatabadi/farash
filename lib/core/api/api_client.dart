@@ -123,6 +123,15 @@ abstract interface class TasksApi {
     String projectId, {
     bool showCompleted = false,
   });
+
+  /// Open tasks due from [from] to [to] (inclusive; no [from] means
+  /// everything overdue up to [to]) across the active projects, earliest
+  /// first. The caller picks "today" in its own zone.
+  Future<List<Task>> listDueTasks(
+    String token, {
+    DateTime? from,
+    required DateTime to,
+  });
   Future<Task> createTask(String token, TaskDraft draft);
   Future<Task> updateTask(String token, String id, TaskDraft changes);
   Future<Task> closeTask(String token, String id);
@@ -243,6 +252,29 @@ class ApiClient implements AuthApi, ProjectsApi, TasksApi, SectionsApi {
               query: {
                 'projectId': projectId,
                 if (showCompleted) 'showCompleted': 'true',
+              },
+            )
+            as Map<String, dynamic>;
+    return [
+      for (final item in body['tasks'] as List<dynamic>)
+        Task.fromJson(item as Map<String, dynamic>),
+    ];
+  }
+
+  @override
+  Future<List<Task>> listDueTasks(
+    String token, {
+    DateTime? from,
+    required DateTime to,
+  }) async {
+    final body =
+        await _send(
+              'GET',
+              '/api/v1/tasks',
+              token: token,
+              query: {
+                'from': ?(from == null ? null : dateKey(from)),
+                'to': dateKey(to),
               },
             )
             as Map<String, dynamic>;

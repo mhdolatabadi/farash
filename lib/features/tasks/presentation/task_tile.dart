@@ -27,6 +27,7 @@ class TaskTile extends StatelessWidget {
     this.selected = false,
     this.stamped = false,
     this.divider = true,
+    this.tag,
   });
 
   final Task task;
@@ -56,6 +57,9 @@ class TaskTile extends StatelessWidget {
 
   /// The hairline under the row; off for the last row of a group.
   final bool divider;
+
+  /// Where the task lives, in views that gather tasks from many projects.
+  final Widget? tag;
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +117,8 @@ class TaskTile extends StatelessWidget {
                       const _DoneStamp(),
                     ] else if (task.hasSubtasks ||
                         checklist.isNotEmpty ||
-                        dated) ...[
+                        dated ||
+                        tag != null) ...[
                       const SizedBox(height: 2),
                       Wrap(
                         spacing: 12,
@@ -133,6 +138,7 @@ class TaskTile extends StatelessWidget {
                               total: checklist.length,
                             ),
                           if (dated) TaskDateLabels(task: task),
+                          ?tag,
                         ],
                       ),
                     ],
