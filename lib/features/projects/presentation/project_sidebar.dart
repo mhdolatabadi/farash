@@ -4,6 +4,7 @@ import 'package:farash/features/projects/application/projects_controller.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/projects/presentation/project_editor.dart';
 import 'package:farash/features/projects/presentation/project_messages.dart';
+import 'package:farash/features/tasks/presentation/due_tasks_view.dart';
 
 /// The navigation list: Inbox, favourites, the project tree and archived
 /// projects. Used as the phone drawer and the wide-screen sidebar.
@@ -15,6 +16,8 @@ class ProjectSidebar extends StatelessWidget {
     required this.onSelect,
     required this.onOpenArchived,
     required this.header,
+    this.selectedView,
+    this.onSelectView,
   });
 
   final ProjectsController controller;
@@ -24,6 +27,10 @@ class ProjectSidebar extends StatelessWidget {
 
   /// The account row at the top.
   final Widget header;
+
+  /// The view across projects that is open, if any.
+  final DueView? selectedView;
+  final ValueChanged<DueView>? onSelectView;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +47,15 @@ class ProjectSidebar extends StatelessWidget {
             children: [
               header,
               const SizedBox(height: 8),
+              if (onSelectView != null)
+                for (final view in DueView.values)
+                  ListTile(
+                    key: ValueKey('view-${view.name}'),
+                    selected: view == selectedView,
+                    leading: Icon(view.icon),
+                    title: Text(view.title),
+                    onTap: () => onSelectView!(view),
+                  ),
               if (inbox != null)
                 _ProjectTile(
                   project: inbox,

@@ -8,6 +8,7 @@ import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/projects/presentation/archived_projects_screen.dart';
 import 'package:farash/features/projects/presentation/project_sidebar.dart';
 import 'package:farash/core/api/api_client.dart';
+import 'package:farash/features/tasks/presentation/due_tasks_view.dart';
 import 'package:farash/features/tasks/presentation/project_tasks_view.dart';
 
 /// Wide layouts keep the project list on screen; phones use a drawer.
@@ -42,6 +43,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   String? _selectedId;
 
+  /// A view across projects (امروز, پیش رو) instead of a project.
+  DueView? _view;
+
   @override
   void initState() {
     super.initState();
@@ -66,7 +70,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _select(Project project) {
-    setState(() => _selectedId = project.id);
+    setState(() {
+      _selectedId = project.id;
+      _view = null;
+    });
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.pop(context);
+    }
+  }
+
+  void _selectView(DueView view) {
+    setState(() => _view = view);
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => GlassLamp.placeFor('@${view.name}'),
+    );
+    _lampFor = null;
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.pop(context);
     }
@@ -86,8 +104,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _sidebar() => ProjectSidebar(
     controller: widget.projects,
-    selectedId: _selected?.id,
+    selectedId: _view == null ? _selected?.id : null,
+    selectedView: _view,
     onSelect: _select,
+    onSelectView: _selectView,
     onOpenArchived: _openArchived,
     header: _AccountHeader(email: widget.email, onLogout: widget.onLogout),
   );
@@ -101,8 +121,18 @@ class _HomeScreenState extends State<HomeScreen> {
           listenable: widget.projects,
           builder: (context, _) {
             final selected = _selected;
-            _placeLamp(selected);
-            final Widget content = selected == null
+            final view = _view;
+            if (view == null) _placeLamp(selected);
+            final Widget content = view != null
+                ? DueTasksView(
+                    key: ValueKey(view),
+                    view: view,
+                    api: widget.tasksApi,
+                    token: widget.token,
+                    projects: () => widget.projects.projects,
+                    onOpenProject: _select,
+                  )
+                : selected == null
                 ? _ProjectPage(loading: widget.projects.isLoading)
                 : ProjectTasksView(
                     // A new controller for each project.
@@ -133,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // with the drawer button, so nothing frames the list twice.
               return Scaffold(
                 key: _scaffoldKey,
-                appBar: selected == null
+                appBar: selected == null && view == null
                     ? AppBar(title: const Text('فراش'))
                     : null,
                 drawer: Drawer(child: _sidebar()),

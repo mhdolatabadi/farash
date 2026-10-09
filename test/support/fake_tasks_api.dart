@@ -119,6 +119,31 @@ class FakeTasksApi implements TasksApi {
     ]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
   }
 
+  /// The projects listDueTasks leaves out, as the server leaves archived
+  /// ones out.
+  final archivedProjects = <String>{};
+
+  @override
+  Future<List<Task>> listDueTasks(
+    String token, {
+    DateTime? from,
+    required DateTime to,
+  }) async {
+    _maybeFail();
+    final start = from == null ? null : dateKey(from);
+    final end = dateKey(to);
+    return [
+      for (final t in _tasks)
+        if (!_deleted.contains(t.id) &&
+            !t.isCompleted &&
+            !archivedProjects.contains(t.projectId) &&
+            t.due != null &&
+            (start == null || t.due!.date.compareTo(start) >= 0) &&
+            t.due!.date.compareTo(end) <= 0)
+          _counted(t),
+    ]..sort((a, b) => a.due!.date.compareTo(b.due!.date));
+  }
+
   @override
   Future<Task> createTask(String token, TaskDraft draft) async {
     _maybeFail();

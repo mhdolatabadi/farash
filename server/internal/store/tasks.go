@@ -10,10 +10,11 @@ import (
 )
 
 var (
-	ErrTaskNotFound = errors.New("task not found")
-	ErrInvalidTask  = errors.New("invalid task")
-	ErrTaskProject  = errors.New("task project not found")
-	ErrTaskOrder    = errors.New("invalid task order")
+	ErrTaskNotFound    = errors.New("task not found")
+	ErrInvalidTask     = errors.New("invalid task")
+	ErrTaskProject     = errors.New("task project not found")
+	ErrInvalidDueRange = errors.New("invalid due range")
+	ErrTaskOrder       = errors.New("invalid task order")
 )
 
 type Task struct {
@@ -110,6 +111,40 @@ func (s *Store) ListTasks(ctx context.Context, owner, project string, completed 
 		return nil, err
 	}
 	rows, err := s.pool.Query(ctx, `SELECT `+taskColumns+` FROM tasks WHERE owner_id=$1 AND project_id=$2 AND deleted_at IS NULL AND ($3 OR completed_at IS NULL) ORDER BY sort_order, created_at, id`, owner, project, completed)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	tasks := []Task{}
+	for rows.Next() {
+		task, err := scanTask(rows)
+		if err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks, rows.Err()
+}
+
+// ListDueTasks returns the owner's open tasks due from from to to
+// (inclusive, YYYY-MM-DD; an empty from means no lower bound) across their
+// active projects, earliest first. The caller picks "today" in its own zone.
+func (s *Store) ListDueTasks(ctx context.Context, owner, from, to string) ([]Task, error) {
+	if (from != "" && !validDate(from)) || !validDate(to) || (from != "" && from > to) {
+		return nil, ErrInvalidDueRange
+	}
+	if from != "" {
+		start, _ := time.Parse(dateLayout, from)
+		end, _ := time.Parse(dateLayout, to)
+		if end.Sub(start) > 366*24*time.Hour {
+			return nil, ErrInvalidDueRange
+		}
+	}
+	rows, err := s.pool.Query(ctx, `SELECT `+taskColumns+` FROM tasks
+		WHERE owner_id=$1 AND deleted_at IS NULL AND completed_at IS NULL AND due_date IS NOT NULL
+		AND ($2 = '' OR due_date >= $2::date) AND due_date <= $3::date
+		AND project_id IN (SELECT id FROM projects WHERE owner_id=$1 AND kind='project' AND NOT is_archived)
+		ORDER BY due_date, due_at NULLS LAST, priority, sort_order, created_at, id`, owner, from, to)
 	if err != nil {
 		return nil, err
 	}
