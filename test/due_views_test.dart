@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
@@ -136,5 +137,66 @@ void main() {
     );
     await tester.scrollUntilVisible(find.text('Later'), 200);
     expect(find.text('Later'), findsOneWidget);
+  });
+
+  testWidgets('the week view shows today and the next six days', (
+    tester,
+  ) async {
+    api.seed('work', 'Late', dates: on(-1));
+    api.seed('work', 'Today', dates: on(0));
+    api.seed('work', 'Sixth', dates: on(6));
+    api.seed('work', 'Eighth', dates: on(7));
+    await pump(tester, DueView.week);
+    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('Late'), findsNothing);
+    await tester.scrollUntilVisible(find.text('Sixth'), 200);
+    expect(find.text('Eighth', skipOffstage: false), findsNothing);
+  });
+
+  testWidgets('all shows every dated task, late ones first', (tester) async {
+    api.seed('work', 'Late', dates: on(-3));
+    api.seed('work', 'Far', dates: on(200));
+    api.seed('work', 'Undated');
+    await pump(tester, DueView.all);
+    expect(find.text('دیرشده'), findsOneWidget);
+    expect(find.text('Late'), findsOneWidget);
+    expect(find.text('Far'), findsOneWidget);
+    expect(find.text('Undated'), findsNothing);
+    expect(
+      tester.getTopLeft(find.text('Late')).dy,
+      lessThan(tester.getTopLeft(find.text('Far')).dy),
+    );
+  });
+
+  testWidgets('dragging a task onto a day moves it, with undo', (tester) async {
+    api.seed('work', 'Tomorrow', dates: on(1));
+    await pump(tester, DueView.upcoming);
+    final settings = CalendarSettings();
+    final target = find.byTooltip(
+      formatDate(day(3), settings, today: today, withWeekday: true),
+    );
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.text('Tomorrow')),
+    );
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+    await gesture.moveTo(tester.getCenter(target));
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(api.byTitle('Tomorrow').due, TaskDue.onDay(day(3)));
+    await tester.tap(find.text('برگرداندن'));
+    await tester.pumpAndSettle();
+    expect(api.byTitle('Tomorrow').due, TaskDue.onDay(day(1)));
+  });
+
+  testWidgets('a task can change day without dragging', (tester) async {
+    api.seed('work', 'Tomorrow', dates: on(1));
+    await pump(tester, DueView.upcoming);
+    await tester.tap(find.byTooltip('تغییر روز «Tomorrow»'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('امروز').last);
+    await tester.tap(find.text('تأیید'));
+    await tester.pumpAndSettle();
+    expect(api.byTitle('Tomorrow').due, TaskDue.onDay(today));
   });
 }
