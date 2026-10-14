@@ -7,13 +7,16 @@ import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/data/task.dart';
+import 'package:farash/features/tasks/presentation/due_picker.dart';
 import 'package:farash/features/tasks/presentation/task_messages.dart';
 import 'package:farash/features/tasks/presentation/task_tile.dart';
 
 /// The views that gather tasks by date from every project.
 enum DueView {
   today('امروز', Icons.wb_twilight),
-  upcoming('پیش رو', Icons.date_range);
+  upcoming('پیش رو', Icons.date_range),
+  week('۷ روز آینده', Icons.view_week_outlined),
+  all('همه', Icons.all_inbox_outlined);
 
   const DueView(this.title, this.icon);
   final String title;
@@ -22,6 +25,9 @@ enum DueView {
 
 /// How far ahead «پیش رو» looks.
 const upcomingDays = 14;
+
+/// How far ahead «همه» looks; the API caps a range at a year.
+const allDays = 365;
 
 /// Readable width, as in a project.
 const _maxListWidth = 760.0;
@@ -76,13 +82,21 @@ class _DueTasksViewState extends State<DueTasksView> {
     });
     try {
       final today = _today;
-      final tasks = widget.view == DueView.today
-          ? await widget.api.listDueTasks(token, to: today)
-          : await widget.api.listDueTasks(
-              token,
-              from: today.add(const Duration(days: 1)),
-              to: today.add(const Duration(days: upcomingDays)),
-            );
+      DateTime plus(int days) => today.add(Duration(days: days));
+      final tasks = switch (widget.view) {
+        DueView.today => await widget.api.listDueTasks(token, to: today),
+        DueView.upcoming => await widget.api.listDueTasks(
+          token,
+          from: plus(1),
+          to: plus(upcomingDays),
+        ),
+        DueView.week => await widget.api.listDueTasks(
+          token,
+          from: today,
+          to: plus(6),
+        ),
+        DueView.all => await widget.api.listDueTasks(token, to: plus(allDays)),
+      };
       if (!mounted) return;
       setState(() {
         _tasks = tasks;
@@ -152,6 +166,43 @@ class _DueTasksViewState extends State<DueTasksView> {
     );
   });
 
+  /// Moves [task] to [day], keeping its time of day when it has one;
+  /// undo puts it back.
+  Future<void> _moveTo(Task task, DateTime day) => _run((token) async {
+    final due = task.due;
+    if (due == null || daysBetween(due.day, day) == 0) return;
+    final time = due.localTime;
+    final next = due.isTimed && due.timezone != null
+        ? TaskDue.at(
+            DateTime(day.year, day.month, day.day, time!.hour, time.minute),
+            due.timezone!,
+          )
+        : TaskDue.onDay(day);
+    await widget.api.rescheduleTasks(token, [task.id], next);
+    await _load();
+    if (!mounted) return;
+    final settings = CalendarScope.of(context);
+    _snack(
+      '«${task.title}» به ${relativeDay(day, settings, today: _today)} رفت.',
+      undo: () => _run((token) async {
+        await widget.api.rescheduleTasks(token, [task.id], due);
+        await _load();
+      }),
+    );
+  });
+
+  /// The non-drag way to move a task: pick its day.
+  Future<void> _pickDay(Task task) async {
+    final picked = await showDuePicker(
+      context,
+      dueOnly: true,
+      initial: task.dates,
+      now: _today,
+    );
+    final day = picked?.due?.day;
+    if (day != null && mounted) await _moveTo(task, day);
+  }
+
   Project? _projectOf(Task task) {
     for (final p in widget.projects()) {
       if (p.id == task.projectId) return p;
@@ -161,7 +212,7 @@ class _DueTasksViewState extends State<DueTasksView> {
 
   Widget _row(Task task, {required bool last}) {
     final project = _projectOf(task);
-    return TaskTile(
+    final tile = TaskTile(
       key: ValueKey(task.id),
       task: task,
       divider: !last,
@@ -170,8 +221,44 @@ class _DueTasksViewState extends State<DueTasksView> {
       onOpen: () {
         if (project != null) widget.onOpenProject(project);
       },
+      trailing: IconButton(
+        tooltip: 'تغییر روز «${task.title}»',
+        onPressed: () => _pickDay(task),
+        icon: const Icon(Icons.event_outlined),
+      ),
+    );
+    // In the agenda a long press lifts the task to drop on another day.
+    if (widget.view == DueView.today) return tile;
+    return LongPressDraggable<Task>(
+      data: task,
+      feedback: Material(
+        elevation: 6,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Text(task.title),
+        ),
+      ),
+      childWhenDragging: Opacity(opacity: 0.4, child: tile),
+      child: tile,
     );
   }
+
+  /// A day that accepts a dropped task, lit while one hovers over it.
+  Widget _dropOn(DateTime day, Widget child) => DragTarget<Task>(
+    onWillAcceptWithDetails: (d) =>
+        d.data.due != null && daysBetween(d.data.due!.day, day) != 0,
+    onAcceptWithDetails: (d) => _moveTo(d.data, day),
+    builder: (context, hovering, _) => DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: hovering.isEmpty
+            ? Colors.transparent
+            : Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+      ),
+      child: child,
+    ),
+  );
 
   /// One pane of glass holding a day's tasks.
   Widget _card(List<Task> tasks) {
@@ -241,23 +328,34 @@ class _DueTasksViewState extends State<DueTasksView> {
     ];
   }
 
-  List<Widget> _upcomingBody() {
+  /// The days the agenda shows: tomorrow on for «پیش رو», today on for
+  /// «۷ روز آینده».
+  List<DateTime> get _agendaDays => switch (widget.view) {
+    DueView.week => [for (var i = 0; i < 7; i++) _today.add(Duration(days: i))],
+    _ => [
+      for (var i = 1; i <= upcomingDays; i++) _today.add(Duration(days: i)),
+    ],
+  };
+
+  List<Widget> _agendaBody() {
     final settings = CalendarScope.of(context);
     final today = _today;
     return [
-      for (var offset = 1; offset <= upcomingDays; offset++)
+      for (final day in _agendaDays)
         ...() {
-          final day = today.add(Duration(days: offset));
           final tasks = [
             for (final t in _tasks)
               if (daysBetween(day, t.due!.day) == 0) t,
           ];
           final key = _dayKeys.putIfAbsent(dateKey(day), GlobalKey.new);
           return [
-            _DayHeading(
-              key: key,
-              title: relativeDay(day, settings, today: today),
-              detail: formatDate(day, settings, today: today),
+            _dropOn(
+              day,
+              _DayHeading(
+                key: key,
+                title: relativeDay(day, settings, today: today),
+                detail: formatDate(day, settings, today: today),
+              ),
             ),
             if (tasks.isEmpty) const _Quiet('کاری نیست.') else _card(tasks),
           ];
@@ -265,12 +363,41 @@ class _DueTasksViewState extends State<DueTasksView> {
     ];
   }
 
+  /// Every dated open task, late ones first, grouped by day.
+  List<Widget> _allBody() {
+    final settings = CalendarScope.of(context);
+    final today = _today;
+    final groups = <String, List<Task>>{};
+    for (final t in _tasks) {
+      final late = daysBetween(today, t.due!.day) < 0;
+      groups.putIfAbsent(late ? '' : dateKey(t.due!.day), () => []).add(t);
+    }
+    return [
+      for (final MapEntry(:key, :value) in groups.entries) ...[
+        key.isEmpty
+            ? const _DayHeading(title: 'دیرشده', late: true)
+            : _dropOn(
+                parseDateKey(key),
+                _DayHeading(
+                  title: relativeDay(parseDateKey(key), settings, today: today),
+                  detail: formatDate(parseDateKey(key), settings, today: today),
+                ),
+              ),
+        _card(value),
+      ],
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final today = widget.view == DueView.today;
     final count = _tasks.isEmpty
-        ? (today ? 'کار بازی نمانده' : 'کاری در دو هفتهٔ پیش رو نیست')
+        ? switch (widget.view) {
+            DueView.today => 'کار بازی نمانده',
+            DueView.upcoming => 'کاری در دو هفتهٔ پیش رو نیست',
+            DueView.week => 'کاری در این هفت روز نیست',
+            DueView.all => 'کار زمان‌داری نمانده',
+          }
         : '${persianDigits(_tasks.length)} کار';
     final Widget body;
     if (_loading && _tasks.isEmpty) {
@@ -297,7 +424,13 @@ class _DueTasksViewState extends State<DueTasksView> {
         ),
       );
     } else {
-      body = SliverList.list(children: today ? _todayBody() : _upcomingBody());
+      body = SliverList.list(
+        children: switch (widget.view) {
+          DueView.today => _todayBody(),
+          DueView.all => _allBody(),
+          _ => _agendaBody(),
+        },
+      );
     }
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -331,12 +464,15 @@ class _DueTasksViewState extends State<DueTasksView> {
                   expandedHeight: constraints.maxHeight < 240 ? 0 : 76 * scale,
                 ),
               ),
-              if (!today)
+              if (widget.view == DueView.upcoming ||
+                  widget.view == DueView.week)
                 SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: inset),
                   sliver: SliverToBoxAdapter(
                     child: _WeekStrip(
+                      days: _agendaDays.take(7).toList(),
                       today: _today,
+                      dropOn: _dropOn,
                       busy: {for (final t in _tasks) dateKey(t.due!.day)},
                       onPick: (day) {
                         final target = _dayKeys[dateKey(day)]?.currentContext;
@@ -471,11 +607,17 @@ class _ProjectTag extends StatelessWidget {
 /// tap scrolls the agenda to that day.
 class _WeekStrip extends StatelessWidget {
   const _WeekStrip({
+    required this.days,
+    required this.dropOn,
     required this.today,
     required this.busy,
     required this.onPick,
   });
 
+  final List<DateTime> days;
+
+  /// Makes a day accept a dropped task.
+  final Widget Function(DateTime day, Widget child) dropOn;
   final DateTime today;
   final Set<String> busy;
   final ValueChanged<DateTime> onPick;
@@ -491,51 +633,54 @@ class _WeekStrip extends StatelessWidget {
         children: [
           for (final day in days)
             Expanded(
-              child: Tooltip(
-                message: formatDate(
-                  day,
-                  settings,
-                  today: today,
-                  withWeekday: true,
-                ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () => onPick(day),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 64),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          weekdayInitials[day.weekday - 1],
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+              child: dropOn(
+                day,
+                Tooltip(
+                  message: formatDate(
+                    day,
+                    settings,
+                    today: today,
+                    withWeekday: true,
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => onPick(day),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 64),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            weekdayInitials[day.weekday - 1],
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          // The day of the month in the chosen calendar.
-                          formatDate(
-                            day,
-                            settings,
-                            today: today,
-                          ).split(' ').first,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
+                          const SizedBox(height: 2),
+                          Text(
+                            // The day of the month in the chosen calendar.
+                            formatDate(
+                              day,
+                              settings,
+                              today: today,
+                            ).split(' ').first,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: busy.contains(dateKey(day))
-                                ? theme.colorScheme.primary
-                                : Colors.transparent,
+                          const SizedBox(height: 4),
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: busy.contains(dateKey(day))
+                                  ? theme.colorScheme.primary
+                                  : Colors.transparent,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

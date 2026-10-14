@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:farash/app/motion.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/calendar_settings_dialog.dart';
+import 'package:farash/core/settings/start_view.dart';
 import 'package:farash/app/glass.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 import 'package:farash/features/projects/data/project.dart';
@@ -24,6 +25,7 @@ class HomeScreen extends StatefulWidget {
     required this.tasksApi,
     required this.token,
     this.sectionsApi,
+    this.startView,
   });
 
   final String email;
@@ -31,6 +33,9 @@ class HomeScreen extends StatefulWidget {
   final ProjectsController projects;
   final TasksApi tasksApi;
   final SectionsApi? sectionsApi;
+
+  /// Which list opens first; the Inbox when absent.
+  final StartView? startView;
 
   /// The current access token; null once signed out.
   final String? Function() token;
@@ -46,10 +51,48 @@ class _HomeScreenState extends State<HomeScreen> {
   /// A view across projects (امروز, پیش رو) instead of a project.
   DueView? _view;
 
+  /// Open tasks due today or late, for the badge on «امروز».
+  int? _todayCount;
+
+  /// Whether the user has picked a list yet; until then the start view
+  /// may still arrive from storage.
+  bool _navigated = false;
+
   @override
   void initState() {
     super.initState();
     widget.projects.load();
+    _applyStartView();
+    widget.startView?.addListener(_applyStartView);
+    _refreshCount();
+  }
+
+  @override
+  void dispose() {
+    widget.startView?.removeListener(_applyStartView);
+    super.dispose();
+  }
+
+  void _applyStartView() {
+    final start = widget.startView;
+    if (start == null || _navigated) return;
+    final view = DueView.values.where((v) => v.name == start.value).firstOrNull;
+    if (view != _view) setState(() => _view = view);
+  }
+
+  Future<void> _refreshCount() async {
+    final token = widget.token();
+    if (token == null) return;
+    try {
+      final today = DateTime.now();
+      final tasks = await widget.tasksApi.listDueTasks(
+        token,
+        to: DateTime(today.year, today.month, today.day),
+      );
+      if (mounted) setState(() => _todayCount = tasks.length);
+    } catch (_) {
+      // The badge is a hint; it stays as it was.
+    }
   }
 
   /// The selected project, falling back to the Inbox when it disappears.
@@ -70,6 +113,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _select(Project project) {
+    _navigated = true;
+    _refreshCount();
     setState(() {
       _selectedId = project.id;
       _view = null;
@@ -80,6 +125,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _selectView(DueView view) {
+    _navigated = true;
+    _refreshCount();
     setState(() => _view = view);
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => GlassLamp.placeFor('@${view.name}'),
@@ -108,8 +155,13 @@ class _HomeScreenState extends State<HomeScreen> {
     selectedView: _view,
     onSelect: _select,
     onSelectView: _selectView,
+    viewCounts: {DueView.today: ?_todayCount},
     onOpenArchived: _openArchived,
-    header: _AccountHeader(email: widget.email, onLogout: widget.onLogout),
+    header: _AccountHeader(
+      email: widget.email,
+      onLogout: widget.onLogout,
+      startView: widget.startView,
+    ),
   );
 
   @override
@@ -199,15 +251,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-enum _AccountAction { calendar, logout }
+enum _AccountAction { calendar, startView, logout }
 
 /// The app's name with the account beneath it, and one menu for the
 /// account's actions, so the email keeps its width.
 class _AccountHeader extends StatelessWidget {
-  const _AccountHeader({required this.email, required this.onLogout});
+  const _AccountHeader({
+    required this.email,
+    required this.onLogout,
+    this.startView,
+  });
 
   final String email;
   final VoidCallback onLogout;
+  final StartView? startView;
 
   @override
   Widget build(BuildContext context) {
@@ -246,17 +303,26 @@ class _AccountHeader extends StatelessWidget {
                 context,
                 CalendarScope.of(context),
               ),
+              _AccountAction.startView => _pickStartView(context, startView!),
               _AccountAction.logout => onLogout(),
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
+            itemBuilder: (context) => [
+              const PopupMenuItem(
                 value: _AccountAction.calendar,
                 child: ListTile(
                   leading: Icon(Icons.calendar_month_outlined),
                   title: Text('تنظیمات تقویم'),
                 ),
               ),
-              PopupMenuItem(
+              if (startView != null)
+                const PopupMenuItem(
+                  value: _AccountAction.startView,
+                  child: ListTile(
+                    leading: Icon(Icons.home_outlined),
+                    title: Text('صفحهٔ آغاز'),
+                  ),
+                ),
+              const PopupMenuItem(
                 value: _AccountAction.logout,
                 child: ListTile(
                   leading: Icon(Icons.logout),
@@ -269,6 +335,34 @@ class _AccountHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Picks which list opens first on this device.
+Future<void> _pickStartView(BuildContext context, StartView start) async {
+  final choices = [
+    (StartView.inbox, 'صندوق ورودی'),
+    for (final v in DueView.values) (v.name, v.title),
+  ];
+  final picked = await showDialog<String>(
+    context: context,
+    builder: (context) => SimpleDialog(
+      title: const Text('صفحهٔ آغاز'),
+      children: [
+        RadioGroup<String>(
+          groupValue: start.value,
+          onChanged: (value) => Navigator.pop(context, value),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final (value, label) in choices)
+                RadioListTile<String>(value: value, title: Text(label)),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+  if (picked != null) await start.set(picked);
 }
 
 /// Shown until the projects (and so the Inbox) have loaded.

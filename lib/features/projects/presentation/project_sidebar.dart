@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/core/widgets/hover_reveal.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 import 'package:farash/features/projects/data/project.dart';
@@ -18,6 +19,7 @@ class ProjectSidebar extends StatelessWidget {
     required this.header,
     this.selectedView,
     this.onSelectView,
+    this.viewCounts = const {},
   });
 
   final ProjectsController controller;
@@ -31,6 +33,9 @@ class ProjectSidebar extends StatelessWidget {
   /// The view across projects that is open, if any.
   final DueView? selectedView;
   final ValueChanged<DueView>? onSelectView;
+
+  /// Open-task counts shown beside views, such as today's.
+  final Map<DueView, int> viewCounts;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +59,18 @@ class ProjectSidebar extends StatelessWidget {
                     selected: view == selectedView,
                     leading: Icon(view.icon),
                     title: Text(view.title),
+                    trailing: switch (viewCounts[view]) {
+                      final count? when count > 0 => Semantics(
+                        label: '${persianDigits(count)} کار',
+                        excludeSemantics: true,
+                        child: Badge(
+                          label: Text(persianDigits(count)),
+                          backgroundColor: theme.colorScheme.primary,
+                          textColor: theme.colorScheme.onPrimary,
+                        ),
+                      ),
+                      _ => null,
+                    },
                     onTap: () => onSelectView!(view),
                   ),
               if (inbox != null)

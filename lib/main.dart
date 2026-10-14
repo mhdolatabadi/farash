@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/core/settings/start_view.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/calendar_settings.dart';
@@ -28,6 +29,7 @@ class FarashApp extends StatefulWidget {
     this.tasksApi,
     this.sectionsApi,
     this.calendarSettings,
+    this.startView,
   });
 
   /// Test overrides; by default the app talks to
@@ -39,6 +41,9 @@ class FarashApp extends StatefulWidget {
   final TasksApi? tasksApi;
   final SectionsApi? sectionsApi;
   final CalendarSettings? calendarSettings;
+
+  /// Which list opens first; per device.
+  final StartView? startView;
 
   @override
   State<FarashApp> createState() => _FarashAppState();
@@ -64,6 +69,9 @@ class _FarashAppState extends State<FarashApp> {
   late final CalendarSettings _calendar =
       widget.calendarSettings ??
       (CalendarSettings(store: SecureCalendarSettingsStore())..load());
+  late final StartView _startView =
+      widget.startView ??
+      (StartView(store: SecureCalendarSettingsStore())..load());
 
   AuthSession? _session;
   _SessionState _state = _SessionState.restoring;
@@ -144,6 +152,7 @@ class _FarashAppState extends State<FarashApp> {
         sectionsApi: _sectionsApi,
         token: () => _session?.token,
         onLogout: _signOut,
+        startView: _startView,
       ),
     };
   }
