@@ -103,29 +103,11 @@ class _ProgressCardState extends State<ProgressCard>
       title: const Text('پیشرفت من'),
       subtitle: progress == null
           ? const Text('در حال دریافت…')
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'سطح ${persianDigits(progress.level)} · '
-                  '${persianDigits(progress.xp)} امتیاز',
-                ),
-                const SizedBox(height: 8),
-                LinearProgressIndicator(
-                  value: (progress.weeklyDays / progress.weeklyGoal).clamp(
-                    0,
-                    1,
-                  ),
-                  semanticsLabel:
-                      'هدف هفتگی، ${persianDigits(progress.weeklyDays)} از '
-                      '${persianDigits(progress.weeklyGoal)} روز',
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${persianDigits(progress.weeklyDays)} از '
-                  '${persianDigits(progress.weeklyGoal)} روز این هفته',
-                ),
-              ],
+          : Text(
+              'سطح ${persianDigits(progress.level)} · '
+              '${persianDigits(progress.xp)} امتیاز · '
+              '${persianDigits(progress.weeklyDays)} از '
+              '${persianDigits(progress.weeklyGoal)} روز',
             ),
       onTap: progress == null ? null : _open,
     );

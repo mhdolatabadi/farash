@@ -273,3 +273,7 @@ Solid surfaces (drawer, bottom sheets, dialogs, menus) sit over a scrim and use 
 - Don't spend violet on secondary buttons, icons or selection.
 - Don't introduce controls for unimplemented features.
 - Don't claim hardware or accessibility-service validation from source inspection.
+
+## Mobile refinement (#59)
+
+Phone layouts use a solid theme surface to keep sparse task lists calm. Ambient lights remain on wide layouts. Headings use Vazirmatn for a consistent reading rhythm. Navigation rows each own their transparent Material so selection ink follows the row inside the scrolling drawer. Rows retain at least 48px touch targets. Personal progress is summarized in one subtitle; full detail stays in its sheet. Capture uses a 14px radius, a short hint and an add icon, without blur or a floating shadow.

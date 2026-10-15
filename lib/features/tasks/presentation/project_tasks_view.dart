@@ -698,7 +698,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                 actions: [completedToggle],
                 topPadding: topPadding,
                 inset: inset,
-                expandedHeight: compact ? 0 : 76 * scale,
+                expandedHeight: compact ? 0 : 56 * scale,
               ),
             ),
           if (capture != null) pad(SliverToBoxAdapter(child: capture)),
@@ -1118,7 +1118,9 @@ class _QuickAddState extends State<_QuickAdd> {
     // One pane of glass: the field, its priority and the send button read
     // as a single control, edged in honey while it has focus.
     return GlassSurface(
-      radius: 20,
+      radius: 14,
+      blur: 0,
+      shadow: false,
       borderColor: _focused ? theme.colorScheme.primary : null,
       padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 8, 4),
       child: Column(
@@ -1169,7 +1171,7 @@ class _QuickAddState extends State<_QuickAdd> {
                         maxLength,
                       }) => null,
                   decoration: InputDecoration(
-                    hintText: 'کار تازه در «${widget.projectName}»',
+                    hintText: 'افزودن کار…',
                     filled: false,
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -1236,7 +1238,7 @@ class _QuickAddState extends State<_QuickAdd> {
                           dimension: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Icon(Icons.arrow_upward),
+                      : const Icon(Icons.add),
                 ),
               ),
             ],

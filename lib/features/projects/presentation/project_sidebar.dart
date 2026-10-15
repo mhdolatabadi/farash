@@ -60,7 +60,7 @@ class ProjectSidebar extends StatelessWidget {
         return SafeArea(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-            children: [
+            children: <Widget>[
               header,
               const SizedBox(height: 8),
               if (onSelectView != null)
@@ -182,7 +182,7 @@ class ProjectSidebar extends StatelessWidget {
                 title: const Text('پروژه‌های بایگانی‌شده'),
                 onTap: onOpenArchived,
               ),
-            ],
+            ].map((row) => Material(type: MaterialType.transparency, child: row)).toList(),
           ),
         );
       },
