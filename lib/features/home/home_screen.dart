@@ -5,6 +5,8 @@ import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/calendar_settings_dialog.dart';
 import 'package:farash/core/settings/start_view.dart';
 import 'package:farash/app/glass.dart';
+import 'package:farash/features/labels/application/labels_controller.dart';
+import 'package:farash/features/labels/data/label.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/projects/presentation/archived_projects_screen.dart';
@@ -27,6 +29,7 @@ class HomeScreen extends StatefulWidget {
     required this.token,
     this.sectionsApi,
     this.startView,
+    this.labelsApi,
   });
 
   final String email;
@@ -37,6 +40,9 @@ class HomeScreen extends StatefulWidget {
 
   /// Which list opens first; the Inbox when absent.
   final StartView? startView;
+
+  /// Labels, where the backend offers them.
+  final LabelsApi? labelsApi;
 
   /// The current access token; null once signed out.
   final String? Function() token;
@@ -59,10 +65,18 @@ class _HomeScreenState extends State<HomeScreen> {
   /// may still arrive from storage.
   bool _navigated = false;
 
+  late final LabelsController? _labels = widget.labelsApi == null
+      ? null
+      : LabelsController(api: widget.labelsApi!, token: widget.token);
+
+  /// The label whose tasks are open, if any.
+  String? _labelId;
+
   @override
   void initState() {
     super.initState();
     widget.projects.load();
+    _labels?.load();
     _applyStartView();
     widget.startView?.addListener(_applyStartView);
     _refreshCount();
@@ -71,6 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     widget.startView?.removeListener(_applyStartView);
+    _labels?.dispose();
     super.dispose();
   }
 
@@ -119,6 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _selectedId = project.id;
       _view = null;
+      _labelId = null;
     });
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.pop(context);
@@ -128,11 +144,25 @@ class _HomeScreenState extends State<HomeScreen> {
   void _selectView(DueView view) {
     _navigated = true;
     _refreshCount();
-    setState(() => _view = view);
+    setState(() {
+      _view = view;
+      _labelId = null;
+    });
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => GlassLamp.placeFor('@${view.name}'),
     );
     _lampFor = null;
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.pop(context);
+    }
+  }
+
+  void _selectLabel(Label label) {
+    _navigated = true;
+    setState(() {
+      _labelId = label.id;
+      _view = null;
+    });
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.pop(context);
     }
@@ -152,7 +182,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _sidebar() => ProjectSidebar(
     controller: widget.projects,
-    selectedId: _view == null ? _selected?.id : null,
+    selectedId: _view == null && _labelId == null ? _selected?.id : null,
+    labels: _labels,
+    selectedLabelId: _labelId,
+    onSelectLabel: _selectLabel,
     selectedView: _view,
     onSelect: _select,
     onSelectView: _selectView,
@@ -177,12 +210,24 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= sidebarBreakpoint;
         return ListenableBuilder(
-          listenable: widget.projects,
+          listenable: Listenable.merge([widget.projects, ?_labels]),
           builder: (context, _) {
             final selected = _selected;
             final view = _view;
-            if (view == null) _placeLamp(selected);
-            final Widget content = view != null
+            final label = _labels?.byId(_labelId);
+            if (view == null && label == null) _placeLamp(selected);
+            final Widget content = label != null
+                ? DueTasksView(
+                    key: ValueKey('label-${label.id}'),
+                    view: DueView.all,
+                    label: label,
+                    labels: _labels,
+                    api: widget.tasksApi,
+                    token: widget.token,
+                    projects: () => widget.projects.projects,
+                    onOpenProject: _select,
+                  )
+                : view != null
                 ? DueTasksView(
                     key: ValueKey(view),
                     view: view,
@@ -190,6 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     token: widget.token,
                     projects: () => widget.projects.projects,
                     onOpenProject: _select,
+                    labels: _labels,
                   )
                 : selected == null
                 ? _ProjectPage(loading: widget.projects.isLoading)
@@ -202,6 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     token: widget.token,
                     moveTargets: () => widget.projects.projects,
                     showTitle: true,
+                    labels: _labels,
                   );
             // Changing project fades through instead of cutting.
             final page = AnimatedSwitcher(
@@ -222,7 +269,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // with the drawer button, so nothing frames the list twice.
               return Scaffold(
                 key: _scaffoldKey,
-                appBar: selected == null && view == null
+                appBar: selected == null && view == null && label == null
                     ? AppBar(title: const Text('فراش'))
                     : null,
                 drawer: Drawer(child: _sidebar()),

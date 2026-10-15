@@ -31,6 +31,7 @@ class FakeTasksApi implements TasksApi {
     String? sectionId,
     Task? parent,
     TaskDates? dates,
+    List<String> labelIds = const [],
   }) {
     final task = Task(
       id: 't${_nextId++}',
@@ -44,6 +45,7 @@ class FakeTasksApi implements TasksApi {
       due: dates?.due,
       deadline: dates?.deadline,
       durationMinutes: dates?.durationMinutes,
+      labelIds: labelIds,
     );
     _tasks.add(task);
     return task;
@@ -119,6 +121,21 @@ class FakeTasksApi implements TasksApi {
     ]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
   }
 
+  /// Every open task, for the labels fake.
+  Future<List<Task>> allOpen() async => [
+    for (final t in _tasks)
+      if (!_deleted.contains(t.id) && !t.isCompleted) _counted(t),
+  ];
+
+  /// Takes a deleted label off every task.
+  void dropLabel(String id) {
+    for (final t in List.of(_tasks)) {
+      if (t.labelIds.contains(id)) {
+        _replace(t.copyWith(labelIds: [...t.labelIds]..remove(id)));
+      }
+    }
+  }
+
   /// The projects listDueTasks leaves out, as the server leaves archived
   /// ones out.
   final archivedProjects = <String>{};
@@ -160,6 +177,7 @@ class FakeTasksApi implements TasksApi {
       due: draft.dates?.due,
       deadline: draft.dates?.deadline,
       durationMinutes: draft.dates?.durationMinutes,
+      labelIds: draft.labelIds ?? const [],
     );
     _tasks.add(task);
     return _counted(task);
@@ -184,6 +202,7 @@ class FakeTasksApi implements TasksApi {
       priority: changes.priority,
       sortOrder: changes.sortOrder,
       dates: changes.dates,
+      labelIds: changes.labelIds,
     );
     // Like the API: a parent_id nests the task in the parent's place; "" or
     // a move elsewhere on its own makes it top-level.

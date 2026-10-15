@@ -20,6 +20,7 @@ class Task {
     this.due,
     this.deadline,
     this.durationMinutes,
+    this.labelIds = const [],
   });
 
   factory Task.fromJson(Map<String, dynamic> json) => Task(
@@ -41,6 +42,10 @@ class Task {
         : TaskDue.fromJson(json['due'] as Map<String, dynamic>),
     deadline: json['deadline'] as String?,
     durationMinutes: json['duration_minutes'] as int?,
+    labelIds: [
+      for (final id in json['label_ids'] as List<dynamic>? ?? const [])
+        id as String,
+    ],
   );
 
   final String id;
@@ -70,6 +75,9 @@ class Task {
   final String? deadline;
   final int? durationMinutes;
 
+  /// The ids of the owner's labels on the task.
+  final List<String> labelIds;
+
   TaskDates get dates =>
       TaskDates(due: due, deadline: deadline, durationMinutes: durationMinutes);
 
@@ -91,6 +99,7 @@ class Task {
     int? subtaskCount,
     int? completedSubtaskCount,
     TaskDates? dates,
+    List<String>? labelIds,
   }) => Task(
     id: id,
     projectId: projectId ?? this.projectId,
@@ -108,6 +117,7 @@ class Task {
     durationMinutes: dates == null
         ? durationMinutes
         : (dates.due?.isTimed == true ? dates.durationMinutes : null),
+    labelIds: labelIds ?? this.labelIds,
   );
 }
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:farash/app/glass.dart';
+import 'package:farash/features/labels/application/labels_controller.dart';
+import 'package:farash/features/labels/presentation/label_widgets.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
@@ -20,6 +22,7 @@ Future<TaskSheetResult?> showTaskDetailSheet(
   required TasksController controller,
   required Task task,
   required List<Project> projects,
+  LabelsController? labels,
 }) {
   return showModalBottomSheet<TaskSheetResult>(
     context: context,
@@ -29,6 +32,7 @@ Future<TaskSheetResult?> showTaskDetailSheet(
       controller: controller,
       task: task,
       projects: projects,
+      labels: labels,
     ),
   );
 }
@@ -40,9 +44,13 @@ class TaskDetailEditor extends StatefulWidget {
     required this.controller,
     required this.task,
     required this.projects,
+    this.labels,
   });
 
   final ValueChanged<TaskSheetResult?>? onResult;
+
+  /// The account's labels, to pick from; none where labels are unavailable.
+  final LabelsController? labels;
   final TasksController controller;
   final Task task;
   final List<Project> projects;
@@ -61,6 +69,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
   late String _projectId = widget.task.projectId;
   late String? _sectionId = widget.controller.sectionOf(widget.task);
   late TaskDates _dates = widget.task.dates;
+  late List<String> _labelIds = [...widget.task.labelIds];
 
   Future<void> _pickDates() async {
     final picked = await showDuePicker(context, initial: _dates);
@@ -124,6 +133,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
       controller: widget.controller,
       task: subtask,
       projects: widget.projects,
+      labels: widget.labels,
     );
     if (result == TaskSheetResult.deleted) {
       await _quietly(() => widget.controller.delete(subtask));
@@ -143,6 +153,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
         projectId: _projectId,
         sectionId: _sectionId,
         dates: _dates,
+        labelIds: widget.labels == null ? null : _labelIds,
       );
       if (mounted) _close(TaskSheetResult.saved);
     } catch (error) {
@@ -354,6 +365,17 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                         onChanged: (id) => setState(() => _sectionId = id),
                       ),
                     ),
+                  if (widget.labels case final labels?)
+                    _PropertyRow(
+                      icon: Icons.sell_outlined,
+                      label: 'برچسب‌ها',
+                      expand: true,
+                      child: _LabelPicker(
+                        labels: labels,
+                        selected: _labelIds,
+                        onChanged: (ids) => setState(() => _labelIds = ids),
+                      ),
+                    ),
                   const SizedBox(height: 8),
                   const Divider(),
                   const SizedBox(height: 4),
@@ -430,6 +452,60 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: body,
+    );
+  }
+}
+
+/// The account's labels as chips to toggle, and one to make a new label.
+class _LabelPicker extends StatelessWidget {
+  const _LabelPicker({
+    required this.labels,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final LabelsController labels;
+  final List<String> selected;
+  final ValueChanged<List<String>> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: labels,
+      builder: (context, _) => Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        children: [
+          for (final label in labels.labels)
+            FilterChip(
+              label: Text(label.tag),
+              selected: selected.contains(label.id),
+              avatar: Icon(Icons.circle, size: 10, color: label.swatch),
+              showCheckmark: false,
+              materialTapTargetSize: MaterialTapTargetSize.padded,
+              onSelected: (on) => onChanged(
+                on
+                    ? [...selected, label.id]
+                    : [
+                        for (final id in selected)
+                          if (id != label.id) id,
+                      ],
+              ),
+            ),
+          ActionChip(
+            avatar: const Icon(Icons.add, size: 18),
+            label: const Text('برچسب تازه'),
+            materialTapTargetSize: MaterialTapTargetSize.padded,
+            onPressed: () async {
+              final created = await showLabelEditor(
+                context,
+                controller: labels,
+              );
+              if (created != null) onChanged([...selected, created.id]);
+            },
+          ),
+        ],
+      ),
     );
   }
 }
