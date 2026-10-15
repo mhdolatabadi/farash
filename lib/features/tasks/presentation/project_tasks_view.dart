@@ -6,7 +6,10 @@ import 'package:farash/app/palette.dart';
 import 'package:farash/app/glass.dart';
 import 'package:farash/app/list_app_bar.dart';
 import 'package:farash/core/api/api_client.dart';
+import 'package:farash/core/calendar/time_zone.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
+import 'package:farash/features/labels/data/label.dart';
+import 'package:farash/features/tasks/data/quick_parse.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
 import 'package:farash/features/tasks/data/task.dart';
@@ -276,6 +279,95 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     _run(() => _tasks.moveTask(moved.task, section?.id, ids, parent: parent));
   }
 
+  /// Adds the task quick-add text describes: its dates, priority and
+  /// labels, in the project after `#` when that names another one.
+  Future<void> _addParsed(
+    QuickTask parsed,
+    String raw,
+    TaskPriority menuPriority,
+  ) async {
+    final priority = parsed.priority == null
+        ? menuPriority
+        : TaskPriority.fromLevel(parsed.priority!);
+    TaskDue? due;
+    if (parsed.day case final day?) {
+      due = parsed.hour == null
+          ? TaskDue.onDay(day)
+          : TaskDue.at(
+              DateTime(
+                day.year,
+                day.month,
+                day.day,
+                parsed.hour!,
+                parsed.minute,
+              ),
+              await deviceTimeZone(),
+            );
+    }
+    final dates = due == null && parsed.deadline == null
+        ? null
+        : TaskDates(
+            due: due,
+            deadline: parsed.deadline == null
+                ? null
+                : dateKey(parsed.deadline!),
+          );
+    final labelIds = await _labelIdsFor(parsed.labels);
+    var title = parsed.title;
+    Project? target;
+    if (parsed.project case final name?) {
+      target = widget
+          .moveTargets()
+          .where(
+            (p) =>
+                !p.isFolder &&
+                p.displayName.toLowerCase() == name.toLowerCase(),
+          )
+          .firstOrNull;
+      // An unknown project stays as text rather than vanishing.
+      if (target == null) title = '$title #$name'.trim();
+    }
+    if (title.isEmpty) title = raw.trim();
+    if (target != null && target.id != widget.project.id) {
+      final token = widget.token();
+      if (token == null) return;
+      await widget.api.createTask(
+        token,
+        TaskDraft(
+          projectId: target.id,
+          title: title,
+          priority: priority,
+          dates: dates,
+          labelIds: labelIds,
+        ),
+      );
+      _snack('«$title» به «${target.displayName}» اضافه شد.');
+      return;
+    }
+    final task = await _tasks.add(
+      title,
+      priority: priority,
+      dates: dates,
+      labelIds: labelIds,
+    );
+    if (mounted) setState(() => _entering.add(task.id));
+  }
+
+  /// The ids of labels named in quick add, making the ones that do not
+  /// exist yet.
+  Future<List<String>?> _labelIdsFor(List<String> names) async {
+    final labels = widget.labels;
+    if (names.isEmpty || labels == null) return null;
+    final ids = <String>[];
+    for (final name in names) {
+      final existing = labels.labels
+          .where((l) => l.name.toLowerCase() == name.toLowerCase())
+          .firstOrNull;
+      ids.add(existing?.id ?? (await labels.create(LabelDraft(name: name))).id);
+    }
+    return ids;
+  }
+
   Future<void> _addSection() async {
     final name = await askSectionName(context, title: 'بخش تازه');
     if (name != null) await _run(() => _tasks.addSection(name));
@@ -336,10 +428,9 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
         final capture = _QuickAdd(
           key: _captureKey,
           projectName: widget.project.displayName,
-          onAdd: (title, priority) async {
+          onAdd: (parsed, raw, priority) async {
             try {
-              final task = await _tasks.add(title, priority: priority);
-              if (mounted) setState(() => _entering.add(task.id));
+              await _addParsed(parsed, raw, priority);
               return true;
             } catch (error) {
               if (mounted) showTaskError(this.context, error);
@@ -910,7 +1001,64 @@ class _SelectionBar extends StatelessWidget {
   }
 }
 
+/// The capture field's text, with the parts quick add recognises lit as
+/// they are typed. Dismissed parts stay plain text.
+class _QuickText extends TextEditingController {
+  final ignore = <(int, int)>{};
+
+  QuickTask get parsed =>
+      parseQuickTask(text, now: DateTime.now(), ignore: ignore);
+
+  void dismiss(QuickToken token) {
+    ignore.add((token.start, token.end));
+    notifyListeners();
+  }
+
+  @override
+  set value(TextEditingValue next) {
+    // A dismissal holds only while its text does.
+    if (next.text != text) {
+      ignore.removeWhere((r) => r.$2 > next.text.length);
+    }
+    super.value = next;
+  }
+
+  @override
+  TextSpan buildTextSpan({
+    required BuildContext context,
+    TextStyle? style,
+    required bool withComposing,
+  }) {
+    final tokens = parsed.tokens;
+    if (tokens.isEmpty || value.composing.isValid && withComposing) {
+      return super.buildTextSpan(
+        context: context,
+        style: style,
+        withComposing: withComposing,
+      );
+    }
+    final primary = Theme.of(context).colorScheme.primary;
+    final lit = style?.copyWith(
+      color: primary,
+      backgroundColor: primary.withValues(alpha: 0.14),
+    );
+    final spans = <TextSpan>[];
+    var cursor = 0;
+    for (final t in tokens) {
+      if (t.start > cursor) {
+        spans.add(TextSpan(text: text.substring(cursor, t.start)));
+      }
+      spans.add(TextSpan(text: text.substring(t.start, t.end), style: lit));
+      cursor = t.end;
+    }
+    if (cursor < text.length) spans.add(TextSpan(text: text.substring(cursor)));
+    return TextSpan(style: style, children: spans);
+  }
+}
+
 /// One field and one button, pinned under the list and above the keyboard.
+/// Dates, times, `#project`, `@label`, `p1`–`p4` and `{deadline}` typed in
+/// the text are recognised as you go.
 class _QuickAdd extends StatefulWidget {
   const _QuickAdd({super.key, required this.projectName, required this.onAdd});
 
@@ -918,14 +1066,19 @@ class _QuickAdd extends StatefulWidget {
 
   /// Returns whether the task was added, so the field keeps its text on
   /// failure.
-  final Future<bool> Function(String title, TaskPriority priority) onAdd;
+  final Future<bool> Function(
+    QuickTask parsed,
+    String raw,
+    TaskPriority priority,
+  )
+  onAdd;
 
   @override
   State<_QuickAdd> createState() => _QuickAddState();
 }
 
 class _QuickAddState extends State<_QuickAdd> {
-  final _text = TextEditingController();
+  final _text = _QuickText();
   late final FocusNode _focus = FocusNode()
     ..addListener(() => setState(() => _focused = _focus.hasFocus));
   bool _focused = false;
@@ -941,16 +1094,18 @@ class _QuickAddState extends State<_QuickAdd> {
   }
 
   Future<void> _submit() async {
-    final title = _text.text.trim();
-    if (title.isEmpty || _busy) return;
+    final raw = _text.text.trim();
+    if (raw.isEmpty || _busy) return;
+    final parsed = _text.parsed;
     final revision = _draftRevision;
     setState(() => _busy = true);
-    final added = await widget.onAdd(title, _priority);
+    final added = await widget.onAdd(parsed, raw, _priority);
     if (!mounted) return;
     setState(() {
       _busy = false;
       if (added && revision == _draftRevision) {
         _text.clear();
+        _text.ignore.clear();
         _priority = TaskPriority.p4;
       }
     });
@@ -966,95 +1121,140 @@ class _QuickAddState extends State<_QuickAdd> {
       radius: 20,
       borderColor: _focused ? theme.colorScheme.primary : null,
       padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 8, 4),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: TextField(
-              controller: _text,
-              focusNode: _focus,
-              textInputAction: TextInputAction.send,
-              maxLength: 500,
-              buildCounter:
-                  (
-                    _, {
-                    required currentLength,
-                    required isFocused,
-                    maxLength,
-                  }) => null,
-              decoration: InputDecoration(
-                hintText: 'کار تازه در «${widget.projectName}»',
-                filled: false,
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                contentPadding: const EdgeInsetsDirectional.fromSTEB(
-                  16,
-                  12,
-                  4,
-                  12,
-                ),
-              ),
-              onSubmitted: (_) => _submit(),
-              onChanged: (_) => _draftRevision++,
-            ),
-          ),
-          PopupMenuButton<TaskPriority>(
-            tooltip: 'اولویت: ${_priority.label}',
-            initialValue: _priority,
-            icon: Icon(
-              _priority == TaskPriority.p4 ? Icons.outlined_flag : Icons.flag,
-              color: _priority == TaskPriority.p4
-                  ? theme.colorScheme.onSurfaceVariant
-                  : _priority.colorIn(context),
-            ),
-            onSelected: (p) => setState(() {
-              _priority = p;
-              _draftRevision++;
-            }),
-            itemBuilder: (context) => [
-              for (final p in TaskPriority.values)
-                PopupMenuItem(
-                  value: p,
-                  child: Row(
+          // What the text will set, each part dismissable back to text.
+          ValueListenableBuilder(
+            valueListenable: _text,
+            builder: (context, _, _) {
+              final tokens = _text.parsed.tokens;
+              if (tokens.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(8, 4, 0, 0),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
                     children: [
-                      Icon(Icons.flag, color: p.colorIn(context)),
-                      const SizedBox(width: 12),
-                      Text(p.label),
+                      for (final token in tokens)
+                        InputChip(
+                          avatar: Icon(_tokenIcon(token.kind), size: 16),
+                          label: Text(token.text),
+                          visualDensity: VisualDensity.compact,
+                          deleteButtonTooltipMessage:
+                              'نادیده گرفتن «${token.text}»',
+                          onDeleted: () => _text.dismiss(token),
+                        ),
                     ],
                   ),
                 ),
-            ],
-          ),
-          // Send wakes up once there is something to add.
-          ValueListenableBuilder(
-            valueListenable: _text,
-            builder: (context, value, button) {
-              final ready = value.text.trim().isNotEmpty;
-              return AnimatedOpacity(
-                opacity: ready || _busy ? 1 : 0.55,
-                duration: Motion.of(context, Motion.quick),
-                child: button,
               );
             },
-            child: IconButton.filled(
-              tooltip: 'افزودن کار',
-              style: const ButtonStyle(
-                minimumSize: WidgetStatePropertyAll(Size(48, 48)),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _text,
+                  focusNode: _focus,
+                  textInputAction: TextInputAction.send,
+                  maxLength: 500,
+                  buildCounter:
+                      (
+                        _, {
+                        required currentLength,
+                        required isFocused,
+                        maxLength,
+                      }) => null,
+                  decoration: InputDecoration(
+                    hintText: 'کار تازه در «${widget.projectName}»',
+                    filled: false,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: const EdgeInsetsDirectional.fromSTEB(
+                      16,
+                      12,
+                      4,
+                      12,
+                    ),
+                  ),
+                  onSubmitted: (_) => _submit(),
+                  onChanged: (_) => _draftRevision++,
+                ),
               ),
-              onPressed: _busy ? null : _submit,
-              icon: _busy
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.arrow_upward),
-            ),
+              PopupMenuButton<TaskPriority>(
+                tooltip: 'اولویت: ${_priority.label}',
+                initialValue: _priority,
+                icon: Icon(
+                  _priority == TaskPriority.p4
+                      ? Icons.outlined_flag
+                      : Icons.flag,
+                  color: _priority == TaskPriority.p4
+                      ? theme.colorScheme.onSurfaceVariant
+                      : _priority.colorIn(context),
+                ),
+                onSelected: (p) => setState(() {
+                  _priority = p;
+                  _draftRevision++;
+                }),
+                itemBuilder: (context) => [
+                  for (final p in TaskPriority.values)
+                    PopupMenuItem(
+                      value: p,
+                      child: Row(
+                        children: [
+                          Icon(Icons.flag, color: p.colorIn(context)),
+                          const SizedBox(width: 12),
+                          Text(p.label),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+              // Send wakes up once there is something to add.
+              ValueListenableBuilder(
+                valueListenable: _text,
+                builder: (context, value, button) {
+                  final ready = value.text.trim().isNotEmpty;
+                  return AnimatedOpacity(
+                    opacity: ready || _busy ? 1 : 0.55,
+                    duration: Motion.of(context, Motion.quick),
+                    child: button,
+                  );
+                },
+                child: IconButton.filled(
+                  tooltip: 'افزودن کار',
+                  style: const ButtonStyle(
+                    minimumSize: WidgetStatePropertyAll(Size(48, 48)),
+                  ),
+                  onPressed: _busy ? null : _submit,
+                  icon: _busy
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.arrow_upward),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 }
+
+IconData _tokenIcon(QuickTokenKind kind) => switch (kind) {
+  QuickTokenKind.date => Icons.event,
+  QuickTokenKind.time => Icons.schedule,
+  QuickTokenKind.priority => Icons.flag,
+  QuickTokenKind.project => Icons.folder_outlined,
+  QuickTokenKind.label => Icons.sell_outlined,
+  QuickTokenKind.deadline => Icons.hourglass_bottom,
+};
 
 class _FolderNotice extends StatelessWidget {
   const _FolderNotice();
