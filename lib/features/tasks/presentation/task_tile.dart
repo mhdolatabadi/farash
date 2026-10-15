@@ -3,6 +3,8 @@ import 'package:farash/app/motion.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
+import 'package:farash/features/labels/data/label.dart';
+import 'package:farash/features/labels/presentation/label_widgets.dart';
 import 'package:farash/features/tasks/data/checklist.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/features/tasks/presentation/priority_color.dart';
@@ -28,6 +30,7 @@ class TaskTile extends StatelessWidget {
     this.stamped = false,
     this.divider = true,
     this.tag,
+    this.labels = const [],
   });
 
   final Task task;
@@ -60,6 +63,9 @@ class TaskTile extends StatelessWidget {
 
   /// Where the task lives, in views that gather tasks from many projects.
   final Widget? tag;
+
+  /// The task's labels, shown as @tags.
+  final List<Label> labels;
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +124,8 @@ class TaskTile extends StatelessWidget {
                     ] else if (task.hasSubtasks ||
                         checklist.isNotEmpty ||
                         dated ||
-                        tag != null) ...[
+                        tag != null ||
+                        labels.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Wrap(
                         spacing: 12,
@@ -139,6 +146,7 @@ class TaskTile extends StatelessWidget {
                             ),
                           if (dated) TaskDateLabels(task: task),
                           ?tag,
+                          for (final label in labels) LabelTag(label: label),
                         ],
                       ),
                     ],

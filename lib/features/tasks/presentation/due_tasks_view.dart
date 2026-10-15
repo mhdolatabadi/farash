@@ -5,6 +5,8 @@ import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
+import 'package:farash/features/labels/application/labels_controller.dart';
+import 'package:farash/features/labels/data/label.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/features/tasks/presentation/due_picker.dart';
@@ -43,6 +45,8 @@ class DueTasksView extends StatefulWidget {
     required this.token,
     required this.projects,
     required this.onOpenProject,
+    this.label,
+    this.labels,
     this.now,
   });
 
@@ -51,6 +55,12 @@ class DueTasksView extends StatefulWidget {
   final String? Function() token;
   final List<Project> Function() projects;
   final ValueChanged<Project> onOpenProject;
+
+  /// Shows this label's open tasks from every project instead of [view].
+  final Label? label;
+
+  /// The account's labels, for the rows' tags and the label's own tasks.
+  final LabelsController? labels;
 
   /// The clock, for tests.
   final DateTime Function()? now;
@@ -83,20 +93,28 @@ class _DueTasksViewState extends State<DueTasksView> {
     try {
       final today = _today;
       DateTime plus(int days) => today.add(Duration(days: days));
-      final tasks = switch (widget.view) {
-        DueView.today => await widget.api.listDueTasks(token, to: today),
-        DueView.upcoming => await widget.api.listDueTasks(
-          token,
-          from: plus(1),
-          to: plus(upcomingDays),
-        ),
-        DueView.week => await widget.api.listDueTasks(
-          token,
-          from: today,
-          to: plus(6),
-        ),
-        DueView.all => await widget.api.listDueTasks(token, to: plus(allDays)),
-      };
+      final label = widget.label;
+      final labels = widget.labels;
+      final tasks = label != null && labels != null
+          ? await labels.api.listLabelTasks(token, label.id)
+          : switch (widget.view) {
+              DueView.today => await widget.api.listDueTasks(token, to: today),
+              DueView.upcoming => await widget.api.listDueTasks(
+                token,
+                from: plus(1),
+                to: plus(upcomingDays),
+              ),
+              DueView.week => await widget.api.listDueTasks(
+                token,
+                from: today,
+                to: plus(6),
+              ),
+              DueView.all => await widget.api.listDueTasks(
+                token,
+                to: plus(allDays),
+              ),
+            };
+      if (label != null) labels?.load();
       if (!mounted) return;
       setState(() {
         _tasks = tasks;
@@ -217,18 +235,21 @@ class _DueTasksViewState extends State<DueTasksView> {
       task: task,
       divider: !last,
       tag: project == null ? null : _ProjectTag(project: project),
+      labels: [for (final id in task.labelIds) ?widget.labels?.byId(id)],
       onToggle: () => _complete(task),
       onOpen: () {
         if (project != null) widget.onOpenProject(project);
       },
-      trailing: IconButton(
-        tooltip: 'تغییر روز «${task.title}»',
-        onPressed: () => _pickDay(task),
-        icon: const Icon(Icons.event_outlined),
-      ),
+      trailing: task.due == null
+          ? null
+          : IconButton(
+              tooltip: 'تغییر روز «${task.title}»',
+              onPressed: () => _pickDay(task),
+              icon: const Icon(Icons.event_outlined),
+            ),
     );
     // In the agenda a long press lifts the task to drop on another day.
-    if (widget.view == DueView.today) return tile;
+    if (widget.view == DueView.today || widget.label != null) return tile;
     return LongPressDraggable<Task>(
       data: task,
       feedback: Material(
@@ -391,7 +412,10 @@ class _DueTasksViewState extends State<DueTasksView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final count = _tasks.isEmpty
+    final label = widget.label;
+    final count = _tasks.isEmpty && label != null
+        ? 'کار بازی با این برچسب نیست'
+        : _tasks.isEmpty
         ? switch (widget.view) {
             DueView.today => 'کار بازی نمانده',
             DueView.upcoming => 'کاری در دو هفتهٔ پیش رو نیست',
@@ -425,11 +449,19 @@ class _DueTasksViewState extends State<DueTasksView> {
       );
     } else {
       body = SliverList.list(
-        children: switch (widget.view) {
-          DueView.today => _todayBody(),
-          DueView.all => _allBody(),
-          _ => _agendaBody(),
-        },
+        children: label != null
+            ? [
+                const SizedBox(height: 8),
+                if (_tasks.isEmpty)
+                  const _Quiet('هنوز کاری این برچسب را ندارد.')
+                else
+                  _card(_tasks),
+              ]
+            : switch (widget.view) {
+                DueView.today => _todayBody(),
+                DueView.all => _allBody(),
+                _ => _agendaBody(),
+              },
       );
     }
     return LayoutBuilder(
@@ -446,12 +478,14 @@ class _DueTasksViewState extends State<DueTasksView> {
               SliverPersistentHeader(
                 pinned: true,
                 delegate: ListAppBar(
-                  title: widget.view.title,
+                  title: label?.tag ?? widget.view.title,
                   subtitle: count,
-                  mark: Icon(
-                    widget.view.icon,
-                    color: theme.colorScheme.primary,
-                  ),
+                  mark: label != null
+                      ? Icon(Icons.sell, color: label.swatch)
+                      : Icon(
+                          widget.view.icon,
+                          color: theme.colorScheme.primary,
+                        ),
                   actions: [
                     IconButton(
                       tooltip: 'به‌روزرسانی',
@@ -464,8 +498,9 @@ class _DueTasksViewState extends State<DueTasksView> {
                   expandedHeight: constraints.maxHeight < 240 ? 0 : 76 * scale,
                 ),
               ),
-              if (widget.view == DueView.upcoming ||
-                  widget.view == DueView.week)
+              if (label == null &&
+                  (widget.view == DueView.upcoming ||
+                      widget.view == DueView.week))
                 SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: inset),
                   sliver: SliverToBoxAdapter(

@@ -5,6 +5,7 @@ import 'package:farash/features/progress/progress.dart';
 
 import 'package:http/http.dart' as http;
 import 'package:farash/features/auth/data/auth_models.dart';
+import 'package:farash/features/labels/data/label.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/data/task.dart';
 
@@ -87,6 +88,7 @@ class TaskDraft {
     this.description,
     this.priority,
     this.sortOrder,
+    this.labelIds,
   });
 
   final String? projectId;
@@ -107,6 +109,9 @@ class TaskDraft {
   final TaskPriority? priority;
   final int? sortOrder;
 
+  /// Replaces the task's labels; null leaves them alone.
+  final List<String>? labelIds;
+
   Map<String, Object?> toJson() => {
     'project_id': ?projectId,
     'section_id': ?sectionId,
@@ -116,7 +121,21 @@ class TaskDraft {
     'description': ?description,
     if (priority != null) 'priority': priority!.level,
     'sort_order': ?sortOrder,
+    'label_ids': ?labelIds,
   };
+}
+
+abstract interface class LabelsApi {
+  /// The owner's labels: favourites first, then in order.
+  Future<List<Label>> listLabels(String token);
+  Future<Label> createLabel(String token, LabelDraft draft);
+  Future<Label> updateLabel(String token, String id, LabelDraft changes);
+
+  /// Removes the label from every task; the tasks stay.
+  Future<void> deleteLabel(String token, String id);
+
+  /// Open tasks with the label, from every active project.
+  Future<List<Task>> listLabelTasks(String token, String labelId);
 }
 
 abstract interface class TasksApi {
@@ -179,7 +198,8 @@ abstract interface class SectionsApi {
 
 /// Talks to the Farash API. Feature interfaces are implemented here so that
 /// one HTTP client serves the whole app.
-class ApiClient implements AuthApi, ProjectsApi, TasksApi, SectionsApi {
+class ApiClient
+    implements AuthApi, ProjectsApi, TasksApi, SectionsApi, LabelsApi {
   ApiClient(this.baseUri, {http.Client? client})
     : _client = client ?? http.Client();
 
@@ -265,6 +285,65 @@ class ApiClient implements AuthApi, ProjectsApi, TasksApi, SectionsApi {
       token: token,
     );
   }
+
+  @override
+  Future<List<Label>> listLabels(String token) async {
+    final body =
+        await _send('GET', '/api/v1/labels', token: token)
+            as Map<String, dynamic>;
+    return [
+      for (final item in body['labels'] as List<dynamic>)
+        Label.fromJson(item as Map<String, dynamic>),
+    ];
+  }
+
+  @override
+  Future<Label> createLabel(String token, LabelDraft draft) async => _label(
+    await _send('POST', '/api/v1/labels', token: token, body: draft.toJson()),
+  );
+
+  @override
+  Future<Label> updateLabel(
+    String token,
+    String id,
+    LabelDraft changes,
+  ) async => _label(
+    await _send(
+      'PATCH',
+      '/api/v1/labels/${Uri.encodeComponent(id)}',
+      token: token,
+      body: changes.toJson(),
+    ),
+  );
+
+  @override
+  Future<void> deleteLabel(String token, String id) async {
+    await _send(
+      'DELETE',
+      '/api/v1/labels/${Uri.encodeComponent(id)}',
+      token: token,
+    );
+  }
+
+  @override
+  Future<List<Task>> listLabelTasks(String token, String labelId) async {
+    final body =
+        await _send(
+              'GET',
+              '/api/v1/tasks',
+              token: token,
+              query: {'labelId': labelId},
+            )
+            as Map<String, dynamic>;
+    return [
+      for (final item in body['tasks'] as List<dynamic>)
+        Task.fromJson(item as Map<String, dynamic>),
+    ];
+  }
+
+  static Label _label(Object? body) => Label.fromJson(
+    (body as Map<String, dynamic>)['label'] as Map<String, dynamic>,
+  );
 
   static Project _project(Object? body) => Project.fromJson(
     (body as Map<String, dynamic>)['project'] as Map<String, dynamic>,

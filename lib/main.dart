@@ -30,6 +30,7 @@ class FarashApp extends StatefulWidget {
     this.sectionsApi,
     this.calendarSettings,
     this.startView,
+    this.labelsApi,
   });
 
   /// Test overrides; by default the app talks to
@@ -44,6 +45,7 @@ class FarashApp extends StatefulWidget {
 
   /// Which list opens first; per device.
   final StartView? startView;
+  final LabelsApi? labelsApi;
 
   @override
   State<FarashApp> createState() => _FarashAppState();
@@ -153,6 +155,7 @@ class _FarashAppState extends State<FarashApp> {
         token: () => _session?.token,
         onLogout: _signOut,
         startView: _startView,
+        labelsApi: widget.labelsApi ?? _apiClient,
       ),
     };
   }

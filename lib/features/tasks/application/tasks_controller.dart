@@ -226,6 +226,8 @@ class TasksController extends ChangeNotifier {
     TaskPriority priority = TaskPriority.p4,
     String? sectionId,
     Task? parent,
+    TaskDates? dates,
+    List<String>? labelIds,
   }) async {
     final siblings = parent == null ? openTasks : openChildren(parent);
     final task = await _api.createTask(
@@ -237,6 +239,8 @@ class TasksController extends ChangeNotifier {
         parentId: parent?.id,
         title: title.trim(),
         priority: priority,
+        dates: dates,
+        labelIds: labelIds,
         sortOrder: siblings.isEmpty
             ? 0
             : siblings.map((t) => t.sortOrder).reduce((a, b) => a > b ? a : b) +
@@ -266,6 +270,7 @@ class TasksController extends ChangeNotifier {
     required String projectId,
     String? sectionId,
     TaskDates? dates,
+    List<String>? labelIds,
   }) async {
     final moved = projectId != this.projectId;
     final sectionChanged = !moved && sectionId != sectionOf(task);
@@ -280,6 +285,9 @@ class TasksController extends ChangeNotifier {
         // The API takes the task out of its section when it changes project.
         sectionId: sectionChanged ? (sectionId ?? '') : null,
         dates: dates == null || dates == task.dates ? null : dates,
+        labelIds: labelIds == null || listEquals(labelIds, task.labelIds)
+            ? null
+            : labelIds,
       ),
     );
     _tasks = [

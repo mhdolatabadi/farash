@@ -38,6 +38,8 @@ type Task struct {
 	// progress such as 2/5.
 	SubtaskCount          int `json:"subtask_count"`
 	CompletedSubtaskCount int `json:"completed_subtask_count"`
+	// LabelIDs are the owner's labels on the task, in id order.
+	LabelIDs []string `json:"label_ids"`
 }
 
 type TaskInput struct {
@@ -53,6 +55,8 @@ type TaskInput struct {
 	Due             *DueInput `json:"due"`
 	Deadline        *string   `json:"deadline"`
 	DurationMinutes *int      `json:"duration_minutes"`
+	// LabelIDs are some of the owner's labels.
+	LabelIDs []string `json:"label_ids"`
 }
 
 type TaskUpdate struct {
@@ -75,19 +79,22 @@ type TaskUpdate struct {
 	Due             Optional[DueInput] `json:"due"`
 	Deadline        Optional[string]   `json:"deadline"`
 	DurationMinutes Optional[int]      `json:"duration_minutes"`
+	// LabelIDs, when present, replace the task's labels.
+	LabelIDs *[]string `json:"label_ids"`
 }
 
 const taskColumns = `id, project_id, section_id, parent_id, title, description, priority, sort_order, completed_at,
 	to_char(due_date, 'YYYY-MM-DD'), due_at, due_timezone, to_char(deadline, 'YYYY-MM-DD'), duration_minutes, created_at, updated_at,
 	(SELECT count(*)::int FROM tasks c WHERE c.owner_id=tasks.owner_id AND c.parent_id=tasks.id AND c.deleted_at IS NULL),
-	(SELECT count(*)::int FROM tasks c WHERE c.owner_id=tasks.owner_id AND c.parent_id=tasks.id AND c.deleted_at IS NULL AND c.completed_at IS NOT NULL)`
+	(SELECT count(*)::int FROM tasks c WHERE c.owner_id=tasks.owner_id AND c.parent_id=tasks.id AND c.deleted_at IS NULL AND c.completed_at IS NOT NULL),
+	COALESCE((SELECT array_agg(tl.label_id ORDER BY tl.label_id) FROM task_labels tl WHERE tl.owner_id=tasks.owner_id AND tl.task_id=tasks.id), '{}')`
 
 func scanTask(row projectScanner) (Task, error) {
 	var task Task
 	var dueDate, dueZone *string
 	var dueAt *time.Time
 	err := row.Scan(&task.ID, &task.ProjectID, &task.SectionID, &task.ParentID, &task.Title, &task.Description, &task.Priority, &task.SortOrder, &task.CompletedAt,
-		&dueDate, &dueAt, &dueZone, &task.Deadline, &task.DurationMinutes, &task.CreatedAt, &task.UpdatedAt, &task.SubtaskCount, &task.CompletedSubtaskCount)
+		&dueDate, &dueAt, &dueZone, &task.Deadline, &task.DurationMinutes, &task.CreatedAt, &task.UpdatedAt, &task.SubtaskCount, &task.CompletedSubtaskCount, &task.LabelIDs)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Task{}, ErrTaskNotFound
 	}
@@ -233,6 +240,13 @@ func (s *Store) CreateTask(ctx context.Context, owner string, input TaskInput) (
 		if errors.Is(err, ErrTaskNotFound) {
 			return ErrTaskProject
 		}
+		if err != nil || len(input.LabelIDs) == 0 {
+			return err
+		}
+		if err := setTaskLabels(ctx, tx, owner, task.ID, input.LabelIDs); err != nil {
+			return err
+		}
+		task, err = scanTask(tx.QueryRow(ctx, `SELECT `+taskColumns+` FROM tasks WHERE owner_id=$1 AND id=$2`, owner, task.ID))
 		return err
 	})
 	if err != nil {
@@ -353,6 +367,14 @@ func (s *Store) UpdateTask(ctx context.Context, owner, id string, input TaskUpda
 		WHERE owner_id=$1 AND id=$2 RETURNING `+taskColumns, owner, id, project, input.Title, input.Description, input.Priority, input.SortOrder, section, parent, dueDate, dueAt, dueZone, deadline, duration))
 	if err != nil {
 		return Task{}, err
+	}
+	if input.LabelIDs != nil {
+		if err := setTaskLabels(ctx, tx, owner, id, *input.LabelIDs); err != nil {
+			return Task{}, err
+		}
+		if task, err = scanTask(tx.QueryRow(ctx, `SELECT `+taskColumns+` FROM tasks WHERE owner_id=$1 AND id=$2`, owner, id)); err != nil {
+			return Task{}, err
+		}
 	}
 	return task, tx.Commit(ctx)
 }
