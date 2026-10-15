@@ -56,6 +56,41 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('agenda keeps distinct days across the autumn clock change', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    api.seed(
+      'work',
+      'After change',
+      dates: TaskDates(due: TaskDue.onDay(DateTime(2026, 10, 25))),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Directionality(
+            textDirection: TextDirection.rtl,
+            child: DueTasksView(
+              view: DueView.upcoming,
+              api: api,
+              token: () => 'token',
+              projects: () => const [_work],
+              onOpenProject: (_) {},
+              now: () => DateTime(2026, 10, 20),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.scrollUntilVisible(find.text('After change'), 200);
+    expect(find.text('After change'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('today gathers late and due tasks from every project', (
     tester,
   ) async {

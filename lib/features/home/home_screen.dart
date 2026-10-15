@@ -193,6 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _switchSection(int section) {
+    _navigated = true;
     setState(() => _section = section);
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.pop(context);

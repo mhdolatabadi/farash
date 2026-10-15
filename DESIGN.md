@@ -1,279 +1,53 @@
 ---
-name: Farash
-description: Dew on glass: peach, lavender and mint light behind white frosted glass by day, and the same hues low in a violet night.
+name: Farash Garden
+description: A botanical sanctuary where confirmed completed work becomes visible growth.
 colors:
-  primary: "#B4A7FF"
-  on-primary: "#1B1340"
-  accent: "#8FD9BF"
-  overdue: "#FF9AA6"
-  surface: "#1C1834"
-  ink: "#F1EEFA"
-  muted-ink: "#B9B4CF"
-  selected: "#332C66"
-  on-selected: "#F1EEFA"
-  backdrop-1: "#1C1736"
-  backdrop-2: "#15122B"
-  backdrop-3: "#0F0D20"
-  lamp: "rgba(255, 158, 181, 0.22)"
-  lavender-light: "rgba(150, 130, 255, 0.35)"
-  mint-light: "rgba(110, 210, 180, 0.22)"
-  pane: "rgba(255, 255, 255, 0.10)"
-  pane-border: "rgba(255, 255, 255, 0.14)"
-  edge: "rgba(255, 255, 255, 0.12)"
-  shadow: "rgba(0, 0, 0, 0.35)"
-  priority-1: "#FF8A9A"
-  priority-2: "#FFB86B"
-  priority-3: "#9FC2FF"
-  priority-4: "#9A96B2"
-  day-primary: "#5B45D6"
-  day-on-primary: "#FFFFFF"
-  day-accent: "#17634A"
-  day-overdue: "#B3263A"
-  day-surface: "#FBFAFE"
-  day-ink: "#1D1B2E"
-  day-muted-ink: "#5D5A73"
-  day-selected: "#ECE7FF"
-  day-on-selected: "#1D1B2E"
-  day-backdrop-1: "#F7F3FB"
-  day-backdrop-2: "#F4F1F8"
-  day-backdrop-3: "#F3F1F8"
-  day-lamp: "#FFD9C2"
-  day-lavender-light: "#D9D2FF"
-  day-mint-light: "#C9F0E4"
-  day-pane: "rgba(255, 255, 255, 0.62)"
-  day-pane-border: "rgba(255, 255, 255, 0.95)"
-  day-edge: "rgba(255, 255, 255, 0.80)"
-  day-shadow: "rgba(80, 60, 140, 0.08)"
-  day-priority-1: "#D23C4B"
-  day-priority-2: "#C4670F"
-  day-priority-3: "#3A63D0"
-  day-priority-4: "#8B88A0"
+  day-primary: '#315D47'
+  day-surface: '#F8F6EE'
+  day-ink: '#23362C'
+  day-muted-ink: '#536356'
+  day-selected: '#DEEADB'
+  primary: '#ABD4AD'
+  surface: '#14251F'
+  ink: '#EDF1E6'
+  muted-ink: '#BCCABD'
+  selected: '#2D4937'
 typography:
-  heading:
-    fontFamily: "Noto Naskh Arabic (FarashNaskh), Vazirmatn"
-    fontSize: "24px"
-    fontWeight: 700
-    lineHeight: 1.35
-  title:
-    fontFamily: "Vazirmatn"
-    fontSize: "22px"
-    fontWeight: 700
-  body:
-    fontFamily: "Vazirmatn"
-    fontSize: "16px"
-  metadata:
-    fontFamily: "Vazirmatn"
-    fontSize: "12px"
-  action:
-    fontFamily: "Vazirmatn"
-    fontSize: "14px"
-    fontWeight: 700
-rounded:
-  control: "12px"
-  card: "16px"
-  capture: "20px"
-  pane: "24px"
-spacing:
-  compact: "8px"
-  pane-inset: "12px"
-  standard: "16px"
-  sheet: "24px"
-components:
-  button-primary:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.on-primary}"
-    rounded: "{rounded.control}"
-    height: "48px"
-  button-text:
-    textColor: "{colors.ink}"
-    rounded: "{rounded.control}"
-    height: "48px"
-  capture-bar:
-    backgroundColor: "{colors.pane}"
-    rounded: "{rounded.capture}"
-    height: "56px"
-  app-bar:
-    height: "64px"
-  navigation-selected:
-    backgroundColor: "{colors.selected}"
-    textColor: "{colors.on-selected}"
-    rounded: "{rounded.control}"
-  glass-pane:
-    backgroundColor: "{colors.pane}"
-    rounded: "{rounded.pane}"
-  task-card:
-    backgroundColor: "{colors.pane}"
-    rounded: "{rounded.pane}"
-  today-strip:
-    textColor: "{colors.primary}"
-    rounded: "20px"
-  done-stamp:
-    textColor: "{colors.primary}"
-    rounded: "6px"
+  heading: {fontFamily: Vazirmatn, fontSize: 28, fontWeight: 700}
+  body: {fontFamily: Vazirmatn, fontSize: 16}
+rounded: {control: 12, surface: 16}
+spacing: {compact: 8, standard: 16, page: 24}
 ---
 
-# Design System: Farash
+# Farash Garden
 
-## Overview
+The owner requested a fundamental replacement for the glass identity, studied Todoist, TickTick, Pomofocus and Forest, and explicitly selected a game-like garden as the central experience. This supersedes the old dew/glass world.
 
-**Creative North Star: «شبنم» (dew on glass)**
+## Places
 
-The room has three soft lights: a peach lamp that moves to a new spot for each project, lavender across the room, and mint near the floor. By day the lights are bright pastels behind white frosted glass. At night the same hues sit low in a violet room.
+**باغچه** is the new default for devices without a saved start preference. The original miniature garden begins with a sapling and becomes a mature sanctuary at ten server-confirmed completed tasks. Flowers at 1, 5, 10, 25 and 50 completions are derived visual milestones, not spendable rewards. Undo restores progress and its corresponding scene. Level and XP come from the account API; unavailable data never produces a fabricated score. Up to three real next tasks can be opened, completed with undo or used as a focus-session title.
 
-The owner chose this world for #49 from a decision page of three looks: the "Lamp night" structure, with the "Glass day" colors and a dark version.
+**کارها** retains inbox, projects, labels, sections, dates, priorities, selection, ordering, editing and reversible completion. Flat task rows replace glass frames. The capture field remains above bottom navigation and safe areas, with measured scrolling clearance.
 
-The structure is plain Material 3:
-- **Top app bar:** medium, naming the project in Naskh. At night the title catches the light.
-- **Today strip:** shows the real day's load, meaning the tasks due today and those late, with planned time. It only appears when something is due.
-- **List card:** the open list sits in one glass card.
-- **Capture bar:** floats over the list end.
-- **Navigation:** a drawer on phones, and a glass navigation pane on wide screens.
-- **Editor:** a side sheet on wide screens, and a bottom sheet on phones.
+**تمرکز** has one dominant timer and focus/short-break/long-break modes. Its controller belongs to the signed-in shell: navigation preserves it; sign-out disposes it. A deadline catches up after tick suspension. Sessions are local and end when the app closes. This delivery does not claim background alarms, persistent focus history or focus XP.
 
-**Key Characteristics:**
-- Three lights behind the glass: a moving peach lamp, lavender and mint.
-- The open list in one glass card; glass only where content passes beneath, never nested.
-- A medium top app bar with the project in Naskh.
-- A today strip with real counts only.
-- Violet means now; mint means tomorrow; rose means overdue. Near dates sit in tinted pills.
+Phones have three bottom destinations plus a project drawer. Wide layouts have a solid sidebar with the same destinations and project hierarchy. Existing saved start preferences remain respected; Garden is added to the preference dialog.
 
-## Colors
+## Material
 
-Every color comes from `FarashPalette.dew` in `lib/app/palette.dart`. The palette feeds the Material theme, the backdrop, the glass and the priority marks.
+Cream and sage by day, pine and pale green at night. Warm earth marks future dates; rose marks late/error states. Every color flows from `FarashPalette.garden`. Surfaces are opaque. No ambient gradients, title glow or decorative glass/blur. Legacy `Glass*` class names are internal compatibility shims rendering solid Material surfaces.
 
-- **Neutrals:** sheets, menus and dialogs are generated from the violet seed (`#5B45D6`).
-- **Violet** (`primary`) is spent on "now":
-  - today's dates and the today strip
-  - the «انجام شد» stamp
-  - the focused capture edge
-  - the single primary action of a view
-- **Mint** (`tertiary`) marks tomorrow.
-- **Rose** (`error`) marks overdue and destructive actions.
-- **Date pills:** today, tomorrow and late dates use their role color at 14%. By day the fill stays translucent; at night it is composited over the solid `surface` color, insulating the label from the room blooms. Later dates stay plain.
-- **Priorities:** red, orange, blue and grey, tuned per brightness, via `TaskPriority.colorIn(context)`.
+Vazirmatn owns every text role. Persian/RTL is primary, with Persian digits. The timer is isolated LTR. Text scales with user settings; the large timer scales down to fit its width. Controls keep at least 48 logical pixels of touch area. Cards/control radii are 12–16. Only a short growth-stage crossfade is used, honoring reduced motion.
 
-Contrast checks in `test/palette_and_motion_test.dart` cover both themes:
-- `onSurface`, `onSurfaceVariant`, primary, tertiary and error at 4.5:1 on the solid surface and glass composited over each backdrop stop, with blooms excluded from that base check
-- `onSurface` and `onSurfaceVariant` at 4.5:1 on the tested sheet surfaces, and `onPrimary` on primary
-- priority marks at 3:1 on those base glass composites
-- the rendered tomorrow pill at 4.5:1 on the sampled backdrop stops and individual lavender, mint and lamp composites
+## References and authority
 
-These checks do not establish every text role over every ambient-light overlap. Widget/source evidence does not claim Android hardware or accessibility-service validation.
+Todoist: fast capture and clear task hierarchy (https://www.todoist.com/features).
+TickTick: distinct task/planning/focus destinations (https://ticktick.com/features).
+Pomofocus: one legible timer and one primary action (https://pomofocus.io/).
+Forest: a consistent botanical world and emotionally legible growth (https://forestapp.cc/).
 
-**The One Accent Rule.** If violet appears on something that is neither "now" nor the primary action, it is a bug.
+Official product pages were studied; Pomofocus and Forest were also inspected visually. No third-party artwork is bundled. The user selected the garden direction; the local concept helper ran degraded without catalog challengers. Implementation is code-led, preserving Flutter product behavior.
 
-## Typography
+## Verification scope
 
-**Headings.** The project's large title and the app name use the headline roles. These are set in Noto Naskh Arabic Bold, bundled as `FarashNaskh` (OFL), with Vazirmatn as fallback and a 1.35 line height. Everything else is Vazirmatn through the Material 3 roles:
-- **Collapsed bar title:** titleLarge, bold.
-- **Editor title:** headlineSmall size in Vazirmatn, because editable text stays in the reading face.
-- **Task titles:** bodyLarge, up to three lines.
-- **Previews:** bodySmall.
-- **Metadata:** labelMedium.
-
-Text keeps its configured scale. The bar's expanded height grows with the text scale, up to 2×.
-
-**The Persian Reading Rule.** Keep RTL and directional spacing everywhere, including the drawer's exposed edge, and isolate the account email as LTR.
-
-## Layout
-
-**Navigation.**
-- **Phones:** the scaffold has no app bar of its own. The list carries the project's medium top app bar, with the drawer button and the show-completed toggle.
-- **Wide screens:** at a viewport width of (840px) and above, a (288px) glass navigation pane sits inset (12px) from the edges. The list fills the rest directly over the room.
-
-**Task list.**
-- Task content keeps a (760px) measure. The app bar's glass and the scroll area span the whole column, so rows pass under the bar.
-- The capture bar floats over the end of the list: (12px) from the edges, constrained to the same measure, above the safe area. The list measures it and leaves room to scroll the last task clear of it.
-- When available height is below (240px), as with a landscape keyboard, capture moves above the tasks in the shared scroll view. The app bar becomes a single non-pinned row there. A GlobalKey keeps the draft across the move.
-
-**Editing.**
-- At a project-pane width of (820px) and above, the editor is a standard side sheet: full height, (400px) wide, at the end edge beside the list.
-- Narrower screens open a modal bottom sheet. The sheet's action row stays in reach above the keyboard and the safe area.
-
-**The Reachable Control Rule.** Every action target is at least (48px): completion, icon actions, the bar's actions and primary buttons.
-
-## Elevation & Depth
-
-**The room.** `GlassBackdrop` paints a soft vertical gradient with three radial blooms:
-- **Lavender light:** fixed at the left middle.
-- **Mint light:** fixed near the floor.
-- **Peach lamp:** moves to a stable spot for each project over 900ms (easeInOutCubic) and holds still under reduced motion.
-
-**The glass.** `GlassSurface` is a frosted pane:
-- blur at sigma 20
-- a 10% white tint at night (62% by day)
-- a 1px light border
-- a lit top edge
-- an optional soft shadow (0 8px, blur 24px) for floating panes
-
-The open list is one glass card (a decorated sliver, 24px radius, without blur), with a soft shadow by day only. The app bar uses the same tint and blur as a flat band with a bottom hairline, and only fades in once content scrolls beneath it.
-
-Solid surfaces (drawer, bottom sheets, dialogs, menus) sit over a scrim and use the violet `surfaceContainer` roles.
-
-**Motion.**
-- Small state changes take 160ms, and rows and pages take 280ms.
-- A completed row lingers for 220ms, stamped «انجام شد» (a 160ms easeOutBack press), before it folds away.
-- Entry eases out and exit eases in.
-- The bar's glass fades in over 160ms.
-- All authored durations become zero under reduced motion.
-
-**The Single Pane Rule.** One pane of glass per region. A pane never contains another pane, a field box, or a card.
-
-## Shapes
-
-- **Radii:** controls 12px, cards and menus 16px, the capture bar 20px, and large panes, sheets and dialogs 24px.
-- **Selection:** selected and picked task rows round to 12px.
-- **Drawers:** curve their exposed end edge.
-- **Completion check:** a circular visible check sits within a 48px target.
-- **Hairlines:** task hairlines start at the title edge.
-
-## Components
-
-**Top app bar.**
-- Its leading drawer button appears only where a drawer exists.
-- The large title row holds the project mark (the Inbox icon or the project's color dot), the Naskh name and the open count, plus planned time when there is any.
-- The toolbar title shows only after the large title fades, so there is exactly one title at a time, for both sight and semantics.
-- The show-completed toggle is an icon button with a selected state.
-
-**Capture bar.**
-- One glass pane holding the text field, the priority menu and the filled send button.
-- It is edged in violet while focused.
-- Send keeps its target at least 48px in both dimensions and fades from 55% to full opacity once there is text; its target never scales.
-- A pending send disables duplicate submission. Text or priority changes made while it is pending preserve the newer draft; success clears only the unchanged submitted revision, and failure preserves it.
-
-**Task rows.**
-- Rows are flat. Each shows the title, a description preview, checklist and subtask counts, and dates.
-- Pointer drag handles appear on hover; touch keeps a quiet handle at the row end.
-
-**Editor.**
-- The first row holds the title (hint «عنوان کار») and the close button, followed by the notes and a divider.
-- Next come the property rows: schedule, segmented priority, project and section.
-- Checklist and subtasks open on demand.
-- A fixed action row closes the editor, with delete as an icon apart at the start and the primary save at the end.
-
-**Navigation pane.** It combines the project mark, the title, tonal selection and hover-revealed row menus, with the app name above the account email.
-
-## Do's and Don'ts
-
-### Do:
-- Do take every color from `FarashPalette.dew`, priorities included.
-- Do use glass only where content passes beneath it, and keep light behind it.
-- Do name the current project in the app bar on every width.
-- Do open editing as a side sheet beside the list on wide screens and as a modal bottom sheet on phones.
-- Do keep violet for "now" and the primary action.
-- Do stamp completions before folding them.
-- Do honor reduced motion: the lamp, rows and bar hold still.
-
-### Don't:
-- Don't nest glass in glass, or put a boxed field or card inside a pane.
-- Don't frame the whole phone screen in a pane.
-- Don't float the editor as a short card inside the list.
-- Don't add texture patterns to the glass. The #47 pebble relief read as noise.
-- Don't add eyebrow labels above titles or tiny floating labels over the editor title.
-- Don't spend violet on secondary buttons, icons or selection.
-- Don't introduce controls for unimplemented features.
-- Don't claim hardware or accessibility-service validation from source inspection.
-
-## Mobile refinement (#59)
-
-Phone layouts use a solid theme surface to keep sparse task lists calm. Ambient lights remain on wide layouts. Headings use Vazirmatn for a consistent reading rhythm. Navigation rows each own their transparent Material so selection ink follows the row inside the scrolling drawer. Rows retain at least 48px touch targets. Personal progress is summarized in one subtitle; full detail stays in its sheet. Capture uses a 14px radius, a short hint and an add icon, without blur or a floating shadow.
+Widget captures use synthetic fixture data and verify layout, not an actual user's progress. Cover phone, desktop, dark mode and 2× text. These are not Android device evidence. Android builds run in CI; hardware and accessibility-service validation remain separate.

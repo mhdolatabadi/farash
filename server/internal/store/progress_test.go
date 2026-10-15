@@ -66,7 +66,7 @@ func TestProgressCountsLocalDaysAndWeekWindow(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Before Saturday, twice on Saturday, Sunday, then next week's boundary.
-	for _, at := range []string{"2026-10-09T20:29:59Z", "2026-10-09T20:30:00Z", "2026-10-10T09:00:00Z", "2026-10-10T20:30:00Z", "2026-10-16T20:30:00Z"} {
+	for _, at := range []string{"2026-10-06T12:00:00Z", "2026-10-07T11:59:59Z", "2026-10-07T12:00:01Z", "2026-10-09T20:29:59Z", "2026-10-09T20:30:00Z", "2026-10-10T09:00:00Z", "2026-10-10T20:30:00Z", "2026-10-16T20:30:00Z"} {
 		task, err := s.CreateTask(ctx, user.ID, TaskInput{ProjectID: project.ID, Title: "task", Priority: 4})
 		if err != nil {
 			t.Fatal(err)
@@ -92,7 +92,27 @@ func TestProgressCountsLocalDaysAndWeekWindow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.Completed != 5 || p.WeeklyDays != 2 || p.WeekStart != "2026-10-10" {
+	if p.Completed != 8 || p.WeeklyDays != 2 || p.WeekStart != "2026-10-10" {
 		t.Fatalf("window: %+v", p)
+	}
+	if p.WeekReport == nil || p.WeekReport.Completed != 3 || p.WeekReport.PreviousCompleted != 2 {
+		t.Fatalf("comparison: %+v", p.WeekReport)
+	}
+}
+
+func TestWeekReportIncludesZeroAndFutureDays(t *testing.T) {
+	zone, _ := time.LoadLocation("Asia/Tehran")
+	now := time.Date(2026, 10, 14, 15, 30, 0, 0, zone)
+	start, _ := ProgressWeek(now, zone)
+	report := weekReport(start, now, map[string]int{"2026-10-10": 2, "2026-10-11": 1}, 4)
+	if len(report.Days) != 7 || report.Completed != 3 || report.PreviousCompleted != 4 {
+		t.Fatalf("report: %+v", report)
+	}
+	if report.Days[0].Date != "2026-10-10" || report.Days[2].Completed != 0 || report.Days[4].Future || !report.Days[5].Future {
+		t.Fatalf("days: %+v", report.Days)
+	}
+	empty := weekReport(start, now, map[string]int{}, 0)
+	if empty.Completed != 0 || len(empty.Days) != 7 {
+		t.Fatalf("empty: %+v", empty)
 	}
 }
