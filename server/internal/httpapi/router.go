@@ -56,6 +56,9 @@ func NewHandler(config Config) http.Handler {
 		if sectionData != nil {
 			(&sectionsHandler{auth: auth, data: sectionData}).routes(mux)
 		}
+		if labelData, ok := config.Store.(labelsStore); ok {
+			(&labelsHandler{auth: auth, data: labelData}).routes(mux)
+		}
 		if projectData := projectStoreFor(config); projectData != nil {
 			projects := newProjectsHandler(auth, projectData)
 			mux.HandleFunc("GET /api/v1/projects", projects.list)

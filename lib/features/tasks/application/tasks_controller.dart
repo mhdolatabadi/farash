@@ -266,6 +266,7 @@ class TasksController extends ChangeNotifier {
     required String projectId,
     String? sectionId,
     TaskDates? dates,
+    List<String>? labelIds,
   }) async {
     final moved = projectId != this.projectId;
     final sectionChanged = !moved && sectionId != sectionOf(task);
@@ -280,6 +281,9 @@ class TasksController extends ChangeNotifier {
         // The API takes the task out of its section when it changes project.
         sectionId: sectionChanged ? (sectionId ?? '') : null,
         dates: dates == null || dates == task.dates ? null : dates,
+        labelIds: labelIds == null || listEquals(labelIds, task.labelIds)
+            ? null
+            : labelIds,
       ),
     );
     _tasks = [

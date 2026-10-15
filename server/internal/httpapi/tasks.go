@@ -13,6 +13,7 @@ import (
 type tasksStore interface {
 	ListTasks(context.Context, string, string, bool) ([]store.Task, error)
 	ListDueTasks(context.Context, string, string, string) ([]store.Task, error)
+	ListLabelTasks(context.Context, string, string) ([]store.Task, error)
 	CreateTask(context.Context, string, store.TaskInput) (store.Task, error)
 	UpdateTask(context.Context, string, string, store.TaskUpdate) (store.Task, error)
 	CompleteTask(context.Context, string, string, bool) (store.Task, error)
@@ -39,6 +40,15 @@ func (h *tasksHandler) handle(w http.ResponseWriter, r *http.Request) {
 	case r.Method == http.MethodGet:
 		query := r.URL.Query()
 		project := query.Get("projectId")
+		if label := query.Get("labelId"); project == "" && label != "" {
+			tasks, err := h.data.ListLabelTasks(r.Context(), owner, label)
+			if err != nil {
+				writeTaskError(w, err)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string][]store.Task{"tasks": tasks})
+			return
+		}
 		if project == "" && query.Has("to") {
 			// Due views across projects: the client sends its own today.
 			tasks, err := h.data.ListDueTasks(r.Context(), owner, query.Get("from"), query.Get("to"))
@@ -179,6 +189,12 @@ func writeTaskError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusBadRequest, "invalid_deadline")
 	case errors.Is(err, store.ErrInvalidDuration):
 		writeError(w, http.StatusBadRequest, "invalid_duration")
+	case errors.Is(err, store.ErrLabelNotFound):
+		writeError(w, http.StatusNotFound, "label_not_found")
+	case errors.Is(err, store.ErrInvalidLabel):
+		writeError(w, http.StatusBadRequest, "invalid_label")
+	case errors.Is(err, store.ErrDuplicateLabel):
+		writeError(w, http.StatusConflict, "duplicate_label")
 	case errors.Is(err, store.ErrInvalidDueRange):
 		writeError(w, http.StatusBadRequest, "invalid_due_range")
 	case errors.Is(err, store.ErrTaskIDs):

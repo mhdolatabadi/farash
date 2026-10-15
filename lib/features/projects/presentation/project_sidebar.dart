@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/core/widgets/hover_reveal.dart';
+import 'package:farash/features/labels/application/labels_controller.dart';
+import 'package:farash/features/labels/data/label.dart';
+import 'package:farash/features/labels/presentation/label_widgets.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/projects/presentation/project_editor.dart';
@@ -20,6 +23,9 @@ class ProjectSidebar extends StatelessWidget {
     this.selectedView,
     this.onSelectView,
     this.viewCounts = const {},
+    this.labels,
+    this.selectedLabelId,
+    this.onSelectLabel,
   });
 
   final ProjectsController controller;
@@ -36,6 +42,11 @@ class ProjectSidebar extends StatelessWidget {
 
   /// Open-task counts shown beside views, such as today's.
   final Map<DueView, int> viewCounts;
+
+  /// The account's labels, listed under the projects.
+  final LabelsController? labels;
+  final String? selectedLabelId;
+  final ValueChanged<Label>? onSelectLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -128,6 +139,43 @@ class ProjectSidebar extends StatelessWidget {
                   onTap: () => onSelect(node.project),
                   controller: controller,
                 ),
+              if (labels case final labels?) ...[
+                _SectionTitle(
+                  'برچسب‌ها',
+                  action: IconButton(
+                    tooltip: 'برچسب تازه',
+                    icon: const Icon(Icons.add),
+                    onPressed: () async {
+                      final created = await showLabelEditor(
+                        context,
+                        controller: labels,
+                      );
+                      if (created != null) onSelectLabel?.call(created);
+                    },
+                  ),
+                ),
+                if (labels.labels.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Text(
+                      'کارهای مرتبط را از پروژه‌های مختلف با برچسبی مثل «@تلفن» کنار هم ببینید.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                for (final label in labels.labels)
+                  _LabelTile(
+                    key: ValueKey('label-${label.id}'),
+                    label: label,
+                    controller: labels,
+                    selected: label.id == selectedLabelId,
+                    onTap: () => onSelectLabel?.call(label),
+                  ),
+              ],
               const SizedBox(height: 8),
               ListTile(
                 leading: const Icon(Icons.archive_outlined),
@@ -138,6 +186,89 @@ class ProjectSidebar extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+enum _LabelAction { edit, favorite, delete }
+
+class _LabelTile extends StatelessWidget {
+  const _LabelTile({
+    super.key,
+    required this.label,
+    required this.controller,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final Label label;
+  final LabelsController controller;
+  final bool selected;
+  final VoidCallback onTap;
+
+  Future<void> _run(BuildContext context, _LabelAction action) async {
+    try {
+      switch (action) {
+        case _LabelAction.edit:
+          await showLabelEditor(context, controller: controller, label: label);
+        case _LabelAction.favorite:
+          await controller.update(
+            label,
+            LabelDraft(isFavorite: !label.isFavorite),
+          );
+        case _LabelAction.delete:
+          if (await confirmLabelDelete(context, label)) {
+            await controller.delete(label);
+          }
+      }
+    } catch (error) {
+      if (context.mounted) showProjectError(context, error);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return HoverRegion(
+      child: ListTile(
+        selected: selected,
+        onTap: onTap,
+        leading: Icon(Icons.sell_outlined, color: label.swatch),
+        title: Text(label.tag, maxLines: 1, overflow: TextOverflow.ellipsis),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (label.openTaskCount > 0)
+              Text(
+                persianDigits(label.openTaskCount),
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
+            HoverReveal(
+              child: PopupMenuButton<_LabelAction>(
+                tooltip: 'گزینه‌های برچسب',
+                onSelected: (action) => _run(context, action),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: _LabelAction.edit,
+                    child: Text('ویرایش'),
+                  ),
+                  PopupMenuItem(
+                    value: _LabelAction.favorite,
+                    child: Text(
+                      label.isFavorite
+                          ? 'حذف از علاقه‌مندی‌ها'
+                          : 'افزودن به علاقه‌مندی‌ها',
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: _LabelAction.delete,
+                    child: Text('حذف'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

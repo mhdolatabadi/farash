@@ -6,6 +6,7 @@ import 'package:farash/app/palette.dart';
 import 'package:farash/app/glass.dart';
 import 'package:farash/app/list_app_bar.dart';
 import 'package:farash/core/api/api_client.dart';
+import 'package:farash/features/labels/application/labels_controller.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
 import 'package:farash/features/tasks/data/task.dart';
@@ -33,6 +34,7 @@ class ProjectTasksView extends StatefulWidget {
     required this.moveTargets,
     this.sectionsApi,
     this.showTitle = false,
+    this.labels,
   });
 
   final Project project;
@@ -47,6 +49,9 @@ class ProjectTasksView extends StatefulWidget {
 
   /// Shows the project name as the list's heading, where no app bar does.
   final bool showTitle;
+
+  /// The account's labels, for the editor and the rows' tags.
+  final LabelsController? labels;
 
   @override
   State<ProjectTasksView> createState() => _ProjectTasksViewState();
@@ -202,6 +207,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
       controller: _tasks,
       task: task,
       projects: widget.moveTargets(),
+      labels: widget.labels,
     );
     if (result == TaskSheetResult.deleted) await _delete(task);
   }
@@ -398,6 +404,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
           controller: _tasks,
           task: task,
           projects: widget.moveTargets(),
+          labels: widget.labels,
           onResult: _editorResult,
         );
         if (!wide) return editor;
@@ -695,6 +702,10 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                                     : task,
                                 stamped: _leaving.containsKey(task.id),
                                 divider: index < rows.length - 1,
+                                labels: [
+                                  for (final id in task.labelIds)
+                                    ?widget.labels?.byId(id),
+                                ],
                                 depth: depth,
                                 folded: _tasks.openChildren(task).isEmpty
                                     ? null
