@@ -1,8 +1,8 @@
+import 'package:farash/features/garden/garden_scene.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:farash/app/palette.dart';
 import 'package:farash/app/glass.dart';
 import 'package:farash/app/list_app_bar.dart';
 import 'package:farash/core/api/api_client.dart';
@@ -544,18 +544,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: AlignmentDirectional.centerStart,
-            end: AlignmentDirectional.centerEnd,
-            colors: [
-              primary.withValues(alpha: 0.18),
-              primary.withValues(alpha: 0.06),
-            ],
-          ),
-          border: Border.all(color: primary.withValues(alpha: 0.3)),
-        ),
+        decoration: const BoxDecoration(),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           child: Row(
@@ -635,7 +624,6 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     );
     final sectionsAvailable = widget.sectionsApi != null;
     final sections = _tasks.sections;
-    final glass = FarashGlassColors.of(context);
     // Content keeps a readable width; the app bar's glass spans the whole
     // column so the list can pass under it.
     final inset = width > _maxListWidth ? (width - _maxListWidth) / 2 : 0.0;
@@ -722,13 +710,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                     padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
                     child: Column(
                       children: [
-                        Icon(
-                          Icons.task_alt,
-                          size: 48,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.6,
-                          ),
-                        ),
+                        const GardenScene(height: 160),
                         const SizedBox(height: 16),
                         Text(
                           'هنوز کاری در «${widget.project.displayName}» نیست.',
@@ -753,20 +735,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
               SliverPadding(
                 padding: EdgeInsets.symmetric(horizontal: inset + 12),
                 sliver: DecoratedSliver(
-                  decoration: BoxDecoration(
-                    color: glass.pane,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: glass.paneBorder),
-                    // By day a soft lift; at night the edge is enough.
-                    boxShadow: [
-                      if (theme.brightness == Brightness.light)
-                        BoxShadow(
-                          color: glass.shadow,
-                          offset: const Offset(0, 8),
-                          blurRadius: 24,
-                        ),
-                    ],
-                  ),
+                  decoration: const BoxDecoration(),
                   sliver: SliverPadding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     sliver: SliverReorderableList(

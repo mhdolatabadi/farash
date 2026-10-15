@@ -1,3 +1,6 @@
+import 'package:farash/features/garden/garden_home.dart';
+import 'package:farash/features/focus/focus_controller.dart';
+import 'package:farash/features/focus/focus_view.dart';
 import 'package:flutter/material.dart';
 import 'package:farash/features/progress/progress_card.dart';
 import 'package:farash/app/motion.dart';
@@ -54,6 +57,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   String? _selectedId;
+  int _section = 1;
+  final _focus = FocusController();
 
   /// A view across projects (امروز, پیش رو) instead of a project.
   DueView? _view;
@@ -84,6 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _focus.dispose();
     widget.startView?.removeListener(_applyStartView);
     _labels?.dispose();
     super.dispose();
@@ -93,7 +99,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final start = widget.startView;
     if (start == null || _navigated) return;
     final view = DueView.values.where((v) => v.name == start.value).firstOrNull;
-    if (view != _view) setState(() => _view = view);
+    setState(() {
+      _section = start.value == StartView.garden ? 0 : 1;
+      _view = view;
+    });
   }
 
   Future<void> _refreshCount() async {
@@ -132,6 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _navigated = true;
     _refreshCount();
     setState(() {
+      _section = 1;
       _selectedId = project.id;
       _view = null;
       _labelId = null;
@@ -145,6 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _navigated = true;
     _refreshCount();
     setState(() {
+      _section = 1;
       _view = view;
       _labelId = null;
     });
@@ -160,6 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _selectLabel(Label label) {
     _navigated = true;
     setState(() {
+      _section = 1;
       _labelId = label.id;
       _view = null;
     });
@@ -180,6 +192,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _switchSection(int section) {
+    setState(() => _section = section);
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.pop(context);
+    }
+  }
+
+  void _startFocus(String? title) {
+    if (!_focus.running) _focus.taskTitle = title;
+    _switchSection(2);
+  }
+
   Widget _sidebar() => ProjectSidebar(
     controller: widget.projects,
     selectedId: _view == null && _labelId == null ? _selected?.id : null,
@@ -198,6 +222,26 @@ class _HomeScreenState extends State<HomeScreen> {
           onLogout: widget.onLogout,
           startView: widget.startView,
         ),
+        if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint) ...[
+          for (final (index, icon, title) in [
+            (0, Icons.yard_outlined, 'باغچه'),
+            (1, Icons.check_circle_outline_rounded, 'کارها'),
+            (2, Icons.hourglass_empty_rounded, 'تمرکز'),
+          ])
+            Material(
+              type: MaterialType.transparency,
+              child: ListTile(
+                leading: Icon(icon),
+                title: Text(title),
+                selected: _section == index,
+                onTap: () => _switchSection(index),
+              ),
+            ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(),
+          ),
+        ],
         if (widget.tasksApi case final ApiClient api)
           ProgressCard(api: api, token: widget.token),
       ],
@@ -216,7 +260,29 @@ class _HomeScreenState extends State<HomeScreen> {
             final view = _view;
             final label = _labels?.byId(_labelId);
             if (view == null && label == null) _placeLamp(selected);
-            final Widget content = label != null
+            final Widget content = _section == 0
+                ? GardenHome(
+                    key: const ValueKey('garden-home'),
+                    api: widget.tasksApi,
+                    token: widget.token,
+                    projects: widget.projects,
+                    onTasks: () => _switchSection(1),
+                    onFocus: _startFocus,
+                    onProject: (id) {
+                      final p = widget.projects.byId(id);
+                      if (p != null) {
+                        _select(p);
+                      } else {
+                        _switchSection(1);
+                      }
+                    },
+                  )
+                : _section == 2
+                ? FocusView(
+                    key: const ValueKey('focus-view'),
+                    controller: _focus,
+                  )
+                : label != null
                 ? DueTasksView(
                     key: ValueKey('label-${label.id}'),
                     view: DueView.all,
@@ -273,6 +339,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? AppBar(title: const Text('فراش'))
                     : null,
                 drawer: Drawer(child: _sidebar()),
+                bottomNavigationBar: NavigationBar(
+                  selectedIndex: _section,
+                  onDestinationSelected: _switchSection,
+                  destinations: const [
+                    NavigationDestination(
+                      icon: Icon(Icons.yard_outlined),
+                      selectedIcon: Icon(Icons.yard_rounded),
+                      label: 'باغچه',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.check_circle_outline_rounded),
+                      selectedIcon: Icon(Icons.check_circle_rounded),
+                      label: 'کارها',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.hourglass_empty_rounded),
+                      selectedIcon: Icon(Icons.hourglass_top_rounded),
+                      label: 'تمرکز',
+                    ),
+                  ],
+                ),
                 body: page,
               );
             }
@@ -394,6 +481,7 @@ class _AccountHeader extends StatelessWidget {
 /// Picks which list opens first on this device.
 Future<void> _pickStartView(BuildContext context, StartView start) async {
   final choices = [
+    (StartView.garden, 'باغچه'),
     (StartView.inbox, 'صندوق ورودی'),
     for (final v in DueView.values) (v.name, v.title),
   ];

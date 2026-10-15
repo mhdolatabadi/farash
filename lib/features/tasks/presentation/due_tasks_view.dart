@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:farash/app/list_app_bar.dart';
-import 'package:farash/app/palette.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/date_labels.dart';
@@ -92,7 +91,8 @@ class _DueTasksViewState extends State<DueTasksView> {
     });
     try {
       final today = _today;
-      DateTime plus(int days) => today.add(Duration(days: days));
+      DateTime plus(int days) =>
+          DateTime(today.year, today.month, today.day + days);
       final label = widget.label;
       final labels = widget.labels;
       final tasks = label != null && labels != null
@@ -283,24 +283,10 @@ class _DueTasksViewState extends State<DueTasksView> {
 
   /// One pane of glass holding a day's tasks.
   Widget _card(List<Task> tasks) {
-    final glass = FarashGlassColors.of(context);
-    final light = Theme.of(context).brightness == Brightness.light;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: glass.pane,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: glass.paneBorder),
-          boxShadow: [
-            if (light)
-              BoxShadow(
-                color: glass.shadow,
-                offset: const Offset(0, 8),
-                blurRadius: 24,
-              ),
-          ],
-        ),
+        decoration: const BoxDecoration(),
         child: Material(
           type: MaterialType.transparency,
           child: Padding(
@@ -352,9 +338,13 @@ class _DueTasksViewState extends State<DueTasksView> {
   /// The days the agenda shows: tomorrow on for «پیش رو», today on for
   /// «۷ روز آینده».
   List<DateTime> get _agendaDays => switch (widget.view) {
-    DueView.week => [for (var i = 0; i < 7; i++) _today.add(Duration(days: i))],
+    DueView.week => [
+      for (var i = 0; i < 7; i++)
+        DateTime(_today.year, _today.month, _today.day + i),
+    ],
     _ => [
-      for (var i = 1; i <= upcomingDays; i++) _today.add(Duration(days: i)),
+      for (var i = 1; i <= upcomingDays; i++)
+        DateTime(_today.year, _today.month, _today.day + i),
     ],
   };
 
@@ -661,7 +651,6 @@ class _WeekStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final settings = CalendarScope.of(context);
-    final days = [for (var i = 1; i <= 7; i++) today.add(Duration(days: i))];
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
       child: Row(

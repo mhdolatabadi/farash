@@ -88,26 +88,26 @@ class FarashPalette {
   /// frosted glass by day, and the same hues low in a violet night. Violet
   /// means "now" and the one primary action; mint marks tomorrow and rose
   /// marks overdue.
-  static const dew = FarashPalette(
-    name: 'dew',
+  static const garden = FarashPalette(
+    name: 'garden',
     light: FarashColors(
-      primary: Color(0xFF5B45D6),
+      primary: Color(0xFF315D47),
       onPrimary: Colors.white,
-      accent: Color(0xFF17634A),
-      surface: Color(0xFFFBFAFE),
-      onSurface: Color(0xFF1D1B2E),
-      onSurfaceVariant: Color(0xFF5D5A73),
-      selected: Color(0xFFECE7FF),
-      onSelected: Color(0xFF1D1B2E),
-      backdrop: [Color(0xFFF7F3FB), Color(0xFFF4F1F8), Color(0xFFF3F1F8)],
-      glow: Color(0xFFFFD9C2),
-      light: Color(0xFFD9D2FF),
-      mist: Color(0xFFC9F0E4),
-      pane: Color(0x9EFFFFFF),
-      paneBorder: Color(0xF2FFFFFF),
-      shadow: Color(0x14503C8C),
+      accent: Color(0xFF795628),
+      surface: Color(0xFFF8F6EE),
+      onSurface: Color(0xFF23362C),
+      onSurfaceVariant: Color(0xFF536356),
+      selected: Color(0xFFDEEADB),
+      onSelected: Color(0xFF23362C),
+      backdrop: [Color(0xFFF8F6EE), Color(0xFFF8F6EE), Color(0xFFF8F6EE)],
+      glow: Color(0xFFF8F6EE),
+      light: Color(0xFFF8F6EE),
+      mist: Color(0xFFF8F6EE),
+      pane: Color(0xFFFFFDF7),
+      paneBorder: Color(0x24536356),
+      shadow: Color(0x00000000),
       overdue: Color(0xFFB3263A),
-      edge: Color(0xCCFFFFFF),
+      edge: Color(0x00FFFFFF),
       priorities: [
         Color(0xFFD23C4B),
         Color(0xFFC4670F),
@@ -116,23 +116,23 @@ class FarashPalette {
       ],
     ),
     dark: FarashColors(
-      primary: Color(0xFFB4A7FF),
-      onPrimary: Color(0xFF1B1340),
-      accent: Color(0xFF8FD9BF),
-      surface: Color(0xFF1C1834),
-      onSurface: Color(0xFFF1EEFA),
-      onSurfaceVariant: Color(0xFFB9B4CF),
-      selected: Color(0xFF332C66),
-      onSelected: Color(0xFFF1EEFA),
-      backdrop: [Color(0xFF1C1736), Color(0xFF15122B), Color(0xFF0F0D20)],
-      glow: Color(0x38FF9EB5),
-      light: Color(0x599682FF),
-      mist: Color(0x386ED2B4),
-      pane: Color(0x1AFFFFFF),
-      paneBorder: Color(0x24FFFFFF),
-      shadow: Color(0x59000000),
+      primary: Color(0xFFABD4AD),
+      onPrimary: Color(0xFF153723),
+      accent: Color(0xFFE7C48C),
+      surface: Color(0xFF14251F),
+      onSurface: Color(0xFFEDF1E6),
+      onSurfaceVariant: Color(0xFFBCCABD),
+      selected: Color(0xFF2D4937),
+      onSelected: Color(0xFFEDF1E6),
+      backdrop: [Color(0xFF14251F), Color(0xFF14251F), Color(0xFF14251F)],
+      glow: Color(0x0014251F),
+      light: Color(0x0014251F),
+      mist: Color(0x0014251F),
+      pane: Color(0xFF1D3229),
+      paneBorder: Color(0x245D7868),
+      shadow: Color(0x00000000),
       overdue: Color(0xFFFF9AA6),
-      edge: Color(0x1FFFFFFF),
+      edge: Color(0x001D3229),
       priorities: [
         Color(0xFFFF8A9A),
         Color(0xFFFFB86B),
@@ -151,7 +151,7 @@ class FarashGlassColors extends ThemeExtension<FarashGlassColors> {
 
   static FarashColors of(BuildContext context) =>
       Theme.of(context).extension<FarashGlassColors>()?.colors ??
-      FarashPalette.dew.of(Theme.of(context).brightness);
+      FarashPalette.garden.of(Theme.of(context).brightness);
 
   @override
   FarashGlassColors copyWith({FarashColors? colors}) =>

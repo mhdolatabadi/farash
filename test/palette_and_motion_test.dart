@@ -19,7 +19,7 @@ double _contrast(Color a, Color b) {
 }
 
 void main() {
-  group('dew palette', () {
+  group('garden palette', () {
     for (final brightness in Brightness.values) {
       test('text keeps 4.5:1 contrast ($brightness)', () {
         final theme = brightness == Brightness.dark
@@ -45,12 +45,12 @@ void main() {
 
     test('the theme and the glass read the same palette', () {
       final theme = FarashTheme.light();
-      expect(theme.colorScheme.primary, const Color(0xFF5B45D6));
-      expect(FarashTheme.dark().colorScheme.primary, const Color(0xFFB4A7FF));
-      expect(theme.colorScheme.error, FarashPalette.dew.light.overdue);
+      expect(theme.colorScheme.primary, const Color(0xFF315D47));
+      expect(FarashTheme.dark().colorScheme.primary, const Color(0xFFABD4AD));
+      expect(theme.colorScheme.error, FarashPalette.garden.light.overdue);
       expect(
         theme.extension<FarashGlassColors>()!.colors,
-        FarashPalette.dew.light,
+        FarashPalette.garden.light,
       );
     });
 
@@ -60,7 +60,7 @@ void main() {
             ? FarashTheme.dark()
             : FarashTheme.light();
         final c = theme.colorScheme;
-        final glass = FarashPalette.dew.of(brightness);
+        final glass = FarashPalette.garden.of(brightness);
         // A pane over each stop of the backdrop, lights aside.
         for (final ground in glass.backdrop) {
           final pane = Color.alphaBlend(glass.pane, ground);
@@ -120,7 +120,7 @@ void main() {
           find.ancestor(of: label, matching: find.byType(DecoratedBox)).first,
         );
         final fill = (box.decoration as BoxDecoration).color!;
-        final glass = FarashPalette.dew.of(brightness);
+        final glass = FarashPalette.garden.of(brightness);
         for (final ground in [
           ...glass.backdrop,
           glass.light,
