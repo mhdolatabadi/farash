@@ -3,6 +3,7 @@ import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/time_zone.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/progress/progress.dart';
+import 'package:farash/features/progress/week_report.dart';
 
 /// A quiet summary in the navigation; details open only on request.
 class ProgressCard extends StatefulWidget {
@@ -201,6 +202,10 @@ class _ProgressPageState extends State<_ProgressPage> {
                   'تا سطح بعد',
                 ),
                 const SizedBox(height: 32),
+                if (_progress.weekReport case final report?) ...[
+                  WeeklyProgressReport(report: report),
+                  const SizedBox(height: 24),
+                ],
                 Text('هدف هفتگی', style: text.titleLarge),
                 const SizedBox(height: 8),
                 Text(
