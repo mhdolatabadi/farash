@@ -323,7 +323,7 @@ class _GardenHomeState extends State<GardenHome> with WidgetsBindingObserver {
                               ),
                               TextButton(
                                 onPressed: widget.onTasks,
-                                child: const Text('همهٔ کارها'),
+                                child: const Text('فهرست کارها'),
                               ),
                             ],
                           ),

@@ -201,7 +201,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _startFocus(String? title) {
-    if (!_focus.running) _focus.taskTitle = title;
+    if (!_focus.running) {
+      if (_focus.taskTitle != title || _focus.minutes != 25) _focus.choose(25);
+      _focus.taskTitle = title;
+    }
     _switchSection(2);
   }
 
@@ -267,7 +270,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     api: widget.tasksApi,
                     token: widget.token,
                     projects: widget.projects,
-                    onTasks: () => _switchSection(1),
+                    onTasks: () {
+                      final inbox = widget.projects.inbox;
+                      if (inbox != null) {
+                        _select(inbox);
+                      } else {
+                        _switchSection(1);
+                      }
+                    },
                     onFocus: _startFocus,
                     onProject: (id) {
                       final p = widget.projects.byId(id);

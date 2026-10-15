@@ -26,6 +26,10 @@ jobs:
       - run: flutter test
         env:
           CAPTURE_GLASS_UI: '1'
+      - name: Check agenda across daylight-saving changes
+        run: flutter test test/due_views_test.dart
+        env:
+          TZ: Europe/Berlin
       - name: Upload UI review captures
         if: always()
         uses: actions/upload-artifact@v4

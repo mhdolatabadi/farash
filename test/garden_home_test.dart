@@ -15,6 +15,7 @@ import 'package:farash/core/settings/start_view.dart';
 import 'package:farash/features/home/home_screen.dart';
 import 'package:farash/features/garden/garden_home.dart';
 import 'package:farash/features/focus/focus_view.dart';
+import 'package:farash/features/focus/focus_controller.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 import 'package:farash/features/tasks/presentation/project_tasks_view.dart';
 import 'support/fake_tasks_api.dart';
@@ -113,6 +114,40 @@ void main() {
       }
     });
   }
+  testWidgets('focus controls stay reachable at 2x text', (tester) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final timer = FocusController();
+    addTearDown(timer.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: FarashTheme.dark(),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: const TextScaler.linear(2)),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: Directionality(
+            textDirection: TextDirection.rtl,
+            child: FocusView(controller: timer),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('شروع تمرکز'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('شروع تمرکز'));
+    await tester.pump();
+    expect(timer.running, isTrue);
+    expect(tester.takeException(), isNull);
+    timer.pause();
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('server confirmed completion grows garden and undo restores it', (
     tester,
   ) async {
