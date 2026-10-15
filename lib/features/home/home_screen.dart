@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/features/progress/progress_card.dart';
 import 'package:farash/app/motion.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/calendar_settings_dialog.dart';
@@ -157,10 +158,16 @@ class _HomeScreenState extends State<HomeScreen> {
     onSelectView: _selectView,
     viewCounts: {DueView.today: ?_todayCount},
     onOpenArchived: _openArchived,
-    header: _AccountHeader(
-      email: widget.email,
-      onLogout: widget.onLogout,
-      startView: widget.startView,
+    header: Column(
+      children: [
+        _AccountHeader(
+          email: widget.email,
+          onLogout: widget.onLogout,
+          startView: widget.startView,
+        ),
+        if (widget.tasksApi case final ApiClient api)
+          ProgressCard(api: api, token: widget.token),
+      ],
     ),
   );
 

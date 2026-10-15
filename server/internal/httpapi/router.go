@@ -35,6 +35,11 @@ func NewHandler(config Config) http.Handler {
 		mux.HandleFunc("POST /api/v1/auth/register", auth.register)
 		mux.HandleFunc("POST /api/v1/auth/login", auth.login)
 		mux.HandleFunc("GET /api/v1/me", auth.me)
+		if data, ok := config.Store.(progressStore); ok {
+			handler := progressHandler(auth, data)
+			mux.HandleFunc("GET /api/v1/progress", handler)
+			mux.HandleFunc("PATCH /api/v1/progress", handler)
+		}
 		taskData := config.TaskStore
 		if taskData == nil {
 			taskData, _ = config.Store.(tasksStore)
