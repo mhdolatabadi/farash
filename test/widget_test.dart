@@ -78,7 +78,9 @@ void main() {
     expect(find.text('ورود به فراش'), findsOneWidget);
   });
 
-  testWidgets('signing in saves the token and opens the Inbox', (tester) async {
+  testWidgets('signing in saves the token and opens the garden', (
+    tester,
+  ) async {
     final sessions = MemorySessionStore();
     await tester.pumpWidget(app(sessions: sessions));
     await tester.pumpAndSettle();
@@ -89,14 +91,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(await sessions.readToken(), 'good-token');
-    expect(find.text('هنوز کاری در «صندوق ورودی» نیست.'), findsOneWidget);
+    expect(find.text('آرام‌آرام، سبزتر.'), findsOneWidget);
   });
 
   testWidgets('restores a saved session straight into the app', (tester) async {
     await tester.pumpWidget(app(sessions: MemorySessionStore('good-token')));
     await tester.pumpAndSettle();
 
-    expect(find.text('هنوز کاری در «صندوق ورودی» نیست.'), findsOneWidget);
+    expect(find.text('آرام‌آرام، سبزتر.'), findsOneWidget);
   });
 
   testWidgets('a rejected saved token is dropped', (tester) async {

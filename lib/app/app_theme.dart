@@ -3,7 +3,7 @@ import 'package:farash/app/palette.dart';
 
 abstract final class FarashTheme {
   /// The palette the app ships with.
-  static const palette = FarashPalette.dew;
+  static const palette = FarashPalette.garden;
 
   static const _controlRadius = 12.0;
   static const _surfaceRadius = 16.0;
@@ -19,7 +19,7 @@ abstract final class FarashTheme {
     // Neutrals (sheets, menus, dialogs, fields) come from the violet, so
     // every solid surface belongs to the same room.
     final generated = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF5B45D6),
+      seedColor: const Color(0xFF315D47),
       brightness: brightness,
       dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot,
     );
@@ -65,9 +65,21 @@ abstract final class FarashTheme {
     return base.copyWith(
       textTheme: text,
       extensions: [FarashGlassColors(p)],
-      scaffoldBackgroundColor: Colors.transparent,
+      scaffoldBackgroundColor: colors.surface,
+      navigationBarTheme: NavigationBarThemeData(
+        height: 72,
+        elevation: 0,
+        backgroundColor: colors.surfaceContainerLow,
+        indicatorColor: colors.secondaryContainer,
+        labelTextStyle: WidgetStatePropertyAll(
+          base.textTheme.labelMedium?.copyWith(
+            color: colors.onSurface,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
       appBarTheme: AppBarTheme(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.surface,
         foregroundColor: colors.onSurface,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,

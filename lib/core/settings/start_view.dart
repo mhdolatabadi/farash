@@ -4,11 +4,12 @@ import 'package:farash/core/calendar/calendar_settings.dart';
 /// Which list opens when the app starts on this device: the Inbox
 /// (`inbox`) or a view across projects, by its name.
 class StartView extends ChangeNotifier {
-  StartView({CalendarSettingsStore? store, String value = inbox})
+  StartView({CalendarSettingsStore? store, String value = garden})
     : _store = store,
       _value = value;
 
   static const inbox = 'inbox';
+  static const garden = 'garden';
   static const _key = 'start_view';
 
   final CalendarSettingsStore? _store;

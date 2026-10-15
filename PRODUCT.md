@@ -14,9 +14,9 @@ sections, priorities, completion, undo and project navigation. Roadmap features
 must not appear as working controls before implementation.
 
 ## Brand Commitments
-فراش / Farash, Persian RTL, bundled Vazirmatn. User chose a light, calm glass
-redesign with a coordinated dark theme. The A + C comp recommendation was
-accepted by “continue”; details recorded in docs/design/glass.md.
+فراش / Farash, Persian RTL, bundled Vazirmatn. User requested a fundamental redesign inspired by Todoist, TickTick,
+Pomofocus and Forest, and selected a game-like garden as the central experience.
+See DESIGN.md and docs/design/garden.md.
 
 ## Product Principles
 Fast one-field capture; private by default; reversible completion/deletion;
