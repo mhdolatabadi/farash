@@ -138,15 +138,6 @@ class ListAppBar extends SliverPersistentHeaderDelegate {
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w700,
-                                // At night the title catches the lamp.
-                                shadows: [
-                                  if (theme.brightness == Brightness.dark)
-                                    Shadow(
-                                      color: theme.colorScheme.primary
-                                          .withValues(alpha: 0.45),
-                                      blurRadius: 24,
-                                    ),
-                                ],
                               ),
                             ),
                           ),

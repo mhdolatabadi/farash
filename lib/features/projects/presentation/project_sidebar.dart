@@ -49,92 +49,99 @@ class ProjectSidebar extends StatelessWidget {
         return SafeArea(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-            children: [
-              header,
-              const SizedBox(height: 8),
-              if (onSelectView != null)
-                for (final view in DueView.values)
-                  ListTile(
-                    key: ValueKey('view-${view.name}'),
-                    selected: view == selectedView,
-                    leading: Icon(view.icon),
-                    title: Text(view.title),
-                    trailing: switch (viewCounts[view]) {
-                      final count? when count > 0 => Semantics(
-                        label: '${persianDigits(count)} کار',
-                        excludeSemantics: true,
-                        child: Badge(
-                          label: Text(persianDigits(count)),
-                          backgroundColor: theme.colorScheme.primary,
-                          textColor: theme.colorScheme.onPrimary,
+            children:
+                <Widget>[
+                      header,
+                      const SizedBox(height: 8),
+                      if (onSelectView != null)
+                        for (final view in DueView.values)
+                          ListTile(
+                            key: ValueKey('view-${view.name}'),
+                            selected: view == selectedView,
+                            leading: Icon(view.icon),
+                            title: Text(view.title),
+                            trailing: switch (viewCounts[view]) {
+                              final count? when count > 0 => Semantics(
+                                label: '${persianDigits(count)} کار',
+                                excludeSemantics: true,
+                                child: Badge(
+                                  label: Text(persianDigits(count)),
+                                  backgroundColor: theme.colorScheme.primary,
+                                  textColor: theme.colorScheme.onPrimary,
+                                ),
+                              ),
+                              _ => null,
+                            },
+                            onTap: () => onSelectView!(view),
+                          ),
+                      if (inbox != null)
+                        _ProjectTile(
+                          project: inbox,
+                          icon: Icons.inbox_outlined,
+                          selected: inbox.id == selectedId,
+                          onTap: () => onSelect(inbox),
+                          controller: controller,
+                        ),
+                      if (controller.error != null &&
+                          controller.projects.isEmpty)
+                        _LoadError(onRetry: controller.load),
+                      if (favorites.isNotEmpty) ...[
+                        const _SectionTitle('علاقه‌مندی‌ها'),
+                        for (final project in favorites)
+                          _ProjectTile(
+                            key: ValueKey('favorite-${project.id}'),
+                            project: project,
+                            selected: project.id == selectedId,
+                            onTap: () => onSelect(project),
+                            controller: controller,
+                          ),
+                      ],
+                      _SectionTitle(
+                        'پروژه‌ها',
+                        action: IconButton(
+                          tooltip: 'پروژهٔ تازه',
+                          icon: const Icon(Icons.add),
+                          onPressed: () => showProjectEditor(
+                            context,
+                            controller: controller,
+                            onCreated: onSelect,
+                          ),
                         ),
                       ),
-                      _ => null,
-                    },
-                    onTap: () => onSelectView!(view),
-                  ),
-              if (inbox != null)
-                _ProjectTile(
-                  project: inbox,
-                  icon: Icons.inbox_outlined,
-                  selected: inbox.id == selectedId,
-                  onTap: () => onSelect(inbox),
-                  controller: controller,
-                ),
-              if (controller.error != null && controller.projects.isEmpty)
-                _LoadError(onRetry: controller.load),
-              if (favorites.isNotEmpty) ...[
-                const _SectionTitle('علاقه‌مندی‌ها'),
-                for (final project in favorites)
-                  _ProjectTile(
-                    key: ValueKey('favorite-${project.id}'),
-                    project: project,
-                    selected: project.id == selectedId,
-                    onTap: () => onSelect(project),
-                    controller: controller,
-                  ),
-              ],
-              _SectionTitle(
-                'پروژه‌ها',
-                action: IconButton(
-                  tooltip: 'پروژهٔ تازه',
-                  icon: const Icon(Icons.add),
-                  onPressed: () => showProjectEditor(
-                    context,
-                    controller: controller,
-                    onCreated: onSelect,
-                  ),
-                ),
-              ),
-              if (tree.isEmpty && controller.projects.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Text(
-                    'کارها را در پروژه‌ها دسته‌بندی کنید؛ مثلاً «کار» یا «خانه».',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              for (final node in tree)
-                _ProjectTile(
-                  key: ValueKey('tree-${node.project.id}'),
-                  project: node.project,
-                  depth: node.depth,
-                  selected: node.project.id == selectedId,
-                  onTap: () => onSelect(node.project),
-                  controller: controller,
-                ),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: const Icon(Icons.archive_outlined),
-                title: const Text('پروژه‌های بایگانی‌شده'),
-                onTap: onOpenArchived,
-              ),
-            ],
+                      if (tree.isEmpty && controller.projects.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          child: Text(
+                            'کارها را در پروژه‌ها دسته‌بندی کنید؛ مثلاً «کار» یا «خانه».',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      for (final node in tree)
+                        _ProjectTile(
+                          key: ValueKey('tree-${node.project.id}'),
+                          project: node.project,
+                          depth: node.depth,
+                          selected: node.project.id == selectedId,
+                          onTap: () => onSelect(node.project),
+                          controller: controller,
+                        ),
+                      const SizedBox(height: 8),
+                      ListTile(
+                        leading: const Icon(Icons.archive_outlined),
+                        title: const Text('پروژه‌های بایگانی‌شده'),
+                        onTap: onOpenArchived,
+                      ),
+                    ]
+                    .map(
+                      (row) =>
+                          Material(type: MaterialType.transparency, child: row),
+                    )
+                    .toList(),
           ),
         );
       },

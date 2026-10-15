@@ -34,6 +34,22 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('narrow RTL drawer owns selection ink per row after scroll', (
+    tester,
+  ) async {
+    await pumpHome(tester, size: const Size(320, 700));
+    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.pumpAndSettle();
+    final tile = find.widgetWithText(ListTile, 'صندوق ورودی');
+    final tileContext = tester.element(tile);
+    final material = tileContext.findAncestorWidgetOfExactType<Material>();
+    expect(material?.type, MaterialType.transparency);
+    expect(tester.getSize(tile).height, greaterThanOrEqualTo(48));
+    await tester.drag(find.byType(ListView).first, const Offset(0, -100));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('opens on the Inbox', (tester) async {
     await pumpHome(tester, size: const Size(400, 800));
 

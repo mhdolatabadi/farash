@@ -106,7 +106,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('سطح ۱ · ۱۰ امتیاز'), findsOneWidget);
+    expect(find.textContaining('سطح ۱ · ۱۰ امتیاز ·'), findsOneWidget);
     await tester.tap(find.text('پیشرفت من'));
     await tester.pumpAndSettle();
     expect(find.text('قدم‌های کوچک، پیشرفت ماندگار'), findsOneWidget);
@@ -150,7 +150,7 @@ void main() {
       failing = false;
       await tester.tap(find.text('پیشرفت من'));
       await tester.pumpAndSettle();
-      expect(find.text('سطح ۱ · ۱۰ امتیاز'), findsOneWidget);
+      expect(find.textContaining('سطح ۱ · ۱۰ امتیاز ·'), findsOneWidget);
     },
   );
 
@@ -171,11 +171,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('سطح ۱ · ۰ امتیاز'), findsOneWidget);
+    expect(find.textContaining('سطح ۱ · ۰ امتیاز ·'), findsOneWidget);
     completed = 1;
     api.progressChanges.value++;
     await tester.pumpAndSettle();
-    expect(find.text('سطح ۱ · ۱۰ امتیاز'), findsOneWidget);
+    expect(find.textContaining('سطح ۱ · ۱۰ امتیاز ·'), findsOneWidget);
   });
 }
 

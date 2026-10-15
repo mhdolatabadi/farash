@@ -51,7 +51,7 @@ abstract final class FarashTheme {
     // Headings are set in Naskh, the hand of the house; everything read in
     // passing stays in Vazirmatn.
     TextStyle? naskh(TextStyle? style) => style?.copyWith(
-      fontFamily: 'FarashNaskh',
+      fontFamily: 'Vazirmatn',
       fontFamilyFallback: const ['Vazirmatn'],
       height: 1.35,
     );
@@ -111,6 +111,14 @@ abstract final class FarashTheme {
         thickness: 1,
       ),
       listTileTheme: ListTileThemeData(
+        minTileHeight: 52,
+        minLeadingWidth: 24,
+        horizontalTitleGap: 12,
+        contentPadding: const EdgeInsetsDirectional.fromSTEB(12, 0, 8, 0),
+        titleTextStyle: base.textTheme.bodyMedium?.copyWith(
+          color: colors.onSurface,
+          fontWeight: FontWeight.w500,
+        ),
         shape: controlShape,
         iconColor: colors.onSurfaceVariant,
         selectedColor: colors.onSecondaryContainer,

@@ -1,4 +1,5 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:farash/app/motion.dart';
 import 'package:farash/app/palette.dart';
@@ -28,6 +29,14 @@ class GlassBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // On phones the list itself is the canvas; room lights compete with
+    // sparse content and make the capture field harder to distinguish.
+    if (MediaQuery.sizeOf(context).width < 840) {
+      return ColoredBox(
+        color: Theme.of(context).colorScheme.surface,
+        child: child,
+      );
+    }
     final glass = FarashGlassColors.of(context);
     RadialGradient bloom(Alignment at, Color color, double radius) =>
         RadialGradient(
