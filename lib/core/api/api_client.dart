@@ -1,5 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+import 'package:farash/features/progress/progress.dart';
+
 import 'package:http/http.dart' as http;
 import 'package:farash/features/auth/data/auth_models.dart';
 import 'package:farash/features/projects/data/project.dart';
@@ -184,6 +187,35 @@ class ApiClient implements AuthApi, ProjectsApi, TasksApi, SectionsApi {
   final http.Client _client;
 
   static const _timeout = Duration(seconds: 20);
+
+  /// Invalidates progress after server-confirmed task/project mutations.
+  final progressChanges = ValueNotifier<int>(0);
+
+  Future<PersonalProgress> loadProgress(String token, String timezone) async =>
+      PersonalProgress.fromJson(
+        await _send(
+              'GET',
+              '/api/v1/progress',
+              token: token,
+              query: {'timezone': timezone},
+            )
+            as Map<String, dynamic>,
+      );
+
+  Future<PersonalProgress> saveProgressGoal(
+    String token,
+    String timezone,
+    int days,
+  ) async => PersonalProgress.fromJson(
+    await _send(
+          'PATCH',
+          '/api/v1/progress',
+          token: token,
+          query: {'timezone': timezone},
+          body: {'weekly_goal': days},
+        )
+        as Map<String, dynamic>,
+  );
 
   Future<void> checkHealth() async {
     await _send('GET', '/api/v1/health');
@@ -502,6 +534,12 @@ class ApiClient implements AuthApi, ProjectsApi, TasksApi, SectionsApi {
         ? null
         : _tryDecode(utf8.decode(response.bodyBytes));
     if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (method != 'GET' &&
+          (path.startsWith('/api/v1/tasks') ||
+              path.startsWith('/api/v1/projects') ||
+              path.startsWith('/api/v1/sections'))) {
+        progressChanges.value++;
+      }
       return decoded;
     }
     final code = decoded is Map<String, dynamic>
