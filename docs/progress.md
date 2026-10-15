@@ -35,3 +35,19 @@ reload/resume. Progress never blocks task completion if its own request fails.
 Migration 008 adds a constrained user goal and a partial completion index; no task
 rewrite or external service is required. Deploy through the existing workflow.
 For application rollback, leave the additive schema/index in place.
+
+## Weekly report
+
+The additive `week_report` field contains seven ordered `days` (Saturday first),
+with local ISO date, completion count and `future` flag; zero-activity dates are
+included. `completed` counts the current week through the response instant,
+`previous_completed` counts the preceding Saturday through the same local
+weekday/time last week. `compared_through` records the current cutoff.
+Calendar-day arithmetic preserves the local comparison across DST transitions
+(with Go's time normalization for nonexistent local times). This compares equal
+local calendar periods, not a partial week against a whole previous week.
+Future completions are excluded from weekly counts. Existing all-time XP rules
+are unchanged. Counts are still derived from current task state; reopening or
+deleting tasks can change a past day's count. They are not immutable history.
+Older clients ignore the added field; newer clients hide the report when talking
+to an older server. No schema migration is needed.

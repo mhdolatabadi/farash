@@ -30,10 +30,10 @@ func TestProgressLifecycleAndPrivacy(t *testing.T) {
 			t.Fatalf("close: %d", code)
 		}
 	}
-	if p := get(token); p.XP != 10 || p.WeeklyDays != 1 || len(p.Badges) != 1 {
+	if p := get(token); p.XP != 10 || p.WeeklyDays != 1 || len(p.Badges) != 1 || p.WeekReport.Completed != 1 {
 		t.Fatalf("completion: %+v", p)
 	}
-	if p := get(other); p.XP != 0 || p.WeeklyDays != 0 {
+	if p := get(other); p.XP != 0 || p.WeeklyDays != 0 || p.WeekReport.Completed != 0 {
 		t.Fatalf("private progress leaked: %+v", p)
 	}
 	if code := api.do("PATCH", "/api/v1/progress", token, map[string]any{"weekly_goal": 1}, nil); code != 200 {
@@ -46,7 +46,7 @@ func TestProgressLifecycleAndPrivacy(t *testing.T) {
 		t.Fatal("goal leaked to other account")
 	}
 	api.do("POST", path+"/reopen", token, nil, nil)
-	if p := get(token); p.XP != 0 || p.WeeklyDays != 0 || len(p.Badges) != 0 {
+	if p := get(token); p.XP != 0 || p.WeeklyDays != 0 || len(p.Badges) != 0 || p.WeekReport.Completed != 0 {
 		t.Fatalf("undo: %+v", p)
 	}
 	api.do("POST", path+"/close", token, nil, nil)
