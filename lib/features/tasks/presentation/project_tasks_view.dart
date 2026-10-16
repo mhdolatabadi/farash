@@ -1087,9 +1087,9 @@ class _QuickAddState extends State<_QuickAdd> {
     // One pane of glass: the field, its priority and the send button read
     // as a single control, edged in honey while it has focus.
     return GlassSurface(
-      radius: 14,
+      radius: 22,
       blur: 0,
-      shadow: false,
+      shadow: true,
       borderColor: _focused ? theme.colorScheme.primary : null,
       padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 8, 4),
       child: Column(

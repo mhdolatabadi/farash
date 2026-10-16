@@ -13,6 +13,21 @@ import 'support/fake_projects_api.dart';
 import 'support/fake_tasks_api.dart';
 
 void main() {
+  test(
+    'migrate the former garden preference without changing task views',
+    () async {
+      final store = MemoryCalendarSettingsStore()
+        ..values['start_view'] = 'garden';
+      final start = StartView(store: store);
+      await start.load();
+      expect(start.value, StartView.weaving);
+      expect(StartView(value: 'garden').value, StartView.weaving);
+      await start.set('today');
+      expect(start.value, 'today');
+      expect(store.values['start_view'], 'today');
+    },
+  );
+
   Future<FakeTasksApi> pumpHome(
     WidgetTester tester,
     StartView start, {

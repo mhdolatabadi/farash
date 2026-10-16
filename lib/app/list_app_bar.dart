@@ -52,7 +52,14 @@ class ListAppBar extends SliverPersistentHeaderDelegate {
                       icon: const Icon(Icons.menu_rounded),
                       onPressed: scaffold!.openDrawer,
                     ),
-                  mark,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: mark,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Semantics(

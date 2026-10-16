@@ -257,6 +257,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.drag(find.byType(CustomScrollView), const Offset(0, 1500));
     await tester.pumpAndSettle();
+    await tester.runAsync(
+      () => precacheImage(
+        const AssetImage('assets/weaving/rug.png'),
+        tester.element(find.byType(WeavingHome)),
+      ),
+    );
+    await tester.pumpAndSettle();
     await capture(tester, key, 'weaving-earned-progress');
     final collection = find.text('فرش‌های من · ۱');
     await tester.ensureVisible(collection);

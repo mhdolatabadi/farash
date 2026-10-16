@@ -1,3 +1,4 @@
+import 'package:farash/app/atelier.dart';
 import 'package:flutter/material.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/focus/focus_controller.dart';
@@ -67,27 +68,42 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyLarge,
                       ),
-                      const SizedBox(height: 24),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        alignment: WrapAlignment.center,
-                        children: [
-                          for (final item in [
-                            (25, 'تمرکز'),
-                            (5, 'استراحت کوتاه'),
-                            (15, 'استراحت بلند'),
-                          ])
-                            ChoiceChip(
-                              label: Text(item.$2),
-                              selected: timer.minutes == item.$1,
-                              onSelected: timer.running
-                                  ? null
-                                  : (_) => timer.choose(item.$1),
-                            ),
-                        ],
+                      const SizedBox(height: 12),
+                      const ThreadRule(),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    for (final item in [
+                      (25, 'تمرکز'),
+                      (5, 'استراحت کوتاه'),
+                      (15, 'استراحت بلند'),
+                    ])
+                      ChoiceChip(
+                        label: Text(item.$2),
+                        selected: timer.minutes == item.$1,
+                        onSelected: timer.running
+                            ? null
+                            : (_) => timer.choose(item.$1),
                       ),
-                      const SizedBox(height: 28),
+                  ],
+                ),
+                const SizedBox(height: 28),
+                AtelierPanel(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 20,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const ThreadRule(),
+                      const SizedBox(height: 12),
                       Semantics(
                         label:
                             '${persianDigits(seconds ~/ 60)} دقیقه و ${persianDigits(seconds % 60)} ثانیه باقی مانده',

@@ -5,8 +5,8 @@ abstract final class FarashTheme {
   /// The palette the app ships with.
   static const palette = FarashPalette.weaving;
 
-  static const _controlRadius = 12.0;
-  static const _surfaceRadius = 16.0;
+  static const _controlRadius = 18.0;
+  static const _surfaceRadius = 22.0;
 
   static ThemeData light([FarashPalette palette = FarashTheme.palette]) =>
       _build(Brightness.light, palette);
@@ -24,6 +24,25 @@ abstract final class FarashTheme {
     );
     final colors = generated.copyWith(
       primary: p.primary,
+      secondary: p.accent,
+      onSecondary: brightness == Brightness.dark
+          ? const Color(0xFF123D42)
+          : Colors.white,
+      surfaceContainerLowest: brightness == Brightness.dark
+          ? const Color(0xFF16202B)
+          : const Color(0xFFFFFCF6),
+      surfaceContainerLow: brightness == Brightness.dark
+          ? const Color(0xFF22303D)
+          : const Color(0xFFFFFAF2),
+      surfaceContainer: brightness == Brightness.dark
+          ? const Color(0xFF2A3744)
+          : const Color(0xFFF1E7D9),
+      surfaceContainerHigh: brightness == Brightness.dark
+          ? const Color(0xFF33414E)
+          : const Color(0xFFEADCCA),
+      outlineVariant: brightness == Brightness.dark
+          ? const Color(0xFF52606A)
+          : const Color(0xFFDDCBB6),
       onPrimary: p.onPrimary,
       tertiary: p.accent,
       error: p.overdue,
@@ -172,6 +191,9 @@ abstract final class FarashTheme {
       chipTheme: base.chipTheme.copyWith(
         iconTheme: IconThemeData(color: colors.onSurfaceVariant, size: 18),
         selectedColor: colors.secondaryContainer,
+        backgroundColor: colors.surfaceContainerLow,
+        side: BorderSide(color: colors.outlineVariant),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         checkmarkColor: colors.onSecondaryContainer,
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
