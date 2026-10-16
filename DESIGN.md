@@ -9,6 +9,11 @@ colors:
   day-selected: '#F0DDD2'
   day-accent: '#246D72'
   day-error: '#B3263A'
+  day-container-lowest: '#FFFCF6'
+  day-container-low: '#FFFAF2'
+  day-container: '#F1E7D9'
+  day-container-high: '#EADCCA'
+  day-outline: '#DDCBB6'
   primary: '#F2B49A'
   surface: '#19232F'
   ink: '#F5EDE1'
@@ -16,11 +21,16 @@ colors:
   selected: '#553B34'
   accent: '#86CCD0'
   error: '#FF9AA6'
+  container-lowest: '#16202B'
+  container-low: '#22303D'
+  container: '#2A3744'
+  container-high: '#33414E'
+  outline: '#52606A'
 typography:
   weaving-heading: {fontFamily: Vazirmatn, fontSize: 28, fontWeight: 700, lineHeight: 1.35}
   body: {fontFamily: Vazirmatn, fontSize: 16}
   timer: {fontFamily: Vazirmatn, fontSize: 80, fontWeight: 700}
-rounded: {control: 12, surface: 16}
+rounded: {chip: 14, control: 18, progress: 20, surface: 22, panel: 24}
 spacing: {compact: 8, standard: 16, page: 24}
 ---
 
@@ -51,7 +61,7 @@ Turquoise marks future dates; rose marks late/error states. Priority colors reta
 
 ### Neutral
 
-Surface, ink and muted ink come from the palette. Material container and outline roles are generated from the active primary seed by `ColorScheme.fromSeed`; they are not fixed copies of the surface token. Input fill is a translucent tonal container over an opaque surface.
+Surface, ink and muted ink come from the palette. Lowest, low, regular and high Material containers and the outline variant are explicitly warm in light mode and blue-slate in dark mode. Other Material roles, including the highest container used by field fill, are generated from the active primary seed. Input fill is a translucent tonal container over an opaque surface.
 
 **The Confirmed Weaving Rule.** Never fabricate progress, XP or rewards to decorate a screen.
 
@@ -69,13 +79,13 @@ The capture field remains above bottom navigation and safe areas, with measured 
 
 ## Elevation & Depth
 
-Opaque tonal surfaces, outline borders and original loom artwork create depth. Cards and bottom navigation have zero elevation; legacy `Glass*` class names are internal compatibility shims rendering solid Material surfaces. No ambient gradients, title glow or decorative glass/blur.
+Opaque tonal surfaces, warm outlines, original artwork and restrained lift create depth. Theme cards retain zero Material elevation, while `AtelierPanel` adds an ambient shadow (offset 0, 7; blur 22; black alpha .045 by day and .12 by night). Panels can opt out of lift. Legacy `Glass*` names are compatibility shims; the visual material is opaque atelier paper. No ambient gradients, title glow or decorative glass/blur.
 
 The labelled rug pattern reveals rows over 320 ms; the decorative loom image is static. Shell changes also fade and scale using the standard 280 ms motion; task rows have arrival and completion motion. `Motion.of` removes these durations when reduced motion is requested. Material controls retain their framework state behavior.
 
 ## Shapes
 
-Controls use gently rounded corners (12); ordinary cards and compatibility surfaces use 16. The weaving progress card uses 20; drawers, sheets and dialogs use 24 where defined by the theme. Avoid describing every surface as a 12–16 radius. Filled, outlined and text buttons have a minimum height of 48; icon buttons have a minimum 48 by 48 area.
+Controls and individual task surfaces use rounded corners (18); theme cards and capture use 22. Chips use 14, the weaving progress card uses 20, and atelier panels default to 24. Drawers, sheets and dialogs use 24 where defined by the theme. Component-specific radii remain intentional rather than a universal pill. Filled, outlined and text buttons have a minimum height of 48; icon buttons have a minimum 48 by 48 area.
 
 ## Components
 
@@ -85,11 +95,11 @@ Solid terracotta primary buttons use bold Material labels and the control radius
 
 ### Chips
 
-Selected chips use the selected surface and corresponding ink; chip icons use muted ink. Focus-mode chips are disabled while the timer runs.
+Selected chips use the selected surface and corresponding ink; chip icons use muted ink. Unselected chips use the low container with a warm outline and 14 radius. Focus-mode chips are disabled while the timer runs.
 
 ### Cards / Containers
 
-Cards use generated `surfaceContainerLow`, outline borders, the surface radius and zero elevation. Task lists remain flat rows rather than separately framed glass cards.
+Theme cards use the explicit `surfaceContainerLow`, outline borders, the surface radius and zero elevation. Task rows are individual 18-radius solid surfaces with subtle outline borders and selected tonal fills. `AtelierPanel` carries lifted page furniture, focus framing and capture; ornamental `ThreadRule` dividers use the house diamond between fine lines.
 
 ### Inputs / Fields
 
@@ -97,15 +107,15 @@ Filled tonal fields use the control radius, 16 horizontal and 14 vertical paddin
 
 ### Navigation
 
-فرش, کارها and تمرکز are directly reachable. Phone navigation is 72 high with selected tonal indicators. Wide layouts use the same destinations and project hierarchy in the sidebar.
+فرش, کارها and تمرکز are directly reachable. Phone navigation is 72 high with selected tonal indicators and a fine top border; the weaving destination uses the original nested-diamond `WeaveMark`. The same mark identifies the account header. Toolbars pair their title with a tonal icon badge. Wide layouts use the same destinations and project hierarchy in the sidebar.
 
 ### Weaving and Focus
 
-The transparent original loom illustration (`assets/weaving/loom.png`) establishes atmosphere and is decorative. Actual progress is carried by the labelled `RugPattern` card, not the illustration. Each confirmed completed task represents one row. Fifty rows complete one rug: current rows equal completed count modulo 50, and collection count equals completed count divided by 50, rounded down. At exactly 50, one rug enters the collection and the next begins at zero rows. Undo deterministically removes the corresponding row or completed rug. Three pattern palettes cycle by rug index; they do not encode project history or project-specific threads.
+The transparent original loom illustration (`assets/weaving/loom.png`) establishes atmosphere and is decorative. Actual progress is carried by the labelled `RugPattern` card, not the illustration. Each confirmed completed task represents one row. Fifty rows complete one rug: current rows equal completed count modulo 50, and collection count equals completed count divided by 50, rounded down. At exactly 50, one rug enters the collection and the next begins at zero rows. Undo deterministically removes the corresponding row or completed rug. The current and collected rugs repeat one original authored rug image (`assets/weaving/rug.png`); there are no distinct palette variants. `RugPattern` reveals its exact bottom-up completion fraction using a clip over pale drawn warp. It does not encode project history or project-specific threads. One collected rug is displayed large at 35% of viewport height; multiple rugs use a lazy grid within 45% of viewport height, inside a scrollable dialog capped at width 520.
 
 Level and XP come from the account API; unavailable data never produces a fabricated score or rug progress. Up to three real next tasks can be opened, completed with undo or used as a focus-session title.
 
-Focus has one dominant timer and focus/short-break/long-break modes (25/5/15 minutes). Its controller belongs to the signed-in shell: navigation preserves it; sign-out disposes it. A deadline catches up after tick suspension. Sessions are local and end when the app closes. This delivery does not claim background alarms, persistent focus history or focus XP. Starting focus for a different task while a session runs preserves the running session and explains this through a snackbar.
+Focus frames the timer and its start/pause/reset controls in an atelier panel with 24 horizontal and 20 vertical padding. A thread rule sits above the timer and another below the controls. It retains one dominant timer and focus/short-break/long-break modes (25/5/15 minutes). Its controller belongs to the signed-in shell: navigation preserves it; sign-out disposes it. A deadline catches up after tick suspension. Sessions are local and end when the app closes. This delivery does not claim background alarms, persistent focus history or focus XP. Starting focus for a different task while a session runs preserves the running session and explains this through a snackbar.
 
 ## Do's and Don'ts
 

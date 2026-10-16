@@ -1,3 +1,4 @@
+import 'package:farash/app/atelier.dart';
 import 'package:flutter/material.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/time_zone.dart';
@@ -145,43 +146,81 @@ class _WeavingHomeState extends State<WeavingHome> with WidgetsBindingObserver {
   }
 
   void _showCollection(int count) {
+    final direction = Directionality.of(context);
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('فرش‌های من'),
-        content: SizedBox(
-          width: 480,
-          height: 360,
-          child: count == 0
-              ? const Center(
-                  child: Text(
-                    'اولین فرشت با ۵۰ کارِ انجام‌شده کامل می‌شود.',
-                    textAlign: TextAlign.center,
-                  ),
-                )
-              : GridView.builder(
-                  itemCount: count,
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 150,
-                    mainAxisSpacing: 20,
-                    crossAxisSpacing: 20,
-                    childAspectRatio: .65,
-                  ),
-                  itemBuilder: (context, index) => Column(
-                    children: [
-                      Expanded(child: RugPattern(rows: 50, design: index)),
-                      const SizedBox(height: 8),
-                      Text('فرش ${persianDigits(index + 1)}'),
-                    ],
-                  ),
+      builder: (context) => Directionality(
+        textDirection: direction,
+        child: Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'فرش‌های من',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'بستن',
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (count == 0)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Text(
+                          'اولین فرشت با ۵۰ کارِ انجام‌شده کامل می‌شود.',
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    else if (count == 1) ...[
+                      SizedBox(
+                        height: MediaQuery.sizeOf(context).height * .35,
+                        child: const RugPattern(rows: 50),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('فرش ۱'),
+                    ] else
+                      SizedBox(
+                        height: MediaQuery.sizeOf(context).height * .45,
+                        child: GridView.builder(
+                          itemCount: count,
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 180,
+                                mainAxisSpacing: 24,
+                                crossAxisSpacing: 24,
+                                childAspectRatio: .6,
+                              ),
+                          itemBuilder: (context, index) => Column(
+                            children: [
+                              Expanded(
+                                child: RugPattern(rows: 50, design: index),
+                              ),
+                              const SizedBox(height: 8),
+                              Text('فرش ${persianDigits(index + 1)}'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                  ],
                 ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('بستن'),
+              ),
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -252,9 +291,10 @@ class _WeavingHomeState extends State<WeavingHome> with WidgetsBindingObserver {
                               color: c.onSurfaceVariant,
                             ),
                           ),
-                          WovenRug(
-                            height: size.maxWidth > 650 ? 320 : 250,
-                            completed: completed,
+                          WovenRug(height: size.maxWidth > 650 ? 320 : 250),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: ThreadRule(),
                           ),
                           Text(
                             stage,
@@ -436,11 +476,8 @@ class _WeavingHomeState extends State<WeavingHome> with WidgetsBindingObserver {
                               ),
                             ),
                           const SizedBox(height: 28),
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: c.secondaryContainer,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
+                          AtelierPanel(
+                            color: c.secondaryContainer,
                             child: Padding(
                               padding: const EdgeInsets.all(20),
                               child: Column(

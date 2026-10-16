@@ -1,3 +1,4 @@
+import 'package:farash/app/atelier.dart';
 import 'package:flutter/material.dart';
 
 /// Compatibility hook for existing project navigation.
@@ -14,12 +15,12 @@ class GlassBackdrop extends StatelessWidget {
       ColoredBox(color: Theme.of(context).colorScheme.surface, child: child);
 }
 
-/// Legacy call sites now receive opaque botanical surfaces without blur.
+/// Legacy call sites now receive opaque atelier surfaces without blur.
 class GlassSurface extends StatelessWidget {
   const GlassSurface({
     super.key,
     required this.child,
-    this.radius = 16,
+    this.radius = 24,
     this.blur = 0,
     this.padding = EdgeInsets.zero,
     this.borderColor,
@@ -32,15 +33,11 @@ class GlassSurface extends StatelessWidget {
   final Color? borderColor;
   final bool shadow;
   @override
-  Widget build(BuildContext context) => Material(
-    color: Theme.of(context).colorScheme.surfaceContainerLow,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(radius),
-      side: BorderSide(
-        color: borderColor ?? Theme.of(context).colorScheme.outlineVariant,
-      ),
-    ),
-    clipBehavior: Clip.antiAlias,
-    child: Padding(padding: padding, child: child),
+  Widget build(BuildContext context) => AtelierPanel(
+    radius: radius,
+    borderColor: borderColor,
+    padding: padding,
+    lifted: shadow,
+    child: child,
   );
 }

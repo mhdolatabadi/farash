@@ -75,6 +75,7 @@ class TaskTile extends StatelessWidget {
     final checklist = parseChecklist(task.description);
     final dated = task.due != null || task.deadline != null;
     final row = InkWell(
+      borderRadius: BorderRadius.circular(18),
       onTap: onOpen,
       onLongPress: onLongPress,
       child: Padding(
@@ -161,23 +162,40 @@ class TaskTile extends StatelessWidget {
     );
     return Semantics(
       selected: selected,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          row,
-          // A hairline from the title's edge keeps rows apart without boxes.
-          if (divider)
-            Padding(
-              padding: EdgeInsetsDirectional.only(
-                start: 56 + subtaskIndent * depth,
-                end: 12,
-              ),
-              child: Divider(
-                height: 1,
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-              ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Material(
+          color: selected
+              ? theme.colorScheme.secondaryContainer
+              : theme.colorScheme.surfaceContainerLow,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: .45),
             ),
-        ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              row,
+              // A hairline from the title's edge keeps rows apart without boxes.
+              if (divider)
+                Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    start: 56 + subtaskIndent * depth,
+                    end: 12,
+                  ),
+                  child: Divider(
+                    height: 1,
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.5,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -257,6 +257,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.drag(find.byType(CustomScrollView), const Offset(0, 1500));
     await tester.pumpAndSettle();
+    await tester.runAsync(
+      () => precacheImage(
+        const AssetImage('assets/weaving/rug.png'),
+        tester.element(find.byType(WeavingHome)),
+      ),
+    );
+    await tester.pumpAndSettle();
     await capture(tester, key, 'weaving-earned-progress');
     final collection = find.text('فرش‌های من · ۱');
     await tester.ensureVisible(collection);
@@ -265,6 +272,11 @@ void main() {
     expect(find.text('فرش ۱'), findsOneWidget);
     expect(tester.widget<RugPattern>(find.byType(RugPattern).last).rows, 50);
     await capture(tester, key, 'weaving-collection');
+    for (final size in [const Size(320, 600), const Size(740, 360)]) {
+      tester.view.physicalSize = size;
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
     expect(tester.takeException(), isNull);
   });
 }

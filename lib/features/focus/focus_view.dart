@@ -1,3 +1,4 @@
+import 'package:farash/app/atelier.dart';
 import 'package:flutter/material.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/focus/focus_controller.dart';
@@ -57,6 +58,7 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                             ? 'فقط همین یک کار.'
                             : 'وقتِ نفس تازه.',
                         style: theme.textTheme.headlineSmall,
+                        textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -87,55 +89,70 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                             ),
                         ],
                       ),
-                      const SizedBox(height: 28),
-                      Semantics(
-                        label:
-                            '${persianDigits(seconds ~/ 60)} دقیقه و ${persianDigits(seconds % 60)} ثانیه باقی مانده',
-                        excludeSemantics: true,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            persianDigits(time),
-                            textDirection: TextDirection.ltr,
-                            style: theme.textTheme.displayLarge?.copyWith(
-                              fontSize: 80,
-                              fontWeight: FontWeight.w700,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                        ),
-                      ),
                       const SizedBox(height: 24),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        alignment: WrapAlignment.center,
-                        children: [
-                          FilledButton.icon(
-                            onPressed: timer.running
-                                ? timer.pause
-                                : timer.start,
-                            icon: Icon(
-                              timer.running
-                                  ? Icons.pause_rounded
-                                  : Icons.play_arrow_rounded,
+                      AtelierPanel(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 20,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const ThreadRule(),
+                            const SizedBox(height: 12),
+                            Semantics(
+                              label:
+                                  '${persianDigits(seconds ~/ 60)} دقیقه و ${persianDigits(seconds % 60)} ثانیه باقی مانده',
+                              excludeSemantics: true,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  persianDigits(time),
+                                  textDirection: TextDirection.ltr,
+                                  style: theme.textTheme.displayLarge?.copyWith(
+                                    fontSize: 80,
+                                    fontWeight: FontWeight.w700,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ),
                             ),
-                            label: Text(
-                              timer.running
-                                  ? 'مکث'
-                                  : timer.finished
-                                  ? 'دوباره شروع کن'
-                                  : timer.minutes == 25
-                                  ? 'شروع تمرکز'
-                                  : 'شروع استراحت',
+                            const SizedBox(height: 16),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              alignment: WrapAlignment.center,
+                              children: [
+                                FilledButton.icon(
+                                  onPressed: timer.running
+                                      ? timer.pause
+                                      : timer.start,
+                                  icon: Icon(
+                                    timer.running
+                                        ? Icons.pause_rounded
+                                        : Icons.play_arrow_rounded,
+                                  ),
+                                  label: Text(
+                                    timer.running
+                                        ? 'مکث'
+                                        : timer.finished
+                                        ? 'دوباره شروع کن'
+                                        : timer.minutes == 25
+                                        ? 'شروع تمرکز'
+                                        : 'شروع استراحت',
+                                  ),
+                                ),
+                                IconButton.outlined(
+                                  tooltip: 'از نو',
+                                  onPressed: timer.reset,
+                                  icon: const Icon(Icons.restart_alt),
+                                ),
+                              ],
                             ),
-                          ),
-                          IconButton.outlined(
-                            tooltip: 'از نو',
-                            onPressed: timer.reset,
-                            icon: const Icon(Icons.restart_alt),
-                          ),
-                        ],
+                            const SizedBox(height: 12),
+                            const ThreadRule(),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 24),
                       Text(

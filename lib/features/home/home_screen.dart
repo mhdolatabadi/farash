@@ -1,3 +1,4 @@
+import 'package:farash/app/atelier.dart';
 import 'package:farash/features/weaving/weaving_home.dart';
 import 'package:farash/features/focus/focus_controller.dart';
 import 'package:farash/features/focus/focus_view.dart';
@@ -357,26 +358,36 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? AppBar(title: const Text('فراش'))
                     : null,
                 drawer: Drawer(child: _sidebar()),
-                bottomNavigationBar: NavigationBar(
-                  selectedIndex: _section,
-                  onDestinationSelected: _switchSection,
-                  destinations: const [
-                    NavigationDestination(
-                      icon: Icon(Icons.grid_view_rounded),
-                      selectedIcon: Icon(Icons.grid_view_rounded),
-                      label: 'فرش',
+                bottomNavigationBar: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerLow,
+                    border: Border(
+                      top: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
                     ),
-                    NavigationDestination(
-                      icon: Icon(Icons.check_circle_outline_rounded),
-                      selectedIcon: Icon(Icons.check_circle_rounded),
-                      label: 'کارها',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.hourglass_empty_rounded),
-                      selectedIcon: Icon(Icons.hourglass_top_rounded),
-                      label: 'تمرکز',
-                    ),
-                  ],
+                  ),
+                  child: NavigationBar(
+                    selectedIndex: _section,
+                    onDestinationSelected: _switchSection,
+                    destinations: const [
+                      NavigationDestination(
+                        icon: WeaveMark(size: 24),
+                        selectedIcon: WeaveMark(size: 26),
+                        label: 'فرش',
+                      ),
+                      NavigationDestination(
+                        icon: Icon(Icons.check_circle_outline_rounded),
+                        selectedIcon: Icon(Icons.check_circle_rounded),
+                        label: 'کارها',
+                      ),
+                      NavigationDestination(
+                        icon: Icon(Icons.hourglass_empty_rounded),
+                        selectedIcon: Icon(Icons.hourglass_top_rounded),
+                        label: 'تمرکز',
+                      ),
+                    ],
+                  ),
                 ),
                 body: page,
               );
@@ -436,11 +447,17 @@ class _AccountHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'فراش',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+                Row(
+                  children: [
+                    const WeaveMark(size: 28),
+                    const SizedBox(width: 10),
+                    Text(
+                      'فراش',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
                 Text(
                   email,
