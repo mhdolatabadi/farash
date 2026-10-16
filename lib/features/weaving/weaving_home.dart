@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/time_zone.dart';
 import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/features/garden/garden_scene.dart';
+import 'package:farash/features/weaving/woven_rug.dart';
 import 'package:farash/features/progress/progress.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/features/tasks/presentation/priority_color.dart';
 
-class GardenHome extends StatefulWidget {
-  const GardenHome({
+class WeavingHome extends StatefulWidget {
+  const WeavingHome({
     super.key,
     required this.api,
     required this.token,
@@ -25,10 +25,10 @@ class GardenHome extends StatefulWidget {
   final ValueChanged<String> onProject;
   final ValueChanged<String?> onFocus;
   @override
-  State<GardenHome> createState() => _GardenHomeState();
+  State<WeavingHome> createState() => _WeavingHomeState();
 }
 
-class _GardenHomeState extends State<GardenHome> with WidgetsBindingObserver {
+class _WeavingHomeState extends State<WeavingHome> with WidgetsBindingObserver {
   PersonalProgress? _progress;
   List<Task> _tasks = [];
   bool _loading = true;
@@ -80,7 +80,7 @@ class _GardenHomeState extends State<GardenHome> with WidgetsBindingObserver {
         try {
           progress = await _client!.loadProgress(token, await deviceTimeZone());
         } catch (_) {
-          error = 'رشد باغچه دریافت نشد. برای تلاش دوباره لمس کنید.';
+          error = 'پیشرفت بافت دریافت نشد. برای تلاش دوباره لمس کنید.';
         }
       }
       if (!mounted || request != _request || token != widget.token()) return;
@@ -93,7 +93,7 @@ class _GardenHomeState extends State<GardenHome> with WidgetsBindingObserver {
     } catch (_) {
       if (!mounted || request != _request || token != widget.token()) return;
       setState(() {
-        _error = 'اطلاعات باغچه دریافت نشد. برای تلاش دوباره لمس کنید.';
+        _error = 'اطلاعات فرش دریافت نشد. برای تلاش دوباره لمس کنید.';
         _loading = false;
       });
     }
@@ -110,7 +110,7 @@ class _GardenHomeState extends State<GardenHome> with WidgetsBindingObserver {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('یک قدم سبزتر. کار انجام شد.'),
+          content: const Text('یک رج جلوتر. کار انجام شد.'),
           action: SnackBarAction(
             label: 'برگرداندن',
             onPressed: () async {
@@ -144,32 +144,69 @@ class _GardenHomeState extends State<GardenHome> with WidgetsBindingObserver {
     }
   }
 
+  void _showCollection(int count) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('فرش‌های من'),
+        content: SizedBox(
+          width: 480,
+          height: 360,
+          child: count == 0
+              ? const Center(
+                  child: Text(
+                    'اولین فرشت با ۵۰ کارِ انجام‌شده کامل می‌شود.',
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              : GridView.builder(
+                  itemCount: count,
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 150,
+                    mainAxisSpacing: 20,
+                    crossAxisSpacing: 20,
+                    childAspectRatio: .65,
+                  ),
+                  itemBuilder: (context, index) => Column(
+                    children: [
+                      Expanded(child: RugPattern(rows: 50, design: index)),
+                      const SizedBox(height: 8),
+                      Text('فرش ${persianDigits(index + 1)}'),
+                    ],
+                  ),
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('بستن'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = theme.colorScheme;
     final progress = _progress;
     final completed = progress?.completed;
-    final stage = completed == null
-        ? 'باغچهٔ من'
-        : completed == 0
-        ? 'شروع یک باغچه'
-        : completed < 10
-        ? 'اولین جوانه‌ها'
-        : completed < 50
-        ? 'در مسیر شکفتن'
-        : 'یک باغچهٔ پُربار';
+    final weave = completed == null ? null : WeaveProgress(completed);
+    final stage = weave == null
+        ? 'فرشِ روزهای تو'
+        : 'فرش شمارهٔ ${persianDigits(weave.rugs + 1)}';
     return RefreshIndicator(
       onRefresh: _load,
       child: CustomScrollView(
-        key: const PageStorageKey('garden-scroll'),
+        key: const PageStorageKey('weaving-scroll'),
         slivers: [
           SliverAppBar(
-            title: const Text('باغچهٔ من'),
+            title: const Text('فرشٔ من'),
             floating: true,
             actions: [
               IconButton(
-                tooltip: 'تازه‌سازی باغچه',
+                tooltip: 'تازه‌سازی فرش',
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
               ),
@@ -191,7 +228,7 @@ class _GardenHomeState extends State<GardenHome> with WidgetsBindingObserver {
                             children: [
                               Expanded(
                                 child: Text(
-                                  'آرام‌آرام، سبزتر.',
+                                  'گره‌گره، رو به جلو.',
                                   style: theme.textTheme.headlineMedium
                                       ?.copyWith(fontWeight: FontWeight.w700),
                                 ),
@@ -199,7 +236,7 @@ class _GardenHomeState extends State<GardenHome> with WidgetsBindingObserver {
                               if (progress != null)
                                 Chip(
                                   avatar: const Icon(
-                                    Icons.eco_rounded,
+                                    Icons.auto_awesome_rounded,
                                     size: 18,
                                   ),
                                   label: Text(
@@ -210,12 +247,12 @@ class _GardenHomeState extends State<GardenHome> with WidgetsBindingObserver {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'هر کارِ انجام‌شده، یک قدم برای رشد.',
+                            'هر کار، یک رج؛ هر روز، نقش تازه.',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: c.onSurfaceVariant,
                             ),
                           ),
-                          GardenScene(
+                          WovenRug(
                             height: size.maxWidth > 650 ? 320 : 250,
                             completed: completed,
                           ),
@@ -246,7 +283,7 @@ class _GardenHomeState extends State<GardenHome> with WidgetsBindingObserver {
                               minHeight: 8,
                               borderRadius: BorderRadius.circular(8),
                               semanticsLabel:
-                                  'رشد تا سطح بعد، ${persianDigits(progress.levelXp)} از ۱۰۰',
+                                  'پیشرفت تا سطح بعد، ${persianDigits(progress.levelXp)} از ۱۰۰',
                             ),
                             const SizedBox(height: 8),
                             Text(
@@ -258,54 +295,65 @@ class _GardenHomeState extends State<GardenHome> with WidgetsBindingObserver {
                             ),
                           ] else
                             const Text(
-                              'با انجام کارها، مسیر رشدتان را بسازید.',
+                              'با انجام کارها، فرش خودت را بباف.',
                               textAlign: TextAlign.center,
                             ),
-                          const SizedBox(height: 24),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              for (final target in [1, 5, 10, 25, 50])
-                                Expanded(
-                                  child: Semantics(
-                                    label:
-                                        '${persianDigits(target)} کار انجام‌شده، ${completed != null && completed >= target ? "شکفته" : "در انتظار رشد"}',
-                                    excludeSemantics: true,
-                                    child: Column(
-                                      children: [
-                                        SizedBox(
-                                          height: 48,
-                                          child: Icon(
-                                            completed != null &&
-                                                    completed >= target
-                                                ? Icons.local_florist_rounded
-                                                : Icons.lock_outline_rounded,
-                                            size:
-                                                completed != null &&
-                                                    completed >= target
-                                                ? 28
-                                                : 20,
-                                            color:
-                                                completed != null &&
-                                                    completed >= target
-                                                ? c.primary
-                                                : c.onSurfaceVariant,
-                                          ),
-                                        ),
-                                        Text(
-                                          '${persianDigits(target)} کار',
-                                          textAlign: TextAlign.center,
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                color: c.onSurfaceVariant,
-                                              ),
-                                        ),
-                                      ],
+                          if (weave != null) ...[
+                            const SizedBox(height: 20),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: c.surfaceContainerLow,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: c.outlineVariant),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 58,
+                                      height: 80,
+                                      child: RugPattern(
+                                        rows: weave.rows,
+                                        design: weave.rugs,
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '${persianDigits(weave.rows)} رج از ۵۰ رج',
+                                            style: theme.textTheme.titleMedium,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'هر کارِ انجام‌شده یک رج می‌بافد.',
+                                            style: theme.textTheme.bodySmall,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          TextButton.icon(
+                                            onPressed: () =>
+                                                _showCollection(weave.rugs),
+                                            icon: const Icon(
+                                              Icons
+                                                  .collections_bookmark_outlined,
+                                              size: 18,
+                                            ),
+                                            label: Text(
+                                              'فرش‌های من · ${persianDigits(weave.rugs)}',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                            ],
-                          ),
+                              ),
+                            ),
+                          ],
                         ],
                       );
                       final next = Column(

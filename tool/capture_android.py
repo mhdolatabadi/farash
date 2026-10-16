@@ -24,7 +24,7 @@ def tap(label):
         xml = adb('shell', 'cat', '/sdcard/window.xml')
         (OUT / 'last-window.xml').write_bytes(xml)
         for node in ET.fromstring(xml).iter('node'):
-            if label in (node.get('text', ''), node.get('content-desc', '')):
+            if any(value.split('\n')[0] == label for value in (node.get('text', ''), node.get('content-desc', ''))):
                 x1, y1, x2, y2 = map(int, re.findall(r'\d+', node.get('bounds')))
                 adb('shell', 'input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
                 return
@@ -35,11 +35,11 @@ def tap(label):
 adb('install', '-r', 'build/app/outputs/flutter-apk/app-debug.apk')
 adb('shell', 'am', 'start', '-n', 'ir.mhdolatabadi.farash/.MainActivity')
 time.sleep(8)
-capture('garden-light')
+capture('weaving-light')
 adb('shell', 'cmd', 'uimode', 'night', 'yes')
-capture('garden-dark')
+capture('weaving-dark')
 adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')
-capture('garden-large-text')
+capture('weaving-large-text')
 adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')
 time.sleep(2)
 tap('تمرکز')

@@ -1,4 +1,4 @@
-import 'package:farash/features/garden/garden_home.dart';
+import 'package:farash/features/weaving/weaving_home.dart';
 import 'package:farash/features/focus/focus_controller.dart';
 import 'package:farash/features/focus/focus_view.dart';
 import 'package:flutter/material.dart';
@@ -100,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (start == null || _navigated) return;
     final view = DueView.values.where((v) => v.name == start.value).firstOrNull;
     setState(() {
-      _section = start.value == StartView.garden ? 0 : 1;
+      _section = start.value == StartView.weaving ? 0 : 1;
       _view = view;
     });
   }
@@ -235,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint) ...[
           for (final (index, icon, title) in [
-            (0, Icons.yard_outlined, 'باغچه'),
+            (0, Icons.grid_view_rounded, 'فرش'),
             (1, Icons.check_circle_outline_rounded, 'کارها'),
             (2, Icons.hourglass_empty_rounded, 'تمرکز'),
           ])
@@ -272,8 +272,8 @@ class _HomeScreenState extends State<HomeScreen> {
             final label = _labels?.byId(_labelId);
             if (view == null && label == null) _placeLamp(selected);
             final Widget content = _section == 0
-                ? GardenHome(
-                    key: const ValueKey('garden-home'),
+                ? WeavingHome(
+                    key: const ValueKey('weaving-home'),
                     api: widget.tasksApi,
                     token: widget.token,
                     projects: widget.projects,
@@ -362,9 +362,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   onDestinationSelected: _switchSection,
                   destinations: const [
                     NavigationDestination(
-                      icon: Icon(Icons.yard_outlined),
-                      selectedIcon: Icon(Icons.yard_rounded),
-                      label: 'باغچه',
+                      icon: Icon(Icons.grid_view_rounded),
+                      selectedIcon: Icon(Icons.grid_view_rounded),
+                      label: 'فرش',
                     ),
                     NavigationDestination(
                       icon: Icon(Icons.check_circle_outline_rounded),
@@ -499,7 +499,7 @@ class _AccountHeader extends StatelessWidget {
 /// Picks which list opens first on this device.
 Future<void> _pickStartView(BuildContext context, StartView start) async {
   final choices = [
-    (StartView.garden, 'باغچه'),
+    (StartView.weaving, 'فرش'),
     (StartView.inbox, 'صندوق ورودی'),
     for (final v in DueView.values) (v.name, v.title),
   ];

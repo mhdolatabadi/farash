@@ -1,4 +1,4 @@
-import 'package:farash/features/garden/garden_scene.dart';
+import 'package:farash/features/weaving/woven_rug.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -710,7 +710,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                     padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
                     child: Column(
                       children: [
-                        const GardenScene(height: 160),
+                        const WovenRug(height: 160),
                         const SizedBox(height: 16),
                         Text(
                           'هنوز کاری در «${widget.project.displayName}» نیست.',
