@@ -103,7 +103,11 @@ class TimeTrackingView extends StatelessWidget {
   final TimeTracker tracker;
   final TasksApi tasksApi;
   final ProjectsController projects;
-  Future<void> _pick(BuildContext context) async {
+  Future<void> _pick(
+    BuildContext context, {
+    DateTime? manualStart,
+    DateTime? manualEnd,
+  }) async {
     try {
       final token = tracker.token();
       if (token == null) return;
@@ -146,7 +150,17 @@ class TimeTrackingView extends StatelessWidget {
                     leading: const Icon(Icons.play_circle_outline),
                     onTap: () {
                       Navigator.pop(context);
-                      startTracking(rootContext, tracker, tasks[index]);
+                      if (manualStart != null) {
+                        manualTime(
+                          rootContext,
+                          tracker,
+                          tasks[index],
+                          initialStart: manualStart,
+                          initialEnd: manualEnd,
+                        );
+                      } else {
+                        startTracking(rootContext, tracker, tasks[index]);
+                      }
                     },
                   ),
                 ),
@@ -229,6 +243,17 @@ class TimeTrackingView extends StatelessWidget {
                           icon: const Icon(Icons.play_arrow_rounded),
                           label: const Text('شروع برای یک کار'),
                         ),
+                        TextButton.icon(
+                          onPressed: () => _pick(
+                            context,
+                            manualStart: DateTime.now().subtract(
+                              const Duration(minutes: 30),
+                            ),
+                            manualEnd: DateTime.now(),
+                          ),
+                          icon: const Icon(Icons.edit_calendar_outlined),
+                          label: const Text('افزودن بازهٔ دستی'),
+                        ),
                         const SizedBox(height: 24),
                         if (tracker.active case final active?) ...[
                           ActiveTimeBar(tracker: tracker, onOpen: () {}),
@@ -299,6 +324,25 @@ class TimeTrackingView extends StatelessWidget {
                         const Text(
                           'فاصلهٔ بین بازه‌ها ثبت نشده است؛ فقط اگر واقعاً کار کرده‌ای آن را دستی اضافه کن.',
                         ),
+                        if (!report.truncated)
+                          for (final gap in todayGaps(
+                            report.entries,
+                            report.now,
+                          ))
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: OutlinedButton.icon(
+                                onPressed: () => _pick(
+                                  context,
+                                  manualStart: gap.$1.toLocal(),
+                                  manualEnd: gap.$2.toLocal(),
+                                ),
+                                icon: const Icon(Icons.add),
+                                label: Text(
+                                  'فاصلهٔ ثبت‌نشدهٔ امروز · ${trackedTime(gap.$2.difference(gap.$1))}',
+                                ),
+                              ),
+                            ),
                         for (final entry in report.entries) ...[
                           ListTile(
                             contentPadding: EdgeInsets.zero,
@@ -353,7 +397,7 @@ class _Total extends StatelessWidget {
   );
 }
 
-Future<void> confirmDeleteTime(
+Future<bool> confirmDeleteTime(
   BuildContext context,
   TimeTracker tracker,
   TimeEntry entry,
@@ -375,7 +419,7 @@ Future<void> confirmDeleteTime(
       ],
     ),
   );
-  if (yes == true) await tracker.remove(entry);
+  return yes == true ? tracker.remove(entry) : false;
 }
 
 Future<void> manualTime(
@@ -383,14 +427,28 @@ Future<void> manualTime(
   TimeTracker tracker,
   Task task, {
   TimeEntry? editing,
+  DateTime? initialStart,
+  DateTime? initialEnd,
 }) => showDialog<void>(
   context: context,
-  builder: (context) =>
-      _TimeEditor(tracker: tracker, task: task, editing: editing),
+  builder: (context) => _TimeEditor(
+    tracker: tracker,
+    task: task,
+    editing: editing,
+    initialStart: initialStart,
+    initialEnd: initialEnd,
+  ),
 );
 
 class _TimeEditor extends StatefulWidget {
-  const _TimeEditor({required this.tracker, required this.task, this.editing});
+  const _TimeEditor({
+    required this.tracker,
+    required this.task,
+    this.editing,
+    this.initialStart,
+    this.initialEnd,
+  });
+  final DateTime? initialStart, initialEnd;
   final TimeTracker tracker;
   final Task task;
   final TimeEntry? editing;
@@ -401,8 +459,10 @@ class _TimeEditor extends StatefulWidget {
 class _TimeEditorState extends State<_TimeEditor> {
   late DateTime start =
       widget.editing?.started.toLocal() ??
+      widget.initialStart ??
       DateTime.now().subtract(const Duration(minutes: 30));
-  late DateTime end = widget.editing?.ended?.toLocal() ?? DateTime.now();
+  late DateTime end =
+      widget.editing?.ended?.toLocal() ?? widget.initialEnd ?? DateTime.now();
   final key = timeKey();
   String? error;
   bool saving = false;
@@ -472,8 +532,12 @@ class _TimeEditorState extends State<_TimeEditor> {
               onPressed: saving
                   ? null
                   : () async {
-                      await confirmDeleteTime(context, widget.tracker, entry);
-                      if (context.mounted) Navigator.pop(context);
+                      final removed = await confirmDeleteTime(
+                        context,
+                        widget.tracker,
+                        entry,
+                      );
+                      if (removed && context.mounted) Navigator.pop(context);
                     },
               child: const Text('حذف بازه'),
             ),
@@ -508,7 +572,7 @@ class _TimeEditorState extends State<_TimeEditor> {
                   key,
                   editing: widget.editing,
                 );
-                if (!mounted) return;
+                if (!context.mounted) return;
                 if (ok) {
                   Navigator.pop(context);
                 } else {
@@ -653,3 +717,25 @@ class TrackerMessage extends StatelessWidget {
     },
   );
 }
+
+List<(DateTime, DateTime)> todayGaps(List<TimeEntry> entries, DateTime now) {
+  final local = now.toLocal();
+  var cursor = DateTime(local.year, local.month, local.day).toUtc();
+  final end = now.toUtc();
+  final gaps = <(DateTime, DateTime)>[];
+  final sorted = [...entries]..sort((a, b) => a.started.compareTo(b.started));
+  for (final entry in sorted) {
+    final start = entry.started.isBefore(cursor) ? cursor : entry.started;
+    final stop = entry.started.add(entry.elapsed(now));
+    if (start.isAfter(end)) break;
+    if (start.difference(cursor) >= const Duration(minutes: 5))
+      gaps.add((cursor, start));
+    if (stop.isAfter(cursor)) cursor = stop;
+  }
+  if (end.difference(cursor) >= const Duration(minutes: 5))
+    gaps.add((cursor, end));
+  return gaps;
+}
+
+String timeStamp(BuildContext context, DateTime date) =>
+    '${formatDate(date, CalendarScope.of(context), alwaysYear: true)} ${persianDigits('${date.hour}:${date.minute.toString().padLeft(2, '0')}')}';

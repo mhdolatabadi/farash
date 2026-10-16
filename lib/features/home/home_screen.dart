@@ -93,8 +93,9 @@ class _HomeScreenState extends State<HomeScreen> {
         : null;
     _tracker?.focusTask = _startTaskFocus;
     _tracker?.addListener(_trackerChanged);
-    if (widget.tasksApi case final ApiClient api)
+    if (widget.tasksApi case final ApiClient api) {
       api.completedTask.addListener(_completedTime);
+    }
     widget.projects.load();
     _labels?.load();
     _applyStartView();
@@ -104,8 +105,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    if (widget.tasksApi case final ApiClient api)
+    if (widget.tasksApi case final ApiClient api) {
       api.completedTask.removeListener(_completedTime);
+    }
     _tracker?.removeListener(_trackerChanged);
     _tracker?.dispose();
     _focus.dispose();
@@ -165,8 +167,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<bool> _beforeFocusPause() async {
     final active = _tracker?.active;
-    if (active != null && active.id == _focusEntry)
+    if (active != null && active.id == _focusEntry) {
       return _tracker!.stop(active);
+    }
     return true;
   }
 
@@ -444,7 +447,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   )
                 : _section == 3 && _tracker != null
                 ? TimeTrackingView(
-                    tracker: _tracker!,
+                    tracker: _tracker,
                     tasksApi: widget.tasksApi,
                     projects: widget.projects,
                   )
@@ -548,10 +551,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     if (_tracker != null)
                       ActiveTimeBar(
-                        tracker: _tracker!,
+                        tracker: _tracker,
                         onOpen: () => _switchSection(3),
                       ),
-                    if (_tracker != null) TrackerMessage(tracker: _tracker!),
+                    if (_tracker != null) TrackerMessage(tracker: _tracker),
                     Expanded(child: page),
                   ],
                 ),
@@ -579,11 +582,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           if (_tracker != null)
                             ActiveTimeBar(
-                              tracker: _tracker!,
+                              tracker: _tracker,
                               onOpen: () => _switchSection(3),
                             ),
                           if (_tracker != null)
-                            TrackerMessage(tracker: _tracker!),
+                            TrackerMessage(tracker: _tracker),
                           Expanded(child: page),
                         ],
                       ),

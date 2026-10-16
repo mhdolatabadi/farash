@@ -45,6 +45,9 @@ func TestTimeAPI(t *testing.T) {
 			t.Fatal("validation", code)
 		}
 	}
+	if code := api.do("GET", "/api/v1/time?taskId="+task.ID, other, nil, nil); code != 404 {
+		t.Fatal("private task report", code)
+	}
 	var report store.TimeReport
 	if code := api.do("GET", "/api/v1/time?timezone=Asia%2FTehran", token, nil, &report); code != 200 || len(report.Entries) != 1 {
 		t.Fatalf("report %d %+v", code, report)

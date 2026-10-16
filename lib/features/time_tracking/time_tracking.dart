@@ -60,9 +60,9 @@ class TimeReport {
 }
 
 String timeKey() =>
-    '${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
+    '${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(0x7fffffff)}';
 String trackedTime(Duration d) {
-  final seconds = d.inSeconds.clamp(0, 1 << 40);
+  final seconds = d.inSeconds.clamp(0, 9999999999);
   return persianDigits(
     '${(seconds ~/ 3600).toString().padLeft(2, '0')}:${(seconds ~/ 60 % 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}',
   );
@@ -91,9 +91,11 @@ class TimeTracker extends ChangeNotifier with WidgetsBindingObserver {
   final _clock = Stopwatch();
   DateTime get now =>
       (report?.now ?? DateTime.now().toUtc()).add(_clock.elapsed);
-  TimeEntry? get active => report?.active;
+  TimeEntry? _active;
+  TimeEntry? get active => _active;
+  Map<String, dynamic>? _lastMutation;
   ValueChanged<Task>? focusTask;
-  String? _pendingStartKey, _pendingTask;
+  String? _pendingStartKey, _pendingTask, _pendingSource;
   Future<TimeReport> fetch({String? taskId}) async {
     final current = token();
     if (current == null) throw StateError('signed out');
@@ -113,13 +115,16 @@ class TimeTracker extends ChangeNotifier with WidgetsBindingObserver {
       final value = await fetch();
       if (_disposed || generation != _generation) return;
       report = value;
+      _active = value.active;
+      if (!busy) error = null;
       revision++;
       _clock
         ..reset()
         ..start();
     } catch (_) {
-      if (!_disposed && generation == _generation)
+      if (!_disposed && generation == _generation) {
         error = 'زمان‌ها دریافت نشد؛ اتصال را بررسی و دوباره تلاش کنید.';
+      }
     }
     if (!_disposed) notifyListeners();
   }
@@ -134,7 +139,20 @@ class TimeTracker extends ChangeNotifier with WidgetsBindingObserver {
     error = null;
     notifyListeners();
     try {
-      await api.timeRequest(token()!, method, path, body: body);
+      final result = await api.timeRequest(token()!, method, path, body: body);
+      _lastMutation = result;
+      if (result['id'] != null) {
+        final entry = TimeEntry.fromJson(result);
+        if (entry.ended == null) {
+          _active = entry;
+        } else if (_active?.id == entry.id) {
+          _active = null;
+        }
+      } else if (method == 'DELETE' &&
+          _active != null &&
+          path.endsWith(_active!.id)) {
+        _active = null;
+      }
       await load();
       return true;
     } catch (_) {
@@ -154,9 +172,11 @@ class TimeTracker extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<bool> start(Task task, {int? focusSeconds}) async {
     // Reuse an idempotency key after a lost response, never award another interval.
-    if (_pendingTask != task.id) {
+    final source = focusSeconds == null ? 'timer' : 'focus';
+    if (_pendingTask != task.id || _pendingSource != source) {
       _pendingStartKey = null;
       _pendingTask = task.id;
+      _pendingSource = source;
     }
     _pendingStartKey ??= timeKey();
     final ok = await mutate(
@@ -165,13 +185,18 @@ class TimeTracker extends ChangeNotifier with WidgetsBindingObserver {
       body: {
         'task_id': task.id,
         'request_key': _pendingStartKey,
-        'source': focusSeconds == null ? 'timer' : 'focus',
-        if (focusSeconds != null) 'focus_seconds': focusSeconds,
+        'source': source,
+        'focus_seconds': ?focusSeconds,
       },
     );
     if (ok) {
       _pendingStartKey = null;
       _pendingTask = null;
+    }
+    if (ok && _lastMutation?['ended_at'] != null) {
+      error = 'جلسهٔ قبلی ثبت شده است؛ برای جلسهٔ تازه دوباره شروع کنید.';
+      if (!_disposed) notifyListeners();
+      return false;
     }
     return ok;
   }

@@ -89,6 +89,9 @@ func (s *Store) CreateTime(ctx context.Context, owner string, in TimeInput) (Tim
 		if old.TaskID == nil || *old.TaskID != in.TaskID || old.Source != in.Source {
 			return TimeEntry{}, ErrInvalidTime
 		}
+		if in.Source == "manual" && (!old.Started.Equal(in.Started) || old.Ended == nil || !old.Ended.Equal(*in.Ended)) {
+			return TimeEntry{}, ErrInvalidTime
+		}
 		return old, tx.Commit(ctx)
 	}
 	if !errors.Is(err, ErrTimeNotFound) {
@@ -145,6 +148,15 @@ func (s *Store) DeleteTime(ctx context.Context, owner, id string) error {
 	return err
 }
 func (s *Store) TimeReport(ctx context.Context, owner string, from, to time.Time, zone *time.Location, task string) (TimeReport, error) {
+	if task != "" {
+		var exists bool
+		if err := s.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM tasks WHERE owner_id=$1 AND id=$2)`, owner, task).Scan(&exists); err != nil {
+			return TimeReport{}, err
+		}
+		if !exists {
+			return TimeReport{}, ErrTaskNotFound
+		}
+	}
 	now := time.Now().UTC()
 	p := TimeReport{Entries: []TimeEntry{}, Tasks: []TaskTime{}, ServerNow: now}
 	if err := s.expireTimes(ctx, owner); err != nil {

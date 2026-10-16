@@ -134,12 +134,14 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                                   onPressed: () async {
                                     if (timer.running) {
                                       if (await (widget.beforePause?.call() ??
-                                          Future.value(true))) {
+                                              Future.value(true)) &&
+                                          mounted) {
                                         timer.pause();
                                       }
                                     } else {
                                       if (await (widget.beforeStart?.call() ??
-                                          Future.value(true))) {
+                                              Future.value(true)) &&
+                                          mounted) {
                                         timer.start();
                                       }
                                     }
@@ -161,7 +163,12 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                                 ),
                                 IconButton.outlined(
                                   tooltip: 'از نو',
-                                  onPressed: timer.reset,
+                                  onPressed: () async {
+                                    if (await (widget.beforePause?.call() ??
+                                            Future.value(true)) &&
+                                        mounted)
+                                      timer.reset();
+                                  },
                                   icon: const Icon(Icons.restart_alt),
                                 ),
                               ],
