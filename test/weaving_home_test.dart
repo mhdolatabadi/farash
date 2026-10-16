@@ -272,6 +272,11 @@ void main() {
     expect(find.text('فرش ۱'), findsOneWidget);
     expect(tester.widget<RugPattern>(find.byType(RugPattern).last).rows, 50);
     await capture(tester, key, 'weaving-collection');
+    for (final size in [const Size(320, 600), const Size(740, 360)]) {
+      tester.view.physicalSize = size;
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
     expect(tester.takeException(), isNull);
   });
 }
