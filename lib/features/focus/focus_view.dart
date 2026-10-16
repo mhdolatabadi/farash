@@ -166,8 +166,9 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                                   onPressed: () async {
                                     if (await (widget.beforePause?.call() ??
                                             Future.value(true)) &&
-                                        mounted)
+                                        mounted) {
                                       timer.reset();
+                                    }
                                   },
                                   icon: const Icon(Icons.restart_alt),
                                 ),

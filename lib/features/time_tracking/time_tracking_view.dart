@@ -256,7 +256,6 @@ class TimeTrackingView extends StatelessWidget {
                         ),
                         const SizedBox(height: 24),
                         if (tracker.active case final active?) ...[
-                          ActiveTimeBar(tracker: tracker, onOpen: () {}),
                           if (active.elapsed(tracker.now) >
                               const Duration(hours: 4))
                             Padding(
@@ -268,6 +267,12 @@ class TimeTrackingView extends StatelessWidget {
                                   ),
                                   Wrap(
                                     children: [
+                                      TextButton(
+                                        onPressed: tracker.busy
+                                            ? null
+                                            : () => tracker.stop(active),
+                                        child: const Text('ثبت کل بازه و توقف'),
+                                      ),
                                       TextButton(
                                         onPressed: () => manualTime(
                                           context,
@@ -348,7 +353,7 @@ class TimeTrackingView extends StatelessWidget {
                             contentPadding: EdgeInsets.zero,
                             title: Text(entry.title),
                             subtitle: Text(
-                              '${formatDate(entry.started.toLocal(), CalendarScope.of(context), alwaysYear: true) + ' ' + persianDigits('${entry.started.toLocal().hour}:${entry.started.toLocal().minute.toString().padLeft(2, '0')}')} · ${trackedTime(entry.elapsed(report.now))}',
+                              '${timeStamp(context, entry.started.toLocal())} · ${trackedTime(entry.elapsed(report.now))}',
                             ),
                             onTap: () => manualTime(
                               context,
@@ -508,15 +513,11 @@ class _TimeEditorState extends State<_TimeEditor> {
           const SizedBox(height: 12),
           TextButton(
             onPressed: saving ? null : () => pick(true),
-            child: Text(
-              'از ${formatDate(start, CalendarScope.of(context), alwaysYear: true) + ' ' + persianDigits('${start.hour}:${start.minute.toString().padLeft(2, '0')}')}',
-            ),
+            child: Text('از ${timeStamp(context, start)}'),
           ),
           TextButton(
             onPressed: saving ? null : () => pick(false),
-            child: Text(
-              'تا ${formatDate(end, CalendarScope.of(context), alwaysYear: true) + ' ' + persianDigits('${end.hour}:${end.minute.toString().padLeft(2, '0')}')}',
-            ),
+            child: Text('تا ${timeStamp(context, end)}'),
           ),
           Text('مدت ${trackedTime(end.difference(start))}'),
           const Text(
@@ -617,11 +618,12 @@ class _TaskTimePanelState extends State<TaskTimePanel> {
   Future<void> load() async {
     try {
       final r = await widget.tracker.fetch(taskId: widget.task.id);
-      if (mounted)
+      if (mounted) {
         setState(() {
           report = r;
           error = null;
         });
+      }
     } catch (_) {
       if (mounted) setState(() => error = 'زمان این کار دریافت نشد.');
     }
@@ -728,12 +730,14 @@ List<(DateTime, DateTime)> todayGaps(List<TimeEntry> entries, DateTime now) {
     final start = entry.started.isBefore(cursor) ? cursor : entry.started;
     final stop = entry.started.add(entry.elapsed(now));
     if (start.isAfter(end)) break;
-    if (start.difference(cursor) >= const Duration(minutes: 5))
+    if (start.difference(cursor) >= const Duration(minutes: 5)) {
       gaps.add((cursor, start));
+    }
     if (stop.isAfter(cursor)) cursor = stop;
   }
-  if (end.difference(cursor) >= const Duration(minutes: 5))
+  if (end.difference(cursor) >= const Duration(minutes: 5)) {
     gaps.add((cursor, end));
+  }
   return gaps;
 }
 

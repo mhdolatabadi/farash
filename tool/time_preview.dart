@@ -39,9 +39,26 @@ class PreviewTimeApi extends FakeTasksApi implements TimeApi {
       };
       return active!;
     }
+    final now = DateTime.now();
+    final end = now.subtract(const Duration(hours: 1));
+    final start = end.subtract(const Duration(hours: 1));
+    final midnight = DateTime(now.year, now.month, now.day);
+    final today = end.isBefore(midnight)
+        ? 0
+        : end.difference(start.isBefore(midnight) ? midnight : start).inSeconds;
     return {
       'active': active,
-      'entries': <Map<String, dynamic>>[],
+      'entries': [
+        {
+          'id': 'previous-entry',
+          'task_id': 'task-1',
+          'title': 'مطالعهٔ فصل اول کتاب',
+          'source': 'manual',
+          'started_at': start.toUtc().toIso8601String(),
+          'ended_at': end.toUtc().toIso8601String(),
+          'planned_end': null,
+        },
+      ],
       'tasks': [
         {
           'task_id': 'task-1',
@@ -51,7 +68,7 @@ class PreviewTimeApi extends FakeTasksApi implements TimeApi {
         },
       ],
       'seconds': 3600,
-      'today_seconds': 3600,
+      'today_seconds': today,
       'server_now': DateTime.now().toUtc().toIso8601String(),
       'truncated': false,
     };

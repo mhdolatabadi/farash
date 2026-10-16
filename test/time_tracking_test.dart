@@ -18,6 +18,7 @@ class TrackingFixture extends FakeTasksApi implements TimeApi {
   Map<String, dynamic>? active;
   final calls = <Map<String, Object?>>[];
   bool fail = false;
+  bool failRead = false;
   @override
   Future<Map<String, dynamic>> timeRequest(
     String token,
@@ -29,7 +30,12 @@ class TrackingFixture extends FakeTasksApi implements TimeApi {
       calls.add(body ?? {'stop': path});
       if (fail) throw const ApiException('offline');
       if (path.endsWith('/stop')) {
+        final stopped = {
+          ...active!,
+          'ended_at': DateTime.now().toUtc().toIso8601String(),
+        };
         active = null;
+        return stopped;
       } else {
         active = {
           'id': 'entry-1',
@@ -48,6 +54,7 @@ class TrackingFixture extends FakeTasksApi implements TimeApi {
       }
       return active ?? {};
     }
+    if (failRead) throw const ApiException('offline report');
     return {
       'active': active,
       'entries': <Map<String, dynamic>>[],
@@ -99,7 +106,7 @@ void main() {
     expect(api.calls.first['focus_seconds'], 1500);
     await tester.tap(find.text('کارها').last);
     await tester.pumpAndSettle();
-    expect(find.byTooltip('توقف ثبت زمان'), findsOneWidget);
+    expect(find.byTooltip('توقف ثبت زمان'), findsWidgets);
     await tester.tap(find.text('تمرکز').last);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('مکث'));
@@ -184,6 +191,42 @@ void main() {
       await tester.pumpAndSettle();
     },
   );
+  testWidgets('authoritative start and stop survive a failed report refresh', (
+    tester,
+  ) async {
+    final api = TrackingFixture();
+    final tracker = TimeTracker(api: api, token: () => 'token');
+    addTearDown(tracker.dispose);
+    await tester.pumpAndSettle();
+    api.failRead = true;
+    expect(
+      await tracker.start(
+        const Task(id: 'task', projectId: 'inbox', title: 'work'),
+      ),
+      isTrue,
+    );
+    expect(tracker.active?.id, 'entry-1');
+    expect(tracker.error, isNotNull);
+    expect(await tracker.stop(tracker.active!), isTrue);
+    expect(tracker.active, isNull);
+  });
+  test('today gaps merge overlaps without inventing work', () {
+    final now = DateTime(2026, 10, 16, 12);
+    TimeEntry entry(int start, int end) => TimeEntry.fromJson({
+      'id': '$start',
+      'task_id': 'task',
+      'title': 'work',
+      'started_at': DateTime(2026, 10, 16, start).toUtc().toIso8601String(),
+      'ended_at': DateTime(2026, 10, 16, end).toUtc().toIso8601String(),
+      'planned_end': null,
+      'source': 'manual',
+    });
+    final gaps = todayGaps([entry(8, 10), entry(9, 11)], now);
+    expect(gaps.length, 2);
+    expect(gaps.first.$2, DateTime(2026, 10, 16, 8).toUtc());
+    expect(gaps.last.$1, DateTime(2026, 10, 16, 11).toUtc());
+    expect(gaps.last.$2, now.toUtc());
+  });
   test('time labels retain hours and clamp negative elapsed values', () {
     expect(
       trackedTime(const Duration(hours: 27, minutes: 2, seconds: 3)),
