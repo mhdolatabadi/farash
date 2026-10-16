@@ -13,7 +13,8 @@ import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/time_zone.dart';
 import 'package:farash/core/settings/start_view.dart';
 import 'package:farash/features/home/home_screen.dart';
-import 'package:farash/features/garden/garden_home.dart';
+import 'package:farash/features/weaving/weaving_home.dart';
+import 'package:farash/features/weaving/woven_rug.dart';
 import 'package:farash/features/focus/focus_view.dart';
 import 'package:farash/features/focus/focus_controller.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
@@ -33,12 +34,12 @@ void main() {
     }
   });
   for (final variant in [
-    ('garden-phone', const Size(390, 844), false, 1.0),
-    ('garden-dark', const Size(390, 844), true, 1.0),
-    ('garden-large-text', const Size(320, 760), false, 2.0),
-    ('garden-desktop', const Size(1440, 900), false, 1.0),
+    ('weaving-phone', const Size(390, 844), false, 1.0),
+    ('weaving-dark', const Size(390, 844), true, 1.0),
+    ('weaving-large-text', const Size(320, 760), false, 2.0),
+    ('weaving-desktop', const Size(1440, 900), false, 1.0),
   ]) {
-    testWidgets('garden layout and navigation ${variant.$1}', (tester) async {
+    testWidgets('weaving layout and navigation ${variant.$1}', (tester) async {
       tester.view.physicalSize = variant.$2;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -65,7 +66,7 @@ void main() {
               child: child!,
             ),
             home: HomeScreen(
-              email: 'garden@example.com',
+              email: 'weaving@example.com',
               onLogout: () {},
               projects: projects,
               tasksApi: tasks,
@@ -76,23 +77,24 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(GardenHome), findsOneWidget);
+      expect(find.byType(WeavingHome), findsOneWidget);
       expect(find.textContaining('امتیاز'), findsNothing);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
       await tester.runAsync(
         () => precacheImage(
-          const AssetImage('assets/garden/sanctuary-seed.png'),
-          tester.element(find.byType(GardenHome)),
+          const AssetImage('assets/weaving/loom.png'),
+          tester.element(find.byType(WeavingHome)),
         ),
       );
       await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
       await capture(tester, key, variant.$1);
       if (variant.$4 == 1) {
         await tester.tap(find.text('تمرکز').last);
         await tester.pumpAndSettle();
         expect(find.byType(FocusView), findsOneWidget);
         await capture(tester, key, '${variant.$1}-focus');
-        if (variant.$1 == 'garden-phone') {
+        if (variant.$1 == 'weaving-phone') {
           await tester.tap(find.text('شروع تمرکز'));
           await tester.pump();
           await tester.tap(find.text('کارها').last);
@@ -104,6 +106,15 @@ void main() {
               .controller;
           expect(timer.running, isTrue);
           expect(find.text('مکث'), findsOneWidget);
+          await tester.tap(find.text('فرش').last);
+          await tester.pumpAndSettle();
+          tester
+              .widget<WeavingHome>(find.byType(WeavingHome))
+              .onFocus('کار دوم');
+          await tester.pumpAndSettle();
+          expect(find.textContaining('جلسهٔ قبلی هنوز'), findsOneWidget);
+          expect(timer.running, isTrue);
+          expect(timer.taskTitle, isNull);
           timer.pause();
         }
         await tester.tap(find.text('کارها').last);
@@ -148,13 +159,13 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('server confirmed completion grows garden and undo restores it', (
+  testWidgets('server confirmed completion weaves rows and undo restores it', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    var count = 9;
+    var count = 49;
     var closed = false;
     final task = {
       'id': 'task-1',
@@ -212,7 +223,7 @@ void main() {
           home: Scaffold(
             body: Directionality(
               textDirection: TextDirection.rtl,
-              child: GardenHome(
+              child: WeavingHome(
                 api: api,
                 token: () => 'token',
                 projects: projects,
@@ -226,31 +237,34 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('۹ کار انجام‌شده · ۹۰ امتیاز'), findsOneWidget);
+    expect(find.text('۴۹ کار انجام‌شده · ۴۹۰ امتیاز'), findsOneWidget);
     final complete = find.byTooltip('انجام «مطالعهٔ کتاب»');
     await tester.ensureVisible(complete);
     await tester.pumpAndSettle();
     await tester.tap(complete);
     await tester.pumpAndSettle();
-    expect(count, 10);
-    expect(find.text('۱۰ کار انجام‌شده · ۱۰۰ امتیاز'), findsOneWidget);
+    expect(count, 50);
+    expect(find.text('۵۰ کار انجام‌شده · ۵۰۰ امتیاز'), findsOneWidget);
+    expect(tester.widget<RugPattern>(find.byType(RugPattern).first).rows, 0);
     await tester.tap(find.text('برگرداندن'));
     await tester.pumpAndSettle();
-    expect(count, 9);
-    expect(find.text('۹ کار انجام‌شده · ۹۰ امتیاز'), findsOneWidget);
-    count = 25;
+    expect(count, 49);
+    expect(find.text('۴۹ کار انجام‌شده · ۴۹۰ امتیاز'), findsOneWidget);
+    expect(tester.widget<RugPattern>(find.byType(RugPattern).first).rows, 49);
+    count = 75;
     api.progressChanges.value++;
     await tester.pumpAndSettle();
-    await tester.runAsync(
-      () => precacheImage(
-        const AssetImage('assets/garden/sanctuary.png'),
-        tester.element(find.byType(GardenHome)),
-      ),
-    );
     await tester.pumpAndSettle();
     await tester.drag(find.byType(CustomScrollView), const Offset(0, 1500));
     await tester.pumpAndSettle();
-    await capture(tester, key, 'garden-earned-progress');
+    await capture(tester, key, 'weaving-earned-progress');
+    final collection = find.text('فرش‌های من · ۱');
+    await tester.ensureVisible(collection);
+    await tester.tap(collection);
+    await tester.pumpAndSettle();
+    expect(find.text('فرش ۱'), findsOneWidget);
+    expect(tester.widget<RugPattern>(find.byType(RugPattern).last).rows, 50);
+    await capture(tester, key, 'weaving-collection');
     expect(tester.takeException(), isNull);
   });
 }

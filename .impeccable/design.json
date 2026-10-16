@@ -1,50 +1,117 @@
 {
   "schemaVersion": 2,
-  "title": "Farash Garden",
-  "colors": {
-    "primary": {
-      "light": "#315D47",
-      "dark": "#ABD4AD"
+  "generatedAt": "2026-10-16T00:00:00Z",
+  "title": "Design System: Farash Weaving",
+  "extensions": {
+    "motion": [
+      {
+        "name": "woven-rows",
+        "value": "320ms",
+        "purpose": "Labelled RugPattern row reveal; zero with reduced motion."
+      },
+      {
+        "name": "standard",
+        "value": "280ms",
+        "purpose": "Shell and row transitions; zero with reduced motion."
+      },
+      {
+        "name": "quick",
+        "value": "160ms",
+        "purpose": "Small state changes."
+      },
+      {
+        "name": "linger",
+        "value": "220ms",
+        "purpose": "Completed row hold before folding."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sidebar",
+        "value": "840 logical pixels"
+      },
+      {
+        "name": "weaving-columns",
+        "value": ">650 available logical pixels"
+      }
+    ],
+    "shadows": [
+      {
+        "name": "flat-card",
+        "value": "none",
+        "purpose": "Cards and compatibility surfaces use tonal layers and outlines."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "description": "Light-mode visual translation of the filled Material action; Flutter supplies native state layers.",
+      "html": "<button class=\"ds-primary\">شروع تمرکز</button>",
+      "css": ".ds-primary{background:#98503D;color:white;min-height:48px;border:0;border-radius:12px;padding:0 24px;font-family:Vazirmatn,sans-serif;font-weight:700}.ds-primary:hover{filter:brightness(1.08)}.ds-primary:active{filter:brightness(.95)}.ds-primary:focus-visible{outline:2px solid #98503D;outline-offset:3px}"
     },
-    "surface": {
-      "light": "#F8F6EE",
-      "dark": "#14251F"
+    {
+      "name": "Text action",
+      "kind": "button",
+      "description": "Ink-colored secondary action.",
+      "html": "<button class=\"ds-text\">تازه‌سازی فرش</button>",
+      "css": ".ds-text{background:transparent;color:#283442;min-height:48px;border:0;border-radius:12px;padding:0 16px;font-family:Vazirmatn,sans-serif}.ds-text:hover{background:#F0DDD2}.ds-text:focus-visible{outline:2px solid #98503D;outline-offset:3px}"
     },
-    "ink": {
-      "light": "#23362C",
-      "dark": "#EDF1E6"
+    {
+      "name": "Task input",
+      "kind": "input",
+      "description": "Approximate web preview: production field fill and outline use generated Material container roles.",
+      "html": "<input class=\"ds-input\" dir=\"rtl\" aria-label=\"کار تازه\" placeholder=\"کار تازه\">",
+      "css": ".ds-input{color:#283442;background:#FAF5EB;border:1px solid #69625B;border-radius:12px;padding:14px 16px;font-family:Vazirmatn,sans-serif}.ds-input:hover{border-color:#98503D}.ds-input:focus-visible{outline:2px solid #98503D;outline-offset:-2px}"
     },
-    "mutedInk": {
-      "light": "#536356",
-      "dark": "#BCCABD"
+    {
+      "name": "Selected mode",
+      "kind": "chip",
+      "description": "Selected tonal chip; actual chip shape and state layers come from Material defaults.",
+      "html": "<button class=\"ds-chip\" aria-pressed=\"true\">تمرکز</button>",
+      "css": ".ds-chip{background:#F0DDD2;color:#283442;border:1px solid #69625B;border-radius:8px;padding:8px 16px;font-family:Vazirmatn,sans-serif}.ds-chip:hover{filter:brightness(.97)}.ds-chip:focus-visible{outline:2px solid #98503D;outline-offset:3px}"
     },
-    "selected": {
-      "light": "#DEEADB",
-      "dark": "#2D4937"
+    {
+      "name": "Phone destinations",
+      "kind": "nav",
+      "description": "Text-only web preview of three destinations; actual navigation includes Material icons and generated container background.",
+      "html": "<nav class=\"ds-nav\" dir=\"rtl\" aria-label=\"ناوبری\"><button aria-current=\"page\">فرش</button><button>کارها</button><button>تمرکز</button></nav>",
+      "css": ".ds-nav{display:flex;align-items:center;justify-content:space-around;min-height:72px;background:#FAF5EB}.ds-nav button{border:0;background:transparent;color:#283442;min-height:48px;padding:8px 16px;font-family:Vazirmatn,sans-serif;border-radius:12px}.ds-nav button[aria-current]{background:#F0DDD2}.ds-nav button:hover{background:#F0DDD2}.ds-nav button:focus-visible{outline:2px solid #98503D;outline-offset:3px}"
+    },
+    {
+      "name": "Tonal container",
+      "kind": "card",
+      "description": "Approximate light web preview; production container and outline are generated Material roles. No shadow.",
+      "html": "<article class=\"ds-card\" dir=\"rtl\">قدم بعدی</article>",
+      "css": ".ds-card{background:#FAF5EB;color:#283442;border:1px solid #69625B;border-radius:16px;padding:16px;font-family:Vazirmatn,sans-serif}"
     }
-  },
-  "typography": {
-    "family": "Vazirmatn",
-    "headingSize": 28,
-    "bodySize": 16
-  },
-  "radii": {
-    "control": 12,
-    "surface": 16
-  },
-  "spacing": {
-    "compact": 8,
-    "standard": 16,
-    "page": 24
-  },
-  "motion": {
-    "growthStageMs": 180,
-    "reducedMotion": "instant"
-  },
-  "components": {
-    "canvas": "opaque theme surface",
-    "navigation": "three Material destinations",
-    "scene": "native-alpha authored raster selected by server-confirmed completion count",
-    "capture": "solid Material with measured safe-area clearance"
+  ],
+  "narrative": {
+    "northStar": "A Persian weaving atelier",
+    "overview": "The owner explicitly rejected similarity to Forest and approved an original Persian woven-rug world. This supersedes the botanical and earlier dew/glass identities. Confirmed work becomes visible woven craft; task utility and a legible focus timer support the atelier. The same high artistic quality is a durable expectation across the UI, including quiet utility surfaces, rather than only the home illustration.",
+    "keyCharacteristics": [
+      "Woven rows grounded in confirmed completed work.",
+      "Wool cream, terracotta and turquoise by day; midnight ink at night.",
+      "Persian-first typography and reversible, direct actions."
+    ],
+    "rules": [
+      {
+        "name": "The Confirmed Weaving Rule",
+        "body": "Never fabricate progress, XP or rewards to decorate a screen.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Do derive woven rows and collection counts from confirmed completed work and retain undo.",
+      "Do preserve Persian RTL, Persian digits and the isolated LTR timer.",
+      "Do keep task content readable with user text scaling."
+    ],
+    "donts": [
+      "Don't restore decorative glass, ambient gradients or title glow.",
+      "Don't display unavailable account progress as an invented score.",
+      "Don't infer project-specific threads, colors or historical rugs from unavailable completion history.",
+      "Don't present the static loom illustration as the measured progress display."
+    ]
   }
 }

@@ -84,27 +84,24 @@ class FarashPalette {
   FarashColors of(Brightness brightness) =>
       brightness == Brightness.dark ? dark : light;
 
-  /// شبنم (#49): dew on glass. Peach, lavender and mint light behind white
-  /// frosted glass by day, and the same hues low in a violet night. Violet
-  /// means "now" and the one primary action; mint marks tomorrow and rose
-  /// marks overdue.
-  static const garden = FarashPalette(
-    name: 'garden',
+  /// Wool, terracotta, turquoise and midnight ink.
+  static const weaving = FarashPalette(
+    name: 'weaving',
     light: FarashColors(
-      primary: Color(0xFF315D47),
+      primary: Color(0xFF98503D),
       onPrimary: Colors.white,
-      accent: Color(0xFF795628),
-      surface: Color(0xFFF8F6EE),
-      onSurface: Color(0xFF23362C),
-      onSurfaceVariant: Color(0xFF536356),
-      selected: Color(0xFFDEEADB),
-      onSelected: Color(0xFF23362C),
-      backdrop: [Color(0xFFF8F6EE), Color(0xFFF8F6EE), Color(0xFFF8F6EE)],
-      glow: Color(0xFFF8F6EE),
-      light: Color(0xFFF8F6EE),
-      mist: Color(0xFFF8F6EE),
-      pane: Color(0xFFFFFDF7),
-      paneBorder: Color(0x24536356),
+      accent: Color(0xFF246D72),
+      surface: Color(0xFFFAF5EB),
+      onSurface: Color(0xFF283442),
+      onSurfaceVariant: Color(0xFF69625B),
+      selected: Color(0xFFF0DDD2),
+      onSelected: Color(0xFF283442),
+      backdrop: [Color(0xFFFAF5EB), Color(0xFFFAF5EB), Color(0xFFFAF5EB)],
+      glow: Color(0xFFFAF5EB),
+      light: Color(0xFFFAF5EB),
+      mist: Color(0xFFFAF5EB),
+      pane: Color(0xFFFFFBF3),
+      paneBorder: Color(0x2469625B),
       shadow: Color(0x00000000),
       overdue: Color(0xFFB3263A),
       edge: Color(0x00FFFFFF),
@@ -116,23 +113,23 @@ class FarashPalette {
       ],
     ),
     dark: FarashColors(
-      primary: Color(0xFFABD4AD),
-      onPrimary: Color(0xFF153723),
-      accent: Color(0xFFE7C48C),
-      surface: Color(0xFF14251F),
-      onSurface: Color(0xFFEDF1E6),
-      onSurfaceVariant: Color(0xFFBCCABD),
-      selected: Color(0xFF2D4937),
-      onSelected: Color(0xFFEDF1E6),
-      backdrop: [Color(0xFF14251F), Color(0xFF14251F), Color(0xFF14251F)],
-      glow: Color(0x0014251F),
-      light: Color(0x0014251F),
-      mist: Color(0x0014251F),
-      pane: Color(0xFF1D3229),
-      paneBorder: Color(0x245D7868),
+      primary: Color(0xFFF2B49A),
+      onPrimary: Color(0xFF4C251B),
+      accent: Color(0xFF86CCD0),
+      surface: Color(0xFF19232F),
+      onSurface: Color(0xFFF5EDE1),
+      onSurfaceVariant: Color(0xFFCFC3B7),
+      selected: Color(0xFF553B34),
+      onSelected: Color(0xFFF5EDE1),
+      backdrop: [Color(0xFF19232F), Color(0xFF19232F), Color(0xFF19232F)],
+      glow: Color(0x0019232F),
+      light: Color(0x0019232F),
+      mist: Color(0x0019232F),
+      pane: Color(0xFF24303D),
+      paneBorder: Color(0x24A78D7F),
       shadow: Color(0x00000000),
       overdue: Color(0xFFFF9AA6),
-      edge: Color(0x001D3229),
+      edge: Color(0x0024303D),
       priorities: [
         Color(0xFFFF8A9A),
         Color(0xFFFFB86B),
@@ -151,7 +148,7 @@ class FarashGlassColors extends ThemeExtension<FarashGlassColors> {
 
   static FarashColors of(BuildContext context) =>
       Theme.of(context).extension<FarashGlassColors>()?.colors ??
-      FarashPalette.garden.of(Theme.of(context).brightness);
+      FarashPalette.weaving.of(Theme.of(context).brightness);
 
   @override
   FarashGlassColors copyWith({FarashColors? colors}) =>

@@ -4,12 +4,12 @@ import 'package:farash/core/calendar/calendar_settings.dart';
 /// Which list opens when the app starts on this device: the Inbox
 /// (`inbox`) or a view across projects, by its name.
 class StartView extends ChangeNotifier {
-  StartView({CalendarSettingsStore? store, String value = garden})
+  StartView({CalendarSettingsStore? store, String value = weaving})
     : _store = store,
-      _value = value;
+      _value = value == 'garden' ? weaving : value;
 
   static const inbox = 'inbox';
-  static const garden = 'garden';
+  static const weaving = 'weaving';
   static const _key = 'start_view';
 
   final CalendarSettingsStore? _store;
@@ -25,7 +25,9 @@ class StartView extends ChangeNotifier {
   Future<void> load() async {
     try {
       final saved = await _store?.read(_key);
-      if (saved != null && saved.isNotEmpty) _value = saved;
+      if (saved != null && saved.isNotEmpty) {
+        _value = saved == 'garden' ? weaving : saved;
+      }
     } catch (_) {
       // Unreadable storage keeps the Inbox.
     }
@@ -35,7 +37,7 @@ class StartView extends ChangeNotifier {
 
   Future<void> set(String value) async {
     if (value == _value) return;
-    _value = value;
+    _value = value == 'garden' ? weaving : value;
     notifyListeners();
     try {
       await _store?.write(_key, value);

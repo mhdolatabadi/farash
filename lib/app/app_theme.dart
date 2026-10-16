@@ -3,7 +3,7 @@ import 'package:farash/app/palette.dart';
 
 abstract final class FarashTheme {
   /// The palette the app ships with.
-  static const palette = FarashPalette.garden;
+  static const palette = FarashPalette.weaving;
 
   static const _controlRadius = 12.0;
   static const _surfaceRadius = 16.0;
@@ -16,10 +16,9 @@ abstract final class FarashTheme {
 
   static ThemeData _build(Brightness brightness, FarashPalette palette) {
     final p = palette.of(brightness);
-    // Neutrals (sheets, menus, dialogs, fields) come from the violet, so
-    // every solid surface belongs to the same room.
+    // Warm tonal surfaces carry the woven identity across every screen.
     final generated = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF315D47),
+      seedColor: p.primary,
       brightness: brightness,
       dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot,
     );
@@ -48,8 +47,7 @@ abstract final class FarashTheme {
       borderSide: BorderSide(color: colors.outlineVariant),
     );
 
-    // Headings are set in Naskh, the hand of the house; everything read in
-    // passing stays in Vazirmatn.
+    // One Persian type family keeps headings and task text coherent.
     TextStyle? naskh(TextStyle? style) => style?.copyWith(
       fontFamily: 'Vazirmatn',
       fontFamilyFallback: const ['Vazirmatn'],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/focus/focus_controller.dart';
-import 'package:farash/features/garden/garden_scene.dart';
+import 'package:farash/features/weaving/woven_rug.dart';
 
 class FocusView extends StatefulWidget {
   const FocusView({super.key, required this.controller});
@@ -49,7 +49,7 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
                   child: Column(
                     children: [
-                      const GardenScene(height: 180),
+                      const WovenRug(height: 180),
                       Text(
                         timer.finished
                             ? 'یک مکثِ پربار.'

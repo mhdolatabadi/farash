@@ -14,9 +14,7 @@ sections, priorities, completion, undo and project navigation. Roadmap features
 must not appear as working controls before implementation.
 
 ## Brand Commitments
-فراش / Farash, Persian RTL, bundled Vazirmatn. User requested a fundamental redesign inspired by Todoist, TickTick,
-Pomofocus and Forest, and selected a game-like garden as the central experience.
-See DESIGN.md and docs/design/garden.md.
+فراش / Farash, Persian RTL, bundled Vazirmatn. The user rejected similarity to Forest and explicitly approved an original Persian woven-rug world, with the same high artistic quality throughout the UI. Confirmed task completions weave rows and complete rugs; existing task utility remains central. This supersedes the botanical garden direction. See DESIGN.md and docs/design/weaving.md.
 
 ## Product Principles
 Fast one-field capture; private by default; reversible completion/deletion;
