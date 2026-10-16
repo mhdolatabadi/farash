@@ -11,6 +11,7 @@ import (
 type progressStore interface {
 	Progress(context.Context, string, time.Time, *time.Location) (store.Progress, error)
 	SetProgressGoal(context.Context, string, int) error
+	SetWeeklyTaskGoal(context.Context, string, int) error
 }
 
 func progressHandler(auth *authHandler, data progressStore) http.HandlerFunc {
@@ -28,7 +29,22 @@ func progressHandler(auth *authHandler, data progressStore) http.HandlerFunc {
 			writeError(w, http.StatusBadRequest, "invalid_timezone")
 			return
 		}
-		if r.Method == http.MethodPatch {
+		if r.Method == http.MethodPatch && r.URL.Path == "/api/v1/progress/challenge" {
+			input, ok := decodeTaskRequest[struct {
+				Target int `json:"target"`
+			}](w, r)
+			if !ok {
+				return
+			}
+			if input.Target < 1 || input.Target > 500 {
+				writeError(w, http.StatusBadRequest, "invalid_challenge_target")
+				return
+			}
+			if err := data.SetWeeklyTaskGoal(r.Context(), user.ID, input.Target); err != nil {
+				writeError(w, http.StatusInternalServerError, "progress_unavailable")
+				return
+			}
+		} else if r.Method == http.MethodPatch {
 			input, ok := decodeTaskRequest[struct {
 				Days int `json:"weekly_goal"`
 			}](w, r)

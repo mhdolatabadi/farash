@@ -119,3 +119,71 @@ func TestProgressValidationAndFailures(t *testing.T) {
 		}
 	}
 }
+
+func (s *progressUsers) SetWeeklyTaskGoal(ctx context.Context, owner string, target int) error {
+	return s.SetProgressGoal(ctx, owner, target)
+}
+
+func TestWeeklyChallengeValidation(t *testing.T) {
+	data := &progressUsers{fakeUsers: newFakeUsers()}
+	api := &dbAPI{t: t, handler: NewHandler(Config{Store: data, AuthSecret: []byte("test-secret")})}
+	token := api.register("challenge-unit@example.com")
+	const path = "/api/v1/progress/challenge"
+	if code := api.do("PATCH", path, "", map[string]int{"target": 10}, nil); code != 401 {
+		t.Fatalf("auth: %d", code)
+	}
+	for _, body := range []string{`{}`, `null`, `{"target":0}`, `{"target":501}`, `{"target":-1}`, `{"target":1.5}`, `{"target":"10"}`, `{"target":10,"owner_id":"other"}`} {
+		if code := api.do("PATCH", path, token, body, nil); code != 400 {
+			t.Fatalf("invalid %s: %d", body, code)
+		}
+	}
+	for _, target := range []int{1, 10, 500} {
+		if code := api.do("PATCH", path, token, map[string]int{"target": target}, nil); code != 200 {
+			t.Fatalf("valid: %d", code)
+		}
+	}
+	data.fail = true
+	if code := api.do("PATCH", path, token, map[string]int{"target": 10}, nil); code != 500 {
+		t.Fatalf("failure: %d", code)
+	}
+}
+
+func TestWeeklyChallengeOwnerAndUndo(t *testing.T) {
+	api := newDBAPI(t)
+	token := api.register("challenge@example.com")
+	other := api.register("private-challenge@example.com")
+	read := func(token string) store.Progress {
+		t.Helper()
+		var p store.Progress
+		if code := api.do("GET", "/api/v1/progress", token, nil, &p); code != 200 {
+			t.Fatalf("read: %d", code)
+		}
+		return p
+	}
+	if p := read(token); p.WeeklyTaskGoal != 10 {
+		t.Fatalf("default: %+v", p)
+	}
+	task := api.createTask(token, "", "هدف شخصی")
+	path := "/api/v1/tasks/" + task.ID
+	api.do("POST", path+"/close", token, nil, nil)
+	api.do("PATCH", "/api/v1/progress/challenge", token, map[string]int{"target": 1}, nil)
+	if p := read(token); p.WeeklyTaskGoal != 1 || p.WeekReport.Completed != 1 || p.XP != 10 || p.WeeklyGoal != 3 {
+		t.Fatalf("challenge: %+v", p)
+	}
+	if p := read(other); p.WeeklyTaskGoal != 10 || p.WeekReport.Completed != 0 {
+		t.Fatalf("privacy: %+v", p)
+	}
+	api.do("PATCH", "/api/v1/progress", token, map[string]int{"weekly_goal": 5}, nil)
+	if p := read(token); p.WeeklyTaskGoal != 1 || p.WeeklyGoal != 5 {
+		t.Fatalf("independent goals: %+v", p)
+	}
+	api.do("POST", path+"/reopen", token, nil, nil)
+	if p := read(token); p.WeekReport.Completed != 0 || p.XP != 0 || p.WeeklyTaskGoal != 1 {
+		t.Fatalf("undo: %+v", p)
+	}
+	api.do("POST", path+"/close", token, nil, nil)
+	api.do("DELETE", path, token, nil, nil)
+	if p := read(token); p.WeekReport.Completed != 0 || p.WeeklyTaskGoal != 1 {
+		t.Fatalf("delete: %+v", p)
+	}
+}

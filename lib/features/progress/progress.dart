@@ -8,10 +8,12 @@ class PersonalProgress {
     required this.weeklyGoal,
     required this.badges,
     this.weekReport,
+    this.weeklyTaskGoal,
   });
 
   factory PersonalProgress.fromJson(Map<String, dynamic> json) =>
       PersonalProgress(
+        weeklyTaskGoal: json['weekly_task_goal'] as int?,
         completed: json['completed'] as int,
         xp: json['xp'] as int,
         level: json['level'] as int,
@@ -34,6 +36,7 @@ class PersonalProgress {
   final int weeklyGoal;
   final List<String> badges;
   final ProgressWeekReport? weekReport;
+  final int? weeklyTaskGoal;
 }
 
 class ProgressWeekReport {
