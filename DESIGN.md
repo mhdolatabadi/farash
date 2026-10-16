@@ -115,7 +115,7 @@ The transparent original loom illustration (`assets/weaving/loom.png`) establish
 
 Level and XP come from the account API; unavailable data never produces a fabricated score or rug progress. Up to three real next tasks can be opened, completed with undo or used as a focus-session title.
 
-Focus frames the timer in an atelier panel with thread-rule ornaments and retains one dominant timer and focus/short-break/long-break modes (25/5/15 minutes). Its controller belongs to the signed-in shell: navigation preserves it; sign-out disposes it. A deadline catches up after tick suspension. Sessions are local and end when the app closes. This delivery does not claim background alarms, persistent focus history or focus XP. Starting focus for a different task while a session runs preserves the running session and explains this through a snackbar.
+Focus frames the timer and its start/pause/reset controls in an atelier panel with 24 horizontal and 20 vertical padding. A thread rule sits above the timer and another below the controls. It retains one dominant timer and focus/short-break/long-break modes (25/5/15 minutes). Its controller belongs to the signed-in shell: navigation preserves it; sign-out disposes it. A deadline catches up after tick suspension. Sessions are local and end when the app closes. This delivery does not claim background alarms, persistent focus history or focus XP. Starting focus for a different task while a session runs preserves the running session and explains this through a snackbar.
 
 ## Do's and Don'ts
 

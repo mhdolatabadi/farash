@@ -66,7 +66,7 @@
     {
       "name": "Task input",
       "kind": "input",
-      "description": "Approximate web preview: production field fill and outline use generated Material container roles.",
+      "description": "Approximate web preview: production field fill uses the generated highest Material container; its outline is explicitly warm.",
       "html": "<input class=\"ds-input\" dir=\"rtl\" aria-label=\"کار تازه\" placeholder=\"کار تازه\">",
       "css": ".ds-input{color:#283442;background:#FAF5EB;border:1px solid #DDCBB6;border-radius:18px;padding:14px 16px;font-family:Vazirmatn,sans-serif}.ds-input:hover{border-color:#98503D}.ds-input:focus-visible{outline:2px solid #98503D;outline-offset:-2px}"
     },
@@ -89,7 +89,7 @@
       "kind": "card",
       "description": "Light-mode lifted paper panel; theme cards themselves retain zero Material elevation.",
       "html": "<article class=\"ds-card\" dir=\"rtl\">قدم بعدی</article>",
-      "css": ".ds-card{background:#FFFAF2;color:#283442;border:1px solid #DDCBB6;border-radius:24px;padding:16px;box-shadow:0 7px 22px rgba(0,0,0,.045);font-family:Vazirmatn,sans-serif}"
+      "css": ".ds-card{background:#FFFAF2;color:#283442;border:1px solid rgba(221,203,182,.7);border-radius:24px;padding:16px;box-shadow:0 7px 22px rgba(0,0,0,.045);font-family:Vazirmatn,sans-serif}"
     },
     {
       "name": "Thread ornament",
