@@ -18,6 +18,7 @@ class WeavingHome extends StatefulWidget {
     required this.onTasks,
     required this.onProject,
     required this.onFocus,
+    this.onTaskFocus,
   });
   final TasksApi api;
   final String? Function() token;
@@ -25,6 +26,7 @@ class WeavingHome extends StatefulWidget {
   final VoidCallback onTasks;
   final ValueChanged<String> onProject;
   final ValueChanged<String?> onFocus;
+  final ValueChanged<Task>? onTaskFocus;
   @override
   State<WeavingHome> createState() => _WeavingHomeState();
 }
@@ -467,7 +469,9 @@ class _WeavingHomeState extends State<WeavingHome> with WidgetsBindingObserver {
                                   onTap: () => widget.onProject(task.projectId),
                                   trailing: IconButton(
                                     tooltip: 'تمرکز روی این کار',
-                                    onPressed: () => widget.onFocus(task.title),
+                                    onPressed: () => widget.onTaskFocus != null
+                                        ? widget.onTaskFocus!(task)
+                                        : widget.onFocus(task.title),
                                     icon: const Icon(
                                       Icons.play_circle_outline_rounded,
                                     ),
@@ -505,9 +509,15 @@ class _WeavingHomeState extends State<WeavingHome> with WidgetsBindingObserver {
                                   ),
                                   const SizedBox(height: 16),
                                   FilledButton.icon(
-                                    onPressed: () => widget.onFocus(
-                                      _tasks.firstOrNull?.title,
-                                    ),
+                                    onPressed: () {
+                                      final task = _tasks.firstOrNull;
+                                      if (task != null &&
+                                          widget.onTaskFocus != null) {
+                                        widget.onTaskFocus!(task);
+                                      } else {
+                                        widget.onFocus(task?.title);
+                                      }
+                                    },
                                     icon: const Icon(Icons.play_arrow_rounded),
                                     label: const Text('شروع یک جلسه'),
                                   ),

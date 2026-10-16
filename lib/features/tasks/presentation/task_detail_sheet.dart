@@ -1,3 +1,5 @@
+import 'package:farash/features/time_tracking/time_tracking.dart';
+import 'package:farash/features/time_tracking/time_tracking_view.dart';
 import 'package:flutter/material.dart';
 import 'package:farash/app/glass.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
@@ -24,6 +26,7 @@ Future<TaskSheetResult?> showTaskDetailSheet(
   required List<Project> projects,
   LabelsController? labels,
 }) {
+  final tracker = TrackerScope.of(context);
   return showModalBottomSheet<TaskSheetResult>(
     context: context,
     isScrollControlled: true,
@@ -33,6 +36,7 @@ Future<TaskSheetResult?> showTaskDetailSheet(
       task: task,
       projects: projects,
       labels: labels,
+      tracker: tracker,
     ),
   );
 }
@@ -45,12 +49,14 @@ class TaskDetailEditor extends StatefulWidget {
     required this.task,
     required this.projects,
     this.labels,
+    this.tracker,
   });
 
   final ValueChanged<TaskSheetResult?>? onResult;
 
   /// The account's labels, to pick from; none where labels are unavailable.
   final LabelsController? labels;
+  final TimeTracker? tracker;
   final TasksController controller;
   final Task task;
   final List<Project> projects;
@@ -286,6 +292,8 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                   const Divider(),
                   const SizedBox(height: 8),
                   _ScheduleRow(dates: _dates, onTap: _pickDates),
+                  if (widget.tracker != null)
+                    TaskTimePanel(tracker: widget.tracker!, task: widget.task),
                   _PropertyRow(
                     icon: Icons.flag_outlined,
                     label: 'اولویت',

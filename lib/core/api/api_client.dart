@@ -1,3 +1,4 @@
+import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -199,10 +200,29 @@ abstract interface class SectionsApi {
 /// Talks to the Farash API. Feature interfaces are implemented here so that
 /// one HTTP client serves the whole app.
 class ApiClient
-    implements AuthApi, ProjectsApi, TasksApi, SectionsApi, LabelsApi {
+    implements AuthApi, ProjectsApi, TasksApi, SectionsApi, LabelsApi, TimeApi {
   ApiClient(this.baseUri, {http.Client? client})
     : _client = client ?? http.Client();
 
+  @override
+  Future<Map<String, dynamic>> timeRequest(
+    String token,
+    String method,
+    String path, {
+    Map<String, Object?>? body,
+  }) async {
+    final uri = Uri.parse(path);
+    return (await _send(
+          method,
+          uri.path,
+          token: token,
+          body: body,
+          query: uri.queryParameters,
+        ))
+        as Map<String, dynamic>;
+  }
+
+  final completedTask = ValueNotifier<Task?>(null);
   final Uri baseUri;
   final http.Client _client;
 
@@ -427,8 +447,13 @@ class ApiClient
       );
 
   @override
-  Future<Task> closeTask(String token, String id) async =>
-      _task(await _send('POST', '${_taskPath(id)}/close', token: token));
+  Future<Task> closeTask(String token, String id) async {
+    final task = _task(
+      await _send('POST', '${_taskPath(id)}/close', token: token),
+    );
+    completedTask.value = task;
+    return task;
+  }
 
   @override
   Future<Task> reopenTask(String token, String id) async =>

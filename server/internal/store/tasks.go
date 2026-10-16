@@ -399,6 +399,10 @@ func (s *Store) CompleteTask(ctx context.Context, owner, id string, completed bo
 			if err := closeSubtree(ctx, tx, owner, id, at); err != nil {
 				return err
 			}
+			if _, err := tx.Exec(ctx, `UPDATE time_entries e SET ended_at=GREATEST(e.started_at+interval '1 microsecond',LEAST(now(),COALESCE(e.planned_end,now()))) FROM tasks t WHERE e.owner_id=$1 AND e.task_id=t.id AND t.owner_id=$1 AND t.completed_at=$2 AND e.ended_at IS NULL`, owner, at); err != nil {
+				return err
+			}
+
 		} else {
 			if previous != nil {
 				if _, err := tx.Exec(ctx, `UPDATE tasks SET completed_at=NULL WHERE owner_id=$1 AND id=$2`, owner, id); err != nil {

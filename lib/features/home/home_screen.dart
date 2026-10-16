@@ -1,3 +1,7 @@
+import 'package:farash/core/text/persian_digits.dart';
+import 'package:farash/features/time_tracking/time_tracking.dart';
+import 'package:farash/features/time_tracking/time_tracking_view.dart';
+import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/app/atelier.dart';
 import 'package:farash/features/weaving/weaving_home.dart';
 import 'package:farash/features/focus/focus_controller.dart';
@@ -60,6 +64,9 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _selectedId;
   int _section = 1;
   final _focus = FocusController();
+  late final TimeTracker? _tracker;
+  Task? _focusTask;
+  String? _focusEntry;
 
   /// A view across projects (امروز, پیش رو) instead of a project.
   DueView? _view;
@@ -81,6 +88,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _tracker = widget.tasksApi is TimeApi
+        ? TimeTracker(api: widget.tasksApi as TimeApi, token: widget.token)
+        : null;
+    _tracker?.focusTask = _startTaskFocus;
+    _tracker?.addListener(_trackerChanged);
+    if (widget.tasksApi case final ApiClient api)
+      api.completedTask.addListener(_completedTime);
     widget.projects.load();
     _labels?.load();
     _applyStartView();
@@ -90,10 +104,132 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    if (widget.tasksApi case final ApiClient api)
+      api.completedTask.removeListener(_completedTime);
+    _tracker?.removeListener(_trackerChanged);
+    _tracker?.dispose();
     _focus.dispose();
     widget.startView?.removeListener(_applyStartView);
     _labels?.dispose();
     super.dispose();
+  }
+
+  void _trackerChanged() {
+    if (_focusEntry != null && _tracker?.active?.id != _focusEntry) {
+      _focus.pause();
+      _focusEntry = null;
+    }
+  }
+
+  void _startTaskFocus(Task task) {
+    if (_focus.running) {
+      _startFocus(task.title);
+      return;
+    }
+    _startFocus(task.title);
+    _focusTask = task;
+  }
+
+  Future<bool> _beforeFocusStart() async {
+    final tracker = _tracker, task = _focusTask;
+    if (tracker == null || task == null || _focus.minutes != 25) return true;
+    if (tracker.active case final active?) {
+      final yes = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('ثبت زمان دیگری فعال است'),
+          content: Text(
+            'ثبت «${active.title}» متوقف و تمرکز روی «${task.title}» شروع شود؟',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('انصراف'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('توقف و شروع'),
+            ),
+          ],
+        ),
+      );
+      if (yes != true || !await tracker.stop(active)) return false;
+    }
+    final ok = await tracker.start(
+      task,
+      focusSeconds: _focus.remaining.inSeconds.clamp(1, 1500),
+    );
+    if (ok) _focusEntry = tracker.active?.id;
+    return ok;
+  }
+
+  Future<bool> _beforeFocusPause() async {
+    final active = _tracker?.active;
+    if (active != null && active.id == _focusEntry)
+      return _tracker!.stop(active);
+    return true;
+  }
+
+  Future<void> _completedTime() async {
+    final tracker = _tracker;
+    if (tracker == null) return;
+    final task = (widget.tasksApi as ApiClient).completedTask.value;
+    if (task == null) return;
+    await tracker.load();
+    try {
+      final report = await tracker.fetch(taskId: task.id);
+      if (!mounted || report.seconds > 0 || report.entries.isNotEmpty) return;
+      await showModalBottomSheet<void>(
+        context: context,
+        useSafeArea: true,
+        builder: (sheetContext) => Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'برای «${task.title}» چقدر وقت گذاشتی؟',
+                style: Theme.of(sheetContext).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final minutes in [15, 30, 60])
+                    OutlinedButton(
+                      onPressed: () async {
+                        Navigator.pop(sheetContext);
+                        final end = DateTime.now();
+                        await tracker.save(
+                          task,
+                          end.subtract(Duration(minutes: minutes)),
+                          end,
+                          timeKey(),
+                        );
+                      },
+                      child: Text('${persianDigits(minutes)} دقیقه'),
+                    ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(sheetContext);
+                      manualTime(context, tracker, task);
+                    },
+                    child: const Text('ورود دستی'),
+                  ),
+                ],
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(sheetContext),
+                child: const Text('فعلاً نه'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (_) {
+      /* Completion remains successful when time reporting is unavailable. */
+    }
   }
 
   void _applyStartView() {
@@ -210,6 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
     if (!_focus.running) {
+      _focusTask = null;
       if (_focus.taskTitle != title || _focus.minutes != 25) _focus.choose(25);
       _focus.taskTitle = title;
     }
@@ -239,6 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
             (0, Icons.grid_view_rounded, 'فرش'),
             (1, Icons.check_circle_outline_rounded, 'کارها'),
             (2, Icons.hourglass_empty_rounded, 'تمرکز'),
+            if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
           ])
             Material(
               type: MaterialType.transparency,
@@ -287,6 +425,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       }
                     },
                     onFocus: _startFocus,
+                    onTaskFocus: _startTaskFocus,
                     onProject: (id) {
                       final p = widget.projects.byId(id);
                       if (p != null) {
@@ -300,6 +439,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? FocusView(
                     key: const ValueKey('focus-view'),
                     controller: _focus,
+                    beforeStart: _beforeFocusStart,
+                    beforePause: _beforeFocusPause,
+                  )
+                : _section == 3 && _tracker != null
+                ? TimeTrackingView(
+                    tracker: _tracker!,
+                    tasksApi: widget.tasksApi,
+                    projects: widget.projects,
                   )
                 : label != null
                 ? DueTasksView(
@@ -336,18 +483,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     labels: _labels,
                   );
             // Changing project fades through instead of cutting.
-            final page = AnimatedSwitcher(
-              duration: Motion.of(context, Motion.standard),
-              switchInCurve: Motion.enter,
-              switchOutCurve: Motion.exit,
-              transitionBuilder: (child, animation) => FadeTransition(
-                opacity: animation,
-                child: ScaleTransition(
-                  scale: Tween(begin: 0.98, end: 1.0).animate(animation),
-                  child: child,
+            final page = TrackerScope(
+              tracker: _tracker,
+              child: AnimatedSwitcher(
+                duration: Motion.of(context, Motion.standard),
+                switchInCurve: Motion.enter,
+                switchOutCurve: Motion.exit,
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(
+                    scale: Tween(begin: 0.98, end: 1.0).animate(animation),
+                    child: child,
+                  ),
                 ),
+                child: content,
               ),
-              child: content,
             );
             if (!wide) {
               // Full bleed: the list carries its own collapsing app bar,
@@ -370,26 +520,41 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: NavigationBar(
                     selectedIndex: _section,
                     onDestinationSelected: _switchSection,
-                    destinations: const [
-                      NavigationDestination(
+                    destinations: [
+                      const NavigationDestination(
                         icon: WeaveMark(size: 24),
                         selectedIcon: WeaveMark(size: 26),
                         label: 'فرش',
                       ),
-                      NavigationDestination(
+                      const NavigationDestination(
                         icon: Icon(Icons.check_circle_outline_rounded),
                         selectedIcon: Icon(Icons.check_circle_rounded),
                         label: 'کارها',
                       ),
-                      NavigationDestination(
+                      const NavigationDestination(
                         icon: Icon(Icons.hourglass_empty_rounded),
                         selectedIcon: Icon(Icons.hourglass_top_rounded),
                         label: 'تمرکز',
                       ),
+                      if (_tracker != null)
+                        const NavigationDestination(
+                          icon: Icon(Icons.timer_outlined),
+                          label: 'زمان‌ها',
+                        ),
                     ],
                   ),
                 ),
-                body: page,
+                body: Column(
+                  children: [
+                    if (_tracker != null)
+                      ActiveTimeBar(
+                        tracker: _tracker!,
+                        onOpen: () => _switchSection(3),
+                      ),
+                    if (_tracker != null) TrackerMessage(tracker: _tracker!),
+                    Expanded(child: page),
+                  ],
+                ),
               );
             }
             return Scaffold(
@@ -409,7 +574,20 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: GlassSurface(child: _sidebar()),
                       ),
                     ),
-                    Expanded(child: page),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          if (_tracker != null)
+                            ActiveTimeBar(
+                              tracker: _tracker!,
+                              onOpen: () => _switchSection(3),
+                            ),
+                          if (_tracker != null)
+                            TrackerMessage(tracker: _tracker!),
+                          Expanded(child: page),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),

@@ -41,6 +41,14 @@ func NewHandler(config Config) http.Handler {
 			mux.HandleFunc("PATCH /api/v1/progress", handler)
 			mux.HandleFunc("PATCH /api/v1/progress/challenge", handler)
 		}
+		if data, ok := config.Store.(timeStore); ok {
+			handler := timeHandler(auth, data)
+			mux.HandleFunc("GET /api/v1/time", handler)
+			mux.HandleFunc("POST /api/v1/time", handler)
+			mux.HandleFunc("POST /api/v1/time/{id}/stop", handler)
+			mux.HandleFunc("PATCH /api/v1/time/{id}", handler)
+			mux.HandleFunc("DELETE /api/v1/time/{id}", handler)
+		}
 		taskData := config.TaskStore
 		if taskData == nil {
 			taskData, _ = config.Store.(tasksStore)
