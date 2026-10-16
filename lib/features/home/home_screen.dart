@@ -201,6 +201,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _startFocus(String? title) {
+    if (_focus.running && _focus.taskTitle != title) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('جلسهٔ قبلی هنوز در حال اجراست؛ ابتدا آن را مکث کنید.'),
+        ),
+      );
+    }
     if (!_focus.running) {
       if (_focus.taskTitle != title || _focus.minutes != 25) _focus.choose(25);
       _focus.taskTitle = title;

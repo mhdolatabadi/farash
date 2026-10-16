@@ -104,6 +104,13 @@ void main() {
               .controller;
           expect(timer.running, isTrue);
           expect(find.text('مکث'), findsOneWidget);
+          await tester.tap(find.text('باغچه').last);
+          await tester.pumpAndSettle();
+          tester.widget<GardenHome>(find.byType(GardenHome)).onFocus('کار دوم');
+          await tester.pumpAndSettle();
+          expect(find.textContaining('جلسهٔ قبلی هنوز'), findsOneWidget);
+          expect(timer.running, isTrue);
+          expect(timer.taskTitle, isNull);
           timer.pause();
         }
         await tester.tap(find.text('کارها').last);
