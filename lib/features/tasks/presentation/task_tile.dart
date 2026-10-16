@@ -1,3 +1,5 @@
+import 'package:farash/features/time_tracking/time_tracking.dart';
+import 'package:farash/features/time_tracking/time_tracking_view.dart';
 import 'package:flutter/material.dart';
 import 'package:farash/app/motion.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
@@ -155,6 +157,29 @@ class TaskTile extends StatelessWidget {
                 ),
               ),
             ),
+            if (!done && TrackerScope.of(context) != null)
+              ListenableBuilder(
+                listenable: TrackerScope.of(context)!,
+                builder: (context, _) {
+                  final tracker = TrackerScope.of(context)!;
+                  final active = tracker.active;
+                  final running = active?.taskId == task.id;
+                  return IconButton(
+                    tooltip: running ? 'توقف ثبت زمان' : 'ثبت زمان این کار',
+                    onPressed: tracker.busy
+                        ? null
+                        : () => running
+                              ? tracker.stop(active!)
+                              : startTracking(context, tracker, task),
+                    icon: Icon(
+                      running
+                          ? Icons.stop_circle_outlined
+                          : Icons.play_circle_outline,
+                      size: 22,
+                    ),
+                  );
+                },
+              ),
             ?trailing,
           ],
         ),

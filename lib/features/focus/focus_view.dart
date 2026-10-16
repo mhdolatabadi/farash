@@ -5,7 +5,14 @@ import 'package:farash/features/focus/focus_controller.dart';
 import 'package:farash/features/weaving/woven_rug.dart';
 
 class FocusView extends StatefulWidget {
-  const FocusView({super.key, required this.controller});
+  const FocusView({
+    super.key,
+    required this.controller,
+    this.beforeStart,
+    this.beforePause,
+  });
+  final Future<bool> Function()? beforeStart;
+  final Future<bool> Function()? beforePause;
   final FocusController controller;
   @override
   State<FocusView> createState() => _FocusViewState();
@@ -124,9 +131,21 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                               alignment: WrapAlignment.center,
                               children: [
                                 FilledButton.icon(
-                                  onPressed: timer.running
-                                      ? timer.pause
-                                      : timer.start,
+                                  onPressed: () async {
+                                    if (timer.running) {
+                                      if (await (widget.beforePause?.call() ??
+                                              Future.value(true)) &&
+                                          mounted) {
+                                        timer.pause();
+                                      }
+                                    } else {
+                                      if (await (widget.beforeStart?.call() ??
+                                              Future.value(true)) &&
+                                          mounted) {
+                                        timer.start();
+                                      }
+                                    }
+                                  },
                                   icon: Icon(
                                     timer.running
                                         ? Icons.pause_rounded
@@ -144,7 +163,13 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                                 ),
                                 IconButton.outlined(
                                   tooltip: 'از نو',
-                                  onPressed: timer.reset,
+                                  onPressed: () async {
+                                    if (await (widget.beforePause?.call() ??
+                                            Future.value(true)) &&
+                                        mounted) {
+                                      timer.reset();
+                                    }
+                                  },
                                   icon: const Icon(Icons.restart_alt),
                                 ),
                               ],
