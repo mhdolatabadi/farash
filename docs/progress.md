@@ -51,3 +51,17 @@ are unchanged. Counts are still derived from current task state; reopening or
 deleting tasks can change a past day's count. They are not immutable history.
 Older clients ignore the added field; newer clients hide the report when talking
 to an older server. No schema migration is needed.
+
+## Weekly personal challenge
+
+`weekly_task_goal` is the per-account completed-task target, default 10 (1–500).
+Authenticated `PATCH /api/v1/progress/challenge?timezone=Asia/Tehran` accepts
+`{"target": 20}` and returns the updated full progress response. Invalid integers
+return 400 (`invalid_challenge_target`); authentication and backend errors match
+the existing progress endpoint. The active-day goal remains independent.
+Changing a target applies immediately; completion is `week_report.completed >=
+weekly_task_goal`. No extra XP or permanent award is issued. The target persists,
+but progress resets with the existing Saturday/local week window. Reopening and
+deleting tasks reverses progress. Clients hide the control with older servers.
+Migration 009 adds the constrained goal column; keep this additive column when
+rolling the application back.

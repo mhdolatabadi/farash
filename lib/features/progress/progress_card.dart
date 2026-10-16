@@ -4,6 +4,7 @@ import 'package:farash/core/calendar/time_zone.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/progress/progress.dart';
 import 'package:farash/features/progress/week_report.dart';
+import 'package:farash/features/progress/weekly_challenge.dart';
 
 /// A quiet summary in the navigation; details open only on request.
 class ProgressCard extends StatefulWidget {
@@ -141,6 +142,17 @@ class _ProgressPage extends StatefulWidget {
 }
 
 class _ProgressPageState extends State<_ProgressPage> {
+  Future<void> _saveChallenge(int target) async {
+    final token = widget.token();
+    if (token == null) throw const ApiException('نشست شما منقضی شده است.');
+    final progress = await widget.api.saveWeeklyChallenge(
+      token,
+      widget.zone,
+      target,
+    );
+    if (mounted) setState(() => _progress = progress);
+  }
+
   late PersonalProgress _progress = widget.initial;
   bool _saving = false;
   String? _error;
@@ -203,6 +215,14 @@ class _ProgressPageState extends State<_ProgressPage> {
                 ),
                 const SizedBox(height: 32),
                 if (_progress.weekReport case final report?) ...[
+                  if (_progress.weeklyTaskGoal case final target?) ...[
+                    WeeklyChallenge(
+                      completed: report.completed,
+                      target: target,
+                      onSave: _saveChallenge,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   WeeklyProgressReport(report: report),
                   const SizedBox(height: 24),
                 ],

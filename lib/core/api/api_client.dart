@@ -237,6 +237,21 @@ class ApiClient
         as Map<String, dynamic>,
   );
 
+  Future<PersonalProgress> saveWeeklyChallenge(
+    String token,
+    String timezone,
+    int target,
+  ) async => PersonalProgress.fromJson(
+    await _send(
+          'PATCH',
+          '/api/v1/progress/challenge',
+          token: token,
+          query: {'timezone': timezone},
+          body: {'target': target},
+        )
+        as Map<String, dynamic>,
+  );
+
   Future<void> checkHealth() async {
     await _send('GET', '/api/v1/health');
   }

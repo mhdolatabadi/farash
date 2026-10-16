@@ -10,15 +10,16 @@ import (
 // Progress is derived from live completed tasks, so retries cannot award XP
 // twice and undo/deletion automatically remove the corresponding credit.
 type Progress struct {
-	Completed  int         `json:"completed"`
-	XP         int         `json:"xp"`
-	Level      int         `json:"level"`
-	LevelXP    int         `json:"level_xp"`
-	WeeklyDays int         `json:"weekly_days"`
-	WeeklyGoal int         `json:"weekly_goal"`
-	WeekStart  string      `json:"week_start"`
-	Badges     []string    `json:"badges"`
-	WeekReport *WeekReport `json:"week_report,omitempty"`
+	WeeklyTaskGoal int         `json:"weekly_task_goal"`
+	Completed      int         `json:"completed"`
+	XP             int         `json:"xp"`
+	Level          int         `json:"level"`
+	LevelXP        int         `json:"level_xp"`
+	WeeklyDays     int         `json:"weekly_days"`
+	WeeklyGoal     int         `json:"weekly_goal"`
+	WeekStart      string      `json:"week_start"`
+	Badges         []string    `json:"badges"`
+	WeekReport     *WeekReport `json:"week_report,omitempty"`
 }
 
 type ProgressDay struct {
@@ -77,16 +78,16 @@ func (s *Store) Progress(ctx context.Context, owner string, now time.Time, zone 
 	start, _ := ProgressWeek(now, zone)
 	previousStart := start.AddDate(0, 0, -7)
 	previousEnd := now.AddDate(0, 0, -7)
-	var completed, goal, previous int
+	var completed, goal, previous, taskGoal int
 	var dailyJSON []byte
-	err := s.pool.QueryRow(ctx, `SELECT u.weekly_active_days,
+	err := s.pool.QueryRow(ctx, `SELECT u.weekly_active_days,u.weekly_task_goal,
  (SELECT count(*) FROM tasks WHERE owner_id=u.id AND deleted_at IS NULL AND completed_at IS NOT NULL),
  (SELECT COALESCE(jsonb_object_agg(day,total),'{}'::jsonb) FROM (
   SELECT to_char(completed_at AT TIME ZONE $4,'YYYY-MM-DD') AS day,count(*) AS total
   FROM tasks WHERE owner_id=u.id AND deleted_at IS NULL AND completed_at >= $2 AND completed_at <= $3 GROUP BY 1
  ) days),
  (SELECT count(*) FROM tasks WHERE owner_id=u.id AND deleted_at IS NULL AND completed_at >= $5 AND completed_at <= $6)
- FROM users u WHERE u.id=$1`, owner, start, now, zone.String(), previousStart, previousEnd).Scan(&goal, &completed, &dailyJSON, &previous)
+ FROM users u WHERE u.id=$1`, owner, start, now, zone.String(), previousStart, previousEnd).Scan(&goal, &taskGoal, &completed, &dailyJSON, &previous)
 	if err != nil {
 		return Progress{}, err
 	}
@@ -96,6 +97,7 @@ func (s *Store) Progress(ctx context.Context, owner string, now time.Time, zone 
 	}
 	p := progressValues(completed, len(counts), goal, start)
 	p.WeekReport = weekReport(start, now, counts, previous)
+	p.WeeklyTaskGoal = taskGoal
 	return p, nil
 }
 
@@ -104,5 +106,13 @@ func (s *Store) SetProgressGoal(ctx context.Context, owner string, days int) err
 		return ErrInvalidTask
 	}
 	_, err := s.pool.Exec(ctx, `UPDATE users SET weekly_active_days=$2 WHERE id=$1`, owner, days)
+	return err
+}
+
+func (s *Store) SetWeeklyTaskGoal(ctx context.Context, owner string, target int) error {
+	if target < 1 || target > 500 {
+		return ErrInvalidTask
+	}
+	_, err := s.pool.Exec(ctx, `UPDATE users SET weekly_task_goal=$2 WHERE id=$1`, owner, target)
 	return err
 }

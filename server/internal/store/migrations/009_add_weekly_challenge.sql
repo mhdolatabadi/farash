@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN weekly_task_goal INTEGER NOT NULL DEFAULT 10 CHECK (weekly_task_goal BETWEEN 1 AND 500);
