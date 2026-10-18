@@ -51,7 +51,6 @@ class ActiveTimeBar extends StatelessWidget {
       return Material(
         color: Theme.of(context).colorScheme.secondaryContainer,
         child: SafeArea(
-          top: false,
           bottom: false,
           child: Padding(
             padding: const EdgeInsetsDirectional.fromSTEB(12, 4, 4, 4),

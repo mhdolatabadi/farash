@@ -142,6 +142,7 @@ void main() {
     (tester) async {
       tester.view.physicalSize = const Size(320, 700);
       tester.view.devicePixelRatio = 1;
+      tester.view.padding = FakeViewPadding(top: 24);
       addTearDown(tester.view.reset);
       final api = TrackingFixture();
       final tracker = TimeTracker(api: api, token: () => 'token');
@@ -183,6 +184,10 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      expect(
+        tester.getTopLeft(find.byTooltip('توقف ثبت زمان').first).dy,
+        greaterThanOrEqualTo(24),
+      );
       await tester.tap(find.byTooltip('توقف ثبت زمان').first);
       await tester.pumpAndSettle();
       expect(tracker.active, isNull);
