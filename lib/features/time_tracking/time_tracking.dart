@@ -76,7 +76,7 @@ class TimeTracker extends ChangeNotifier with WidgetsBindingObserver {
       if (++_ticks % 30 == 0) {
         unawaited(load());
       }
-      if (report?.active != null) notifyListeners();
+      if (_active != null) elapsedTicks.value++;
     });
     unawaited(load());
   }
@@ -88,9 +88,10 @@ class TimeTracker extends ChangeNotifier with WidgetsBindingObserver {
   String? error;
   TimeReport? report;
   int revision = 0;
+  final elapsedTicks = ValueNotifier<int>(0);
   final _clock = Stopwatch();
-  DateTime get now =>
-      (report?.now ?? DateTime.now().toUtc()).add(_clock.elapsed);
+  DateTime? _anchor;
+  DateTime get now => (_anchor ?? DateTime.now().toUtc()).add(_clock.elapsed);
   TimeEntry? _active;
   TimeEntry? get active => _active;
   Map<String, dynamic>? _lastMutation;
@@ -115,6 +116,7 @@ class TimeTracker extends ChangeNotifier with WidgetsBindingObserver {
       final value = await fetch();
       if (_disposed || generation != _generation) return;
       report = value;
+      _anchor = value.now;
       _active = value.active;
       if (!busy) error = null;
       revision++;
@@ -141,6 +143,12 @@ class TimeTracker extends ChangeNotifier with WidgetsBindingObserver {
     try {
       final result = await api.timeRequest(token()!, method, path, body: body);
       _lastMutation = result;
+      if (result['server_now'] is String) {
+        _anchor = DateTime.parse(result['server_now'] as String);
+        _clock
+          ..reset()
+          ..start();
+      }
       if (result['id'] != null) {
         final entry = TimeEntry.fromJson(result);
         if (entry.ended == null) {
@@ -201,8 +209,19 @@ class TimeTracker extends ChangeNotifier with WidgetsBindingObserver {
     return ok;
   }
 
-  Future<bool> stop(TimeEntry entry) =>
-      mutate('POST', '/api/v1/time/${Uri.encodeComponent(entry.id)}/stop');
+  Future<bool> stop(TimeEntry entry) async {
+    final ok = await mutate(
+      'POST',
+      '/api/v1/time/${Uri.encodeComponent(entry.id)}/stop',
+    );
+    if (ok) {
+      _pendingStartKey = null;
+      _pendingTask = null;
+      _pendingSource = null;
+    }
+    return ok;
+  }
+
   Future<bool> remove(TimeEntry entry) =>
       mutate('DELETE', '/api/v1/time/${Uri.encodeComponent(entry.id)}');
   Future<bool> save(
@@ -235,6 +254,7 @@ class TimeTracker extends ChangeNotifier with WidgetsBindingObserver {
     _generation++;
     _tick?.cancel();
     _clock.stop();
+    elapsedTicks.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

@@ -95,6 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _tracker?.addListener(_trackerChanged);
     if (widget.tasksApi case final ApiClient api) {
       api.completedTask.addListener(_completedTime);
+      api.progressChanges.addListener(_refreshTracker);
     }
     widget.projects.load();
     _labels?.load();
@@ -107,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     if (widget.tasksApi case final ApiClient api) {
       api.completedTask.removeListener(_completedTime);
+      api.progressChanges.removeListener(_refreshTracker);
     }
     _tracker?.removeListener(_trackerChanged);
     _tracker?.dispose();
@@ -114,6 +116,10 @@ class _HomeScreenState extends State<HomeScreen> {
     widget.startView?.removeListener(_applyStartView);
     _labels?.dispose();
     super.dispose();
+  }
+
+  void _refreshTracker() {
+    _tracker?.load();
   }
 
   void _trackerChanged() {
@@ -161,7 +167,18 @@ class _HomeScreenState extends State<HomeScreen> {
       task,
       focusSeconds: _focus.remaining.inSeconds.clamp(1, 1500),
     );
-    if (ok) _focusEntry = tracker.active?.id;
+    if (ok) {
+      _focusEntry = tracker.active?.id;
+      final end = tracker.active?.plannedEnd;
+      if (end != null) {
+        final remaining = end.difference(tracker.now);
+        if (remaining <= Duration.zero) {
+          await tracker.load();
+          return false;
+        }
+        _focus.restoreRemaining(remaining);
+      }
+    }
     return ok;
   }
 
@@ -444,6 +461,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     controller: _focus,
                     beforeStart: _beforeFocusStart,
                     beforePause: _beforeFocusPause,
+                    timeLinked: _tracker != null && _focusTask != null,
                   )
                 : _section == 3 && _tracker != null
                 ? TimeTrackingView(

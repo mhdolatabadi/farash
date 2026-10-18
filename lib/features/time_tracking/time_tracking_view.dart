@@ -44,7 +44,7 @@ class ActiveTimeBar extends StatelessWidget {
   final VoidCallback onOpen;
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: tracker,
+    listenable: Listenable.merge([tracker, tracker.elapsedTicks]),
     builder: (context, _) {
       final entry = tracker.active;
       if (entry == null) return const SizedBox.shrink();
@@ -309,18 +309,7 @@ class TimeTrackingView extends StatelessWidget {
                           const Text(
                             'هنوز زمانی ثبت نشده. از یک کار کوچک شروع کن.',
                           ),
-                        for (final item in report.tasks)
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(item['title'] as String),
-                            subtitle: Text(item['project'] as String),
-                            trailing: Text(
-                              trackedTime(
-                                Duration(seconds: item['seconds'] as int),
-                              ),
-                              textDirection: TextDirection.ltr,
-                            ),
-                          ),
+                        ProjectTimeGroups(tasks: report.tasks),
                         const SizedBox(height: 24),
                         Text(
                           'مرور روزها و بازه‌ها',
@@ -743,3 +732,38 @@ List<(DateTime, DateTime)> todayGaps(List<TimeEntry> entries, DateTime now) {
 
 String timeStamp(BuildContext context, DateTime date) =>
     '${formatDate(date, CalendarScope.of(context), alwaysYear: true)} ${persianDigits('${date.hour}:${date.minute.toString().padLeft(2, '0')}')}';
+
+class ProjectTimeGroups extends StatelessWidget {
+  const ProjectTimeGroups({super.key, required this.tasks});
+  final List<Map<String, dynamic>> tasks;
+  @override
+  Widget build(BuildContext context) {
+    final groups = <String, List<Map<String, dynamic>>>{};
+    for (final task in tasks) {
+      groups.putIfAbsent(task['project'] as String, () => []).add(task);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final group in groups.entries) ...[
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 4),
+            child: Text(
+              '${group.key.isEmpty ? 'کارهای حذف‌شده' : group.key} · ${trackedTime(Duration(seconds: group.value.fold<int>(0, (sum, e) => sum + (e['seconds'] as int))))}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          for (final task in group.value)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(task['title'] as String),
+              subtitle: Text(
+                trackedTime(Duration(seconds: task['seconds'] as int)),
+                textDirection: TextDirection.ltr,
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}

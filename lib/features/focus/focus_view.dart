@@ -10,9 +10,11 @@ class FocusView extends StatefulWidget {
     required this.controller,
     this.beforeStart,
     this.beforePause,
+    this.timeLinked = false,
   });
   final Future<bool> Function()? beforeStart;
   final Future<bool> Function()? beforePause;
+  final bool timeLinked;
   final FocusController controller;
   @override
   State<FocusView> createState() => _FocusViewState();
@@ -183,6 +185,8 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                       Text(
                         timer.finished
                             ? 'جلسه تمام شد. وقت یک نفس تازه است.'
+                            : widget.timeLinked && timer.minutes == 25
+                            ? 'شروع تمرکز، ثبت زمان این کار را هم فعال می‌کند. برای پایان زودتر مکث کن؛ ثبت سرور حداکثر تا پایان نوبت ادامه دارد.'
                             : 'تایمر با جابه‌جایی بین صفحه‌ها ادامه دارد. با بستن برنامه، جلسه پایان می‌یابد.',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodySmall?.copyWith(

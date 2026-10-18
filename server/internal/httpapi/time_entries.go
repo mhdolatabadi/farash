@@ -38,7 +38,7 @@ func timeHandler(auth *authHandler, data timeStore) http.HandlerFunc {
 			}
 			from, to := store.ProgressWeek(time.Now(), zone)
 			if r.URL.Query().Get("taskId") != "" {
-				from = time.Unix(0, 0)
+				from = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
 				to = time.Now()
 			}
 			if r.URL.Query().Has("from") || r.URL.Query().Has("to") {
@@ -80,6 +80,12 @@ func timeHandler(auth *authHandler, data timeStore) http.HandlerFunc {
 				writeError(w, 500, "time_unavailable")
 			}
 			return
+		}
+		if entry, ok := result.(store.TimeEntry); ok {
+			result = struct {
+				store.TimeEntry
+				ServerNow time.Time `json:"server_now"`
+			}{entry, time.Now().UTC()}
 		}
 		writeJSON(w, 200, result)
 	}

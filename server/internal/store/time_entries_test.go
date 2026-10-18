@@ -135,6 +135,10 @@ func TestDurableTimeAccounting(t *testing.T) {
 	}
 	// Model a suspended client: expiry is accounted on the server, no client tick needed.
 	pool.Exec(ctx, `UPDATE time_entries SET started_at=now()-interval '2 minutes',planned_end=now()-interval '1 minute' WHERE id=$1`, focus.ID)
+	retried, err := s.CreateTime(ctx, owner.ID, TimeInput{TaskID: task.ID, Source: "focus", FocusSeconds: 1, RequestKey: "focus-time-key"})
+	if err != nil || retried.Ended == nil {
+		t.Fatal("expired focus retry", err)
+	}
 	r, err = s.TimeReport(ctx, owner.ID, from, to, zone, "")
 	if err != nil || r.Active != nil || r.Seconds != 60 {
 		t.Fatalf("focus expiry %+v %v", r, err)

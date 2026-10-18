@@ -20,6 +20,13 @@ class FocusController extends ChangeNotifier {
     reset();
   }
 
+  void restoreRemaining(Duration value) {
+    if (running) return;
+    _remaining = value.isNegative ? Duration.zero : value;
+    finished = false;
+    notifyListeners();
+  }
+
   void start() {
     if (running) return;
     if (_remaining == Duration.zero) _remaining = Duration(minutes: minutes);

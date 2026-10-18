@@ -125,7 +125,6 @@ void main() {
     (tester) async {
       final api = TrackingFixture();
       final tracker = TimeTracker(api: api, token: () => 'token');
-      addTearDown(tracker.dispose);
       await tester.pumpAndSettle();
       api.fail = true;
       const task = Task(id: 'task', projectId: 'inbox', title: 'work');
@@ -135,6 +134,7 @@ void main() {
       api.fail = false;
       expect(await tracker.start(task), isTrue);
       expect(api.calls.last['request_key'], key);
+      tracker.dispose();
     },
   );
   testWidgets(
@@ -145,7 +145,6 @@ void main() {
       addTearDown(tester.view.reset);
       final api = TrackingFixture();
       final tracker = TimeTracker(api: api, token: () => 'token');
-      addTearDown(tracker.dispose);
       await tester.pumpAndSettle();
       await tracker.start(
         const Task(id: 'task', projectId: 'inbox', title: 'work'),
@@ -188,6 +187,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(tracker.active, isNull);
       await tester.pumpWidget(const SizedBox());
+      tracker.dispose();
       await tester.pumpAndSettle();
     },
   );
@@ -196,7 +196,6 @@ void main() {
   ) async {
     final api = TrackingFixture();
     final tracker = TimeTracker(api: api, token: () => 'token');
-    addTearDown(tracker.dispose);
     await tester.pumpAndSettle();
     api.failRead = true;
     expect(
@@ -209,6 +208,7 @@ void main() {
     expect(tracker.error, isNotNull);
     expect(await tracker.stop(tracker.active!), isTrue);
     expect(tracker.active, isNull);
+    tracker.dispose();
   });
   test('today gaps merge overlaps without inventing work', () {
     final now = DateTime(2026, 10, 16, 12);

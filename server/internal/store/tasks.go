@@ -437,7 +437,11 @@ func (s *Store) DeleteTask(ctx context.Context, owner, id string) error {
 		if err != nil {
 			return err
 		}
-		return deleteSubtree(ctx, tx, owner, id, at)
+		if err := deleteSubtree(ctx, tx, owner, id, at); err != nil {
+			return err
+		}
+		_, err = tx.Exec(ctx, `UPDATE time_entries e SET ended_at=GREATEST(e.started_at+interval '1 microsecond',LEAST(now(),COALESCE(e.planned_end,now()))) FROM tasks t WHERE e.owner_id=$1 AND e.task_id=t.id AND t.owner_id=$1 AND t.deleted_at=$2 AND e.ended_at IS NULL`, owner, at)
+		return err
 	})
 }
 

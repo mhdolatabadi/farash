@@ -84,6 +84,9 @@ func (s *Store) CreateTime(ctx context.Context, owner string, in TimeInput) (Tim
 	if _, err = tx.Exec(ctx, `SELECT id FROM users WHERE id=$1 FOR UPDATE`, owner); err != nil {
 		return TimeEntry{}, err
 	}
+	if _, err = tx.Exec(ctx, `UPDATE time_entries SET ended_at=planned_end WHERE owner_id=$1 AND ended_at IS NULL AND planned_end<=now()`, owner); err != nil {
+		return TimeEntry{}, err
+	}
 	old, err := scanTime(tx.QueryRow(ctx, `SELECT `+timeColumns+` FROM time_entries WHERE owner_id=$1 AND request_key=$2`, owner, in.RequestKey))
 	if err == nil {
 		if old.TaskID == nil || *old.TaskID != in.TaskID || old.Source != in.Source {
@@ -101,9 +104,6 @@ func (s *Store) CreateTime(ctx context.Context, owner string, in TimeInput) (Tim
 	if err = tx.QueryRow(ctx, `SELECT title FROM tasks WHERE id=$1 AND owner_id=$2 AND deleted_at IS NULL`, in.TaskID, owner).Scan(&title); errors.Is(err, pgx.ErrNoRows) {
 		return TimeEntry{}, ErrTaskNotFound
 	} else if err != nil {
-		return TimeEntry{}, err
-	}
-	if _, err = tx.Exec(ctx, `UPDATE time_entries SET ended_at=planned_end WHERE owner_id=$1 AND ended_at IS NULL AND planned_end<=now()`, owner); err != nil {
 		return TimeEntry{}, err
 	}
 	var planned *time.Time
