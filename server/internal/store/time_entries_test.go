@@ -110,7 +110,7 @@ func TestDurableTimeAccounting(t *testing.T) {
 		t.Fatal(err)
 	}
 	r, err = s.TimeReport(ctx, owner.ID, start.Add(-time.Hour), midnight, zone, "")
-	if err != nil || r.Seconds != 1200 || r.TodaySeconds != 0 {
+	if err != nil || r.Seconds != 1200 || r.TodaySeconds != 0 || len(r.Tasks) != 1 || r.Tasks[0].ProjectID == nil || *r.Tasks[0].ProjectID != task.ProjectID {
 		t.Fatalf("manual totals %+v %v", r, err)
 	}
 	cutoff := start.Add(5 * time.Minute)

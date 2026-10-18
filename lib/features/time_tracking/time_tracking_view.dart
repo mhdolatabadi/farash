@@ -739,7 +739,12 @@ class ProjectTimeGroups extends StatelessWidget {
   Widget build(BuildContext context) {
     final groups = <String, List<Map<String, dynamic>>>{};
     for (final task in tasks) {
-      groups.putIfAbsent(task['project'] as String, () => []).add(task);
+      groups
+          .putIfAbsent(
+            task['project_id'] as String? ?? task['project'] as String,
+            () => [],
+          )
+          .add(task);
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -748,7 +753,7 @@ class ProjectTimeGroups extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 12, bottom: 4),
             child: Text(
-              '${group.key.isEmpty ? 'کارهای حذف‌شده' : group.key} · ${trackedTime(Duration(seconds: group.value.fold<int>(0, (sum, e) => sum + (e['seconds'] as int))))}',
+              '${(group.value.first['project'] as String).isEmpty ? 'کارهای حذف‌شده' : group.value.first['project']} · ${trackedTime(Duration(seconds: group.value.fold<int>(0, (sum, e) => sum + (e['seconds'] as int))))}',
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),

@@ -215,6 +215,35 @@ void main() {
     expect(tracker.active, isNull);
     tracker.dispose();
   });
+  testWidgets('same-name projects retain separate report groups', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ProjectTimeGroups(
+            tasks: [
+              {
+                'project_id': 'one',
+                'project': 'پروژه',
+                'title': 'اول',
+                'seconds': 60,
+              },
+              {
+                'project_id': 'two',
+                'project': 'پروژه',
+                'title': 'دوم',
+                'seconds': 120,
+              },
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(find.text('پروژه · ۰۰:۰۱:۰۰'), findsOneWidget);
+    expect(find.text('پروژه · ۰۰:۰۲:۰۰'), findsOneWidget);
+    expect(find.text('پروژه · ۰۰:۰۳:۰۰'), findsNothing);
+  });
   test('today gaps merge overlaps without inventing work', () {
     final now = DateTime(2026, 10, 16, 12);
     TimeEntry entry(int start, int end) => TimeEntry.fromJson({

@@ -29,10 +29,11 @@ type TimeInput struct {
 	FocusSeconds int        `json:"focus_seconds"`
 }
 type TaskTime struct {
-	TaskID  *string `json:"task_id"`
-	Title   string  `json:"title"`
-	Project string  `json:"project"`
-	Seconds int64   `json:"seconds"`
+	TaskID    *string `json:"task_id"`
+	Title     string  `json:"title"`
+	Project   string  `json:"project"`
+	ProjectID *string `json:"project_id"`
+	Seconds   int64   `json:"seconds"`
 }
 type TimeReport struct {
 	Active       *TimeEntry  `json:"active"`
@@ -191,12 +192,12 @@ func (s *Store) TimeReport(ctx context.Context, owner string, from, to time.Time
 	}
 	local := now.In(zone)
 	today := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, zone)
-	groups, err := s.pool.Query(ctx, `SELECT e.task_id,COALESCE(t.title,e.task_title),COALESCE(p.name,''),
+	groups, err := s.pool.Query(ctx, `SELECT e.task_id,COALESCE(t.title,e.task_title),COALESCE(p.name,''),p.id,
  COALESCE(sum(EXTRACT(EPOCH FROM GREATEST(interval '0',LEAST(COALESCE(e.ended_at,$4),$3)-GREATEST(e.started_at,$2)))),0)::bigint,
  COALESCE(sum(EXTRACT(EPOCH FROM GREATEST(interval '0',LEAST(COALESCE(e.ended_at,$4),$3)-GREATEST(e.started_at,$2,$6)))),0)::bigint
  FROM time_entries e LEFT JOIN tasks t ON t.id=e.task_id AND t.owner_id=e.owner_id LEFT JOIN projects p ON p.id=t.project_id AND p.owner_id=e.owner_id
  WHERE e.owner_id=$1 AND e.started_at<$3 AND COALESCE(e.ended_at,$4)>$2 AND ($5='' OR e.task_id=$5)
- GROUP BY e.task_id,COALESCE(t.title,e.task_title),COALESCE(p.name,'') ORDER BY 4 DESC,2`, owner, from, to, now, task, today)
+ GROUP BY e.task_id,COALESCE(t.title,e.task_title),COALESCE(p.name,''),p.id ORDER BY 5 DESC,2`, owner, from, to, now, task, today)
 	if err != nil {
 		return p, err
 	}
@@ -204,7 +205,7 @@ func (s *Store) TimeReport(ctx context.Context, owner string, from, to time.Time
 	for groups.Next() {
 		var g TaskTime
 		var day int64
-		if err = groups.Scan(&g.TaskID, &g.Title, &g.Project, &g.Seconds, &day); err != nil {
+		if err = groups.Scan(&g.TaskID, &g.Title, &g.Project, &g.ProjectID, &g.Seconds, &day); err != nil {
 			return p, err
 		}
 		p.Tasks = append(p.Tasks, g)
