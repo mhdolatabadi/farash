@@ -15,7 +15,26 @@ def adb(*args):
 
 def capture(name):
     time.sleep(2)
+    clear_launcher_anr()
     (OUT / f'{name}.png').write_bytes(adb('exec-out', 'screencap', '-p'))
+
+
+def clear_launcher_anr(xml=None):
+    # API 35's launcher may ANR during font/density changes on hosted runners.
+    # Only handle this known system launcher dialog; never hide a Farash ANR.
+    if xml is None:
+        adb('shell', 'uiautomator', 'dump', '/sdcard/window.xml')
+        xml = adb('shell', 'cat', '/sdcard/window.xml')
+    root = ET.fromstring(xml)
+    if not any(n.get('text') == "Quickstep isn't responding" for n in root.iter('node')):
+        return False
+    for node in root.iter('node'):
+        if node.get('resource-id') == 'android:id/aerr_wait':
+            x1, y1, x2, y2 = map(int, re.findall(r'\d+', node.get('bounds')))
+            adb('shell', 'input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
+            time.sleep(2)
+            return True
+    return False
 
 
 def tap(label):
@@ -23,6 +42,8 @@ def tap(label):
         adb('shell', 'uiautomator', 'dump', '/sdcard/window.xml')
         xml = adb('shell', 'cat', '/sdcard/window.xml')
         (OUT / 'last-window.xml').write_bytes(xml)
+        if clear_launcher_anr(xml):
+            continue
         for node in ET.fromstring(xml).iter('node'):
             if any(value.split('\n')[0] == label for value in (node.get('text', ''), node.get('content-desc', ''))):
                 x1, y1, x2, y2 = map(int, re.findall(r'\d+', node.get('bounds')))
