@@ -13,6 +13,18 @@ def adb(*args):
     return subprocess.check_output(['adb', *args])
 
 
+def window_xml():
+    for _ in range(10):
+        try:
+            adb('shell', 'uiautomator', 'dump', '/sdcard/window.xml')
+            xml = adb('shell', 'cat', '/sdcard/window.xml')
+            ET.fromstring(xml)
+            return xml
+        except (subprocess.CalledProcessError, ET.ParseError):
+            time.sleep(2)
+    raise RuntimeError('Emulator accessibility tree did not become available')
+
+
 def capture(name):
     time.sleep(2)
     clear_launcher_anr()
@@ -23,8 +35,7 @@ def clear_launcher_anr(xml=None):
     # API 35's launcher may ANR during font/density changes on hosted runners.
     # Only handle this known system launcher dialog; never hide a Farash ANR.
     if xml is None:
-        adb('shell', 'uiautomator', 'dump', '/sdcard/window.xml')
-        xml = adb('shell', 'cat', '/sdcard/window.xml')
+        xml = window_xml()
     root = ET.fromstring(xml)
     if not any(n.get('text') == "Quickstep isn't responding" for n in root.iter('node')):
         return False
@@ -39,8 +50,7 @@ def clear_launcher_anr(xml=None):
 
 def tap(label):
     for _ in range(12):
-        adb('shell', 'uiautomator', 'dump', '/sdcard/window.xml')
-        xml = adb('shell', 'cat', '/sdcard/window.xml')
+        xml = window_xml()
         (OUT / 'last-window.xml').write_bytes(xml)
         if clear_launcher_anr(xml):
             continue
