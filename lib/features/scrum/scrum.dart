@@ -98,8 +98,9 @@ class ScrumController extends ChangeNotifier {
       data = ScrumData.fromJson(value);
       error = null;
     } catch (_) {
-      if (!disposed && generation == _generation)
+      if (!disposed && generation == _generation) {
         error = 'پروژه تازه نشد. اتصال را بررسی و دوباره تلاش کن.';
+      }
     }
     publish();
   }
@@ -113,10 +114,11 @@ class ScrumController extends ChangeNotifier {
       await action();
       return true;
     } catch (e) {
-      if (!disposed)
+      if (!disposed) {
         error = e is ApiException && e.code == 'agile_state_conflict'
             ? 'وضعیت پروژه تغییر کرده است. اسپرینت فعال را ببند؛ برآورد کار داخل اسپرینت فعال ثابت می‌ماند.'
             : 'ذخیره نشد. اتصال و وضعیت پروژه را بررسی و دوباره تلاش کن.';
+      }
       return false;
     } finally {
       if (!disposed) {

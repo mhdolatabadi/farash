@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestSprintValidation(t *testing.T) {
@@ -119,7 +120,17 @@ func TestPersonalScrumLifecycle(t *testing.T) {
 		t.Fatal("reestimate active", e)
 	}
 	points = 3
+	// Time is measured in actual execution bounds, then frozen on closure.
+	pool.Exec(ctx, `UPDATE sprints SET started_at=now()-interval '2 minutes' WHERE id=$1`, sid)
+	now := time.Now()
+	timeStart, timeEnd := now.Add(-90*time.Second), now.Add(-30*time.Second)
+	recorded, err := s.CreateTime(ctx, u.ID, TimeInput{TaskID: a.ID, Source: "manual", RequestKey: "scrum-time-key", Started: timeStart, Ended: &timeEnd})
+	if err != nil {
+		t.Fatal(err)
+	}
 	s.CompleteTask(ctx, u.ID, a.ID, true)
+	item.Acceptance = "Can refine acceptance after completing"
+	w("item", a.ID, item)
 	before := get()
 	var sprint Sprint
 	for _, sp := range before.Sprints {
@@ -132,11 +143,12 @@ func TestPersonalScrumLifecycle(t *testing.T) {
 	}
 	w("close", sid, AgileCommand{Review: "One delivered", Retro: "Smaller scope"})
 	w("close", sid, AgileCommand{Review: "must not overwrite"})
+	s.DeleteTime(ctx, u.ID, recorded.ID)
 	s.CompleteTask(ctx, u.ID, a.ID, false)
 	s.DeleteTask(ctx, u.ID, a.ID)
 	after := get()
 	for _, sp := range after.Sprints {
-		if sp.ID == sid && (sp.DonePoints != 3 || sp.DoneCount != 1 || sp.Review != "One delivered") {
+		if sp.ID == sid && (sp.DonePoints != 3 || sp.DoneCount != 1 || sp.Review != "One delivered" || sp.TrackedSeconds != 60) {
 			t.Fatalf("history changed %+v", sp)
 		}
 	}
@@ -160,7 +172,15 @@ func TestPersonalScrumLifecycle(t *testing.T) {
 	third := get().Sprints[0].ID
 	item.SprintID = &third
 	w("item", b.ID, item)
+	already, _ := s.CreateTask(ctx, u.ID, TaskInput{ProjectID: p.ID, Title: "Already delivered"})
+	w("item", already.ID, item)
+	s.CompleteTask(ctx, u.ID, already.ID, true)
 	w("start", third, AgileCommand{})
+	for _, it := range get().Items {
+		if it.Task.ID == already.ID && it.SprintID != nil {
+			t.Fatal("pre-completed work entered scope")
+		}
+	}
 	s.DeleteTask(ctx, u.ID, b.ID)
 	for _, sp := range get().Sprints {
 		if sp.ID == third && (sp.ScopeCount != 0 || sp.CommittedCount != 1) {

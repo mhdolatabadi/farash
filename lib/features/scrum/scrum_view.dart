@@ -6,7 +6,6 @@ import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
-import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/features/tasks/presentation/task_detail_sheet.dart';
 import 'package:farash/features/tasks/presentation/task_tile.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
@@ -85,8 +84,9 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
           TaskTile(
             task: item.task,
             onToggle: () {
-              if (!c.busy)
+              if (!c.busy) {
                 c.move(item, item.task.isCompleted ? 'todo' : 'done');
+              }
             },
             onOpen: () => open(item),
             divider: false,
@@ -123,7 +123,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                 Text(
                   item.points == null
                       ? 'بدون برآورد'
-                      : '${persianDigits(item.points)} امتیاز داستان',
+                      : '${persianDigits(item.points!)} امتیاز داستان',
                 ),
                 if (item.acceptance.isNotEmpty)
                   const Tooltip(
@@ -364,7 +364,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                       (n, i) => n + (i.points ?? 0),
                     );
                     return Text(
-                      '${persianDigits(items.length)} کار · ${persianDigits(points)} امتیاز داستان${sprint.capacity == null ? '' : ' · ظرفیت ${persianDigits(sprint.capacity)}'}${sprint.capacity != null && points > sprint.capacity! ? ' · بیشتر از ظرفیت پیشنهادی' : ''}',
+                      '${persianDigits(items.length)} کار · ${persianDigits(points)} امتیاز داستان${sprint.capacity == null ? '' : ' · ظرفیت ${persianDigits(sprint.capacity!)}'}${sprint.capacity != null && points > sprint.capacity! ? ' · بیشتر از ظرفیت پیشنهادی' : ''}',
                     );
                   },
                 ),
@@ -451,10 +451,11 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
   }
 
   Widget board(ScrumData d, double width, {bool all = false}) {
-    if (!all && d.active == null)
+    if (!all && d.active == null) {
       return const Text(
         'اسپرینت فعالی نداری. در بک‌لاگ کار انتخاب کن و اسپرینت را شروع کن.',
       );
+    }
     final items = d.items
         .where(
           (i) =>
@@ -531,10 +532,11 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
 
   Widget reports(ScrumData d) {
     final choices = d.sprints.where((s) => s.state != 'planned').toList();
-    if (choices.isEmpty)
+    if (choices.isEmpty) {
       return const Text(
         'با شروع نخستین اسپرینت، گزارش واقعی محدوده و کار باقی‌مانده اینجا شکل می‌گیرد.',
       );
+    }
     final sprint =
         choices.where((s) => s.id == reportId).firstOrNull ??
         d.active ??

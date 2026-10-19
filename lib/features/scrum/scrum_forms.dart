@@ -60,7 +60,7 @@ class _SprintEditorState extends State<_SprintEditor> {
       initial: TaskDates(due: TaskDue.onDay(first ? start : end)),
       dueOnly: true,
     );
-    if (picked?.due != null && mounted)
+    if (picked?.due != null && mounted) {
       setState(() {
         if (first) {
           start = picked!.due!.day;
@@ -68,6 +68,7 @@ class _SprintEditorState extends State<_SprintEditor> {
           end = picked!.due!.day;
         }
       });
+    }
   }
 
   Future<void> save() async {

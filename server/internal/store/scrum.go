@@ -152,7 +152,7 @@ func (s *Store) AgileWorkspace(ctx context.Context, owner, project string) (Agil
  (SELECT count(*) FROM sprint_scope WHERE sprint_id=s.id AND removed_at IS NULL),
  (SELECT count(*) FROM sprint_scope WHERE sprint_id=s.id AND removed_at IS NULL AND completed),
  (SELECT count(*) FROM sprint_scope WHERE sprint_id=s.id AND removed_at IS NULL AND points IS NULL),
- COALESCE((SELECT sum(EXTRACT(EPOCH FROM GREATEST(interval '0',LEAST(COALESCE(e.ended_at,now()),COALESCE(e.planned_end,now()),COALESCE(s.closed_at,now()))-GREATEST(e.started_at,s.started_at)))) FROM time_entries e WHERE e.owner_id=s.owner_id AND e.task_id IN (SELECT task_id FROM sprint_scope WHERE sprint_id=s.id)),0)::bigint,s.review,s.retro
+ CASE WHEN s.state='closed' THEN s.closed_tracked_seconds ELSE sprint_tracked_seconds(s.id) END,s.review,s.retro
  FROM sprints s WHERE s.owner_id=$1 AND s.project_id=$2 ORDER BY s.created_at DESC,s.id`, owner, project)
 	if err != nil {
 		return out, err
@@ -301,6 +301,10 @@ func (s *Store) AgileWrite(ctx context.Context, owner, project, action, id strin
 				if exists {
 					return ErrAgileConflict
 				}
+				_, err = tx.Exec(ctx, `UPDATE scrum_items m SET sprint_id=NULL FROM tasks t WHERE t.id=m.task_id AND m.sprint_id=$1 AND (t.completed_at IS NOT NULL OR t.deleted_at IS NOT NULL OR t.project_id<>$2)`, id, project)
+				if err != nil {
+					return err
+				}
 				_, err = tx.Exec(ctx, `INSERT INTO sprint_scope(sprint_id,task_id,title,points,completed) SELECT $1,t.id,t.title,m.points,false FROM scrum_items m JOIN tasks t ON t.id=m.task_id WHERE m.sprint_id=$1 AND m.owner_id=$2 AND t.owner_id=$2 AND t.project_id=$3 AND t.completed_at IS NULL AND t.deleted_at IS NULL`, id, owner, project)
 				if err != nil {
 					return err
@@ -341,6 +345,10 @@ func (s *Store) AgileWrite(ctx context.Context, owner, project, action, id strin
 					return err
 				}
 				_, err = tx.Exec(ctx, `UPDATE sprints SET state='closed',closed_at=clock_timestamp(),review=$2,retro=$3 WHERE id=$1`, id, in.Review, in.Retro)
+				if err != nil {
+					return err
+				}
+				_, err = tx.Exec(ctx, `UPDATE sprints SET closed_tracked_seconds=sprint_tracked_seconds(id) WHERE id=$1`, id)
 				if err != nil {
 					return err
 				}
@@ -396,7 +404,7 @@ func writeAgileItem(ctx context.Context, tx pgx.Tx, owner, project, id string, i
 	}
 	targetState := ""
 	if in.SprintID != nil {
-		if completed {
+		if completed && (oldSprint == nil || *oldSprint != *in.SprintID) {
 			return ErrAgileConflict
 		}
 		err = tx.QueryRow(ctx, `SELECT state FROM sprints WHERE id=$1 AND owner_id=$2 AND project_id=$3 AND state<>'closed'`, *in.SprintID, owner, project).Scan(&targetState)

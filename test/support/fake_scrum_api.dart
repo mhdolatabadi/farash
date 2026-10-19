@@ -39,19 +39,20 @@ class FakeScrumApi extends PreviewTimeApi implements ScrumApi {
     if (fail) throw StateError('offline');
     if (verb != 'GET') {
       calls.add((verb, path, body));
-      if (path.endsWith('/agile'))
+      if (path.endsWith('/agile')) {
         method = body!['method'] as String;
-      else if (path.contains('/items/'))
+      } else if (path.contains('/items/')) {
         metadata[path.split('/').last] = {...body!};
-      else if (path.endsWith('/start'))
+      } else if (path.endsWith('/start')) {
         state = 'active';
-      else if (path.endsWith('/close')) {
+      } else if (path.endsWith('/close')) {
         state = 'closed';
         review = body!['review'] as String? ?? '';
         retro = body['retro'] as String? ?? '';
         for (final entry in metadata.entries) {
-          if (!all.firstWhere((t) => t.id == entry.key).isCompleted)
+          if (!all.firstWhere((t) => t.id == entry.key).isCompleted) {
             entry.value['sprint_id'] = body['sprint_id'];
+          }
         }
       } else if (path.endsWith('/notes')) {
         review = body!['review'] as String;

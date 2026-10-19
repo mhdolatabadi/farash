@@ -8,7 +8,7 @@ CREATE TABLE sprints (
  capacity INTEGER CHECK(capacity BETWEEN 0 AND 10000),
  state TEXT NOT NULL DEFAULT 'planned' CHECK(state IN ('planned','active','closed')),
  started_at TIMESTAMPTZ, closed_at TIMESTAMPTZ,
- committed_points INTEGER NOT NULL DEFAULT 0, committed_count INTEGER NOT NULL DEFAULT 0,
+ committed_points INTEGER NOT NULL DEFAULT 0, committed_count INTEGER NOT NULL DEFAULT 0, closed_tracked_seconds BIGINT NOT NULL DEFAULT 0,
  review TEXT NOT NULL DEFAULT '' CHECK(length(review)<=20000), retro TEXT NOT NULL DEFAULT '' CHECK(length(retro)<=20000),
  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  UNIQUE(owner_id,project_id,id), UNIQUE(owner_id,project_id,request_key),
@@ -40,6 +40,11 @@ CREATE TABLE sprint_events (
  scope_count INTEGER NOT NULL, remaining_count INTEGER NOT NULL
 );
 CREATE INDEX sprint_events_sprint ON sprint_events(sprint_id,id);
+CREATE FUNCTION sprint_tracked_seconds(sid TEXT) RETURNS BIGINT LANGUAGE SQL STABLE AS $$
+ SELECT COALESCE(sum(EXTRACT(EPOCH FROM GREATEST(interval '0',LEAST(COALESCE(e.ended_at,now()),COALESCE(e.planned_end,now()),COALESCE(s.closed_at,now()))-GREATEST(e.started_at,s.started_at)))),0)::bigint
+ FROM sprints s JOIN time_entries e ON e.owner_id=s.owner_id
+ WHERE s.id=sid AND s.started_at IS NOT NULL AND e.task_id IN (SELECT task_id FROM sprint_scope WHERE sprint_id=sid);
+$$;
 CREATE FUNCTION record_sprint_event(sid TEXT, event_kind TEXT) RETURNS VOID LANGUAGE SQL AS $$
  INSERT INTO sprint_events(sprint_id,kind,scope_points,remaining_points,scope_count,remaining_count)
  SELECT sid,event_kind,COALESCE(sum(points),0),COALESCE(sum(points) FILTER(WHERE NOT completed),0),count(*),count(*) FILTER(WHERE NOT completed)
