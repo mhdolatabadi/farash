@@ -95,6 +95,27 @@ void main() {
       expect(find.textContaining('انجام‌شده: ۱ از ۲'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await capture(tester, key, 'scrum-${variant.$1}-report');
+      await tester.ensureVisible(find.text('بک‌لاگ').first);
+      await tester.tap(find.text('بک‌لاگ').first);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('پایان اسپرینت'));
+      await tester.tap(find.text('پایان اسپرینت'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'مرور · چه خروجی‌ای داشتیم؟'),
+        'یک کار تمام شد.',
+      );
+      await capture(tester, key, 'scrum-${variant.$1}-closure');
+      await tester.ensureVisible(find.text('ثبت و پایان'));
+      await tester.tap(find.text('ثبت و پایان'));
+      await tester.pumpAndSettle();
+      expect(api.state, 'closed');
+      expect(api.review, 'یک کار تمام شد.');
+      expect(
+        api.metadata.values.where((v) => v['sprint_id'] == null),
+        isNotEmpty,
+      );
+      expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();
     });

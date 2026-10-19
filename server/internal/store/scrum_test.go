@@ -160,6 +160,13 @@ func TestPersonalScrumLifecycle(t *testing.T) {
 	if len(after.Events) < 3 {
 		t.Fatal("burndown events")
 	}
+	w("notes", sid, AgileCommand{Review: "Updated review", Retro: "Next action"})
+	for _, sp := range get().Sprints {
+		if sp.ID == sid && (sp.Review != "Updated review" || sp.DonePoints != 3 || sp.TrackedSeconds != 60) {
+			t.Fatal("notes changed measured history", sp)
+		}
+	}
+
 	w("method", "", AgileCommand{Method: "kanban"})
 	if len(get().Sprints) != 2 {
 		t.Fatal("history lost on method change")
