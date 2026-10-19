@@ -73,7 +73,7 @@ The timer uses bold display text, isolated LTR and scaled down to fit its width.
 
 ## Layout
 
-Phones have three bottom destinations plus a project drawer. At a shell width of 840 logical pixels, a solid sidebar replaces bottom navigation; its content width is 288. Weaving content is centered within 960, with 24 horizontal padding. Above 650 available content width, scene and next tasks sit beside each other at a 6:4 ratio with a 40 gap; otherwise they stack. Focus content is centered within 620.
+Phones have four bottom destinations (فرش, کارها, تمرکز and زمان‌ها) when the time API is available, plus a project drawer; clients without time support retain three. At a shell width of 840 logical pixels, a solid sidebar replaces bottom navigation; its content width is 288. Weaving content is centered within 960, with 24 horizontal padding. Above 650 available content width, scene and next tasks sit beside each other at a 6:4 ratio with a 40 gap; otherwise they stack. Focus content is centered within 620.
 
 The capture field remains above bottom navigation and safe areas, with measured scrolling clearance. Preserve existing saved start preferences and migrate the persisted `garden` value to `weaving`; Weaving is the default when no preference exists.
 
@@ -107,7 +107,7 @@ Filled tonal fields use the control radius, 16 horizontal and 14 vertical paddin
 
 ### Navigation
 
-فرش, کارها and تمرکز are directly reachable. Phone navigation is 72 high with selected tonal indicators and a fine top border; the weaving destination uses the original nested-diamond `WeaveMark`. The same mark identifies the account header. Toolbars pair their title with a tonal icon badge. Wide layouts use the same destinations and project hierarchy in the sidebar.
+فرش, کارها, تمرکز and, with time support, زمان‌ها are directly reachable. Phone navigation is 72 high with selected tonal indicators and a fine top border; the weaving destination uses the original nested-diamond `WeaveMark`. The same mark identifies the account header. Toolbars pair their title with a tonal icon badge. Wide layouts use the same destinations and project hierarchy in the sidebar.
 
 ### Weaving and Focus
 
@@ -115,7 +115,11 @@ The transparent original loom illustration (`assets/weaving/loom.png`) establish
 
 Level and XP come from the account API; unavailable data never produces a fabricated score or rug progress. Up to three real next tasks can be opened, completed with undo or used as a focus-session title.
 
-Focus frames the timer and its start/pause/reset controls in an atelier panel with 24 horizontal and 20 vertical padding. A thread rule sits above the timer and another below the controls. It retains one dominant timer and focus/short-break/long-break modes (25/5/15 minutes). Its controller belongs to the signed-in shell: navigation preserves it; sign-out disposes it. A deadline catches up after tick suspension. Sessions are local and end when the app closes. This delivery does not claim background alarms, persistent focus history or focus XP. Starting focus for a different task while a session runs preserves the running session and explains this through a snackbar.
+Focus frames the timer and its start/pause/reset controls in an atelier panel with 24 horizontal and 20 vertical padding. A thread rule sits above the timer and another below the controls. It retains one dominant timer and focus/short-break/long-break modes (25/5/15 minutes). Its controller belongs to the signed-in shell: navigation preserves it; sign-out disposes it. A deadline catches up after tick suspension. The countdown is local and is disposed when the app closes; task-linked work Focus also creates a durable, account-owned server time entry when time support is available. Pause/reset stops that entry. Its server deadline caps recording at the work-session end even if the client closes or suspends; reopening retrieves the recorded work rather than restoring the local countdown. Breaks and untargeted Focus record no work. A manually started work timer continues until stopped, corrected, deleted or closed by task completion/deletion. Time records add no XP; background alarms are not promised. Starting focus for a different task while a session runs preserves the running session and explains this through a snackbar.
+
+### Time tracking
+
+The time surface extends the same atelier panels, tonal task rows and Persian typography. Its active-time strip reserves space across shell navigation, with a direct stop action. Task details expose recorded totals, recent intervals and manual correction; optional completion prompts and today-gap suggestions record nothing until confirmed. Overlapping intervals are explicitly counted independently. Server-confirmed records, rather than a local countdown, are the source of time totals. No new artwork or reward system is introduced.
 
 ## Do's and Don'ts
 
