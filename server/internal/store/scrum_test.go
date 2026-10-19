@@ -145,6 +145,11 @@ func TestPersonalScrumLifecycle(t *testing.T) {
 	w("close", sid, AgileCommand{Review: "must not overwrite"})
 	s.DeleteTime(ctx, u.ID, recorded.ID)
 	s.CompleteTask(ctx, u.ID, a.ID, false)
+	for _, it := range get().Items {
+		if it.Task.ID == a.ID && it.SprintID != nil {
+			t.Fatal("reopened closed work did not return to backlog")
+		}
+	}
 	s.DeleteTask(ctx, u.ID, a.ID)
 	after := get()
 	for _, sp := range after.Sprints {

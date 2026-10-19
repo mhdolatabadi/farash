@@ -69,7 +69,7 @@ BEGIN
  IF moved THEN
    UPDATE scrum_items SET sprint_id=NULL,stage='todo' WHERE task_id=OLD.id;
  ELSIF TG_OP='UPDATE' AND OLD.completed_at IS NOT NULL AND NEW.completed_at IS NULL THEN
-   UPDATE scrum_items SET stage='todo' WHERE task_id=OLD.id;
+   UPDATE scrum_items m SET stage='todo',sprint_id=CASE WHEN EXISTS(SELECT 1 FROM sprints s WHERE s.id=m.sprint_id AND s.state='closed') THEN NULL ELSE m.sprint_id END WHERE task_id=OLD.id;
  END IF;
  RETURN NULL;
 END;
