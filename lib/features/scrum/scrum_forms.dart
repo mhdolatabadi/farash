@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/features/tasks/data/task.dart';
@@ -120,6 +121,7 @@ class _SprintEditorState extends State<_SprintEditor> {
             TextField(
               controller: name,
               enabled: !saving,
+              buildCounter: scrumCounter,
               maxLength: 120,
               decoration: const InputDecoration(labelText: 'نام اسپرینت'),
             ),
@@ -127,6 +129,7 @@ class _SprintEditorState extends State<_SprintEditor> {
             TextField(
               controller: goal,
               enabled: !saving,
+              buildCounter: scrumCounter,
               maxLength: 4000,
               minLines: 2,
               maxLines: 5,
@@ -144,6 +147,7 @@ class _SprintEditorState extends State<_SprintEditor> {
               controller: capacity,
               enabled: !saving,
               keyboardType: TextInputType.number,
+              buildCounter: scrumCounter,
               maxLength: 5,
               decoration: const InputDecoration(
                 labelText: 'ظرفیت پیشنهادی · امتیاز داستان',
@@ -270,6 +274,7 @@ class _ItemEditorState extends State<_ItemEditor> {
               controller: points,
               enabled: !saving && !frozen,
               keyboardType: TextInputType.number,
+              buildCounter: scrumCounter,
               maxLength: 4,
               decoration: InputDecoration(
                 labelText: 'امتیاز داستان · اختیاری',
@@ -306,6 +311,7 @@ class _ItemEditorState extends State<_ItemEditor> {
               enabled: !saving,
               minLines: 3,
               maxLines: 8,
+              buildCounter: scrumCounter,
               maxLength: 20000,
               decoration: const InputDecoration(labelText: 'معیار پذیرش'),
             ),
@@ -427,6 +433,7 @@ class _SprintNotesState extends State<_SprintNotes> {
               enabled: !saving,
               minLines: 2,
               maxLines: 5,
+              buildCounter: scrumCounter,
               maxLength: 20000,
               decoration: const InputDecoration(
                 labelText: 'مرور · چه خروجی‌ای داشتیم؟',
@@ -439,6 +446,7 @@ class _SprintNotesState extends State<_SprintNotes> {
               enabled: !saving,
               minLines: 3,
               maxLines: 6,
+              buildCounter: scrumCounter,
               maxLength: 20000,
               decoration: const InputDecoration(
                 labelText: 'رترو · دفعهٔ بعد چه تغییری بدهیم؟',
@@ -472,3 +480,15 @@ class _SprintNotesState extends State<_SprintNotes> {
     ],
   );
 }
+
+Widget? scrumCounter(
+  BuildContext context, {
+  required int currentLength,
+  required bool isFocused,
+  required int? maxLength,
+}) => maxLength == null || currentLength < maxLength * .9
+    ? null
+    : Text(
+        '${persianDigits(currentLength)}/${persianDigits(maxLength)}',
+        style: Theme.of(context).textTheme.labelSmall,
+      );

@@ -284,6 +284,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                                     controller: capture,
                                     enabled:
                                         !c.busy && !widget.project.isArchived,
+                                    buildCounter: scrumCounter,
                                     maxLength: 500,
                                     decoration: InputDecoration(
                                       labelText: 'کار تازه در بک‌لاگ',
