@@ -209,7 +209,7 @@ func (s *Store) AgileWorkspace(ctx context.Context, owner, project string) (Agil
 func validSprint(in AgileCommand) bool {
 	a, e := time.Parse(dateLayout, in.StartsOn)
 	b, f := time.Parse(dateLayout, in.EndsOn)
-	return strings.TrimSpace(in.Name) != "" && len([]rune(in.Name)) <= 120 && len([]rune(in.Goal)) <= 4000 && e == nil && f == nil && !b.Before(a) && b.Sub(a) <= 90*24*time.Hour && (in.Capacity == nil || *in.Capacity >= 0 && *in.Capacity <= 10000)
+	return strings.TrimSpace(in.Name) != "" && len([]rune(in.Name)) <= 120 && len([]rune(in.Goal)) <= 4000 && e == nil && f == nil && a.Year() >= 1 && b.Year() <= 9999 && !b.Before(a) && b.Sub(a) <= 90*24*time.Hour && (in.Capacity == nil || *in.Capacity >= 0 && *in.Capacity <= 10000)
 }
 
 // All lifecycle writes take the project lock first, including starts from two devices.

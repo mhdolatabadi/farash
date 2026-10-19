@@ -114,10 +114,12 @@ class ScrumController extends ChangeNotifier {
       await action();
       return true;
     } catch (e) {
+      final message = e is ApiException && e.code == 'agile_state_conflict'
+          ? 'وضعیت پروژه تغییر کرده است. اسپرینت فعال را ببند؛ برآورد کار داخل اسپرینت فعال ثابت می‌ماند.'
+          : 'ذخیره نشد. اتصال و وضعیت پروژه را بررسی و دوباره تلاش کن.';
       if (!disposed) {
-        error = e is ApiException && e.code == 'agile_state_conflict'
-            ? 'وضعیت پروژه تغییر کرده است. اسپرینت فعال را ببند؛ برآورد کار داخل اسپرینت فعال ثابت می‌ماند.'
-            : 'ذخیره نشد. اتصال و وضعیت پروژه را بررسی و دوباره تلاش کن.';
+        await load();
+        if (!disposed) error = message;
       }
       return false;
     } finally {

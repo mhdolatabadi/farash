@@ -115,6 +115,61 @@ void main() {
     expect(c.error, isNotNull);
     c.dispose();
   });
+  test('failed board PUT reloads an already-confirmed reopen', () async {
+    final api = RejectingScrumApi();
+    final c = ScrumController(
+      api: api,
+      tasks: api,
+      token: () => 'token',
+      projectId: 'personal',
+    );
+    await c.load();
+    final id = c.data!.items.first.task.id;
+    await api.closeTask('token', id);
+    await c.load();
+    api.rejectPut = true;
+    expect(await c.move(c.data!.items.first, 'doing'), isFalse);
+    expect(c.data!.items.first.task.isCompleted, isFalse);
+    expect(c.error, isNotNull);
+    c.dispose();
+  });
+  testWidgets('completed backlog work can be reopened in the Scrum workspace', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final api = FakeScrumApi();
+    final task = api.byTitle('انتخاب فصل بعدی');
+    await api.closeTask('token', task.id);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ProjectWorkspace(
+            project: personal,
+            api: api,
+            tasks: api,
+            token: () => 'token',
+            projects: () => [personal],
+            simple: const SizedBox(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('انجام‌شده‌های بک‌لاگ'));
+    await tester.tap(find.text('انجام‌شده‌های بک‌لاگ'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.bySemanticsLabel('برگرداندن «انتخاب فصل بعدی»'),
+    );
+    await tester.tap(find.bySemanticsLabel('برگرداندن «انتخاب فصل بعدی»'));
+    await tester.pumpAndSettle();
+    expect(api.byTitle('انتخاب فصل بعدی').isCompleted, isFalse);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+  });
   testWidgets(
     'Persian story points and optional personal criteria save as metadata',
     (tester) async {
@@ -169,4 +224,18 @@ Future<void> capture(WidgetTester tester, GlobalKey key, String name) async {
     await file.writeAsBytes(data!.buffer.asUint8List());
     image.dispose();
   });
+}
+
+class RejectingScrumApi extends FakeScrumApi {
+  bool rejectPut = false;
+  @override
+  Future<Map<String, dynamic>> agileRequest(
+    String token,
+    String method,
+    String path, {
+    Map<String, Object?>? body,
+  }) {
+    if (rejectPut && method == 'PUT') throw StateError('offline');
+    return super.agileRequest(token, method, path, body: body);
+  }
 }

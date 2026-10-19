@@ -423,6 +423,16 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
             'کار تازه را پایین اضافه کن؛ از گزینه‌های هر کار، برآورد و اسپرینتش را تعیین کن.',
           ),
         for (final item in unassigned) itemTile(item),
+        if (d.items.any((i) => i.task.isCompleted && i.sprintId == null))
+          ExpansionTile(
+            title: const Text('انجام‌شده‌های بک‌لاگ'),
+            children: [
+              for (final item in d.items.where(
+                (i) => i.task.isCompleted && i.sprintId == null,
+              ))
+                itemTile(item),
+            ],
+          ),
       ],
     );
   }
@@ -459,7 +469,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
     final items = d.items
         .where(
           (i) =>
-              i.kind != 'epic' &&
+              (all || i.kind != 'epic') &&
               (all
                   ? (!i.task.isCompleted || i.sprintId == null)
                   : i.sprintId == d.active!.id),
