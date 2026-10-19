@@ -1,0 +1,24 @@
+# Personal Scrum (#84) and collaboration roadmap (#83)
+
+Project method is persisted separately from future membership: `simple`, `kanban`, `scrum`. Regular projects can switch without deleting tasks or sprint history. Inbox/folders are not agile projects. An active sprint must be closed before switching away from Scrum. Archived projects retain read access but agile mutations fail with a conflict. Sharing, invitations, Scrum roles, comments, attachments and notifications remain tracked in #22/#15/#14 and are not advertised as implemented by this slice.
+
+Scrum works with one account: backlog, task/story/bug/epic metadata, optional integer story points, acceptance criteria, planned sprints, optional point capacity, board, report, review and retrospective. Existing task parent/subtask hierarchy remains available through task detail. Epics remain outside sprints; no separate epic rollup is claimed. Story points never replace duration estimates or real time, and never award XP. Capacity is advisory; unknown estimates remain null and reports include unestimated-item counts.
+
+Writes require server confirmation. A project row lock plus the partial unique index allows only one active sprint. Sprint creation uses a stable request key; retries match the original planning fields. Start and close are idempotent state transitions. Planned dates are civil calendar dates (Jalali-first UI), not automatic execution deadlines. A sprint may be planned for at most 90 days. Actual start/end timestamps govern measurement.
+
+Start snapshots all open assigned tasks, their titles and points; empty starts fail. Original committed count/points remain stable. Active-sprint point changes are rejected; acceptance text and stage may change. Adding/removing scope appends an aggregate event. Task completion, undo, movement, title changes and deletion update active scope through a database trigger, including changes from ordinary task screens. Done is the existing task completion, not a second state: time tracking and existing confirmed completion rewards retain their established behavior. Todo/doing are workflow stages. Task rows retain task detail and timer access.
+
+Closing freezes scope outcomes and review/retro notes and returns unfinished work to backlog or an explicitly chosen planned sprint. Retrying close does not overwrite the first closure. Review and retrospective notes may be edited later independently. Later task edits, deletion or undo do not rewrite closed scope. Snapshot titles and IDs are private project history, intentionally retained even if the task is physically deleted. Normal project/account deletion cascades that history. All reads/writes are owner-scoped; private project/task/sprint IDs return 404.
+
+Reports show initial commitment, final/current scope, done points/count, unknown estimates, and recorded time clipped to actual sprint execution for tasks in its historical scope (including removed tasks). Overlapping recorded time retains the time tracker's independent summation rule. Velocity lists completed-sprint outputs without inventing scores or comparing people. The burndown is a step plot of actual aggregate events, accompanied by an accessible table; it does not invent daily work, an ideal line or a flat future projection. Dates display in the user's calendar/device timezone. Counts include explicitly assigned subtasks independently; no implicit rollup or deduplication of parent estimates is claimed.
+
+Migration `011_scrum.sql` is additive. Normal deployment applies it before the new API. Rollback can leave the tables/method column in place. Never drop history to roll back. API base `/api/v1/projects/{project}/agile`: GET workspace, PATCH method, PUT items/{task}; POST sprints, PATCH sprints/{id}, POST start/close, PATCH notes. Writes return a fresh workspace; a failed response is never treated as confirmed progress. Planned creation retry keys are form-owned; changing payload after a lost create requires reopening the form/new intent.
+
+## Direction contract
+
+THESIS: A sole user can plan a small increment, work through it and review what actually happened without creating a team.
+OWN-WORLD: Extend the established Persian weaving atelier, opaque tonal surfaces and Vazirmatn; tasks and real outcomes lead.
+STORY: Opt into Scrum, shape backlog, assign scope, start, move work, close and reflect.
+FIRST VIEWPORT: Project/method toolbar, one calm heading, backlog/board/report navigation, relevant sprint goal and a clear primary action. Dense reports follow the task flow; no decorative analytics dashboard.
+FORM: Ordinary code-led extension. Preserve tokens, artwork and existing quick capture. Narrow boards select a column; wide boards show three lanes with drag plus menu alternatives.
+FINISH: Independent native screenshot review and documentation check, with synthetic fixtures clearly distinguished from PostgreSQL integration and physical-device evidence. No new rasters.

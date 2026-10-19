@@ -1,3 +1,5 @@
+import 'package:farash/features/scrum/scrum.dart';
+import 'package:farash/features/scrum/scrum_view.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:farash/features/time_tracking/time_tracking_view.dart';
@@ -492,6 +494,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   )
                 : selected == null
                 ? _ProjectPage(loading: widget.projects.isLoading)
+                : widget.tasksApi is ScrumApi &&
+                      !selected.isInbox &&
+                      !selected.isFolder
+                ? ProjectWorkspace(
+                    key: ValueKey('workspace-${selected.id}'),
+                    project: selected,
+                    api: widget.tasksApi as ScrumApi,
+                    tasks: widget.tasksApi,
+                    token: widget.token,
+                    projects: () => widget.projects.projects,
+                    simple: ProjectTasksView(
+                      key: ValueKey(selected.id),
+                      project: selected,
+                      api: widget.tasksApi,
+                      sectionsApi: widget.sectionsApi,
+                      token: widget.token,
+                      moveTargets: () => widget.projects.projects,
+                      labels: _labels,
+                    ),
+                  )
                 : ProjectTasksView(
                     // A new controller for each project.
                     key: ValueKey(selected.id),

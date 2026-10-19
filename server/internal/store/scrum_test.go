@@ -5,7 +5,6 @@ import (
 	"errors"
 	"sync"
 	"testing"
-	"time"
 )
 
 func TestSprintValidation(t *testing.T) {
@@ -168,5 +167,4 @@ func TestPersonalScrumLifecycle(t *testing.T) {
 			t.Fatalf("deleted scope %+v", sp)
 		}
 	}
-	_ = time.Now()
 }
