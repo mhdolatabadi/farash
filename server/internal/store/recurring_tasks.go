@@ -14,11 +14,11 @@ var ErrRecurrenceConflict = errors.New("recurrence state conflict")
 var ErrInvalidRecurrence = errors.New("invalid recurrence")
 
 type TaskRecurrence struct {
-	Schedule recurrence.Schedule `json:"schedule"`
-	Emitted int `json:"emitted"`
-	NextTaskID *string `json:"next_task_id"`
-	AdvancedAt *time.Time `json:"advanced_at"`
-	Skipped bool `json:"skipped"`
+	Schedule   recurrence.Schedule `json:"schedule"`
+	Emitted    int                 `json:"emitted"`
+	NextTaskID *string             `json:"next_task_id"`
+	AdvancedAt *time.Time          `json:"advanced_at"`
+	Skipped    bool                `json:"skipped"`
 }
 
 func recurrenceState(ctx context.Context, tx pgx.Tx, owner, id string) (*TaskRecurrence, error) {
