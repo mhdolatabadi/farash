@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/atelier.dart';
 import 'package:farash/app/glass.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/features/auth/data/auth_models.dart';
@@ -83,11 +84,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Icon(
-                            Icons.check_circle_rounded,
-                            color: colors.primary,
-                            size: 48,
-                          ),
+                          const Center(child: WeaveMark(size: 48)),
                           const SizedBox(height: 16),
                           Text(
                             title,

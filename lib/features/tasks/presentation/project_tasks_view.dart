@@ -2,6 +2,7 @@ import 'package:farash/features/weaving/woven_rug.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:farash/app/atelier.dart';
 import 'package:flutter/rendering.dart';
 import 'package:farash/app/glass.dart';
 import 'package:farash/app/list_app_bar.dart';
@@ -543,8 +544,9 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     ];
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(),
+      child: AtelierPanel(
+        radius: 20,
+        lifted: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           child: Row(

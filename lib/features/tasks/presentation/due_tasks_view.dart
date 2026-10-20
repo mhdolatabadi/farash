@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/atelier.dart';
 import 'package:farash/app/list_app_bar.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
@@ -546,6 +547,11 @@ class _DayHeading extends StatelessWidget {
       padding: const EdgeInsetsDirectional.fromSTEB(24, 20, 12, 8),
       child: Row(
         children: [
+          WeaveMark(
+            size: 14,
+            color: late ? theme.colorScheme.error : theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Semantics(
               header: true,
@@ -554,7 +560,7 @@ class _DayHeading extends StatelessWidget {
                   children: [
                     TextSpan(
                       text: title,
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: late ? theme.colorScheme.error : null,
                       ),
