@@ -21,6 +21,7 @@ const _old = Project(id: 'old', name: 'Old', color: '#16a34a');
 
 void main() {
   final today = dayOf(DateTime.now());
+  // Calendar days, not 24-hour steps, so offsets stay exact across DST.
   DateTime day(int offset) =>
       DateTime(today.year, today.month, today.day + offset);
   TaskDates on(int offset) => TaskDates(due: TaskDue.onDay(day(offset)));
