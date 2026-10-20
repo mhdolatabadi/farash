@@ -1,3 +1,4 @@
+import 'package:farash/features/scrum/scrum.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'dart:convert';
 
@@ -200,7 +201,14 @@ abstract interface class SectionsApi {
 /// Talks to the Farash API. Feature interfaces are implemented here so that
 /// one HTTP client serves the whole app.
 class ApiClient
-    implements AuthApi, ProjectsApi, TasksApi, SectionsApi, LabelsApi, TimeApi {
+    implements
+        AuthApi,
+        ProjectsApi,
+        TasksApi,
+        SectionsApi,
+        LabelsApi,
+        TimeApi,
+        ScrumApi {
   ApiClient(this.baseUri, {http.Client? client})
     : _client = client ?? http.Client();
 
@@ -221,6 +229,14 @@ class ApiClient
         ))
         as Map<String, dynamic>;
   }
+
+  @override
+  Future<Map<String, dynamic>> agileRequest(
+    String token,
+    String method,
+    String path, {
+    Map<String, Object?>? body,
+  }) => timeRequest(token, method, path, body: body);
 
   final completedTask = ValueNotifier<Task?>(null);
   final Uri baseUri;
