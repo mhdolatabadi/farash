@@ -40,30 +40,33 @@ void main() {
     expect(timer.remaining, const Duration(minutes: 5));
   });
 
-  test('every weaving boundary is elapsed-time based, including suspension', () {
-    final origin = DateTime(2026);
-    var now = origin;
-    final timer = FocusController(now: () => now);
-    addTearDown(timer.dispose);
-    expect(timer.weavingFrame, 0);
-    timer.start();
-    for (var frame = 1; frame <= 9; frame++) {
-      final boundary = (1500000 * frame + 8) ~/ 9;
-      now = origin.add(Duration(milliseconds: boundary - 1));
+  test(
+    'every weaving boundary is elapsed-time based, including suspension',
+    () {
+      final origin = DateTime(2026);
+      var now = origin;
+      final timer = FocusController(now: () => now);
+      addTearDown(timer.dispose);
+      expect(timer.weavingFrame, 0);
+      timer.start();
+      for (var frame = 1; frame <= 9; frame++) {
+        final boundary = (1500000 * frame + 8) ~/ 9;
+        now = origin.add(Duration(milliseconds: boundary - 1));
+        timer.refresh();
+        expect(timer.weavingFrame, frame - 1);
+        now = origin.add(Duration(milliseconds: boundary));
+        timer.refresh();
+        expect(timer.weavingFrame, frame);
+      }
+      expect(timer.finished, isTrue);
+      now = now.add(const Duration(hours: 2));
       timer.refresh();
-      expect(timer.weavingFrame, frame - 1);
-      now = origin.add(Duration(milliseconds: boundary));
-      timer.refresh();
-      expect(timer.weavingFrame, frame);
-    }
-    expect(timer.finished, isTrue);
-    now = now.add(const Duration(hours: 2));
-    timer.refresh();
-    expect(timer.weavingFrame, 9);
-    timer.start();
-    expect(timer.weavingFrame, 0);
-    expect(timer.design, 1);
-  });
+      expect(timer.weavingFrame, 9);
+      timer.start();
+      expect(timer.weavingFrame, 0);
+      expect(timer.design, 1);
+    },
+  );
 
   test('pause, resume and reset preserve the intended weaving state', () {
     var now = DateTime(2026);

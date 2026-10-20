@@ -35,9 +35,7 @@ class FocusController extends ChangeNotifier {
   void restoreRemaining(Duration value) {
     if (running) return;
     final total = Duration(minutes: minutes).inMilliseconds;
-    _remaining = Duration(
-      milliseconds: value.inMilliseconds.clamp(0, total),
-    );
+    _remaining = Duration(milliseconds: value.inMilliseconds.clamp(0, total));
     finished = false;
     notifyListeners();
   }
