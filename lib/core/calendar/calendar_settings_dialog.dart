@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/core/settings/theme_preferences.dart';
 import 'package:farash/core/calendar/calendar_settings.dart';
 import 'package:farash/core/calendar/date_labels.dart';
 
@@ -11,11 +12,38 @@ Future<void> showCalendarSettings(
   builder: (context) => ListenableBuilder(
     listenable: settings,
     builder: (context, _) => AlertDialog(
-      title: const Text('تقویم'),
+      title: const Text('نمایش و تقویم'),
+      scrollable: true,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (ThemePreferencesScope.maybeOf(context) case final appearance?) ...[
+            Text('نمایش', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<ThemeMode>(
+              initialValue: appearance.mode,
+              decoration: const InputDecoration(labelText: 'پوسته'),
+              items: const [
+                DropdownMenuItem(
+                  value: ThemeMode.system,
+                  child: Text('همگام با دستگاه'),
+                ),
+                DropdownMenuItem(
+                  value: ThemeMode.light,
+                  child: Text('روشن'),
+                ),
+                DropdownMenuItem(
+                  value: ThemeMode.dark,
+                  child: Text('تیره'),
+                ),
+              ],
+              onChanged: (mode) {
+                if (mode != null) appearance.setMode(mode);
+              },
+            ),
+            const SizedBox(height: 24),
+          ],
           SegmentedButton<CalendarSystem>(
             segments: const [
               ButtonSegment(
