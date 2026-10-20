@@ -7,7 +7,7 @@ class ThemePreferences extends ChangeNotifier {
     CalendarSettingsStore? store,
     ThemeMode mode = ThemeMode.system,
   }) : _store = store,
-      _mode = mode;
+       _mode = mode;
 
   static const _key = 'theme_mode';
   final CalendarSettingsStore? _store;
@@ -63,8 +63,7 @@ class ThemePreferencesScope extends InheritedNotifier<ThemePreferences> {
     required super.child,
   }) : super(notifier: preferences);
 
-  static ThemePreferences? maybeOf(BuildContext context) =>
-      context
-          .dependOnInheritedWidgetOfExactType<ThemePreferencesScope>()
-          ?.notifier;
+  static ThemePreferences? maybeOf(BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<ThemePreferencesScope>()
+      ?.notifier;
 }

@@ -48,7 +48,9 @@ void main() {
     expect(store.written, 'dark');
   });
 
-  testWidgets('appearance is selectable with narrow large text', (tester) async {
+  testWidgets('appearance is selectable with narrow large text', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(320, 760);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -66,9 +68,9 @@ void main() {
           builder: (context, child) => ThemePreferencesScope(
             preferences: preferences,
             child: MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: TextScaler.linear(2),
-              ),
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(2)),
               child: Directionality(
                 textDirection: TextDirection.rtl,
                 child: child!,

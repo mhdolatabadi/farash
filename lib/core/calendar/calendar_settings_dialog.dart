@@ -18,7 +18,8 @@ Future<void> showCalendarSettings(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (ThemePreferencesScope.maybeOf(context) case final appearance?) ...[
+          if (ThemePreferencesScope.maybeOf(context)
+              case final appearance?) ...[
             Text('نمایش', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             DropdownButtonFormField<ThemeMode>(
@@ -29,14 +30,8 @@ Future<void> showCalendarSettings(
                   value: ThemeMode.system,
                   child: Text('همگام با دستگاه'),
                 ),
-                DropdownMenuItem(
-                  value: ThemeMode.light,
-                  child: Text('روشن'),
-                ),
-                DropdownMenuItem(
-                  value: ThemeMode.dark,
-                  child: Text('تیره'),
-                ),
+                DropdownMenuItem(value: ThemeMode.light, child: Text('روشن')),
+                DropdownMenuItem(value: ThemeMode.dark, child: Text('تیره')),
               ],
               onChanged: (mode) {
                 if (mode != null) appearance.setMode(mode);
