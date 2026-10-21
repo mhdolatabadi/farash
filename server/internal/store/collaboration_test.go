@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 )
 
@@ -203,5 +204,62 @@ func TestCollaborationBoundedMembership(t *testing.T) {
 	}
 	if err := s.CollaborationWrite(ctx, owner.ID, project.ID, "invite", "", CollaborationCommand{Email: "limit-201@example.com", Role: "viewer"}); !errors.Is(err, ErrCollaborationConflict) {
 		t.Fatal("invitation quota", err)
+	}
+}
+
+// A retry racing a removal cannot recreate consent after the owner removes it.
+func TestCollaborationConcurrentAcceptAndRemove(t *testing.T) {
+	s := New(testPool(t))
+	ctx := context.Background()
+	owner, err := s.CreateUser(ctx, "race-owner@example.com", "unused")
+	if err != nil {
+		t.Fatal(err)
+	}
+	member, err := s.CreateUser(ctx, "race-member@example.com", "unused")
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := s.CreateProject(ctx, owner.ID, ProjectInput{Name: "Concurrent consent"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.CollaborationWrite(ctx, owner.ID, project.ID, "invite", "", CollaborationCommand{Email: member.Email, Role: "editor"}); err != nil {
+		t.Fatal(err)
+	}
+	invitations, err := s.CollaborationInvitations(ctx, member.ID)
+	if err != nil || len(invitations) != 1 {
+		t.Fatal(invitations, err)
+	}
+	id := invitations[0].ID
+	if err := s.CollaborationWrite(ctx, member.ID, project.ID, "accept", id, CollaborationCommand{}); err != nil {
+		t.Fatal(err)
+	}
+	start := make(chan struct{})
+	results := make(chan error, 2)
+	var workers sync.WaitGroup
+	workers.Add(2)
+	go func() {
+		defer workers.Done()
+		<-start
+		results <- s.CollaborationWrite(ctx, member.ID, project.ID, "accept", id, CollaborationCommand{})
+	}()
+	go func() {
+		defer workers.Done()
+		<-start
+		results <- s.CollaborationWrite(ctx, owner.ID, project.ID, "remove", member.ID, CollaborationCommand{})
+	}()
+	close(start)
+	workers.Wait()
+	close(results)
+	for err := range results {
+		if err != nil && !errors.Is(err, ErrCollaborationConflict) {
+			t.Fatal(err)
+		}
+	}
+	if _, err := s.ProjectCollaboration(ctx, member.ID, project.ID); !errors.Is(err, ErrCollaborationNotFound) {
+		t.Fatal("racing retry restored membership", err)
+	}
+	if err := s.CollaborationWrite(ctx, member.ID, project.ID, "accept", id, CollaborationCommand{}); !errors.Is(err, ErrCollaborationConflict) {
+		t.Fatal("removed invitation restored membership", err)
 	}
 }
