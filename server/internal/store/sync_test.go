@@ -164,3 +164,48 @@ func TestSyncDoesNotSkipConcurrentCommitOrRollback(t *testing.T) {
 		t.Fatal("rollback emitted change", afterRollback, err)
 	}
 }
+
+func TestSyncBootstrapKeepsEditsMovedPastAnEarlierPage(t *testing.T) {
+	ctx := context.Background()
+	pool := testPool(t)
+	s := New(pool)
+	user, err := s.CreateUser(ctx, "sync-bootstrap@example.com", "hash")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `INSERT INTO projects(id,owner_id,name) VALUES('p',$1,'Project')`, user.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `INSERT INTO tasks(id,owner_id,project_id,title) VALUES('a',$1,'p','Before'),('b',$1,'p','B')`, user.ID); err != nil {
+		t.Fatal(err)
+	}
+	page, err := s.PullSync(ctx, user.ID, "", 1)
+	if err != nil || len(page.Changes) != 1 || !page.HasMore {
+		t.Fatal(page, err)
+	}
+	// Coalescing moves this task beyond the unread task. It must still arrive
+	// during pagination, with its latest content rather than the original row.
+	if _, err := pool.Exec(ctx, `UPDATE tasks SET title='Latest' WHERE id='a'`); err != nil {
+		t.Fatal(err)
+	}
+	seen := map[string]string{}
+	for page.HasMore {
+		page, err = s.PullSync(ctx, user.ID, page.Cursor, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, change := range page.Changes {
+			seen[change.ID] = string(change.Data)
+		}
+	}
+	if len(seen) != 2 || !strings.Contains(seen["a"], "Latest") || !strings.Contains(seen["b"], `"B"`) {
+		t.Fatal("bootstrap skipped a coalesced change", seen)
+	}
+	if _, err := pool.Exec(ctx, `DELETE FROM tasks WHERE id='b'`); err != nil {
+		t.Fatal(err)
+	}
+	deleted, err := s.PullSync(ctx, user.ID, page.Cursor, 1)
+	if err != nil || len(deleted.Changes) != 1 || deleted.Changes[0].ID != "b" || deleted.Changes[0].Operation != "delete" {
+		t.Fatal(deleted, err)
+	}
+}

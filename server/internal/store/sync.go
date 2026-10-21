@@ -19,7 +19,7 @@ type SyncChange struct {
 	Entity    string          `json:"entity"`
 	ID        string          `json:"id"`
 	Revision  string          `json:"revision"`
-	Operation string         `json:"operation"`
+	Operation string          `json:"operation"`
 	Data      json.RawMessage `json:"data"`
 }
 
