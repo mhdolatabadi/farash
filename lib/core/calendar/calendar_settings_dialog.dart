@@ -24,11 +24,15 @@ Future<void> showCalendarSettings(
             const SizedBox(height: 8),
             DropdownButtonFormField<ThemeMode>(
               initialValue: appearance.mode,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'پوسته'),
               items: const [
                 DropdownMenuItem(
                   value: ThemeMode.system,
-                  child: Text('همگام با دستگاه'),
+                  child: Text(
+                    'همگام با دستگاه',
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 DropdownMenuItem(value: ThemeMode.light, child: Text('روشن')),
                 DropdownMenuItem(value: ThemeMode.dark, child: Text('تیره')),
@@ -39,23 +43,30 @@ Future<void> showCalendarSettings(
             ),
             const SizedBox(height: 24),
           ],
-          SegmentedButton<CalendarSystem>(
-            segments: const [
-              ButtonSegment(
-                value: CalendarSystem.jalali,
-                label: Text('خورشیدی'),
-              ),
-              ButtonSegment(
-                value: CalendarSystem.gregorian,
-                label: Text('میلادی'),
-              ),
-            ],
-            selected: {settings.system},
-            onSelectionChanged: (s) => settings.setSystem(s.single),
+          RadioGroup<CalendarSystem>(
+            groupValue: settings.system,
+            onChanged: (system) {
+              if (system != null) settings.setSystem(system);
+            },
+            child: const Column(
+              children: [
+                RadioListTile(
+                  value: CalendarSystem.jalali,
+                  title: Text('خورشیدی'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                RadioListTile(
+                  value: CalendarSystem.gregorian,
+                  title: Text('میلادی'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<int>(
             initialValue: settings.weekStart,
+            isExpanded: true,
             decoration: const InputDecoration(labelText: 'شروع هفته'),
             items: [
               for (final day in const [

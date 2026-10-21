@@ -1,11 +1,25 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:farash/app/app_theme.dart';
 import 'package:farash/core/calendar/calendar_settings.dart';
 import 'package:farash/core/calendar/calendar_settings_dialog.dart';
 import 'package:farash/core/settings/theme_preferences.dart';
 
 void main() {
+  setUpAll(() async {
+    for (final font in [
+      ('Vazirmatn', 'assets/fonts/Vazirmatn-Regular.ttf'),
+      ('MaterialIcons', 'fonts/MaterialIcons-Regular.otf'),
+    ]) {
+      await (FontLoader(font.$1)..addFont(rootBundle.load(font.$2))).load();
+    }
+  });
   test('appearance persists and rejects unknown values', () async {
     final store = MemoryCalendarSettingsStore();
     final preferences = ThemePreferences(store: store);
@@ -58,30 +72,33 @@ void main() {
     addTearDown(preferences.dispose);
     final calendar = CalendarSettings();
     addTearDown(calendar.dispose);
+    final captureKey = GlobalKey();
     await tester.pumpWidget(
-      ListenableBuilder(
-        listenable: preferences,
-        builder: (context, _) => MaterialApp(
-          themeMode: preferences.mode,
-          theme: ThemeData.light(),
-          darkTheme: ThemeData.dark(),
-          builder: (context, child) => ThemePreferencesScope(
-            preferences: preferences,
-            child: MediaQuery(
-              data: MediaQuery.of(
-                context,
-              ).copyWith(textScaler: TextScaler.linear(2)),
-              child: Directionality(
-                textDirection: TextDirection.rtl,
-                child: child!,
+      RepaintBoundary(
+        key: captureKey,
+        child: ListenableBuilder(
+          listenable: preferences,
+          builder: (context, _) => MaterialApp(
+            themeMode: preferences.mode,
+            theme: FarashTheme.light(),
+            darkTheme: FarashTheme.dark(),
+            builder: (context, child) => ThemePreferencesScope(
+              preferences: preferences,
+              child: MediaQuery(
+                data: MediaQuery.of(context)
+                    .copyWith(textScaler: TextScaler.linear(2)),
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: child!,
+                ),
               ),
             ),
-          ),
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: TextButton(
-                onPressed: () => showCalendarSettings(context, calendar),
-                child: const Text('settings'),
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: TextButton(
+                  onPressed: () => showCalendarSettings(context, calendar),
+                  child: const Text('settings'),
+                ),
               ),
             ),
           ),
@@ -91,6 +108,7 @@ void main() {
     await tester.tap(find.text('settings'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    await capture(tester, captureKey, 'appearance-narrow-large-light');
     await tester.tap(find.text('همگام با دستگاه'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('تیره').last);
@@ -101,10 +119,25 @@ void main() {
       Brightness.dark,
     );
     expect(tester.takeException(), isNull);
+    await capture(tester, captureKey, 'appearance-narrow-large-dark');
     await tester.ensureVisible(find.text('بستن'));
     await tester.tap(find.text('بستن'));
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsNothing);
+  });
+}
+
+Future<void> capture(WidgetTester tester, GlobalKey key, String name) async {
+  if (Platform.environment['CAPTURE_GLASS_UI'] != '1') return;
+  await tester.runAsync(() async {
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    final image = await boundary.toImage(pixelRatio: 1);
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    final file = File('.impeccable/review/$name.png');
+    await file.parent.create(recursive: true);
+    await file.writeAsBytes(data!.buffer.asUint8List());
+    image.dispose();
   });
 }
 
