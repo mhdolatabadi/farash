@@ -12,7 +12,7 @@ import (
 
 var (
 	ErrFilterNotFound = errors.New("filter not found")
-	ErrInvalidFilter = errors.New("invalid filter")
+	ErrInvalidFilter  = errors.New("invalid filter")
 )
 
 type SearchPage struct {
