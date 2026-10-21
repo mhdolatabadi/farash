@@ -10,4 +10,10 @@ Persian ي/ى/ك map to ی/ی/ک, case is folded, and whitespace/half-spaces are
 
 GET/POST /api/v1/filters list/create; PUT/DELETE /api/v1/filters/{id} replace/delete. Filters store name, query, color, favorite and sort; dates remain relative when evaluated later. No filter can access data beyond the caller's scope. Migration015 is additive; rollback can retain saved_filters.
 
-This delivery does not yet establish full #13 acceptance: comment search, shared/assigned predicates, a form-based smart-list builder, grouping and the client entry point remain separate follow-through until explicitly implemented and verified. Do not close #13 based on backend delivery alone.
+The client entry in the drawer/sidebar opens a live query workspace. It supports explicit search, sort, optional completed tasks, confirmed saved-filter creation/deletion/selection, pagination, shared task details and canonical completion/undo endpoints. Search uses the device's current civil day; it does not imply account timezone preferences. Errors retain an explicit retry, unsupported syntax is rejected, and a generation guard discards older responses after a newer query/disposal. Offset pagination can shift when other writes happen; it is not a stable snapshot.
+
+This delivery does not yet establish full #13 acceptance: comment search, shared/assigned predicates, a form-based smart-list builder, grouping, direct favorite sidebar entries and saved-filter editing remain separate follow-through. Do not close #13 based on this slice alone.
+
+## Direction contract
+
+THESIS: Find and act on the existing task with a precise query, then keep that query for later. OWN-WORLD: Preserve the Persian weaving atelier, Vazirmatn, opaque Material fields, existing TaskTile and a ThreadRule. STORY: Enter text or a predicate, inspect confirmed results, open or complete a task, optionally save the query. FIRST VIEWPORT: Search field, explicit search and save, wrapping sort/completed controls, progressive syntax help and saved filters before results. FORM: Narrow code-led Operate extension of the existing task workspace; bounded 960 content and scrollable controls at large text. FINISH: Widget phone/dark/320-at-2x/wide captures plus independent finish review; emulator/hardware claims require distinct native evidence. No new raster assets or visual-system decisions.
