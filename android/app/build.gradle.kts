@@ -44,13 +44,7 @@ android {
 
     buildTypes {
         release {
-            // Local release builds keep working with the debug key. CI provides
-            // key.properties and always selects the private production key.
-            signingConfig = if (keystorePropertiesFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
@@ -63,4 +57,11 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+// Never silently distribute a release signed with the public Android debug key.
+gradle.taskGraph.whenReady {
+    if (allTasks.any { it.name.contains("Release") } && !keystorePropertiesFile.exists()) {
+        throw GradleException("Release signing is required: configure android/key.properties.")
+    }
 }
