@@ -11,14 +11,19 @@ import 'package:farash/core/api/api_client.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/search/search.dart';
 import 'package:farash/features/search/search_view.dart';
+import 'package:farash/features/tasks/presentation/task_detail_sheet.dart';
+import 'package:farash/features/labels/application/labels_controller.dart';
 
 import 'support/fake_tasks_api.dart';
+import 'support/fake_sections_api.dart';
+import 'support/fake_labels_api.dart';
 
 class SearchFixture extends FakeTasksApi implements SearchApi {
   final requests = <Uri>[];
   bool fail = false;
   bool hasMore = false;
   final filters = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>>? searchTasks;
   @override
   Future<Map<String, dynamic>> searchRequest(
     String token,
@@ -31,16 +36,18 @@ class SearchFixture extends FakeTasksApi implements SearchApi {
     if (fail) throw const ApiException('invalid', statusCode: 400);
     if (uri.path == '/api/v1/search') {
       return {
-        'tasks': [
-          {
-            'id': 'read',
-            'project_id': 'work',
-            'title': 'مطالعهٔ کتاب طراحی سیستم',
-            'description': 'یادداشت‌ها',
-            'priority': 2,
-            'sort_order': 0,
-          },
-        ],
+        'tasks':
+            searchTasks ??
+            [
+              {
+                'id': 'read',
+                'project_id': 'work',
+                'title': 'مطالعهٔ کتاب طراحی سیستم',
+                'description': 'یادداشت‌ها',
+                'priority': 2,
+                'sort_order': 0,
+              },
+            ],
         'has_more': hasMore,
       };
     }
@@ -126,10 +133,9 @@ void main() {
       api.fail = true;
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.textContaining('عبارت فیلتر معتبر نیست'),
-        200,
-      );
+      // The text field has its own Scrollable; reveal the already-built
+      // recovery message through its nearest scrolling ancestor instead.
+      await tester.ensureVisible(find.textContaining('عبارت فیلتر معتبر نیست'));
       expect(find.textContaining('عبارت فیلتر معتبر نیست'), findsOneWidget);
       expect(find.text('تلاش دوباره'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -163,6 +169,87 @@ void main() {
     await tester.tap(find.text('مهم‌ها'));
     await tester.pumpAndSettle();
     expect(api.requests.last.queryParameters['q'], 'p1');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'search detail loads sections, children and shared label picker',
+    (tester) async {
+      tester.view.physicalSize = const Size(600, 1100);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final api = SearchFixture();
+      final sections = FakeSectionsApi(tasks: api);
+      final section = sections.seed('work', 'Reading section');
+      final parent = api.seed(
+        'work',
+        'Parent from search',
+        sectionId: section.id,
+      );
+      api.seed('work', 'Existing child', parent: parent);
+      api.searchTasks = [
+        {
+          'id': parent.id,
+          'project_id': 'work',
+          'section_id': section.id,
+          'title': parent.title,
+          'priority': 4,
+          'sort_order': 0,
+          'subtask_count': 1,
+        },
+      ];
+      final labels = LabelsController(
+        api: FakeLabelsApi(tasks: api)..seed('Reading'),
+        token: () => 'token',
+      );
+      addTearDown(labels.dispose);
+      await labels.load();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SearchWorkspace(
+            api: api,
+            tasks: api,
+            sections: sections,
+            labels: labels,
+            token: () => 'token',
+            projects: () => const [Project(id: 'work', name: 'Work')],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Parent from search'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TaskDetailEditor), findsOneWidget);
+      expect(find.text('Reading section'), findsOneWidget);
+      expect(find.text('Existing child'), findsOneWidget);
+      expect(find.text('برچسب‌ها'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('failed project load does not open an incomplete task editor', (
+    tester,
+  ) async {
+    final api = SearchFixture();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SearchWorkspace(
+          api: api,
+          tasks: api,
+          token: () => 'token',
+          projects: () => const [Project(id: 'work', name: 'Work')],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    api.failNext = const ApiException('offline');
+    await tester.tap(find.text('مطالعهٔ کتاب طراحی سیستم'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TaskDetailEditor), findsNothing);
+    expect(
+      find.text('جزئیات کار دریافت نشد؛ دوباره تلاش کنید.'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 }
