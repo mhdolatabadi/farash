@@ -1,9 +1,25 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:farash/features/portability/export_api.dart';
 // Synthetic, deterministic Scrum API for tests and native review only.
 import 'package:farash/features/scrum/scrum.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import '../../tool/time_preview.dart' show PreviewTimeApi;
 
-class FakeScrumApi extends PreviewTimeApi implements ScrumApi {
+class FakeScrumApi extends PreviewTimeApi implements ScrumApi, ExportApi {
+  @override
+  Future<Uint8List> exportAccount(String token) async => Uint8List.fromList(
+    utf8.encode(
+      jsonEncode({
+        'format': 'farash-export',
+        'version': 1,
+        'exported_at': '2026-10-21T00:00:00Z',
+        'preferences': <String, Object?>{},
+        'records': {'tasks': <Object?>[]},
+      }),
+    ),
+  );
+
   FakeScrumApi() {
     seed('inbox', 'مطالعهٔ فصل اول کتاب');
     final a = seed('personal', 'مطالعهٔ فصل دوم کتاب');

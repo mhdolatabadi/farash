@@ -1,6 +1,9 @@
+import 'package:farash/features/portability/export_api.dart';
 import 'package:farash/features/scrum/scrum.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
+
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:farash/features/progress/progress.dart';
@@ -208,7 +211,8 @@ class ApiClient
         SectionsApi,
         LabelsApi,
         TimeApi,
-        ScrumApi {
+        ScrumApi,
+        ExportApi {
   ApiClient(this.baseUri, {http.Client? client})
     : _client = client ?? http.Client();
 
@@ -237,6 +241,10 @@ class ApiClient
     String path, {
     Map<String, Object?>? body,
   }) => timeRequest(token, method, path, body: body);
+
+  @override
+  Future<Uint8List> exportAccount(String token) =>
+      downloadAccountExport(_client, _uri('/api/v1/export'), token);
 
   final completedTask = ValueNotifier<Task?>(null);
   final Uri baseUri;

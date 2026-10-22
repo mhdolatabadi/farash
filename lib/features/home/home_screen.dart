@@ -1,3 +1,5 @@
+import 'package:farash/features/portability/export_api.dart';
+import 'package:farash/features/portability/export_dialog.dart';
 import 'package:farash/features/scrum/scrum.dart';
 import 'package:farash/features/scrum/scrum_view.dart';
 import 'package:farash/core/text/persian_digits.dart';
@@ -392,6 +394,10 @@ class _HomeScreenState extends State<HomeScreen> {
           email: widget.email,
           onLogout: widget.onLogout,
           startView: widget.startView,
+          exportApi: widget.tasksApi is ExportApi
+              ? widget.tasksApi as ExportApi
+              : null,
+          token: widget.token,
         ),
         if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint) ...[
           for (final (index, icon, title) in [
@@ -642,7 +648,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-enum _AccountAction { calendar, startView, logout }
+enum _AccountAction { calendar, startView, export, logout }
 
 /// The app's name with the account beneath it, and one menu for the
 /// account's actions, so the email keeps its width.
@@ -651,11 +657,15 @@ class _AccountHeader extends StatelessWidget {
     required this.email,
     required this.onLogout,
     this.startView,
+    this.exportApi,
+    required this.token,
   });
 
   final String email;
   final VoidCallback onLogout;
   final StartView? startView;
+  final ExportApi? exportApi;
+  final String Function() token;
 
   @override
   Widget build(BuildContext context) {
@@ -701,6 +711,11 @@ class _AccountHeader extends StatelessWidget {
                 CalendarScope.of(context),
               ),
               _AccountAction.startView => _pickStartView(context, startView!),
+              _AccountAction.export => showAccountExport(
+                context,
+                exportApi!,
+                token,
+              ),
               _AccountAction.logout => onLogout(),
             },
             itemBuilder: (context) => [
@@ -717,6 +732,14 @@ class _AccountHeader extends StatelessWidget {
                   child: ListTile(
                     leading: Icon(Icons.home_outlined),
                     title: Text('صفحهٔ آغاز'),
+                  ),
+                ),
+              if (exportApi != null)
+                const PopupMenuItem(
+                  value: _AccountAction.export,
+                  child: ListTile(
+                    leading: Icon(Icons.download_outlined),
+                    title: Text('خروجی داده‌های من'),
                   ),
                 ),
               const PopupMenuItem(
