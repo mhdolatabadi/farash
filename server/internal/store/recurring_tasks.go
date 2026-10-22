@@ -70,7 +70,18 @@ func (s *Store) SetTaskRecurrence(ctx context.Context, owner, id string, schedul
 			_, err = tx.Exec(ctx, `DELETE FROM task_recurrences WHERE owner_id=$1 AND task_id=$2`, owner, id)
 			return err
 		}
-		if task.ParentID != nil || task.SubtaskCount != 0 || task.Due == nil || task.Due.Date != schedule.Start {
+		anchor := schedule.Start
+		if state != nil {
+			// Successors retain the original anchor and emitted count. Editing
+			// their rule must not reset the series to today's occurrence.
+			anchor = state.Schedule.Start
+			if schedule.Start != anchor {
+				return ErrInvalidRecurrence
+			}
+		} else if task.Due != nil && task.Due.Date != anchor {
+			return ErrInvalidRecurrence
+		}
+		if task.ParentID != nil || task.SubtaskCount != 0 || task.Due == nil {
 			return ErrInvalidRecurrence
 		}
 		zone, err := time.LoadLocation(schedule.Timezone)
@@ -165,6 +176,7 @@ func undoRecurrence(ctx context.Context, tx pgx.Tx, owner, id string) error {
 		err := tx.QueryRow(ctx, `SELECT t.completed_at IS NULL AND t.deleted_at IS NULL AND t.updated_at=r.next_version
 			AND NOT EXISTS(SELECT 1 FROM tasks c WHERE c.parent_id=t.id)
 			AND NOT EXISTS(SELECT 1 FROM time_entries e WHERE e.task_id=t.id)
+			AND NOT EXISTS(SELECT 1 FROM scrum_items si WHERE si.task_id=t.id)
 			FROM tasks t,task_recurrences r WHERE t.owner_id=$1 AND t.id=$3 AND r.owner_id=$1 AND r.task_id=$2 FOR UPDATE OF t`, owner, id, *state.NextTaskID).Scan(&safe)
 		if err != nil || !safe {
 			return ErrRecurrenceConflict

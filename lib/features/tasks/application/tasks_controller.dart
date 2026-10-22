@@ -15,6 +15,9 @@ class TasksController extends ChangeNotifier {
 
   final TasksApi _api;
 
+  /// Optional feature transports implemented by the production client.
+  TasksApi get api => _api;
+
   /// Null where sections are not available; the project then has none.
   final SectionsApi? _sectionsApi;
   final String? Function() token;
@@ -352,7 +355,6 @@ class TasksController extends ChangeNotifier {
   Future<void> setCompleted(Task task, bool completed) async {
     final before = _tasks;
     final now = DateTime.now();
-    final tree = _inTree(task);
     // Closing a task closes its open subtasks; reopening a subtask reopens
     // its parents. The API does the same, and the refresh below confirms it.
     final cascade = {
@@ -395,9 +397,9 @@ class TasksController extends ChangeNotifier {
         ];
       }
       _publish();
-      if (tree || saved.hasSubtasks || saved.parentId != null) {
-        await _refresh();
-      }
+      // A recurring completion can create or remove a sibling occurrence.
+      // Reload after confirmation so it appears without a manual refresh.
+      await _refresh();
     } catch (_) {
       _tasks = before;
       _publish();
