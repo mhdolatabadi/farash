@@ -6,7 +6,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:farash/app/app_theme.dart';
-import 'dart:typed_data';
 
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/features/portability/export_api.dart';
@@ -77,7 +76,7 @@ void main() {
     'oversize content length is rejected before stream subscription',
     () async {
       final client = MockClient.streaming(
-        (_, __) async => http.StreamedResponse(
+        (_, _) async => http.StreamedResponse(
           Stream<List<int>>.error(StateError('must not read')),
           200,
           contentLength: exportByteLimit + 1,

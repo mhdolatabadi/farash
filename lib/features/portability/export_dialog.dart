@@ -8,7 +8,7 @@ import 'export_saver.dart';
 Future<void> showAccountExport(
   BuildContext context,
   ExportApi api,
-  String Function() token, {
+  String? Function() token, {
   ExportSaver saver = saveAccountExport,
 }) => showDialog<void>(
   context: context,
@@ -25,7 +25,7 @@ class AccountExportDialog extends StatefulWidget {
   });
 
   final ExportApi api;
-  final String Function() token;
+  final String? Function() token;
   final ExportSaver saver;
 
   @override
@@ -47,6 +47,11 @@ class _AccountExportDialogState extends State<AccountExportDialog> {
       _message = null;
     });
     try {
+      if (session == null) {
+        throw const ExportException(
+          'نشست شما منقضی شده است. دوباره وارد شوید.',
+        );
+      }
       final bytes = await widget.api.exportAccount(session);
       if (!mounted) return;
       if (session != widget.token()) {

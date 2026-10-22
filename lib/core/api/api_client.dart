@@ -3,7 +3,6 @@ import 'package:farash/features/scrum/scrum.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:farash/features/progress/progress.dart';

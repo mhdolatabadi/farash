@@ -665,7 +665,7 @@ class _AccountHeader extends StatelessWidget {
   final VoidCallback onLogout;
   final StartView? startView;
   final ExportApi? exportApi;
-  final String Function() token;
+  final String? Function() token;
 
   @override
   Widget build(BuildContext context) {
