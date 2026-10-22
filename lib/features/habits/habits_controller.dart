@@ -1,0 +1,222 @@
+import 'package:flutter/foundation.dart';
+import 'package:farash/features/habits/habit.dart';
+import 'package:farash/features/habits/habit_stats.dart';
+
+abstract interface class HabitsApi {
+  Future<Map<String, dynamic>> habitRequest(
+    String token,
+    String method,
+    String path, {
+    Map<String, Object?>? body,
+  });
+}
+
+enum HabitSort { manual, name, color, score }
+
+/// The account's habits, with optimistic check-ins that roll back when the
+/// server refuses them.
+class HabitsController extends ChangeNotifier {
+  HabitsController({required this.api, required this.token, DateTime? now})
+    : _now = now;
+
+  final HabitsApi api;
+  final String? Function() token;
+  final DateTime? _now;
+
+  List<Habit> _habits = const [];
+  final _stats = <String, HabitStats>{};
+  bool loading = false, showArchived = false;
+  HabitSort sort = HabitSort.manual;
+  String? error;
+
+  /// A short message for a failed change, shown once.
+  final message = ValueNotifier<String?>(null);
+
+  bool _disposed = false;
+
+  int get today => epochDay(_now ?? DateTime.now());
+
+  List<Habit> get all => _habits;
+
+  /// The habits to list, in the chosen order.
+  List<Habit> get visible {
+    final list = [
+      for (final h in _habits)
+        if (showArchived || !h.archived) h,
+    ];
+    switch (sort) {
+      case HabitSort.manual:
+        break;
+      case HabitSort.name:
+        list.sort((a, b) => a.name.compareTo(b.name));
+      case HabitSort.color:
+        list.sort((a, b) => a.color.compareTo(b.color));
+      case HabitSort.score:
+        list.sort(
+          (a, b) => stats(b).currentScore.compareTo(stats(a).currentScore),
+        );
+    }
+    return list;
+  }
+
+  Habit? byId(String id) => _habits.where((h) => h.id == id).firstOrNull;
+
+  HabitStats stats(Habit habit) {
+    final cached = _stats[habit.id];
+    if (cached != null &&
+        identical(cached.habit, habit) &&
+        cached.today == today) {
+      return cached;
+    }
+    return _stats[habit.id] = HabitStats.of(habit, today);
+  }
+
+  void _set(List<Habit> habits) {
+    _habits = habits;
+    if (!_disposed) notifyListeners();
+  }
+
+  void _replace(Habit habit) =>
+      _set([for (final h in _habits) h.id == habit.id ? habit : h]);
+
+  Future<Map<String, dynamic>?> _call(
+    String method,
+    String path, [
+    Map<String, Object?>? body,
+  ]) async {
+    final current = token();
+    if (current == null) return null;
+    final result = await api.habitRequest(current, method, path, body: body);
+    return current == token() ? result : null;
+  }
+
+  static String _path(String id) => '/api/v1/habits/${Uri.encodeComponent(id)}';
+
+  Future<void> load() async {
+    loading = true;
+    error = null;
+    if (!_disposed) notifyListeners();
+    try {
+      final data = await _call('GET', '/api/v1/habits');
+      if (data != null) {
+        _habits = [
+          for (final h in data['habits'] as List)
+            Habit.fromJson(h as Map<String, dynamic>),
+        ];
+      }
+    } catch (e) {
+      error = '$e';
+    } finally {
+      loading = false;
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  Future<Habit?> create(HabitDraft draft) async {
+    try {
+      final data = await _call('POST', '/api/v1/habits', draft.toJson());
+      if (data == null) return null;
+      final habit = Habit.fromJson(data['habit'] as Map<String, dynamic>);
+      _set([..._habits, habit]);
+      return habit;
+    } catch (e) {
+      message.value = 'عادت ساخته نشد: $e';
+      return null;
+    }
+  }
+
+  Future<bool> update(Habit habit, HabitDraft changes) async {
+    try {
+      final data = await _call('PATCH', _path(habit.id), changes.toJson());
+      if (data == null) return false;
+      _replace(Habit.fromJson(data['habit'] as Map<String, dynamic>));
+      return true;
+    } catch (e) {
+      message.value = 'تغییر ذخیره نشد: $e';
+      return false;
+    }
+  }
+
+  Future<bool> delete(Habit habit) async {
+    final before = _habits;
+    _set([
+      for (final h in _habits)
+        if (h.id != habit.id) h,
+    ]);
+    try {
+      await _call('DELETE', _path(habit.id));
+      return true;
+    } catch (e) {
+      _set(before);
+      message.value = 'عادت حذف نشد: $e';
+      return false;
+    }
+  }
+
+  /// Moves [habit] to [index] of the manual order.
+  Future<void> reorder(Habit habit, int index) async {
+    final before = _habits;
+    final list = [..._habits]..removeWhere((h) => h.id == habit.id);
+    list.insert(index.clamp(0, list.length), habit);
+    _set([for (final (i, h) in list.indexed) h.copyWith(sortOrder: i)]);
+    try {
+      await _call('POST', '/api/v1/habits/reorder', {
+        'habit_ids': [for (final h in list) h.id],
+      });
+    } catch (e) {
+      _set(before);
+      message.value = 'ترتیب ذخیره نشد: $e';
+    }
+  }
+
+  /// Records [entry] for [day], or clears the day when it is null.
+  Future<void> setEntry(Habit habit, int day, HabitEntry? entry) async {
+    final current = byId(habit.id) ?? habit;
+    final entries = {...current.entries};
+    if (entry == null) {
+      entries.remove(day);
+    } else {
+      entries[day] = entry;
+    }
+    _replace(current.copyWith(entries: entries));
+    final path = '${_path(habit.id)}/entries/${dayKey(day)}';
+    try {
+      if (entry == null) {
+        await _call('DELETE', path);
+      } else {
+        await _call('PUT', path, {'value': entry.value, 'skip': entry.skip});
+      }
+    } catch (e) {
+      final latest = byId(habit.id);
+      if (latest != null) {
+        final restored = {...latest.entries};
+        if (current.entries[day] case final old?) {
+          restored[day] = old;
+        } else {
+          restored.remove(day);
+        }
+        _replace(latest.copyWith(entries: restored));
+      }
+      message.value = 'ثبت نشد: $e';
+    }
+  }
+
+  /// Loop's toggle for a yes/no habit: unknown → done → not done → skipped.
+  Future<void> toggle(Habit habit, int day) {
+    final e = (byId(habit.id) ?? habit).entries[day];
+    final HabitEntry? next = switch (e) {
+      null => const HabitEntry(value: 1),
+      HabitEntry(skip: true) => null,
+      HabitEntry(value: > 0) => const HabitEntry(value: 0),
+      _ => const HabitEntry(value: 0, skip: true),
+    };
+    return setEntry(habit, day, next);
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    message.dispose();
+    super.dispose();
+  }
+}
