@@ -112,14 +112,16 @@ void main() {
       );
       expect(tester.takeException(), isNull);
       if (Platform.environment['CAPTURE_GLASS_UI'] == '1') {
-        final boundary =
-            key.currentContext!.findRenderObject() as RenderRepaintBoundary;
-        final image = await boundary.toImage(pixelRatio: 1);
-        final data = await image.toByteData(format: ui.ImageByteFormat.png);
-        final file = File('.impeccable/review/search-${variant.$1}.png');
-        await file.parent.create(recursive: true);
-        await file.writeAsBytes(data!.buffer.asUint8List());
-        image.dispose();
+        await tester.runAsync(() async {
+          final boundary =
+              key.currentContext!.findRenderObject() as RenderRepaintBoundary;
+          final image = await boundary.toImage(pixelRatio: 1);
+          final data = await image.toByteData(format: ui.ImageByteFormat.png);
+          final file = File('.impeccable/review/search-${variant.$1}.png');
+          await file.parent.create(recursive: true);
+          await file.writeAsBytes(data!.buffer.asUint8List());
+          image.dispose();
+        });
       }
       api.fail = true;
       await tester.testTextInput.receiveAction(TextInputAction.search);
