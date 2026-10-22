@@ -49,11 +49,17 @@ jobs:
       - name: Require private signing for release tasks
         shell: bash
         run: |
-          if (cd android && ./gradlew :app:validateSigningRelease) > "$RUNNER_TEMP/unsigned-release-check.log" 2>&1; then
+          # Exercise the same public build entry point as a real release. Flutter
+          # supplies Gradle properties and generates the wrapper for this SDK.
+          if flutter build apk --release > "$RUNNER_TEMP/unsigned-release-check.log" 2>&1; then
             echo 'Release validation unexpectedly accepted missing signing material.' >&2
             exit 1
           fi
-          grep -q 'Release signing is required' "$RUNNER_TEMP/unsigned-release-check.log"
+          if ! grep -q 'Release signing is required' "$RUNNER_TEMP/unsigned-release-check.log"; then
+            echo 'Release failed before reaching the signing guard:' >&2
+            cat "$RUNNER_TEMP/unsigned-release-check.log" >&2
+            exit 1
+          fi
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
