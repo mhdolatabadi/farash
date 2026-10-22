@@ -320,7 +320,7 @@ class _RecurrenceDialogState extends State<_RecurrenceDialog> {
       final schedule = <String, Object?>{
         'start': widget.state?.schedule['start'] ?? due.date,
         'timezone': zone,
-        if (wall != null) 'time': wall,
+        'time': ?wall,
         'rule': {
           'frequency': _frequency,
           'interval': _number(_interval.text),
