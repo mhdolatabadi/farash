@@ -46,6 +46,14 @@ jobs:
       - name: Build Android debug APK
         # The APK is meant to be installed, so it talks to the real server.
         run: flutter build apk --debug --dart-define=API_BASE_URL=${{ vars.FARASH_API_BASE_URL || 'https://farash.mhdolatabadi.ir' }}
+      - name: Require private signing for release tasks
+        shell: bash
+        run: |
+          if (cd android && ./gradlew :app:validateSigningRelease) > "$RUNNER_TEMP/unsigned-release-check.log" 2>&1; then
+            echo 'Release validation unexpectedly accepted missing signing material.' >&2
+            exit 1
+          fi
+          grep -q 'Release signing is required' "$RUNNER_TEMP/unsigned-release-check.log"
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
