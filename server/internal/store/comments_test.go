@@ -7,7 +7,40 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
+
+func TestCommentCreateInvalidatesTaskVersionButRetryDoesNot(t *testing.T) {
+	pool := testPool(t)
+	s := New(pool)
+	ctx := context.Background()
+	u, err := s.CreateUser(ctx, "comment-version@example.com", "hash")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := s.CreateProject(ctx, u.ID, ProjectInput{Name: "Notes"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	task, err := s.CreateTask(ctx, u.ID, TaskInput{ProjectID: p.ID, Title: "Read"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	in := CommentInput{Body: "Keep these notes", RequestKey: "version-test-123"}
+	if _, err := s.WriteComment(ctx, u.ID, "task", task.ID, "create", "", in); err != nil {
+		t.Fatal(err)
+	}
+	var changed, retried time.Time
+	if err := pool.QueryRow(ctx, `SELECT updated_at FROM tasks WHERE id=$1`, task.ID).Scan(&changed); err != nil || !changed.After(task.UpdatedAt) {
+		t.Fatal("comment did not invalidate task version", changed, task.UpdatedAt, err)
+	}
+	if _, err := s.WriteComment(ctx, u.ID, "task", task.ID, "create", "", in); err != nil {
+		t.Fatal(err)
+	}
+	if err := pool.QueryRow(ctx, `SELECT updated_at FROM tasks WHERE id=$1`, task.ID).Scan(&retried); err != nil || !retried.Equal(changed) {
+		t.Fatal("create retry changed task version", retried, changed, err)
+	}
+}
 
 func TestCommentsHistoryPrivacyAndIdempotency(t *testing.T) {
 	s := New(testPool(t))
