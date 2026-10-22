@@ -1,3 +1,5 @@
+import 'package:farash/features/recurrence/recurrence_panel.dart';
+import 'package:farash/features/recurrence/task_recurrence.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:farash/features/time_tracking/time_tracking_view.dart';
 import 'package:flutter/material.dart';
@@ -76,6 +78,12 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
   late String? _sectionId = widget.controller.sectionOf(widget.task);
   late TaskDates _dates = widget.task.dates;
   late List<String> _labelIds = [...widget.task.labelIds];
+  late final RecurrenceService? _recurrence = widget.controller.api is TimeApi
+      ? RecurrenceService(
+          widget.controller.api as TimeApi,
+          widget.controller.token,
+        )
+      : null;
 
   Future<void> _pickDates() async {
     final picked = await showDuePicker(context, initial: _dates);
@@ -292,6 +300,15 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                   const Divider(),
                   const SizedBox(height: 8),
                   _ScheduleRow(dates: _dates, onTap: _pickDates),
+                  if (_recurrence case final service?)
+                    RecurrencePanel(
+                      task: _task,
+                      service: service,
+                      datesSaved: _dates == _task.dates,
+                      disabled: _saving,
+                      onRefresh: widget.controller.load,
+                      onSkipped: () => _close(TaskSheetResult.saved),
+                    ),
                   if (widget.tracker != null)
                     TaskTimePanel(tracker: widget.tracker!, task: widget.task),
                   _PropertyRow(
