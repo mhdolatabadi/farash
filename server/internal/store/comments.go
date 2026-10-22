@@ -170,6 +170,7 @@ func (s *Store) WriteComment(ctx context.Context, owner, kind, target, action, i
 	if archived {
 		return out, ErrCommentConflict
 	}
+	changed := action != "create"
 	switch action {
 	case "create":
 		digest := sha256.Sum256([]byte(in.Body))
@@ -182,6 +183,7 @@ func (s *Store) WriteComment(ctx context.Context, owner, kind, target, action, i
 				return out, ErrCommentConflict
 			}
 		} else if errors.Is(err, pgx.ErrNoRows) {
+			changed = true
 			var count int
 			if err = tx.QueryRow(ctx, `SELECT count(*) FROM comments WHERE owner_id=$1 AND `+column+`=$2`, owner, target).Scan(&count); err != nil {
 				return out, err
@@ -201,6 +203,13 @@ func (s *Store) WriteComment(ctx context.Context, owner, kind, target, action, i
 	}
 	if err != nil {
 		return out, err
+	}
+	if kind == "task" && changed {
+		// A comment is user history on the task. Invalidate version-based
+		// destructive undo guards, including an untouched recurring successor.
+		if _, err = tx.Exec(ctx, `UPDATE tasks SET updated_at=clock_timestamp() WHERE owner_id=$1 AND id=$2`, owner, target); err != nil {
+			return out, err
+		}
 	}
 	return out, tx.Commit(ctx)
 }

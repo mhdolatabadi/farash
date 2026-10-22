@@ -3,6 +3,7 @@ import 'package:farash/app/atelier.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/projects/data/project.dart';
+import 'package:farash/features/labels/application/labels_controller.dart';
 import 'package:farash/features/search/search.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
 import 'package:farash/features/tasks/data/task.dart';
@@ -18,10 +19,12 @@ class SearchWorkspace extends StatefulWidget {
     required this.token,
     required this.projects,
     this.sections,
+    this.labels,
   });
   final SearchApi api;
   final TasksApi tasks;
   final SectionsApi? sections;
+  final LabelsController? labels;
   final String? Function() token;
   final List<Project> Function() projects;
   @override
@@ -155,6 +158,9 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
   }
 
   Future<void> open(Task task) async {
+    if (busy) return;
+    final requestToken = widget.token();
+    setState(() => busy = true);
     final controller = TasksController(
       api: widget.tasks,
       sectionsApi: widget.sections,
@@ -162,15 +168,26 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
       projectId: task.projectId,
     );
     try {
+      // Search results do not contain the project's sections or child rows.
+      // Load the same complete context used by ordinary task-list editors.
+      await controller.setShowCompleted(true);
+      if (!mounted || widget.token() != requestToken) return;
+      final current = controller.taskById(task.id);
+      if (controller.error != null || current == null) {
+        setState(() => error = 'جزئیات کار دریافت نشد؛ دوباره تلاش کنید.');
+        return;
+      }
       await showTaskDetailSheet(
         context,
         controller: controller,
-        task: task,
+        task: current,
         projects: widget.projects(),
+        labels: widget.labels,
       );
       if (mounted) await search();
     } finally {
       controller.dispose();
+      if (mounted) setState(() => busy = false);
     }
   }
 

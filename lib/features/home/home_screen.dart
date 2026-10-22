@@ -415,6 +415,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       api: api,
                       tasks: widget.tasksApi,
                       sections: widget.sectionsApi,
+                      labels: _labels,
                       token: widget.token,
                       projects: () => widget.projects.projects,
                     ),
