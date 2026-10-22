@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/motion.dart';
 import 'package:farash/app/list_app_bar.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
@@ -349,6 +350,7 @@ class _DueTasksViewState extends State<DueTasksView> {
       key: ValueKey(task.id),
       task: task,
       divider: !last,
+      showToday: widget.view != DueView.today || widget.label != null,
       tag: project == null ? null : _ProjectTag(project: project),
       labels: [for (final id in task.labelIds) ?widget.labels?.byId(id)],
       onToggle: () => _complete(task),
@@ -617,8 +619,8 @@ class _DueTasksViewState extends State<DueTasksView> {
                         if (target != null) {
                           Scrollable.ensureVisible(
                             target,
-                            duration: const Duration(milliseconds: 280),
-                            curve: Curves.easeOutCubic,
+                            duration: Motion.of(context, Motion.standard),
+                            curve: Motion.enter,
                           );
                         }
                       },

@@ -262,7 +262,7 @@ class TimeTrackingView extends StatelessWidget {
                               child: Column(
                                 children: [
                                   const Text(
-                                    'این تایمر مدت زیادی روشن مانده؛ اگر فراموشش کرده‌ای زمان را اصلاح کن.',
+                                    'این تایمر مدت زیادی روشن مانده؛ اگر فراموشش کرده‌اید زمان را اصلاح کنید.',
                                   ),
                                   Wrap(
                                     children: [
@@ -306,7 +306,7 @@ class TimeTrackingView extends StatelessWidget {
                         const SizedBox(height: 12),
                         if (report.tasks.isEmpty)
                           const Text(
-                            'هنوز زمانی ثبت نشده. از یک کار کوچک شروع کن.',
+                            'هنوز زمانی ثبت نشده. از یک کار کوچک شروع کنید.',
                           ),
                         ProjectTimeGroups(tasks: report.tasks),
                         const SizedBox(height: 24),
@@ -315,7 +315,7 @@ class TimeTrackingView extends StatelessWidget {
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         const Text(
-                          'فاصلهٔ بین بازه‌ها ثبت نشده است؛ فقط اگر واقعاً کار کرده‌ای آن را دستی اضافه کن.',
+                          'فاصلهٔ بین بازه‌ها ثبت نشده است؛ فقط اگر واقعاً کار کرده‌اید آن را دستی اضافه کنید.',
                         ),
                         if (!report.truncated)
                           for (final gap in todayGaps(

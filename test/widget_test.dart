@@ -58,6 +58,26 @@ void main() {
     expect(find.text('ورود به فراش'), findsOneWidget);
   });
 
+  testWidgets('the password can be shown and hidden', (tester) async {
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+    bool obscured() => tester
+        .widget<EditableText>(
+          find.descendant(
+            of: find.widgetWithText(TextFormField, 'رمز عبور'),
+            matching: find.byType(EditableText),
+          ),
+        )
+        .obscureText;
+    expect(obscured(), isTrue);
+    await tester.tap(find.byTooltip('نمایش رمز'));
+    await tester.pump();
+    expect(obscured(), isFalse);
+    await tester.tap(find.byTooltip('پنهان کردن رمز'));
+    await tester.pump();
+    expect(obscured(), isTrue);
+  });
+
   testWidgets('offers a retry while the server is unreachable', (tester) async {
     var calls = 0;
     await tester.pumpWidget(

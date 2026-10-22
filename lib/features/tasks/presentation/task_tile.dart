@@ -33,6 +33,7 @@ class TaskTile extends StatelessWidget {
     this.divider = true,
     this.tag,
     this.labels = const [],
+    this.showToday = true,
   });
 
   final Task task;
@@ -68,6 +69,10 @@ class TaskTile extends StatelessWidget {
 
   /// The task's labels, shown as @tags.
   final List<Label> labels;
+
+  /// Off under a «امروز» heading, where saying «today» again is noise; a
+  /// time or duration still shows.
+  final bool showToday;
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +151,8 @@ class TaskTile extends StatelessWidget {
                               done: checklist.where((i) => i.done).length,
                               total: checklist.length,
                             ),
-                          if (dated) TaskDateLabels(task: task),
+                          if (dated)
+                            TaskDateLabels(task: task, showToday: showToday),
                           ?tag,
                           for (final label in labels) LabelTag(label: label),
                         ],
@@ -328,10 +334,16 @@ class _DoneStamp extends StatelessWidget {
 /// The due day (with time and duration) and the deadline; red once they
 /// have passed on an open task.
 class TaskDateLabels extends StatelessWidget {
-  const TaskDateLabels({super.key, required this.task, this.now});
+  const TaskDateLabels({
+    super.key,
+    required this.task,
+    this.now,
+    this.showToday = true,
+  });
 
   final Task task;
   final DateTime? now;
+  final bool showToday;
 
   @override
   Widget build(BuildContext context) {
@@ -402,17 +414,20 @@ class TaskDateLabels extends StatelessWidget {
       );
     }
 
+    final quietToday =
+        !showToday && due != null && daysBetween(current, due.day) == 0;
     return Wrap(
       spacing: 12,
       children: [
-        if (due != null)
+        if (due != null &&
+            !(quietToday && !due.isTimed && task.durationMinutes == null))
           label(
             due.isTimed ? Icons.schedule : Icons.event,
             [
-              relativeDay(due.day, settings, today: current),
+              if (!quietToday) relativeDay(due.day, settings, today: current),
               if (due.isTimed) formatTime(due.localTime!),
               if (task.durationMinutes != null)
-                '· ${formatDuration(task.durationMinutes!)}',
+                '${quietToday && !due.isTimed ? '' : '· '}${formatDuration(task.durationMinutes!)}',
             ].join(' '),
             'موعد',
             due.isOverdue(current),

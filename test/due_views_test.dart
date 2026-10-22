@@ -8,6 +8,7 @@ import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/features/tasks/presentation/due_tasks_view.dart';
 import 'package:farash/features/tasks/presentation/task_detail_sheet.dart';
+import 'package:farash/features/tasks/presentation/task_tile.dart';
 
 import 'support/fake_tasks_api.dart';
 
@@ -141,6 +142,11 @@ void main() {
     expect(find.text('دیرشده'), findsOneWidget);
     expect(find.text('Late'), findsOneWidget);
     expect(find.text('Now'), findsOneWidget);
+    // Under the «امروز» heading the rows don't repeat «امروز».
+    expect(
+      find.descendant(of: find.byType(TaskTile), matching: find.text('امروز')),
+      findsNothing,
+    );
     for (final hidden in ['Tomorrow', 'Undated', 'Done', 'Archived']) {
       expect(find.text(hidden), findsNothing);
     }

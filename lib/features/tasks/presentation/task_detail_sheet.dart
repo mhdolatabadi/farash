@@ -104,7 +104,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('تغییرها ذخیره نشده‌اند'),
-          content: const Text('اگر ببندی، تغییرهای این کار از بین می‌روند.'),
+          content: const Text('اگر ببندید، تغییرهای این کار از بین می‌روند.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),

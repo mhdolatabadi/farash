@@ -243,7 +243,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                                 const SizedBox(height: 8),
                                 Text(
                                   d.method == 'scrum'
-                                      ? 'اسکرام برای خودت؛ بدون نیاز به تیم. امتیاز داستان با زمان واقعی و پاداش فرش فرق دارد.'
+                                      ? 'اسکرام برای خودتان؛ بدون نیاز به تیم. امتیاز داستان با زمان واقعی و پاداش فرش فرق دارد.'
                                       : 'با حرکت کارها بین ستون‌ها، وضعیتشان را روشن نگه دار.',
                                 ),
                                 const SizedBox(height: 20),
@@ -418,7 +418,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
         const SizedBox(height: 8),
         if (unassigned.isEmpty)
           const Text(
-            'کار تازه را پایین اضافه کن؛ از گزینه‌های هر کار، برآورد و اسپرینتش را تعیین کن.',
+            'کار تازه را پایین اضافه کنید؛ از گزینه‌های هر کار، برآورد و اسپرینتش را تعیین کنید.',
           ),
         for (final item in unassigned) itemTile(item),
         if (d.items.any((i) => i.task.isCompleted && i.sprintId == null))
@@ -461,7 +461,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
   Widget board(ScrumData d, double width, {bool all = false}) {
     if (!all && d.active == null) {
       return const Text(
-        'اسپرینت فعالی نداری. در بک‌لاگ کار انتخاب کن و اسپرینت را شروع کن.',
+        'اسپرینت فعالی ندارید. در بک‌لاگ کار انتخاب کنید و اسپرینت را شروع کنید.',
       );
     }
     final items = d.items
@@ -624,7 +624,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
         const SizedBox(height: 8),
         Text(
           sprint.retro.isEmpty
-              ? 'رترو اختیاری است: چه چیزی را دفعهٔ بعد عوض می‌کنی؟'
+              ? 'رترو اختیاری است: چه چیزی را دفعهٔ بعد عوض می‌کنید؟'
               : sprint.retro,
         ),
         Align(

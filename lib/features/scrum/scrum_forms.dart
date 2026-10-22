@@ -79,7 +79,7 @@ class _SprintEditorState extends State<_SprintEditor> {
         end.difference(start).inDays > 90 ||
         capacity.text.trim().isNotEmpty && (n == null || n < 0 || n > 10000)) {
       setState(
-        () => error = 'نام، بازهٔ حداکثر ۹۰ روز و ظرفیت نامنفی را بررسی کن.',
+        () => error = 'نام، بازهٔ حداکثر ۹۰ روز و ظرفیت نامنفی را بررسی کنید.',
       );
       return;
     }
@@ -405,7 +405,7 @@ class _SprintNotesState extends State<_SprintNotes> {
             const SizedBox(height: 12),
             if (widget.closing) ...[
               const Text(
-                'گزارش این نوبت ثبت می‌شود. کارهای ناتمام حذف نمی‌شوند؛ مقصدشان را انتخاب کن.',
+                'گزارش این نوبت ثبت می‌شود. کارهای ناتمام حذف نمی‌شوند؛ مقصدشان را انتخاب کنید.',
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
@@ -450,7 +450,7 @@ class _SprintNotesState extends State<_SprintNotes> {
               maxLength: 20000,
               decoration: const InputDecoration(
                 labelText: 'رترو · دفعهٔ بعد چه تغییری بدهیم؟',
-                helperText: 'اختیاری؛ برای خودت هم قابل استفاده است.',
+                helperText: 'اختیاری؛ برای خودتان هم قابل استفاده است.',
               ),
             ),
             if (error != null)

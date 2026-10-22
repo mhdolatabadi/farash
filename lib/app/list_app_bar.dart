@@ -60,12 +60,21 @@ class ListAppBar extends SliverPersistentHeaderDelegate {
                   Expanded(
                     child: Semantics(
                       header: true,
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
+                      // Large text steps the title down a size so long
+                      // names keep more of themselves in the bar; the full
+                      // name stays in the tooltip.
+                      child: Tooltip(
+                        message: title,
+                        excludeFromSemantics: true,
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              (MediaQuery.textScalerOf(context).scale(1) >= 1.5
+                                      ? theme.textTheme.titleMedium
+                                      : theme.textTheme.titleLarge)
+                                  ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),

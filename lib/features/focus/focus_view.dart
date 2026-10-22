@@ -192,7 +192,7 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                       Text(
                         timer.finished
                             ? work
-                                  ? 'جلسه تمام شد. یک استراحت کوتاه بکن.'
+                                  ? 'جلسه تمام شد. یک استراحت کوتاه کنید.'
                                   : 'استراحت تمام شد.'
                             : work
                             ? timer.taskTitle ?? 'بدون کار مشخص'
@@ -233,7 +233,7 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                               timer.running
                                   ? 'مکث'
                                   : timer.finished
-                                  ? 'دوباره شروع کن'
+                                  ? 'دوباره شروع کنید'
                                   : work
                                   ? 'شروع تمرکز'
                                   : 'شروع استراحت',
@@ -244,7 +244,7 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                       const SizedBox(height: 32),
                       Text(
                         widget.timeLinked && work
-                            ? 'شروع تمرکز، ثبت زمان این کار را هم فعال می‌کند. برای پایان زودتر مکث کن؛ ثبت سرور حداکثر تا پایان نوبت ادامه دارد.'
+                            ? 'شروع تمرکز، ثبت زمان این کار را هم فعال می‌کند. برای پایان زودتر مکث کنید؛ ثبت سرور حداکثر تا پایان نوبت ادامه دارد.'
                             : 'تایمر با جابه‌جایی بین صفحه‌ها ادامه دارد. با بستن برنامه، جلسه پایان می‌یابد.',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodySmall?.copyWith(
