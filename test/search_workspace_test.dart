@@ -212,7 +212,9 @@ void main() {
             sections: sections,
             labels: labels,
             token: () => 'token',
-            projects: () => const [Project(id: 'work', name: 'Work')],
+            projects: () => const [
+              Project(id: 'work', name: 'Work', color: '#98503D'),
+            ],
           ),
         ),
       );
@@ -237,7 +239,9 @@ void main() {
           api: api,
           tasks: api,
           token: () => 'token',
-          projects: () => const [Project(id: 'work', name: 'Work')],
+          projects: () => const [
+            Project(id: 'work', name: 'Work', color: '#98503D'),
+          ],
         ),
       ),
     );
