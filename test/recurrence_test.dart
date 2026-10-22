@@ -82,29 +82,33 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final api = RecurrenceFixture();
+      final captureKey = GlobalKey();
       await tester.pumpWidget(
-        MaterialApp(
-          theme: FarashTheme.light(),
-          locale: const Locale('fa'),
-          supportedLocales: const [Locale('fa')],
-          localizationsDelegates: GlobalMaterialLocalizations.delegates,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(textScaler: TextScaler.linear(scale)),
-            child: Directionality(
-              textDirection: TextDirection.rtl,
-              child: child!,
+        RepaintBoundary(
+          key: captureKey,
+          child: MaterialApp(
+            theme: FarashTheme.light(),
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa')],
+            localizationsDelegates: GlobalMaterialLocalizations.delegates,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(scale)),
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: child!,
+              ),
             ),
-          ),
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: RecurrencePanel(
-                task: task,
-                service: RecurrenceService(api, () => 'token'),
-                datesSaved: true,
-                onRefresh: () async {},
-                onSkipped: () {},
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: RecurrencePanel(
+                  task: task,
+                  service: RecurrenceService(api, () => 'token'),
+                  datesSaved: true,
+                  onRefresh: () async {},
+                  onSkipped: () {},
+                ),
               ),
             ),
           ),
@@ -119,11 +123,12 @@ void main() {
       final interval = find.widgetWithText(TextFormField, 'فاصلهٔ تکرار');
       await tester.ensureVisible(interval);
       await tester.enterText(interval, '۳');
+      await tester.pumpAndSettle();
       if (Platform.environment['CAPTURE_GLASS_UI'] == '1') {
         await tester.runAsync(() async {
-          final boundary = tester.firstRenderObject<RenderRepaintBoundary>(
-            find.byType(RepaintBoundary).first,
-          );
+          final boundary =
+              captureKey.currentContext!.findRenderObject()!
+                  as RenderRepaintBoundary;
           final image = await boundary.toImage();
           final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
           final output = File('.impeccable/review/recurrence-${scale}x.png');
