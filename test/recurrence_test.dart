@@ -8,6 +8,9 @@ import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:farash/app/app_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class RecurrenceFixture implements TimeApi {
@@ -43,6 +46,14 @@ class RecurrenceFixture implements TimeApi {
 }
 
 void main() {
+  setUpAll(() async {
+    for (final font in [
+      ('Vazirmatn', 'assets/fonts/Vazirmatn-Regular.ttf'),
+      ('MaterialIcons', 'fonts/MaterialIcons-Regular.otf'),
+    ]) {
+      await (FontLoader(font.$1)..addFont(rootBundle.load(font.$2))).load();
+    }
+  });
   const task = Task(
     id: 'task/a',
     projectId: 'p',
@@ -73,6 +84,10 @@ void main() {
       final api = RecurrenceFixture();
       await tester.pumpWidget(
         MaterialApp(
+          theme: FarashTheme.light(),
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa')],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(
               context,
@@ -105,15 +120,17 @@ void main() {
       await tester.ensureVisible(interval);
       await tester.enterText(interval, '۳');
       if (Platform.environment['CAPTURE_GLASS_UI'] == '1') {
-        final boundary = tester.firstRenderObject<RenderRepaintBoundary>(
-          find.byType(RepaintBoundary).first,
-        );
-        final image = await boundary.toImage();
-        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-        final output = File('.impeccable/review/recurrence-${scale}x.png');
-        output.parent.createSync(recursive: true);
-        output.writeAsBytesSync(bytes!.buffer.asUint8List());
-        image.dispose();
+        await tester.runAsync(() async {
+          final boundary = tester.firstRenderObject<RenderRepaintBoundary>(
+            find.byType(RepaintBoundary).first,
+          );
+          final image = await boundary.toImage();
+          final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+          final output = File('.impeccable/review/recurrence-${scale}x.png');
+          output.parent.createSync(recursive: true);
+          output.writeAsBytesSync(bytes!.buffer.asUint8List());
+          image.dispose();
+        });
       }
       await tester.tap(find.text('ذخیرهٔ تکرار'));
       await tester.pumpAndSettle();
