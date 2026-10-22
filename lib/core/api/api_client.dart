@@ -224,12 +224,13 @@ class ApiClient
   }) async {
     final uri = Uri.parse(path);
     return (await _send(
-      method,
-      uri.path,
-      token: token,
-      body: body,
-      query: uri.queryParameters,
-    )) as Map<String, dynamic>;
+          method,
+          uri.path,
+          token: token,
+          body: body,
+          query: uri.queryParameters,
+        ))
+        as Map<String, dynamic>;
   }
 
   @override
@@ -272,11 +273,12 @@ class ApiClient
   Future<PersonalProgress> loadProgress(String token, String timezone) async =>
       PersonalProgress.fromJson(
         await _send(
-          'GET',
-          '/api/v1/progress',
-          token: token,
-          query: {'timezone': timezone},
-        ) as Map<String, dynamic>,
+              'GET',
+              '/api/v1/progress',
+              token: token,
+              query: {'timezone': timezone},
+            )
+            as Map<String, dynamic>,
       );
 
   Future<PersonalProgress> saveProgressGoal(
@@ -285,12 +287,13 @@ class ApiClient
     int days,
   ) async => PersonalProgress.fromJson(
     await _send(
-      'PATCH',
-      '/api/v1/progress',
-      token: token,
-      query: {'timezone': timezone},
-      body: {'weekly_goal': days},
-    ) as Map<String, dynamic>,
+          'PATCH',
+          '/api/v1/progress',
+          token: token,
+          query: {'timezone': timezone},
+          body: {'weekly_goal': days},
+        )
+        as Map<String, dynamic>,
   );
 
   Future<PersonalProgress> saveWeeklyChallenge(
@@ -299,12 +302,13 @@ class ApiClient
     int target,
   ) async => PersonalProgress.fromJson(
     await _send(
-      'PATCH',
-      '/api/v1/progress/challenge',
-      token: token,
-      query: {'timezone': timezone},
-      body: {'target': target},
-    ) as Map<String, dynamic>,
+          'PATCH',
+          '/api/v1/progress/challenge',
+          token: token,
+          query: {'timezone': timezone},
+          body: {'target': target},
+        )
+        as Map<String, dynamic>,
   );
 
   Future<void> checkHealth() async {
@@ -313,11 +317,9 @@ class ApiClient
 
   @override
   Future<List<Project>> listProjects(String token) async {
-    final body = await _send(
-      'GET',
-      '/api/v1/projects',
-      token: token,
-    ) as Map<String, dynamic>;
+    final body =
+        await _send('GET', '/api/v1/projects', token: token)
+            as Map<String, dynamic>;
     return [
       for (final item in body['projects'] as List<dynamic>)
         Project.fromJson(item as Map<String, dynamic>),
@@ -360,11 +362,9 @@ class ApiClient
 
   @override
   Future<List<Label>> listLabels(String token) async {
-    final body = await _send(
-      'GET',
-      '/api/v1/labels',
-      token: token,
-    ) as Map<String, dynamic>;
+    final body =
+        await _send('GET', '/api/v1/labels', token: token)
+            as Map<String, dynamic>;
     return [
       for (final item in body['labels'] as List<dynamic>)
         Label.fromJson(item as Map<String, dynamic>),
@@ -401,12 +401,14 @@ class ApiClient
 
   @override
   Future<List<Task>> listLabelTasks(String token, String labelId) async {
-    final body = await _send(
-      'GET',
-      '/api/v1/tasks',
-      token: token,
-      query: {'labelId': labelId},
-    ) as Map<String, dynamic>;
+    final body =
+        await _send(
+              'GET',
+              '/api/v1/tasks',
+              token: token,
+              query: {'labelId': labelId},
+            )
+            as Map<String, dynamic>;
     return [
       for (final item in body['tasks'] as List<dynamic>)
         Task.fromJson(item as Map<String, dynamic>),
@@ -427,15 +429,17 @@ class ApiClient
     String projectId, {
     bool showCompleted = false,
   }) async {
-    final body = await _send(
-      'GET',
-      '/api/v1/tasks',
-      token: token,
-      query: {
-        'projectId': projectId,
-        if (showCompleted) 'showCompleted': 'true',
-      },
-    ) as Map<String, dynamic>;
+    final body =
+        await _send(
+              'GET',
+              '/api/v1/tasks',
+              token: token,
+              query: {
+                'projectId': projectId,
+                if (showCompleted) 'showCompleted': 'true',
+              },
+            )
+            as Map<String, dynamic>;
     return [
       for (final item in body['tasks'] as List<dynamic>)
         Task.fromJson(item as Map<String, dynamic>),
@@ -448,15 +452,17 @@ class ApiClient
     DateTime? from,
     required DateTime to,
   }) async {
-    final body = await _send(
-      'GET',
-      '/api/v1/tasks',
-      token: token,
-      query: {
-        'from': ?(from == null ? null : dateKey(from)),
-        'to': dateKey(to),
-      },
-    ) as Map<String, dynamic>;
+    final body =
+        await _send(
+              'GET',
+              '/api/v1/tasks',
+              token: token,
+              query: {
+                'from': ?(from == null ? null : dateKey(from)),
+                'to': dateKey(to),
+              },
+            )
+            as Map<String, dynamic>;
     return [
       for (final item in body['tasks'] as List<dynamic>)
         Task.fromJson(item as Map<String, dynamic>),
@@ -521,12 +527,14 @@ class ApiClient
     List<String> ids,
     TaskDue? due,
   ) async {
-    final body = await _send(
-      'POST',
-      '/api/v1/tasks/reschedule',
-      token: token,
-      body: {'task_ids': ids, 'due': due?.toJson()},
-    ) as Map<String, dynamic>;
+    final body =
+        await _send(
+              'POST',
+              '/api/v1/tasks/reschedule',
+              token: token,
+              body: {'task_ids': ids, 'due': due?.toJson()},
+            )
+            as Map<String, dynamic>;
     return [
       for (final item in body['tasks'] as List<dynamic>)
         Task.fromJson(item as Map<String, dynamic>),
@@ -535,12 +543,14 @@ class ApiClient
 
   @override
   Future<List<Section>> listSections(String token, String projectId) async {
-    final body = await _send(
-      'GET',
-      '/api/v1/sections',
-      token: token,
-      query: {'projectId': projectId},
-    ) as Map<String, dynamic>;
+    final body =
+        await _send(
+              'GET',
+              '/api/v1/sections',
+              token: token,
+              query: {'projectId': projectId},
+            )
+            as Map<String, dynamic>;
     return [
       for (final item in body['sections'] as List<dynamic>)
         Section.fromJson(item as Map<String, dynamic>),

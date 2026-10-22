@@ -124,6 +124,10 @@ void main() {
       api.fail = true;
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.textContaining('عبارت فیلتر معتبر نیست'),
+        200,
+      );
       expect(find.textContaining('عبارت فیلتر معتبر نیست'), findsOneWidget);
       expect(find.text('تلاش دوباره'), findsOneWidget);
       expect(tester.takeException(), isNull);

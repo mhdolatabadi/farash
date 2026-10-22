@@ -74,8 +74,9 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
         filterError = null;
       });
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() => filterError = 'فیلترهای ذخیره‌شده دریافت نشدند.');
+      }
     }
   }
 
@@ -145,8 +146,9 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
       }
       if (mounted) await search();
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() => error = 'تغییر کار تأیید نشد. دوباره تلاش کنید.');
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }

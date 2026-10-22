@@ -85,8 +85,9 @@ void main() {
             builder: (context, child) => ThemePreferencesScope(
               preferences: preferences,
               child: MediaQuery(
-                data: MediaQuery.of(context)
-                    .copyWith(textScaler: TextScaler.linear(2)),
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: TextScaler.linear(2)),
                 child: Directionality(
                   textDirection: TextDirection.rtl,
                   child: child!,
