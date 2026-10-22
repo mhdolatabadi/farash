@@ -14,7 +14,10 @@ sections, priorities, completion, undo and project navigation. Roadmap features
 must not appear as working controls before implementation.
 
 ## Brand Commitments
-فراش / Farash, Persian RTL, bundled Vazirmatn. The user rejected similarity to Forest and explicitly approved an original Persian woven-rug world, with the same high artistic quality throughout the UI. Confirmed task completions weave rows and complete rugs; existing task utility remains central. This supersedes the botanical garden direction. See DESIGN.md and docs/design/weaving.md.
+فراش / Farash, Persian RTL, bundled Vazirmatn. The owner rejected every themed
+look (glass, dew, garden, weaving rug) and chose a plain Material 3 app: white
+and teal by day, near-black and lime by night, flat lists, no illustration or
+metaphor. Habits follow Loop Habit Tracker's UI closely. See DESIGN.md.
 
 ## Product Principles
 Fast one-field capture; private by default; reversible completion/deletion;

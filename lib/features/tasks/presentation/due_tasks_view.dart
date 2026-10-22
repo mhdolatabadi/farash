@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/atelier.dart';
 import 'package:farash/app/list_app_bar.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
@@ -15,7 +14,7 @@ import 'package:farash/features/tasks/presentation/task_tile.dart';
 
 /// The views that gather tasks by date from every project.
 enum DueView {
-  today('امروز', Icons.wb_twilight),
+  today('امروز', Icons.today_outlined),
   upcoming('پیش رو', Icons.date_range),
   week('۷ روز آینده', Icons.view_week_outlined),
   all('همه', Icons.all_inbox_outlined);
@@ -282,7 +281,7 @@ class _DueTasksViewState extends State<DueTasksView> {
     ),
   );
 
-  /// One pane of glass holding a day's tasks.
+  /// One panel holding a day's tasks.
   Widget _card(List<Task> tasks) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -486,7 +485,7 @@ class _DueTasksViewState extends State<DueTasksView> {
                   ],
                   topPadding: topPadding,
                   inset: inset,
-                  expandedHeight: constraints.maxHeight < 240 ? 0 : 76 * scale,
+                  expandedHeight: constraints.maxHeight < 240 ? 0 : 32 * scale,
                 ),
               ),
               if (label == null &&
@@ -544,14 +543,9 @@ class _DayHeading extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(24, 20, 12, 8),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 20, 12, 6),
       child: Row(
         children: [
-          WeaveMark(
-            size: 14,
-            color: late ? theme.colorScheme.error : theme.colorScheme.primary,
-          ),
-          const SizedBox(width: 10),
           Expanded(
             child: Semantics(
               header: true,
@@ -560,9 +554,11 @@ class _DayHeading extends StatelessWidget {
                   children: [
                     TextSpan(
                       text: title,
-                      style: theme.textTheme.titleLarge?.copyWith(
+                      style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: late ? theme.colorScheme.error : null,
+                        color: late
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     if (detail != null)

@@ -77,7 +77,6 @@ class TaskTile extends StatelessWidget {
     final checklist = parseChecklist(task.description);
     final dated = task.due != null || task.deadline != null;
     final row = InkWell(
-      borderRadius: BorderRadius.circular(18),
       onTap: onOpen,
       onLongPress: onLongPress,
       child: Padding(
@@ -185,41 +184,25 @@ class TaskTile extends StatelessWidget {
         ),
       ),
     );
+    // Flat rows on the page: no boxes, a hairline from the title's edge.
     return Semantics(
       selected: selected,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Material(
-          color: selected
-              ? theme.colorScheme.secondaryContainer
-              : theme.colorScheme.surfaceContainerLow,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-            side: BorderSide(
-              color: theme.colorScheme.outlineVariant.withValues(alpha: .45),
-            ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              row,
-              // A hairline from the title's edge keeps rows apart without boxes.
-              if (divider)
-                Padding(
-                  padding: EdgeInsetsDirectional.only(
-                    start: 56 + subtaskIndent * depth,
-                    end: 12,
-                  ),
-                  child: Divider(
-                    height: 1,
-                    color: theme.colorScheme.outlineVariant.withValues(
-                      alpha: 0.5,
-                    ),
-                  ),
+      child: Material(
+        color: selected
+            ? theme.colorScheme.primaryContainer
+            : Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            row,
+            if (divider)
+              Padding(
+                padding: EdgeInsetsDirectional.only(
+                  start: 56 + subtaskIndent * depth,
                 ),
-            ],
-          ),
+                child: const Divider(height: 1),
+              ),
+          ],
         ),
       ),
     );
@@ -308,7 +291,7 @@ class _Count extends StatelessWidget {
   }
 }
 
-/// «انجام شد», pressed like a rubber stamp in the lamplight color.
+/// «انجام شد» in the accent, so nothing leaves the list without saying so.
 class _DoneStamp extends StatelessWidget {
   const _DoneStamp();
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/atelier.dart';
+import 'package:farash/app/surfaces.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/date_labels.dart';
@@ -176,8 +176,6 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                       onPressed: Scaffold.of(context).openDrawer,
                       icon: const Icon(Icons.menu_rounded),
                     ),
-                  const WeaveMark(size: 22),
-                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       widget.project.displayName,
@@ -278,7 +276,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                                   reports(d),
                                 if (tab != 2 || d.method == 'kanban') ...[
                                   const SizedBox(height: 24),
-                                  const ThreadRule(),
+                                  const Divider(),
                                   const SizedBox(height: 16),
                                   TextField(
                                     controller: capture,
@@ -340,9 +338,8 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
         ),
         for (final sprint in d.sprints.where((s) => s.state != 'closed')) ...[
           const SizedBox(height: 20),
-          AtelierPanel(
+          Panel(
             padding: const EdgeInsets.all(16),
-            lifted: false,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

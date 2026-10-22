@@ -4,8 +4,7 @@ import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:farash/features/time_tracking/time_tracking_view.dart';
 import 'package:farash/features/tasks/data/task.dart';
-import 'package:farash/app/atelier.dart';
-import 'package:farash/features/weaving/weaving_home.dart';
+import 'package:farash/app/surfaces.dart';
 import 'package:farash/features/focus/focus_controller.dart';
 import 'package:farash/features/focus/focus_view.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +13,6 @@ import 'package:farash/app/motion.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/calendar_settings_dialog.dart';
 import 'package:farash/core/settings/start_view.dart';
-import 'package:farash/app/glass.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
 import 'package:farash/features/labels/data/label.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
@@ -257,9 +255,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void _applyStartView() {
     final start = widget.startView;
     if (start == null || _navigated) return;
-    final view = DueView.values.where((v) => v.name == start.value).firstOrNull;
+    final today = start.value == StartView.today;
+    final view = today
+        ? null
+        : DueView.values.where((v) => v.name == start.value).firstOrNull;
     setState(() {
-      _section = start.value == StartView.weaving ? 0 : 1;
+      _section = today ? 0 : 1;
       _view = view;
     });
   }
@@ -283,19 +284,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Project? get _selected =>
       widget.projects.byId(_selectedId) ?? widget.projects.inbox;
 
-  /// The project the lamp was last placed for.
-  String? _lampFor;
-
-  /// Moves the lamp behind the glass when the project changes, after the
-  /// frame so the backdrop never rebuilds mid-build.
-  void _placeLamp(Project? project) {
-    if (project == null || project.id == _lampFor) return;
-    _lampFor = project.id;
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => GlassLamp.placeFor(project.id),
-    );
-  }
-
   void _select(Project project) {
     _navigated = true;
     _refreshCount();
@@ -313,15 +301,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void _selectView(DueView view) {
     _navigated = true;
     _refreshCount();
+    // Today has its own destination; the other views open under کارها.
+    final today = view == DueView.today;
     setState(() {
-      _section = 1;
-      _view = view;
+      _section = today ? 0 : 1;
+      _view = today ? null : view;
       _labelId = null;
     });
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => GlassLamp.placeFor('@${view.name}'),
-    );
-    _lampFor = null;
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.pop(context);
     }
@@ -377,11 +363,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _sidebar() => ProjectSidebar(
     controller: widget.projects,
-    selectedId: _view == null && _labelId == null ? _selected?.id : null,
+    selectedId: _section == 1 && _view == null && _labelId == null
+        ? _selected?.id
+        : null,
     labels: _labels,
     selectedLabelId: _labelId,
     onSelectLabel: _selectLabel,
-    selectedView: _view,
+    selectedView: _section == 0
+        ? DueView.today
+        : (_section == 1 ? _view : null),
     onSelect: _select,
     onSelectView: _selectView,
     viewCounts: {DueView.today: ?_todayCount},
@@ -395,9 +385,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint) ...[
           for (final (index, icon, title) in [
-            (0, Icons.grid_view_rounded, 'فرش'),
-            (1, Icons.check_circle_outline_rounded, 'کارها'),
-            (2, Icons.hourglass_empty_rounded, 'تمرکز'),
+            // Today and the lists are already below; only the tools here.
+            (2, Icons.timelapse_rounded, 'تمرکز'),
             if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
           ])
             Material(
@@ -431,31 +420,15 @@ class _HomeScreenState extends State<HomeScreen> {
             final selected = _selected;
             final view = _view;
             final label = _labels?.byId(_labelId);
-            if (view == null && label == null) _placeLamp(selected);
             final Widget content = _section == 0
-                ? WeavingHome(
-                    key: const ValueKey('weaving-home'),
+                ? DueTasksView(
+                    key: const ValueKey(DueView.today),
+                    view: DueView.today,
                     api: widget.tasksApi,
                     token: widget.token,
-                    projects: widget.projects,
-                    onTasks: () {
-                      final inbox = widget.projects.inbox;
-                      if (inbox != null) {
-                        _select(inbox);
-                      } else {
-                        _switchSection(1);
-                      }
-                    },
-                    onFocus: _startFocus,
-                    onTaskFocus: _startTaskFocus,
-                    onProject: (id) {
-                      final p = widget.projects.byId(id);
-                      if (p != null) {
-                        _select(p);
-                      } else {
-                        _switchSection(1);
-                      }
-                    },
+                    projects: () => widget.projects.projects,
+                    onOpenProject: _select,
+                    labels: _labels,
                   )
                 : _section == 2
                 ? FocusView(
@@ -553,7 +526,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 drawer: Drawer(child: _sidebar()),
                 bottomNavigationBar: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerLow,
+                    color: Theme.of(context).colorScheme.surface,
                     border: Border(
                       top: BorderSide(
                         color: Theme.of(context).colorScheme.outlineVariant,
@@ -565,9 +538,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     onDestinationSelected: _switchSection,
                     destinations: [
                       const NavigationDestination(
-                        icon: WeaveMark(size: 24),
-                        selectedIcon: WeaveMark(size: 26),
-                        label: 'فرش',
+                        icon: Icon(Icons.today_outlined),
+                        selectedIcon: Icon(Icons.today_rounded),
+                        label: 'امروز',
                       ),
                       const NavigationDestination(
                         icon: Icon(Icons.check_circle_outline_rounded),
@@ -575,8 +548,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         label: 'کارها',
                       ),
                       const NavigationDestination(
-                        icon: Icon(Icons.hourglass_empty_rounded),
-                        selectedIcon: Icon(Icons.hourglass_top_rounded),
+                        icon: Icon(Icons.timelapse_rounded),
                         label: 'تمرکز',
                       ),
                       if (_tracker != null)
@@ -614,7 +586,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: SizedBox(
                         width: 288,
-                        child: GlassSurface(child: _sidebar()),
+                        child: Panel(child: _sidebar()),
                       ),
                     ),
                     Expanded(
@@ -670,7 +642,7 @@ class _AccountHeader extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const WeaveMark(size: 28),
+                    const FarashMark(size: 28),
                     const SizedBox(width: 10),
                     Text(
                       'فراش',
@@ -737,9 +709,10 @@ class _AccountHeader extends StatelessWidget {
 /// Picks which list opens first on this device.
 Future<void> _pickStartView(BuildContext context, StartView start) async {
   final choices = [
-    (StartView.weaving, 'فرش'),
+    (StartView.today, DueView.today.title),
     (StartView.inbox, 'صندوق ورودی'),
-    for (final v in DueView.values) (v.name, v.title),
+    for (final v in DueView.values)
+      if (v != DueView.today) (v.name, v.title),
   ];
   final picked = await showDialog<String>(
     context: context,

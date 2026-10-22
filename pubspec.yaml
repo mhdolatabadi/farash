@@ -23,7 +23,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/weaving/
     - assets/icon/farash.png
 
   # Bundled so Persian text never waits on a runtime font download from Google.

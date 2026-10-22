@@ -1,7 +1,7 @@
 import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:farash/features/time_tracking/time_tracking_view.dart';
 import 'package:flutter/material.dart';
-import 'package:farash/app/glass.dart';
+import 'package:farash/app/surfaces.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
 import 'package:farash/features/labels/presentation/label_widgets.dart';
 import 'package:farash/features/projects/data/project.dart';
@@ -226,7 +226,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
           .firstOrNull;
       if (current != null) targets.insert(0, current);
     }
-    // Beside the list the editor is a side sheet of glass; as a modal
+    // Beside the list the editor is a side panel; as a modal
     // bottom sheet it is the sheet itself, over a scrim, with no pane of
     // its own.
     final side = widget.onResult != null;
@@ -456,7 +456,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
         ],
       ),
     );
-    if (side) return GlassSurface(child: body);
+    if (side) return Panel(child: body);
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: body,

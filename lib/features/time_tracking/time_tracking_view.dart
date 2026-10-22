@@ -2,7 +2,7 @@ import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/features/tasks/presentation/due_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:farash/app/atelier.dart';
+import 'package:farash/app/surfaces.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
@@ -222,7 +222,7 @@ class TimeTrackingView extends StatelessWidget {
                       if (report == null && tracker.error == null)
                         const LinearProgressIndicator(),
                       if (report != null) ...[
-                        AtelierPanel(
+                        Panel(
                           padding: const EdgeInsets.all(20),
                           child: Wrap(
                             spacing: 32,

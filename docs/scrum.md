@@ -29,7 +29,7 @@ The workspace inherits `DESIGN.md`: the existing `WeaveMark`, `ThreadRule`, `Ate
 ## Direction contract
 
 THESIS: A sole user can plan a small increment, work through it and review what actually happened without creating a team.
-OWN-WORLD: Extend the established Persian weaving atelier, opaque tonal surfaces and Vazirmatn; tasks and real outcomes lead.
+OWN-WORLD: Use the calm Material 3 system in DESIGN.md and Vazirmatn; tasks and real outcomes lead.
 STORY: Opt into Scrum, shape backlog, assign scope, start, move work, close and reflect.
 FIRST VIEWPORT: Project/method toolbar, one calm heading, backlog/board/report navigation, relevant sprint goal and a clear primary action. Dense reports follow the task flow; no decorative analytics dashboard.
 FORM: Ordinary code-led extension. Preserve tokens, artwork and existing quick capture. Narrow boards select a column; wide boards show three lanes with drag plus menu alternatives.
