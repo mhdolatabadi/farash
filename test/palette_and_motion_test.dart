@@ -176,6 +176,7 @@ void main() {
     testWidgets('a new task grows into the list', (tester) async {
       await pumpView(tester);
       await tester.enterText(find.byType(TextField), 'تازه');
+      await tester.pump();
       await tester.tap(find.byTooltip('افزودن کار'));
       // The row appears, starts growing on the next frame, and is midway
       // a little later.

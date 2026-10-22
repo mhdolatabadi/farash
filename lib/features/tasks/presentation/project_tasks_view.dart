@@ -424,9 +424,8 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
         // With a landscape keyboard, reserve no fixed footer: capture and
         // tasks share one scrollable viewport so neither can trap the other.
         final compact = constraints.maxHeight < 240;
-        final capture = _QuickAdd(
+        final capture = QuickAddBar(
           key: _captureKey,
-          projectName: widget.project.displayName,
           onAdd: (parsed, raw, priority) async {
             try {
               await _addParsed(parsed, raw, priority);
@@ -553,7 +552,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
             child: Icon(
               Icons.drag_indicator,
               size: 20,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -944,10 +943,10 @@ class _QuickText extends TextEditingController {
         withComposing: withComposing,
       );
     }
-    final primary = Theme.of(context).colorScheme.primary;
+    final scheme = Theme.of(context).colorScheme;
     final lit = style?.copyWith(
-      color: primary,
-      backgroundColor: primary.withValues(alpha: 0.14),
+      color: scheme.onPrimaryContainer,
+      backgroundColor: scheme.primaryContainer,
     );
     final spans = <TextSpan>[];
     var cursor = 0;
@@ -966,10 +965,14 @@ class _QuickText extends TextEditingController {
 /// One field and one button, pinned under the list and above the keyboard.
 /// Dates, times, `#project`, `@label`, `p1`–`p4` and `{deadline}` typed in
 /// the text are recognised as you go.
-class _QuickAdd extends StatefulWidget {
-  const _QuickAdd({super.key, required this.projectName, required this.onAdd});
+class QuickAddBar extends StatefulWidget {
+  const QuickAddBar({
+    super.key,
+    this.hint = 'افزودن کار…',
+    required this.onAdd,
+  });
 
-  final String projectName;
+  final String hint;
 
   /// Returns whether the task was added, so the field keeps its text on
   /// failure.
@@ -981,10 +984,10 @@ class _QuickAdd extends StatefulWidget {
   onAdd;
 
   @override
-  State<_QuickAdd> createState() => _QuickAddState();
+  State<QuickAddBar> createState() => _QuickAddState();
 }
 
-class _QuickAddState extends State<_QuickAdd> {
+class _QuickAddState extends State<QuickAddBar> {
   final _text = _QuickText();
   late final FocusNode _focus = FocusNode()
     ..addListener(() => setState(() => _focused = _focus.hasFocus));
@@ -1076,7 +1079,7 @@ class _QuickAddState extends State<_QuickAdd> {
                         maxLength,
                       }) => null,
                   decoration: InputDecoration(
-                    hintText: 'افزودن کار…',
+                    hintText: widget.hint,
                     filled: false,
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -1121,30 +1124,25 @@ class _QuickAddState extends State<_QuickAdd> {
                     ),
                 ],
               ),
-              // Send wakes up once there is something to add.
+              // Send is disabled until there is something to add.
               ValueListenableBuilder(
                 valueListenable: _text,
-                builder: (context, value, button) {
+                builder: (context, value, _) {
                   final ready = value.text.trim().isNotEmpty;
-                  return AnimatedOpacity(
-                    opacity: ready || _busy ? 1 : 0.55,
-                    duration: Motion.of(context, Motion.quick),
-                    child: button,
+                  return IconButton.filled(
+                    tooltip: 'افزودن کار',
+                    style: const ButtonStyle(
+                      minimumSize: WidgetStatePropertyAll(Size(48, 48)),
+                    ),
+                    onPressed: _busy || !ready ? null : _submit,
+                    icon: _busy
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.add),
                   );
                 },
-                child: IconButton.filled(
-                  tooltip: 'افزودن کار',
-                  style: const ButtonStyle(
-                    minimumSize: WidgetStatePropertyAll(Size(48, 48)),
-                  ),
-                  onPressed: _busy ? null : _submit,
-                  icon: _busy
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.add),
-                ),
               ),
             ],
           ),

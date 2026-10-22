@@ -31,6 +31,10 @@ Future<TaskSheetResult?> showTaskDetailSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    // A drag would close the sheet without asking about unsaved edits;
+    // Back and the scrim go through the editor's confirmation instead.
+    enableDrag: false,
+    showDragHandle: false,
     builder: (context) => TaskDetailEditor(
       controller: controller,
       task: task,
@@ -77,6 +81,47 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
   late TaskDates _dates = widget.task.dates;
   late List<String> _labelIds = [...widget.task.labelIds];
 
+  /// The notes as last saved; checklist ticks save them on the spot.
+  late String _savedDescription = widget.task.description;
+
+  bool get _dirty =>
+      _title.text != widget.task.title ||
+      _description.text != _savedDescription ||
+      _priority != widget.task.priority ||
+      _projectId != widget.task.projectId ||
+      _sectionId != widget.controller.sectionOf(widget.task) ||
+      _dates != widget.task.dates ||
+      (widget.labels != null && !_sameLabels(_labelIds, widget.task.labelIds));
+
+  static bool _sameLabels(List<String> a, List<String> b) =>
+      a.length == b.length && a.toSet().containsAll(b);
+
+  /// Closes without saving, asking first when something would be lost.
+  Future<void> _dismiss() async {
+    if (_saving) return;
+    if (_dirty) {
+      final discard = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('تغییرها ذخیره نشده‌اند'),
+          content: const Text('اگر ببندی، تغییرهای این کار از بین می‌روند.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('ادامهٔ ویرایش'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('دور ریختن'),
+            ),
+          ],
+        ),
+      );
+      if (discard != true || !mounted) return;
+    }
+    _close(null);
+  }
+
   Future<void> _pickDates() async {
     final picked = await showDuePicker(context, initial: _dates);
     if (picked != null && mounted) setState(() => _dates = picked);
@@ -110,6 +155,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
   /// Checklist changes save at once, like ticking a box should.
   Future<void> _saveChecklist(String description) {
     _description.text = description;
+    _savedDescription = description;
     return _quietly(
       () => widget.controller.saveDescription(widget.task, description),
     );
@@ -270,7 +316,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                       ),
                       IconButton(
                         tooltip: 'بستن ویرایشگر',
-                        onPressed: _saving ? null : () => _close(null),
+                        onPressed: _saving ? null : _dismiss,
                         icon: const Icon(Icons.close),
                       ),
                     ],
@@ -456,10 +502,17 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
         ],
       ),
     );
-    if (side) return Panel(child: body);
+    final guarded = PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _dismiss();
+      },
+      child: body,
+    );
+    if (side) return Panel(child: guarded);
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: body,
+      child: guarded,
     );
   }
 }

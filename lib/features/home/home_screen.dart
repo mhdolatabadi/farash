@@ -8,6 +8,7 @@ import 'package:farash/app/surfaces.dart';
 import 'package:farash/features/focus/focus_controller.dart';
 import 'package:farash/features/focus/focus_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:farash/features/progress/progress_card.dart';
 import 'package:farash/app/motion.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
@@ -25,6 +26,9 @@ import 'package:farash/features/tasks/presentation/project_tasks_view.dart';
 
 /// Wide layouts keep the project list on screen; phones use a drawer.
 const sidebarBreakpoint = 840.0;
+
+/// Between phone and wide, the destinations move to a side rail.
+const railBreakpoint = 600.0;
 
 /// The signed-in shell: project navigation and the selected project.
 class HomeScreen extends StatefulWidget {
@@ -63,7 +67,11 @@ class _HomeScreenState extends State<HomeScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   String? _selectedId;
   int _section = 1;
+
+  /// Where the app opens, and where Back returns to before leaving.
+  int _startSection = 1;
   final _focus = FocusController();
+  bool _focusWasFinished = false;
   late final TimeTracker? _tracker;
   Task? _focusTask;
   String? _focusEntry;
@@ -93,6 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
         : null;
     _tracker?.focusTask = _startTaskFocus;
     _tracker?.addListener(_trackerChanged);
+    _focus.addListener(_focusChanged);
     if (widget.tasksApi case final ApiClient api) {
       api.completedTask.addListener(_completedTime);
       api.progressChanges.addListener(_refreshTracker);
@@ -112,10 +121,38 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     _tracker?.removeListener(_trackerChanged);
     _tracker?.dispose();
+    _focus.removeListener(_focusChanged);
     _focus.dispose();
     widget.startView?.removeListener(_applyStartView);
     _labels?.dispose();
     super.dispose();
+  }
+
+  /// A finished session is announced wherever the user is, not only on
+  /// the focus screen.
+  void _focusChanged() {
+    final finished = _focus.finished;
+    if (finished && !_focusWasFinished && mounted) {
+      HapticFeedback.heavyImpact();
+      ScaffoldMessenger.maybeOf(context)
+        ?..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              _focus.minutes == 25
+                  ? 'جلسهٔ تمرکز تمام شد.'
+                  : 'استراحت تمام شد.',
+            ),
+            action: _section == 2
+                ? null
+                : SnackBarAction(
+                    label: 'تمرکز',
+                    onPressed: () => _switchSection(2),
+                  ),
+          ),
+        );
+    }
+    _focusWasFinished = finished;
   }
 
   void _refreshTracker() {
@@ -260,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ? null
         : DueView.values.where((v) => v.name == start.value).firstOrNull;
     setState(() {
-      _section = today ? 0 : 1;
+      _section = _startSection = today ? 0 : 1;
       _view = view;
     });
   }
@@ -361,6 +398,48 @@ class _HomeScreenState extends State<HomeScreen> {
     _switchSection(2);
   }
 
+  /// The remaining time while a session runs, for the focus destination.
+  String? get _focusBadge {
+    if (!_focus.running) return null;
+    final seconds = _focus.remaining.inSeconds;
+    return persianDigits(
+      '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}',
+    );
+  }
+
+  /// The top-level destinations, shared by the bottom bar and the rail.
+  List<(Widget icon, Widget selectedIcon, String label)> _destinations() {
+    final badge = _focusBadge;
+    Widget focusIcon(IconData data) => Badge(
+      isLabelVisible: badge != null,
+      label: Text(badge ?? ''),
+      child: Icon(data),
+    );
+    return [
+      (
+        const Icon(Icons.today_outlined),
+        const Icon(Icons.today_rounded),
+        'امروز',
+      ),
+      (
+        const Icon(Icons.check_circle_outline_rounded),
+        const Icon(Icons.check_circle_rounded),
+        'کارها',
+      ),
+      (
+        focusIcon(Icons.timelapse_outlined),
+        focusIcon(Icons.timelapse_rounded),
+        'تمرکز',
+      ),
+      if (_tracker != null)
+        (
+          const Icon(Icons.timer_outlined),
+          const Icon(Icons.timer_rounded),
+          'زمان‌ها',
+        ),
+    ];
+  }
+
   Widget _sidebar() => ProjectSidebar(
     controller: widget.projects,
     selectedId: _section == 1 && _view == null && _labelId == null
@@ -386,7 +465,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint) ...[
           for (final (index, icon, title) in [
             // Today and the lists are already below; only the tools here.
-            (2, Icons.timelapse_rounded, 'تمرکز'),
+            (2, Icons.timelapse_outlined, 'تمرکز'),
             if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
           ])
             Material(
@@ -411,9 +490,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Back steps out to the start destination before it leaves the app.
+    return PopScope(
+      canPop: _section == _startSection,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _switchSection(_startSection);
+      },
+      child: _layout(),
+    );
+  }
+
+  Widget _layout() {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= sidebarBreakpoint;
+        final rail = !wide && constraints.maxWidth >= railBreakpoint;
         return ListenableBuilder(
           listenable: Listenable.merge([widget.projects, ?_labels]),
           builder: (context, _) {
@@ -429,6 +520,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     projects: () => widget.projects.projects,
                     onOpenProject: _select,
                     labels: _labels,
+                    sectionsApi: widget.sectionsApi,
                   )
                 : _section == 2
                 ? FocusView(
@@ -454,6 +546,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     token: widget.token,
                     projects: () => widget.projects.projects,
                     onOpenProject: _select,
+                    sectionsApi: widget.sectionsApi,
                   )
                 : view != null
                 ? DueTasksView(
@@ -464,6 +557,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     projects: () => widget.projects.projects,
                     onOpenProject: _select,
                     labels: _labels,
+                    sectionsApi: widget.sectionsApi,
                   )
                 : selected == null
                 ? _ProjectPage(loading: widget.projects.isLoading)
@@ -524,50 +618,77 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? AppBar(title: const Text('فراش'))
                     : null,
                 drawer: Drawer(child: _sidebar()),
-                bottomNavigationBar: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    border: Border(
-                      top: BorderSide(
-                        color: Theme.of(context).colorScheme.outlineVariant,
+                bottomNavigationBar: rail
+                    ? null
+                    : DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          border: Border(
+                            top: BorderSide(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outlineVariant,
+                            ),
+                          ),
+                        ),
+                        child: ListenableBuilder(
+                          listenable: _focus,
+                          builder: (context, _) => NavigationBar(
+                            selectedIndex: _section,
+                            onDestinationSelected: _switchSection,
+                            destinations: [
+                              for (final (icon, selectedIcon, label)
+                                  in _destinations())
+                                NavigationDestination(
+                                  icon: icon,
+                                  selectedIcon: selectedIcon,
+                                  label: label,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                body: Row(
+                  children: [
+                    if (rail) ...[
+                      SafeArea(
+                        right: false,
+                        left: false,
+                        child: ListenableBuilder(
+                          listenable: _focus,
+                          builder: (context, _) => NavigationRail(
+                            selectedIndex: _section,
+                            onDestinationSelected: _switchSection,
+                            labelType: NavigationRailLabelType.all,
+                            groupAlignment: 0,
+                            destinations: [
+                              for (final (icon, selectedIcon, label)
+                                  in _destinations())
+                                NavigationRailDestination(
+                                  icon: icon,
+                                  selectedIcon: selectedIcon,
+                                  label: Text(label),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const VerticalDivider(width: 1),
+                    ],
+                    Expanded(
+                      child: Column(
+                        children: [
+                          if (_tracker != null)
+                            ActiveTimeBar(
+                              tracker: _tracker,
+                              onOpen: () => _switchSection(3),
+                            ),
+                          if (_tracker != null)
+                            TrackerMessage(tracker: _tracker),
+                          Expanded(child: page),
+                        ],
                       ),
                     ),
-                  ),
-                  child: NavigationBar(
-                    selectedIndex: _section,
-                    onDestinationSelected: _switchSection,
-                    destinations: [
-                      const NavigationDestination(
-                        icon: Icon(Icons.today_outlined),
-                        selectedIcon: Icon(Icons.today_rounded),
-                        label: 'امروز',
-                      ),
-                      const NavigationDestination(
-                        icon: Icon(Icons.check_circle_outline_rounded),
-                        selectedIcon: Icon(Icons.check_circle_rounded),
-                        label: 'کارها',
-                      ),
-                      const NavigationDestination(
-                        icon: Icon(Icons.timelapse_rounded),
-                        label: 'تمرکز',
-                      ),
-                      if (_tracker != null)
-                        const NavigationDestination(
-                          icon: Icon(Icons.timer_outlined),
-                          label: 'زمان‌ها',
-                        ),
-                    ],
-                  ),
-                ),
-                body: Column(
-                  children: [
-                    if (_tracker != null)
-                      ActiveTimeBar(
-                        tracker: _tracker,
-                        onOpen: () => _switchSection(3),
-                      ),
-                    if (_tracker != null) TrackerMessage(tracker: _tracker),
-                    Expanded(child: page),
                   ],
                 ),
               );

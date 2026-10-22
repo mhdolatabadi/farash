@@ -22,9 +22,6 @@ void main() {
     final font = FontLoader('Vazirmatn')
       ..addFont(rootBundle.load('assets/fonts/Vazirmatn-Regular.ttf'));
     await font.load();
-    final naskh = FontLoader('FarashNaskh')
-      ..addFont(rootBundle.load('assets/fonts/NotoNaskhArabic-Bold.ttf'));
-    await naskh.load();
     final icons = FontLoader('MaterialIcons')
       ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
     await icons.load();
@@ -184,17 +181,24 @@ void main() {
       expect(tester.takeException(), isNull);
       // Today and focus lay out without overflow too.
       final phoneNav = find.byType(NavigationBar).evaluate().isNotEmpty;
+      final rail = find.byType(NavigationRail).evaluate().isNotEmpty;
+      Finder destination(String label) => phoneNav
+          ? find.widgetWithText(NavigationDestination, label)
+          : find.descendant(
+              of: find.byType(NavigationRail),
+              matching: find.text(label),
+            );
       await tester.tap(
-        phoneNav
-            ? find.widgetWithText(NavigationDestination, 'امروز')
+        phoneNav || rail
+            ? destination('امروز')
             : find.byKey(const ValueKey('view-today')),
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       await _capture(tester, captureKey, '${layout.$1}-today');
       await tester.tap(
-        phoneNav
-            ? find.widgetWithText(NavigationDestination, 'تمرکز')
+        phoneNav || rail
+            ? destination('تمرکز')
             : find.widgetWithText(ListTile, 'تمرکز'),
       );
       await tester.pumpAndSettle();

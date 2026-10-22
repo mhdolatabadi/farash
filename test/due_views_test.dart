@@ -7,6 +7,7 @@ import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/features/tasks/presentation/due_tasks_view.dart';
+import 'package:farash/features/tasks/presentation/task_detail_sheet.dart';
 
 import 'support/fake_tasks_api.dart';
 
@@ -93,6 +94,38 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('today adds to the Inbox for today', (tester) async {
+    await pump(tester, DueView.today);
+    await tester.enterText(find.byType(TextField), 'خرید نان');
+    await tester.pump();
+    await tester.tap(find.byTooltip('افزودن کار'));
+    await tester.pumpAndSettle();
+    final added = api.byTitle('خرید نان');
+    expect(added.projectId, 'inbox');
+    expect(added.due, TaskDue.onDay(today));
+    expect(find.text('خرید نان'), findsOneWidget);
+  });
+
+  testWidgets('closing the editor asks before dropping edits', (tester) async {
+    api.seed('work', 'Now', dates: on(0));
+    await pump(tester, DueView.today);
+    await tester.tap(find.text('Now'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('task-title')), 'Later');
+    await tester.tap(find.byTooltip('بستن ویرایشگر'));
+    await tester.pumpAndSettle();
+    expect(find.text('تغییرها ذخیره نشده‌اند'), findsOneWidget);
+    await tester.tap(find.text('ادامهٔ ویرایش'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TaskDetailEditor), findsOneWidget);
+    await tester.tap(find.byTooltip('بستن ویرایشگر'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('دور ریختن'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TaskDetailEditor), findsNothing);
+    expect(api.byTitle('Now').title, 'Now');
+  });
+
   testWidgets('today gathers late and due tasks from every project', (
     tester,
   ) async {
@@ -111,10 +144,15 @@ void main() {
     for (final hidden in ['Tomorrow', 'Undated', 'Done', 'Archived']) {
       expect(find.text(hidden), findsNothing);
     }
-    // Each task names its project; tapping opens it there.
+    // Each task names its project; tapping opens it in the editor here.
     expect(find.text('کار'), findsOneWidget);
     await tester.tap(find.text('Now'));
-    expect(opened.single.id, 'work');
+    await tester.pumpAndSettle();
+    expect(find.byType(TaskDetailEditor), findsOneWidget);
+    expect(opened, isEmpty);
+    await tester.tap(find.byTooltip('بستن ویرایشگر'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TaskDetailEditor), findsNothing);
 
     // Late tasks move to today together, and come back with undo.
     await tester.tap(find.text('انتقال همه به امروز'));

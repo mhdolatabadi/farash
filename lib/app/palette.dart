@@ -88,8 +88,8 @@ class FarashPalette {
       container: Color(0xFFF0F2F4),
       containerHigh: Color(0xFFEAECEF),
       containerHighest: Color(0xFFE3E6EA),
-      outline: Color(0xFFC9CED4),
-      outlineVariant: Color(0xFFEEF0F2),
+      outline: Color(0xFF878E97),
+      outlineVariant: Color(0xFFE3E6EA),
       overdue: Color(0xFFB42318),
       priorities: [
         Color(0xFFD1242F),
@@ -112,8 +112,8 @@ class FarashPalette {
       container: Color(0xFF191C22),
       containerHigh: Color(0xFF20242B),
       containerHighest: Color(0xFF262A31),
-      outline: Color(0xFF4A4F57),
-      outlineVariant: Color(0xFF1E2127),
+      outline: Color(0xFF6B717A),
+      outlineVariant: Color(0xFF262A31),
       overdue: Color(0xFFFF8A8A),
       priorities: [
         Color(0xFFFF6B6B),

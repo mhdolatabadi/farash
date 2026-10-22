@@ -419,7 +419,12 @@ class TaskDateLabels extends StatelessWidget {
             // Today in the brand color, tomorrow in the accent; later dates
             // stay quiet so the near ones stand out.
             tone: switch (daysBetween(current, due.day)) {
-              0 => theme.colorScheme.primary,
+              // Light pills take the deeper container ink so the small text
+              // clears 4.5:1 on its own tint.
+              0 =>
+                theme.brightness == Brightness.dark
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onPrimaryContainer,
               1 => theme.colorScheme.tertiary,
               _ => null,
             },
@@ -444,11 +449,17 @@ class _PriorityCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final color = task.priority.colorIn(context);
     final done = task.isCompleted;
+    final priority = task.priority == TaskPriority.p4
+        ? ''
+        : '، ${task.priority.label}';
     return Semantics(
       checked: done,
-      label: done ? 'برگرداندن «${task.title}»' : 'انجام «${task.title}»',
+      label: done
+          ? 'برگرداندن «${task.title}»$priority'
+          : 'انجام «${task.title}»$priority',
       child: InkResponse(
         onTap: onToggle,
         radius: 24,
@@ -485,12 +496,16 @@ class _PriorityCheck extends StatelessWidget {
                         Icons.check,
                         key: const ValueKey('checked'),
                         size: 14,
-                        // Light priority tones at night take a dark check.
+                        // Dark fills take the light ink, light fills the dark.
                         color:
                             ThemeData.estimateBrightnessForColor(color) ==
                                 Brightness.dark
-                            ? Colors.white
-                            : const Color(0xFF14182B),
+                            ? (theme.brightness == Brightness.dark
+                                  ? theme.colorScheme.onSurface
+                                  : theme.colorScheme.surface)
+                            : (theme.brightness == Brightness.dark
+                                  ? theme.colorScheme.surface
+                                  : theme.colorScheme.onSurface),
                       )
                     : const SizedBox.shrink(key: ValueKey('open')),
               ),
