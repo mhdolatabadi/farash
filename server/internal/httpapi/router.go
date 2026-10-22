@@ -41,6 +41,9 @@ func NewHandler(config Config) http.Handler {
 			mux.HandleFunc("PATCH /api/v1/progress", handler)
 			mux.HandleFunc("PATCH /api/v1/progress/challenge", handler)
 		}
+		if data, ok := config.Store.(commentsStore); ok {
+			commentsRoutes(mux, auth, data)
+		}
 		if data, ok := config.Store.(agileStore); ok {
 			agileRoutes(mux, auth, data)
 		}
