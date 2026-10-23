@@ -916,11 +916,13 @@ class QuickAddBar extends StatefulWidget {
   const QuickAddBar({
     super.key,
     this.hint = 'افزودن کار…',
+    this.error,
     this.pending,
     required this.onAdd,
   });
 
   final String hint;
+  final String? error;
   final bool Function()? pending;
 
   /// Returns whether the task was added, so the field keeps its text on
@@ -990,6 +992,22 @@ class _QuickAddState extends State<QuickAddBar> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (widget.error case final error?)
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 4),
+              child: Semantics(
+                liveRegion: true,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 96),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      error,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           // What the text will set, each part dismissable back to text.
           ValueListenableBuilder(
             valueListenable: _text,

@@ -68,6 +68,13 @@ void main() {
       ),
     );
     await tester.enterText(find.byType(TextField), 'مطالعه هر روز');
+    await tester.pump();
+    expect(
+      tester
+          .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.add))
+          .onPressed,
+      isNotNull,
+    );
     await tester.tap(find.byTooltip('افزودن کار'));
     await tester.pump();
     expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);

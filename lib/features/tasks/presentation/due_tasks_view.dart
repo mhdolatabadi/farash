@@ -84,6 +84,7 @@ class _DueTasksViewState extends State<DueTasksView> {
   bool _loading = true;
   bool _openingTask = false;
   Object? _error;
+  String? _captureError;
   final _dayKeys = <String, GlobalKey>{};
   late final _captureSession = QuickCaptureSession(
     api: widget.api,
@@ -306,6 +307,7 @@ class _DueTasksViewState extends State<DueTasksView> {
   ) async {
     final token = widget.token();
     if (token == null) return false;
+    setState(() => _captureError = null);
     try {
       await _captureSession.capture(
         parsed,
@@ -318,7 +320,9 @@ class _DueTasksViewState extends State<DueTasksView> {
       await _load();
       return true;
     } catch (error) {
-      if (mounted) showTaskError(context, error);
+      if (mounted && widget.token() == token) {
+        setState(() => _captureError = taskErrorMessage(error));
+      }
       return false;
     }
   }
@@ -629,6 +633,7 @@ class _DueTasksViewState extends State<DueTasksView> {
               padding: EdgeInsets.fromLTRB(inset + 12, 4, inset + 12, 12),
               child: QuickAddBar(
                 hint: 'افزودن کار برای امروز…',
+                error: _captureError,
                 pending: () => _captureSession.hasPendingRecurrence,
                 onAdd: _quickAdd,
               ),

@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:farash/core/calendar/time_zone.dart';
+import 'package:farash/features/labels/application/labels_controller.dart';
+import 'package:farash/features/labels/data/label.dart';
+import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/quick_capture.dart';
 import 'package:farash/features/tasks/data/quick_parse.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'support/fake_tasks_api.dart';
 import 'support/fake_sections_api.dart';
+import 'support/fake_labels_api.dart';
 
 class _RecurringApi extends FakeTasksApi implements TimeApi {
   bool failRule = true;
@@ -27,12 +33,117 @@ class _RecurringApi extends FakeTasksApi implements TimeApi {
   }
 }
 
+class _DelayedSections extends FakeSectionsApi {
+  final response = Completer<List<Section>>();
+  @override
+  Future<List<Section>> listSections(String token, String projectId) =>
+      response.future;
+}
+
+class _RecordingLabels extends FakeLabelsApi {
+  final writes = <String>[];
+  void Function()? afterCreate;
+  @override
+  Future<Label> createLabel(String token, LabelDraft draft) async {
+    writes.add(token);
+    final label = await super.createLabel(token, draft);
+    afterCreate?.call();
+    return label;
+  }
+}
+
 void main() {
   const inbox = Project(id: 'inbox', name: '', color: '#98503D', isInbox: true);
   const work = Project(id: 'work', name: 'کار', color: '#98503D');
   final now = DateTime(2026, 10, 14);
   setUp(() => debugTimeZoneOverride = 'Asia/Tehran');
   tearDown(() => debugTimeZoneOverride = null);
+
+  test(
+    'account switch during section lookup cannot create labels or tasks',
+    () async {
+      final api = FakeTasksApi();
+      final sections = _DelayedSections();
+      final labelsApi = _RecordingLabels();
+      var token = 'account-a';
+      final labels = LabelsController(api: labelsApi, token: () => token);
+      addTearDown(labels.dispose);
+      final session = QuickCaptureSession(
+        api: api,
+        sections: sections,
+        labels: labels,
+        token: () => token,
+        projects: () => [inbox],
+        defaultProject: () => inbox,
+      );
+      const raw = 'مطالعه /برنامه @تلفن';
+      final pending = session.capture(
+        parseQuickTask(raw, now: now),
+        raw,
+        calendar: 'jalali',
+      );
+      final rejected = expectLater(pending, throwsException);
+      token = 'account-b';
+      sections.response.complete([sections.seed('inbox', 'برنامه')]);
+      await rejected;
+      expect(labelsApi.writes, isEmpty);
+      expect(api.all, isEmpty);
+    },
+  );
+
+  test(
+    'account switch during zone lookup cannot create labels or tasks',
+    () async {
+      final api = FakeTasksApi();
+      final labelsApi = _RecordingLabels();
+      var token = 'account-a';
+      final labels = LabelsController(api: labelsApi, token: () => token);
+      addTearDown(labels.dispose);
+      final session = QuickCaptureSession(
+        api: api,
+        labels: labels,
+        token: () => token,
+        projects: () => [inbox],
+        defaultProject: () => inbox,
+      );
+      const raw = 'مطالعه فردا ساعت ۱۷ @تلفن';
+      final parsed = parseQuickTask(raw, now: now);
+      expect(parsed.hour, 17);
+      final pending = session.capture(parsed, raw, calendar: 'jalali');
+      final rejected = expectLater(pending, throwsException);
+      // Even the completed debug zone Future yields before preparation resumes.
+      token = 'account-b';
+      await rejected;
+      expect(labelsApi.writes, isEmpty);
+      expect(api.all, isEmpty);
+    },
+  );
+
+  test(
+    'account switch after a label write prevents later draft writes',
+    () async {
+      final api = FakeTasksApi();
+      final labelsApi = _RecordingLabels();
+      var token = 'account-a';
+      labelsApi.afterCreate = () => token = 'account-b';
+      final labels = LabelsController(api: labelsApi, token: () => token);
+      addTearDown(labels.dispose);
+      final session = QuickCaptureSession(
+        api: api,
+        labels: labels,
+        token: () => token,
+        projects: () => [inbox],
+        defaultProject: () => inbox,
+      );
+      const raw = 'مطالعه @تلفن @خانه';
+      await expectLater(
+        session.capture(parseQuickTask(raw, now: now), raw, calendar: 'jalali'),
+        throwsException,
+      );
+      expect(labelsApi.writes, ['account-a']);
+      expect(api.all, isEmpty);
+    },
+  );
 
   test(
     'Today fallback day preserves explicit dates and project default stays undated',

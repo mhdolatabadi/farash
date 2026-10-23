@@ -48,10 +48,11 @@ class OfflineReadCache extends ChangeNotifier {
   static String scopeFor(Uri server, String token) =>
       sha256.convert(utf8.encode('${server.toString()}\n$token')).toString();
 
+  bool matchesScope(Uri server, String? token) =>
+      token != null && _scope == scopeFor(server, token);
+
   bool matches(Uri server, String? token, int generation) =>
-      token != null &&
-      generation == _epoch &&
-      _scope == scopeFor(server, token);
+      generation == _epoch && matchesScope(server, token);
 
   static bool allows(String path) => const {
     '/api/v1/me',

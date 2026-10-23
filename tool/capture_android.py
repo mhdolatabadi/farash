@@ -105,6 +105,8 @@ def main():
     capture('weaving-light')
     adb('shell', 'cmd', 'uimode', 'night', 'yes')
     capture('weaving-dark')
+    adb('shell', 'settings', 'put', 'system', 'font_scale', '1.3')
+    capture('today-font-1_3-dark')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')
     capture('weaving-large-text')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')

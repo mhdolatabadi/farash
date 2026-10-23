@@ -43,6 +43,12 @@ class QuickCaptureSession {
     if (current == null) {
       throw const ApiException('نشست شما منقضی شده است. دوباره وارد شوید.');
     }
+    void requireSession() {
+      if (token() != current) {
+        throw const ApiException('حساب تغییر کرده است؛ افزودن انجام نشد.');
+      }
+    }
+
     final fingerprint =
         '$raw\u0000${menuPriority.level}\u0000$calendar\u0000${defaultProject().id}';
     if (_created != null &&
@@ -82,10 +88,11 @@ class QuickCaptureSession {
         if (service == null) {
           throw const ApiException('بخش‌ها در این اتصال در دسترس نیستند.');
         }
-        final choices = (await service.listSections(
-          current,
-          target.id,
-        )).where((s) => s.name.toLowerCase() == name.toLowerCase()).toList();
+        final available = await service.listSections(current, target.id);
+        requireSession();
+        final choices = available
+            .where((s) => s.name.toLowerCase() == name.toLowerCase())
+            .toList();
         if (choices.length != 1) {
           throw const ApiException(
             'بخش پیدا نشد یا نامش تکراری است. نام بخش و پروژه را بررسی کنید.',
@@ -112,6 +119,7 @@ class QuickCaptureSession {
       final zone = day != null && (parsed.hour != null || recurring != null)
           ? await deviceTimeZone()
           : null;
+      requireSession();
       final due = day == null
           ? null
           : parsed.hour == null
@@ -138,6 +146,7 @@ class QuickCaptureSession {
       }
       final labelIds = <String>[];
       for (final name in parsed.labels) {
+        requireSession();
         final service = labels;
         if (service == null) {
           title = '$title @$name'.trim();
@@ -151,16 +160,17 @@ class QuickCaptureSession {
             'نام برچسب تکراری است. برچسب را از جزئیات انتخاب کنید.',
           );
         }
-        labelIds.add(
-          matches.isEmpty
-              ? (await service.create(LabelDraft(name: name))).id
-              : matches.single.id,
-        );
+        if (matches.isEmpty) {
+          requireSession();
+          final label = await service.create(LabelDraft(name: name));
+          requireSession();
+          labelIds.add(label.id);
+        } else {
+          labelIds.add(matches.single.id);
+        }
       }
       if (title.isEmpty) title = raw.trim();
-      if (token() != current) {
-        throw const ApiException('حساب تغییر کرده است؛ افزودن انجام نشد.');
-      }
+      requireSession();
       final task = await api.createTask(
         current,
         TaskDraft(

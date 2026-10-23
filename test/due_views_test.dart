@@ -222,6 +222,13 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'مطالعه #کار /برنامه');
+    await tester.pump();
+    expect(
+      tester
+          .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.add))
+          .onPressed,
+      isNotNull,
+    );
     await tester.tap(find.byTooltip('افزودن کار'));
     await tester.pumpAndSettle();
     expect(api.all.single.projectId, 'work');
@@ -235,6 +242,13 @@ void main() {
   ) async {
     await pump(tester, DueView.today);
     await tester.enterText(find.byType(TextField), 'مطالعه #گم‌شده');
+    await tester.pump();
+    expect(
+      tester
+          .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.add))
+          .onPressed,
+      isNotNull,
+    );
     await tester.tap(find.byTooltip('افزودن کار'));
     await tester.pumpAndSettle();
     expect(api.all, isEmpty);
@@ -288,8 +302,16 @@ void main() {
       expect(recurring.all, hasLength(1));
       final id = recurring.all.single.id;
       expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
+      expect(
+        find.textContaining('کار ساخته شد اما تکرارش ذخیره نشد'),
+        findsOneWidget,
+      );
+      expect(find.byType(SnackBar), findsNothing);
+      expect(tester.takeException(), isNull);
       recurring.failRule = false;
-      await tester.tap(find.byTooltip('ذخیرهٔ تکرار کار ساخته‌شده'));
+      final retry = find.byTooltip('ذخیرهٔ تکرار کار ساخته‌شده');
+      expect(tester.getRect(retry).bottom, lessThanOrEqualTo(510));
+      await tester.tap(retry);
       await tester.pumpAndSettle();
       expect(recurring.all, hasLength(1));
       expect(recurring.paths, [
