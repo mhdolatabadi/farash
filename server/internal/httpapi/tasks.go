@@ -177,6 +177,10 @@ func writeTaskError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "task_not_found")
 	case errors.Is(err, store.ErrTaskProject):
 		writeError(w, http.StatusNotFound, "project_not_found")
+	case errors.Is(err, store.ErrRecurrenceConflict):
+		writeError(w, http.StatusConflict, "recurrence_state_conflict")
+	case errors.Is(err, store.ErrInvalidRecurrence):
+		writeError(w, http.StatusBadRequest, "invalid_recurrence")
 	case errors.Is(err, store.ErrInvalidTask):
 		writeError(w, http.StatusBadRequest, "invalid_task")
 	case errors.Is(err, store.ErrParentNotFound):

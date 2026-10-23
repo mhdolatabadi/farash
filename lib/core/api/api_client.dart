@@ -1,3 +1,4 @@
+import 'package:farash/features/habits/habits_controller.dart';
 import 'package:farash/features/scrum/scrum.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'dart:convert';
@@ -208,6 +209,7 @@ class ApiClient
         SectionsApi,
         LabelsApi,
         TimeApi,
+        HabitsApi,
         ScrumApi {
   ApiClient(this.baseUri, {http.Client? client})
     : _client = client ?? http.Client();
@@ -232,6 +234,14 @@ class ApiClient
 
   @override
   Future<Map<String, dynamic>> agileRequest(
+    String token,
+    String method,
+    String path, {
+    Map<String, Object?>? body,
+  }) => timeRequest(token, method, path, body: body);
+
+  @override
+  Future<Map<String, dynamic>> habitRequest(
     String token,
     String method,
     String path, {
@@ -702,6 +712,9 @@ class ApiClient
     if (code == 'invalid_password') {
       return 'رمز عبور باید بین ۸ تا ۷۲ کاراکتر باشد.';
     }
+    if (code == 'habit_limit_reached') return 'تعداد عادت‌ها به سقف رسیده است.';
+    if (code == 'invalid_habit') return 'مشخصات عادت درست نیست.';
+    if (code == 'invalid_habit_entry') return 'این روز را نمی‌توان ثبت کرد.';
     if (status == 401) return 'نشست شما منقضی شده است. دوباره وارد شوید.';
     if (status == 404) return 'پیدا نشد.';
     if (status == 429) {
