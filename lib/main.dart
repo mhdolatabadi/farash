@@ -1,3 +1,5 @@
+import 'package:farash/core/offline/offline_read_cache.dart';
+import 'package:farash/core/offline/offline_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:farash/core/settings/start_view.dart';
 import 'package:farash/core/settings/theme_preferences.dart';
@@ -60,7 +62,10 @@ class _FarashAppState extends State<FarashApp> {
       widget.apiClient ??
       (AppConfiguration.apiBaseUri == null
           ? null
-          : ApiClient(AppConfiguration.apiBaseUri!));
+          : ApiClient(
+              AppConfiguration.apiBaseUri!,
+              offlineCache: OfflineReadCache(),
+            ));
   late final SessionStore _sessionStore =
       widget.sessionStore ?? SecureSessionStore();
   late final ProjectsApi? _projectsApi = widget.projectsApi ?? _apiClient;
@@ -84,6 +89,7 @@ class _FarashAppState extends State<FarashApp> {
   AuthSession? _session;
   _SessionState _state = _SessionState.restoring;
   bool _restoreStarted = false;
+  int _sessionEpoch = 0;
 
   @override
   void dispose() {
@@ -95,21 +101,25 @@ class _FarashAppState extends State<FarashApp> {
   /// Restores the saved sign-in. A rejected token is dropped; a network
   /// failure keeps it so the user can retry without signing in again.
   Future<void> _restoreSession() async {
+    final generation = ++_sessionEpoch;
     final api = _apiClient;
     setState(() => _state = _SessionState.restoring);
     final token = await _sessionStore.readToken();
+    if (!mounted || generation != _sessionEpoch) return;
     if (api == null || token == null) {
       if (mounted) setState(() => _state = _SessionState.ready);
       return;
     }
     try {
+      await api.activateOfflineSession(token);
       final user = await api.me(token);
-      if (!mounted) return;
+      if (!mounted || generation != _sessionEpoch) return;
       setState(() {
         _session = AuthSession(token: token, user: user);
         _state = _SessionState.ready;
       });
     } on ApiException catch (error) {
+      if (!mounted || generation != _sessionEpoch) return;
       if (error.isUnauthorized) await _sessionStore.clear();
       if (!mounted) return;
       setState(() {
@@ -121,15 +131,55 @@ class _FarashAppState extends State<FarashApp> {
   }
 
   Future<void> _setSession(AuthSession session) async {
+    ++_sessionEpoch;
+    await _apiClient?.rememberAuthenticatedIdentity(session);
     await _sessionStore.writeToken(session.token);
     if (mounted) setState(() => _session = session);
   }
 
   Future<void> _signOut() async {
+    ++_sessionEpoch;
+    await _apiClient?.clearOfflineSession();
     // Never show one account's data to the next one.
     _projects?.clear();
     await _sessionStore.clear();
     if (mounted) setState(() => _session = null);
+  }
+
+  Future<void> _checkBackend() async {
+    final check = widget.healthCheck ?? _apiClient?.checkHealth;
+    if (check == null) return;
+    try {
+      await check();
+    } on ApiException catch (error) {
+      final api = _apiClient;
+      if (error.statusCode != null || api == null) rethrow;
+      final token = await _sessionStore.readToken();
+      if (token == null) rethrow;
+      await api.activateOfflineSession(token);
+      if (!await api.hasOfflineIdentity(token)) rethrow;
+      api.offlineCache?.usedOffline();
+    }
+  }
+
+  Future<void> _reconnect() async {
+    final api = _apiClient;
+    final session = _session;
+    if (api == null || session == null) return;
+    try {
+      await api.reconnect(session.token);
+      await _projects?.load();
+    } on ApiException catch (error) {
+      if (error.isUnauthorized) await _signOut();
+      rethrow;
+    }
+  }
+
+  Widget _offlineShell(Widget child) {
+    final cache = _apiClient?.offlineCache;
+    return cache == null
+        ? child
+        : OfflineShell(cache: cache, onReconnect: _reconnect, child: child);
   }
 
   Widget _signedInOrAuth() {
@@ -153,16 +203,18 @@ class _FarashAppState extends State<FarashApp> {
         apiClient: api,
         onAuthenticated: _setSession,
       ),
-      _SessionState.ready => HomeScreen(
-        key: ValueKey(session!.user.id),
-        email: session.user.email,
-        projects: projects,
-        tasksApi: tasks,
-        sectionsApi: _sectionsApi,
-        token: () => _session?.token,
-        onLogout: _signOut,
-        startView: _startView,
-        labelsApi: widget.labelsApi ?? _apiClient,
+      _SessionState.ready => _offlineShell(
+        HomeScreen(
+          key: ValueKey(session!.user.id),
+          email: session.user.email,
+          projects: projects,
+          tasksApi: tasks,
+          sectionsApi: _sectionsApi,
+          token: () => _session?.token,
+          onLogout: _signOut,
+          startView: _startView,
+          labelsApi: widget.labelsApi ?? _apiClient,
+        ),
       ),
     };
   }
@@ -190,7 +242,9 @@ class _FarashAppState extends State<FarashApp> {
       theme: FarashTheme.light(),
       darkTheme: FarashTheme.dark(),
       home: BackendGate(
-        healthCheck: widget.healthCheck ?? _apiClient?.checkHealth,
+        healthCheck: widget.healthCheck != null || _apiClient != null
+            ? _checkBackend
+            : null,
         child: Builder(builder: (_) => _signedInOrAuth()),
       ),
     );

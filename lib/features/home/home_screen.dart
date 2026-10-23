@@ -2,6 +2,8 @@ import 'package:farash/features/habits/habits_controller.dart';
 import 'package:farash/features/habits/habits_view.dart';
 import 'package:farash/features/search/search.dart';
 import 'package:farash/features/search/search_view.dart';
+import 'package:farash/features/portability/export_api.dart';
+import 'package:farash/features/portability/export_dialog.dart';
 import 'package:farash/features/scrum/scrum.dart';
 import 'package:farash/features/scrum/scrum_view.dart';
 import 'package:farash/core/text/persian_digits.dart';
@@ -13,6 +15,8 @@ import 'package:farash/features/focus/focus_controller.dart';
 import 'package:farash/features/focus/focus_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:farash/features/tasks/application/quick_capture.dart';
+import 'package:farash/features/tasks/presentation/quick_add_dialog.dart';
 import 'package:farash/features/progress/progress_card.dart';
 import 'package:farash/app/motion.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
@@ -105,6 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    FocusManager.instance.addEarlyKeyEventHandler(_quickKey);
     _tracker = widget.tasksApi is TimeApi
         ? TimeTracker(api: widget.tasksApi as TimeApi, token: widget.token)
         : null;
@@ -124,6 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    FocusManager.instance.removeEarlyKeyEventHandler(_quickKey);
     if (widget.tasksApi case final ApiClient api) {
       api.completedTask.removeListener(_completedTime);
       api.progressChanges.removeListener(_refreshTracker);
@@ -164,6 +170,82 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     _focusWasFinished = finished;
   }
+
+  bool _quickAdding = false;
+
+  KeyEventResult _quickKey(KeyEvent event) {
+    if (event is! KeyDownEvent ||
+        event.logicalKey != LogicalKeyboardKey.keyQ ||
+        HardwareKeyboard.instance.isControlPressed ||
+        HardwareKeyboard.instance.isAltPressed ||
+        HardwareKeyboard.instance.isMetaPressed ||
+        HardwareKeyboard.instance.isShiftPressed ||
+        _quickAdding ||
+        !mounted) {
+      return KeyEventResult.ignored;
+    }
+    final focused = FocusManager.instance.primaryFocus?.context;
+    // The shell remains mounted behind normal pages such as search. Keep
+    // capture available there, but never steal keys from a modal editor.
+    final route = ModalRoute.of(focused ?? context);
+    if (route is PopupRoute || route?.isCurrent != true) {
+      return KeyEventResult.ignored;
+    }
+    if (focused?.widget is EditableText ||
+        focused?.findAncestorWidgetOfExactType<EditableText>() != null) {
+      return KeyEventResult.ignored;
+    }
+    _quickAdd();
+    return KeyEventResult.handled;
+  }
+
+  Future<void> _quickAdd() async {
+    if (_quickAdding) return;
+    final selected =
+        ModalRoute.of(context)?.isCurrent == true &&
+            _section == 1 &&
+            _view == null &&
+            _labelId == null
+        ? _selected
+        : null;
+    final target =
+        selected != null && !selected.isFolder && !selected.isArchived
+        ? selected
+        : widget.projects.inbox;
+    if (target == null || target.isFolder || target.isArchived) return;
+    _quickAdding = true;
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.pop(context);
+    }
+    final session = QuickCaptureSession(
+      api: widget.tasksApi,
+      sections: widget.sectionsApi,
+      labels: _labels,
+      token: widget.token,
+      projects: () => widget.projects.projects,
+      defaultProject: () => target,
+    );
+    try {
+      final task = await showDialog<Task>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) =>
+            QuickAddDialog(projectName: target.displayName, session: session),
+      );
+      if (task != null && mounted) {
+        _refreshCount();
+        // Recreate the selected task page so the confirmed task appears.
+        setState(() => _captureRevision++);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('«${task.title}» اضافه شد.')));
+      }
+    } finally {
+      _quickAdding = false;
+    }
+  }
+
+  int _captureRevision = 0;
 
   void _refreshTracker() {
     _tracker?.load();
@@ -486,6 +568,10 @@ class _HomeScreenState extends State<HomeScreen> {
           email: widget.email,
           onLogout: widget.onLogout,
           startView: widget.startView,
+          exportApi: widget.tasksApi is ExportApi
+              ? widget.tasksApi as ExportApi
+              : null,
+          token: widget.token,
         ),
         if (widget.tasksApi case final SearchApi api)
           ListTile(
@@ -510,6 +596,12 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
           ),
+        ListTile(
+          leading: const Icon(Icons.add_task),
+          title: const Text('افزودن سریع کار'),
+          subtitle: const Text('میانبر: q'),
+          onTap: _quickAdd,
+        ),
         if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint) ...[
           for (final (index, icon, title) in [
             // Today and the lists are already below; only the tools here.
@@ -741,7 +833,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           if (_tracker != null)
                             TrackerMessage(tracker: _tracker),
-                          Expanded(child: page),
+                          Expanded(
+                            child: KeyedSubtree(
+                              key: ValueKey(_captureRevision),
+                              child: page,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -776,7 +873,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           if (_tracker != null)
                             TrackerMessage(tracker: _tracker),
-                          Expanded(child: page),
+                          Expanded(
+                            child: KeyedSubtree(
+                              key: ValueKey(_captureRevision),
+                              child: page,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -791,7 +893,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-enum _AccountAction { calendar, startView, logout }
+enum _AccountAction { calendar, startView, export, logout }
 
 /// The app's name with the account beneath it, and one menu for the
 /// account's actions, so the email keeps its width.
@@ -800,11 +902,15 @@ class _AccountHeader extends StatelessWidget {
     required this.email,
     required this.onLogout,
     this.startView,
+    this.exportApi,
+    required this.token,
   });
 
   final String email;
   final VoidCallback onLogout;
   final StartView? startView;
+  final ExportApi? exportApi;
+  final String? Function() token;
 
   @override
   Widget build(BuildContext context) {
@@ -850,6 +956,11 @@ class _AccountHeader extends StatelessWidget {
                 CalendarScope.of(context),
               ),
               _AccountAction.startView => _pickStartView(context, startView!),
+              _AccountAction.export => showAccountExport(
+                context,
+                exportApi!,
+                token,
+              ),
               _AccountAction.logout => onLogout(),
             },
             itemBuilder: (context) => [
@@ -866,6 +977,14 @@ class _AccountHeader extends StatelessWidget {
                   child: ListTile(
                     leading: Icon(Icons.home_outlined),
                     title: Text('صفحهٔ آغاز'),
+                  ),
+                ),
+              if (exportApi != null)
+                const PopupMenuItem(
+                  value: _AccountAction.export,
+                  child: ListTile(
+                    leading: Icon(Icons.download_outlined),
+                    title: Text('خروجی داده‌های من'),
                   ),
                 ),
               const PopupMenuItem(
