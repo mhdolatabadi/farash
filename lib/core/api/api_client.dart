@@ -304,8 +304,10 @@ class ApiClient
       cache.epoch,
       _uri('/api/v1/me').toString(),
     );
-    if (body is! Map<String, dynamic> || body['user'] is! Map<String, dynamic>)
+    if (body is! Map<String, dynamic> ||
+        body['user'] is! Map<String, dynamic>) {
       return false;
+    }
     final user = body['user'] as Map<String, dynamic>;
     return user['id'] is String && user['email'] is String;
   }
