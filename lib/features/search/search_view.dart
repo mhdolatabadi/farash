@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/atelier.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/projects/data/project.dart';
@@ -377,7 +376,7 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
                 ),
               ],
               const SizedBox(height: 16),
-              const ThreadRule(),
+              const Divider(),
               const SizedBox(height: 16),
               if (loading)
                 const LinearProgressIndicator(
