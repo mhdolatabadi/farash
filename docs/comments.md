@@ -20,6 +20,13 @@ per minute/account/process; multi-instance global rate limiting is not claimed.
 Archived targets remain readable and reject writes. Foreign/missing/deleted
 targets return 404. Parent project/task deletion and account deletion cascade.
 
+A changed task comment also updates the task version. This prevents recurring
+undo from deleting a successor that acquired comment history, including a comment
+that was subsequently edited or deleted. An idempotent create retry does not
+update the task version; edits and deletes conservatively update it, including
+a repeated delete. Project comments do not update a
+task version.
+
 Migration 018 is additive. Preserve its table during code rollback to retain
 comments. This API is owner-only until a complete shared authorization policy
 is integrated. The client editor, row counts, notifications, attachment storage,

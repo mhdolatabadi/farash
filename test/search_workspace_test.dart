@@ -131,13 +131,33 @@ void main() {
         });
       }
       api.fail = true;
+      final requestsBeforeFailure = api.requests.length;
+      // Submitting a search dismisses the keyboard. Reconnect the input before
+      // sending another IME action, as a user editing and submitting would.
+      await tester.showKeyboard(find.byType(TextField).first);
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pumpAndSettle();
-      // The text field has its own Scrollable; reveal the already-built
-      // recovery message through its nearest scrolling ancestor instead.
-      await tester.ensureVisible(find.textContaining('عبارت فیلتر معتبر نیست'));
+      expect(api.requests.length, requestsBeforeFailure + 1);
+      // At large text sizes this lazy ListView has not built the error yet.
+      // Select its scrollable explicitly: the text field also owns one.
+      await tester.scrollUntilVisible(
+        find.textContaining('عبارت فیلتر معتبر نیست'),
+        160,
+        scrollable: find
+            .descendant(
+              of: find.byType(ListView),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
       expect(find.textContaining('عبارت فیلتر معتبر نیست'), findsOneWidget);
-      expect(find.text('تلاش دوباره'), findsOneWidget);
+      await tester.ensureVisible(find.text('تلاش دوباره'));
+      api.fail = false;
+      await tester.tap(find.text('تلاش دوباره'));
+      await tester.pumpAndSettle();
+      expect(api.requests.length, requestsBeforeFailure + 2);
+      expect(find.textContaining('عبارت فیلتر معتبر نیست'), findsNothing);
+      expect(find.text('مطالعهٔ کتاب طراحی سیستم'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }
