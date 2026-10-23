@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:farash/core/settings/start_view.dart';
+import 'package:farash/core/settings/theme_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/calendar_settings.dart';
@@ -31,6 +32,7 @@ class FarashApp extends StatefulWidget {
     this.calendarSettings,
     this.startView,
     this.labelsApi,
+    this.themePreferences,
   });
 
   /// Test overrides; by default the app talks to
@@ -46,6 +48,7 @@ class FarashApp extends StatefulWidget {
   /// Which list opens first; per device.
   final StartView? startView;
   final LabelsApi? labelsApi;
+  final ThemePreferences? themePreferences;
 
   @override
   State<FarashApp> createState() => _FarashAppState();
@@ -75,6 +78,10 @@ class _FarashAppState extends State<FarashApp> {
       widget.startView ??
       (StartView(store: SecureCalendarSettingsStore())..load());
 
+  late final ThemePreferences _appearance =
+      widget.themePreferences ??
+      (ThemePreferences(store: SecureCalendarSettingsStore())..load());
+
   AuthSession? _session;
   _SessionState _state = _SessionState.restoring;
   bool _restoreStarted = false;
@@ -82,6 +89,7 @@ class _FarashAppState extends State<FarashApp> {
   @override
   void dispose() {
     _projects?.dispose();
+    if (widget.themePreferences == null) _appearance.dispose();
     super.dispose();
   }
 
@@ -161,12 +169,20 @@ class _FarashAppState extends State<FarashApp> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: _appearance,
+    builder: (context, _) => _buildApp(),
+  );
+
+  Widget _buildApp() {
     return MaterialApp(
       title: 'Farash',
-      builder: (context, child) => CalendarScope(
-        settings: _calendar,
-        child: GlassBackdrop(child: child!),
+      builder: (context, child) => ThemePreferencesScope(
+        preferences: _appearance,
+        child: CalendarScope(
+          settings: _calendar,
+          child: GlassBackdrop(child: child!),
+        ),
       ),
       debugShowCheckedModeBanner: false,
       // Persian first: right-to-left layout and Persian Material strings
@@ -174,6 +190,7 @@ class _FarashAppState extends State<FarashApp> {
       locale: const Locale('fa'),
       supportedLocales: const [Locale('fa')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      themeMode: _appearance.mode,
       theme: FarashTheme.light(),
       darkTheme: FarashTheme.dark(),
       home: BackendGate(

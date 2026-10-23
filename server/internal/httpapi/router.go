@@ -38,11 +38,17 @@ func NewHandler(config Config) http.Handler {
 		if data, ok := config.Store.(syncStore); ok {
 			mux.HandleFunc("POST /api/v1/sync", syncHandler(auth, data))
 		}
+		if data, ok := config.Store.(exportStore); ok {
+			mux.HandleFunc("GET /api/v1/export", exportHandler(auth, data))
+		}
 		if data, ok := config.Store.(progressStore); ok {
 			handler := progressHandler(auth, data)
 			mux.HandleFunc("GET /api/v1/progress", handler)
 			mux.HandleFunc("PATCH /api/v1/progress", handler)
 			mux.HandleFunc("PATCH /api/v1/progress/challenge", handler)
+		}
+		if data, ok := config.Store.(collaborationStore); ok {
+			collaborationRoutes(mux, auth, data)
 		}
 		if data, ok := config.Store.(agileStore); ok {
 			agileRoutes(mux, auth, data)
