@@ -3,6 +3,8 @@ import 'package:farash/features/habits/habits_view.dart';
 import 'package:farash/features/habits/habit_detail.dart';
 import 'package:farash/features/habits/reminders/habit_reminders.dart';
 import 'package:farash/features/habits/reminders/local_reminders.dart';
+import 'package:farash/features/search/search.dart';
+import 'package:farash/features/search/search_view.dart';
 import 'package:farash/features/scrum/scrum.dart';
 import 'package:farash/features/scrum/scrum_view.dart';
 import 'package:farash/core/text/persian_digits.dart';
@@ -538,6 +540,29 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           onLogout: widget.onLogout,
           startView: widget.startView,
         ),
+        if (widget.tasksApi case final SearchApi api)
+          ListTile(
+            leading: const Icon(Icons.search),
+            title: const Text('جست‌وجو و فیلترها'),
+            onTap: () {
+              _scaffoldKey.currentState?.closeDrawer();
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => TrackerScope(
+                    tracker: _tracker,
+                    child: SearchWorkspace(
+                      api: api,
+                      tasks: widget.tasksApi,
+                      sections: widget.sectionsApi,
+                      labels: _labels,
+                      token: widget.token,
+                      projects: () => widget.projects.projects,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint) ...[
           for (final (index, icon, title) in [
             // Today and the lists are already below; only the tools here.

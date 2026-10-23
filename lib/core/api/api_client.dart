@@ -1,6 +1,8 @@
 import 'package:farash/features/habits/habits_controller.dart';
+import 'package:farash/features/search/search.dart';
 import 'package:farash/features/scrum/scrum.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
+
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -210,7 +212,8 @@ class ApiClient
         LabelsApi,
         TimeApi,
         HabitsApi,
-        ScrumApi {
+        ScrumApi,
+        SearchApi {
   ApiClient(this.baseUri, {http.Client? client})
     : _client = client ?? http.Client();
 
@@ -247,6 +250,26 @@ class ApiClient
     String path, {
     Map<String, Object?>? body,
   }) => timeRequest(token, method, path, body: body);
+
+  @override
+  Future<Map<String, dynamic>> searchRequest(
+    String token,
+    String method,
+    String path, {
+    Map<String, Object?>? body,
+  }) async {
+    final uri = Uri.parse(path);
+    final result = await _send(
+      method,
+      uri.path,
+      token: token,
+      body: body,
+      query: uri.queryParameters,
+    );
+    return result == null
+        ? <String, dynamic>{}
+        : result as Map<String, dynamic>;
+  }
 
   final completedTask = ValueNotifier<Task?>(null);
   final Uri baseUri;
