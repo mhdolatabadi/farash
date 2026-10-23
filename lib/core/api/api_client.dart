@@ -1,5 +1,6 @@
 import 'package:farash/features/habits/habits_controller.dart';
 import 'package:farash/features/search/search.dart';
+import 'package:farash/features/portability/export_api.dart';
 import 'package:farash/features/scrum/scrum.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 
@@ -213,7 +214,8 @@ class ApiClient
         TimeApi,
         HabitsApi,
         ScrumApi,
-        SearchApi {
+        SearchApi,
+        ExportApi {
   ApiClient(this.baseUri, {http.Client? client})
     : _client = client ?? http.Client();
 
@@ -270,6 +272,10 @@ class ApiClient
         ? <String, dynamic>{}
         : result as Map<String, dynamic>;
   }
+
+  @override
+  Future<Uint8List> exportAccount(String token) =>
+      downloadAccountExport(_client, _uri('/api/v1/export'), token);
 
   final completedTask = ValueNotifier<Task?>(null);
   final Uri baseUri;
