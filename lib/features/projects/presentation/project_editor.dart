@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/motion.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/projects/presentation/project_messages.dart';
@@ -248,7 +249,7 @@ class _ColorChooser extends StatelessWidget {
                   dimension: 48,
                   child: Center(
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
+                      duration: Motion.of(context, Motion.quick),
                       width: 28,
                       height: 28,
                       decoration: BoxDecoration(
@@ -262,10 +263,17 @@ class _ColorChooser extends StatelessWidget {
                         ),
                       ),
                       child: color.hex == selected
-                          ? const Icon(
+                          ? Icon(
                               Icons.check,
                               size: 16,
-                              color: Colors.white,
+                              // Pale swatches (lime, yellow) take a dark check.
+                              color:
+                                  ThemeData.estimateBrightnessForColor(
+                                        color.color,
+                                      ) ==
+                                      Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black,
                             )
                           : null,
                     ),

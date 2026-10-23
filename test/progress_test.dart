@@ -6,7 +6,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:farash/app/app_theme.dart';
-import 'package:farash/app/glass.dart';
 
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/time_zone.dart';
@@ -95,10 +94,8 @@ void main() {
           supportedLocales: const [Locale('fa')],
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
           theme: FarashTheme.light(),
-          builder: (context, child) => Directionality(
-            textDirection: TextDirection.rtl,
-            child: GlassBackdrop(child: child!),
-          ),
+          builder: (context, child) =>
+              Directionality(textDirection: TextDirection.rtl, child: child!),
           home: Scaffold(
             body: ProgressCard(api: api, token: () => 'token'),
           ),

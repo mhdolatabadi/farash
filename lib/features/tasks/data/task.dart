@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:farash/features/tasks/data/task_dates.dart';
 
 export 'package:farash/features/tasks/data/task_dates.dart';
@@ -123,17 +122,17 @@ class Task {
 
 /// P1 is the most urgent; P4 is the default "no priority".
 enum TaskPriority {
-  p1(1, 'اولویت ۱', Color(0xFFD1453B)),
-  p2(2, 'اولویت ۲', Color(0xFFEB8909)),
-  p3(3, 'اولویت ۳', Color(0xFF246FE0)),
-  p4(4, 'اولویت ۴', Color(0xFF8A8A8A));
+  p1(1, 'اولویت ۱'),
+  p2(2, 'اولویت ۲'),
+  p3(3, 'اولویت ۳'),
+  p4(4, 'اولویت ۴');
 
-  const TaskPriority(this.level, this.label, this.color);
+  /// Colors come from the theme: see `priority_color.dart`.
+  const TaskPriority(this.level, this.label);
 
   /// The API's 1–4 value.
   final int level;
   final String label;
-  final Color color;
 
   static TaskPriority fromLevel(int level) =>
       values.firstWhere((p) => p.level == level, orElse: () => p4);

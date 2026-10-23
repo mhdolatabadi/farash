@@ -19,7 +19,7 @@ double _contrast(Color a, Color b) {
 }
 
 void main() {
-  group('weaving palette', () {
+  group('calm palette', () {
     for (final brightness in Brightness.values) {
       test('text keeps 4.5:1 contrast ($brightness)', () {
         final theme = brightness == Brightness.dark
@@ -43,51 +43,39 @@ void main() {
       });
     }
 
-    test('the theme and the glass read the same palette', () {
+    test('the theme reads the calm palette', () {
       final theme = FarashTheme.light();
-      expect(theme.colorScheme.primary, const Color(0xFF98503D));
-      expect(FarashTheme.dark().colorScheme.primary, const Color(0xFFF2B49A));
-      expect(theme.colorScheme.error, FarashPalette.weaving.light.overdue);
+      expect(theme.colorScheme.primary, const Color(0xFF0E7490));
+      expect(theme.colorScheme.surface, Colors.white);
+      expect(FarashTheme.dark().colorScheme.primary, const Color(0xFFC8F25A));
+      expect(FarashTheme.dark().colorScheme.surface, const Color(0xFF0F1115));
+      expect(theme.colorScheme.error, FarashPalette.calm.light.overdue);
       expect(
-        theme.extension<FarashGlassColors>()!.colors,
-        FarashPalette.weaving.light,
+        theme.extension<FarashPaletteColors>()!.colors,
+        FarashPalette.calm.light,
       );
     });
 
     for (final brightness in Brightness.values) {
-      test('text reads on glass and on sheets ($brightness)', () {
+      test('text reads on sheets and selection ($brightness)', () {
         final theme = brightness == Brightness.dark
             ? FarashTheme.dark()
             : FarashTheme.light();
         final c = theme.colorScheme;
-        final glass = FarashPalette.weaving.of(brightness);
-        // A pane over each stop of the backdrop, lights aside.
-        for (final ground in glass.backdrop) {
-          final pane = Color.alphaBlend(glass.pane, ground);
-          for (final (name, fg) in [
-            ('onSurface', c.onSurface),
-            ('onSurfaceVariant', c.onSurfaceVariant),
-            ('primary', c.primary),
-            ('tertiary', c.tertiary),
-            ('error', c.error),
-          ]) {
-            expect(
-              _contrast(fg, pane),
-              greaterThanOrEqualTo(4.5),
-              reason: '$name on glass over $ground',
-            );
-          }
-          // Priority marks are not text; 3:1 keeps them visible.
-          for (final mark in glass.priorities) {
-            expect(_contrast(mark, pane), greaterThanOrEqualTo(3));
-          }
-        }
         for (final sheet in [c.surfaceContainerLow, c.surfaceContainer]) {
           expect(_contrast(c.onSurface, sheet), greaterThanOrEqualTo(4.5));
           expect(
             _contrast(c.onSurfaceVariant, sheet),
             greaterThanOrEqualTo(4.5),
           );
+        }
+        expect(
+          _contrast(c.onPrimaryContainer, c.primaryContainer),
+          greaterThanOrEqualTo(4.5),
+        );
+        // Priority marks are not text; 3:1 keeps them visible.
+        for (final mark in FarashPalette.calm.of(brightness).priorities) {
+          expect(_contrast(mark, c.surface), greaterThanOrEqualTo(3));
         }
       });
     }
@@ -120,20 +108,10 @@ void main() {
           find.ancestor(of: label, matching: find.byType(DecoratedBox)).first,
         );
         final fill = (box.decoration as BoxDecoration).color!;
-        final glass = FarashPalette.weaving.of(brightness);
-        for (final ground in [
-          ...glass.backdrop,
-          glass.light,
-          glass.mist,
-          glass.glow,
-        ]) {
-          final room = Color.alphaBlend(ground, glass.backdrop.first);
-          final pane = Color.alphaBlend(glass.pane, room);
-          expect(
-            _contrast(ink, Color.alphaBlend(fill, pane)),
-            greaterThanOrEqualTo(4.5),
-          );
-        }
+        expect(
+          _contrast(ink, Color.alphaBlend(fill, theme.colorScheme.surface)),
+          greaterThanOrEqualTo(4.5),
+        );
         expect(tester.takeException(), isNull);
       });
     }
@@ -198,6 +176,7 @@ void main() {
     testWidgets('a new task grows into the list', (tester) async {
       await pumpView(tester);
       await tester.enterText(find.byType(TextField), 'تازه');
+      await tester.pump();
       await tester.tap(find.byTooltip('افزودن کار'));
       // The row appears, starts growing on the next frame, and is midway
       // a little later.
