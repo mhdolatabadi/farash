@@ -1,3 +1,5 @@
+import 'package:farash/features/habits/habits_controller.dart';
+import 'package:farash/features/habits/habits_view.dart';
 import 'package:farash/features/scrum/scrum.dart';
 import 'package:farash/features/scrum/scrum_view.dart';
 import 'package:farash/core/text/persian_digits.dart';
@@ -73,6 +75,11 @@ class _HomeScreenState extends State<HomeScreen> {
   final _focus = FocusController();
   bool _focusWasFinished = false;
   late final TimeTracker? _tracker;
+
+  /// Habits live in the shell so check-ins survive switching sections.
+  late final HabitsController? _habits = widget.tasksApi is HabitsApi
+      ? HabitsController(api: widget.tasksApi as HabitsApi, token: widget.token)
+      : null;
   Task? _focusTask;
   String? _focusEntry;
 
@@ -122,6 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _tracker?.removeListener(_trackerChanged);
     _tracker?.dispose();
     _focus.removeListener(_focusChanged);
+    _habits?.dispose();
     _focus.dispose();
     widget.startView?.removeListener(_applyStartView);
     _labels?.dispose();
@@ -437,8 +445,23 @@ class _HomeScreenState extends State<HomeScreen> {
           const Icon(Icons.timer_rounded),
           'زمان‌ها',
         ),
+      if (_habits != null)
+        (
+          const Icon(Icons.task_alt_outlined),
+          const Icon(Icons.task_alt_rounded),
+          'عادت‌ها',
+        ),
     ];
   }
+
+  /// The sections behind the phone's bottom destinations, in order.
+  List<int> get _navSections => [
+    0,
+    1,
+    2,
+    if (_tracker != null) 3,
+    if (_habits != null) 4,
+  ];
 
   Widget _sidebar() => ProjectSidebar(
     controller: widget.projects,
@@ -467,6 +490,7 @@ class _HomeScreenState extends State<HomeScreen> {
             // Today and the lists are already below; only the tools here.
             (2, Icons.timelapse_outlined, 'تمرکز'),
             if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
+            if (_habits != null) (4, Icons.task_alt_rounded, 'عادت‌ها'),
           ])
             Material(
               type: MaterialType.transparency,
@@ -529,6 +553,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     beforeStart: _beforeFocusStart,
                     beforePause: _beforeFocusPause,
                     timeLinked: _tracker != null && _focusTask != null,
+                  )
+                : _section == 4 && _habits != null
+                ? HabitsView(
+                    key: const ValueKey('habits-view'),
+                    controller: _habits,
                   )
                 : _section == 3 && _tracker != null
                 ? TimeTrackingView(
@@ -634,8 +663,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: ListenableBuilder(
                           listenable: _focus,
                           builder: (context, _) => NavigationBar(
-                            selectedIndex: _section,
-                            onDestinationSelected: _switchSection,
+                            selectedIndex: _navSections.indexOf(_section),
+                            onDestinationSelected: (i) =>
+                                _switchSection(_navSections[i]),
                             destinations: [
                               for (final (icon, selectedIcon, label)
                                   in _destinations())
@@ -657,8 +687,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: ListenableBuilder(
                           listenable: _focus,
                           builder: (context, _) => NavigationRail(
-                            selectedIndex: _section,
-                            onDestinationSelected: _switchSection,
+                            selectedIndex: _navSections.indexOf(_section),
+                            onDestinationSelected: (i) =>
+                                _switchSection(_navSections[i]),
                             labelType: NavigationRailLabelType.all,
                             groupAlignment: 0,
                             destinations: [
