@@ -107,6 +107,7 @@ class _HabitEditorState extends State<HabitEditor> {
   late HabitTarget _bound = _old?.target ?? HabitTarget.atLeast;
   String? _nameError, _targetError;
   bool _saving = false;
+  final _createAttempt = HabitCreateAttempt();
 
   bool get _numeric => _kind == HabitKind.numeric;
 
@@ -119,6 +120,7 @@ class _HabitEditorState extends State<HabitEditor> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final name = _name.text.trim();
     final target = _numeric ? parseAmount(_target.text) : 0.0;
     setState(() {
@@ -146,7 +148,7 @@ class _HabitEditorState extends State<HabitEditor> {
     final old = _old;
     final Habit? saved;
     if (old == null) {
-      saved = await widget.controller.create(draft);
+      saved = await widget.controller.create(draft, attempt: _createAttempt);
     } else {
       saved = await widget.controller.update(old, draft)
           ? widget.controller.byId(old.id)

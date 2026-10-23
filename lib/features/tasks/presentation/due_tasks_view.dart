@@ -3,13 +3,13 @@ import 'package:farash/app/motion.dart';
 import 'package:farash/app/list_app_bar.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/calendar/time_zone.dart';
 import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
 import 'package:farash/features/labels/data/label.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
+import 'package:farash/features/tasks/application/quick_capture.dart';
 import 'package:farash/features/tasks/data/quick_parse.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/features/tasks/presentation/due_picker.dart';
@@ -84,7 +84,24 @@ class _DueTasksViewState extends State<DueTasksView> {
   bool _loading = true;
   bool _openingTask = false;
   Object? _error;
+  String? _captureError;
   final _dayKeys = <String, GlobalKey>{};
+  late final _captureSession = QuickCaptureSession(
+    api: widget.api,
+    sections: widget.sectionsApi,
+    labels: widget.labels,
+    token: () => widget.token(),
+    projects: () => widget.projects(),
+    defaultProject: () {
+      final inbox = widget.projects().where((p) => p.isInbox).firstOrNull;
+      if (inbox == null) {
+        throw const ApiException(
+          'صندوق ورودی در دسترس نیست؛ دوباره تلاش کنید.',
+        );
+      }
+      return inbox;
+    },
+  );
 
   DateTime get _today => dayOf((widget.now ?? DateTime.now)());
 
@@ -290,69 +307,22 @@ class _DueTasksViewState extends State<DueTasksView> {
   ) async {
     final token = widget.token();
     if (token == null) return false;
+    setState(() => _captureError = null);
     try {
-      final projects = widget.projects();
-      var title = parsed.title;
-      Project? target;
-      if (parsed.project case final name?) {
-        target = projects
-            .where(
-              (p) =>
-                  !p.isFolder &&
-                  p.displayName.toLowerCase() == name.toLowerCase(),
-            )
-            .firstOrNull;
-        if (target == null) title = '$title #$name'.trim();
-      }
-      target ??= projects.where((p) => p.isInbox).firstOrNull;
-      if (target == null) return false;
-      if (title.isEmpty) title = raw.trim();
-      final day = parsed.day ?? _today;
-      final due = parsed.hour == null
-          ? TaskDue.onDay(day)
-          : TaskDue.at(
-              DateTime(
-                day.year,
-                day.month,
-                day.day,
-                parsed.hour!,
-                parsed.minute,
-              ),
-              await deviceTimeZone(),
-            );
-      List<String>? labelIds;
-      final labels = widget.labels;
-      if (parsed.labels.isNotEmpty && labels != null) {
-        labelIds = [
-          for (final name in parsed.labels)
-            labels.labels
-                    .where((l) => l.name.toLowerCase() == name.toLowerCase())
-                    .firstOrNull
-                    ?.id ??
-                (await labels.create(LabelDraft(name: name))).id,
-        ];
-      }
-      await widget.api.createTask(
-        token,
-        TaskDraft(
-          projectId: target.id,
-          title: title,
-          priority: parsed.priority == null
-              ? menuPriority
-              : TaskPriority.fromLevel(parsed.priority!),
-          dates: TaskDates(
-            due: due,
-            deadline: parsed.deadline == null
-                ? null
-                : dateKey(parsed.deadline!),
-          ),
-          labelIds: labelIds,
-        ),
+      await _captureSession.capture(
+        parsed,
+        raw,
+        calendar: CalendarScope.of(context).isJalali ? 'jalali' : 'gregorian',
+        menuPriority: menuPriority,
+        defaultDay: _today,
+        now: _today,
       );
       await _load();
       return true;
     } catch (error) {
-      if (mounted) showTaskError(context, error);
+      if (mounted && widget.token() == token) {
+        setState(() => _captureError = taskErrorMessage(error));
+      }
       return false;
     }
   }
@@ -663,6 +633,8 @@ class _DueTasksViewState extends State<DueTasksView> {
               padding: EdgeInsets.fromLTRB(inset + 12, 4, inset + 12, 12),
               child: QuickAddBar(
                 hint: 'افزودن کار برای امروز…',
+                error: _captureError,
+                pending: () => _captureSession.hasPendingRecurrence,
                 onAdd: _quickAdd,
               ),
             ),

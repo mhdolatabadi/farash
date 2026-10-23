@@ -46,6 +46,20 @@ jobs:
       - name: Build Android debug APK
         # The APK is meant to be installed, so it talks to the real server.
         run: flutter build apk --debug --dart-define=API_BASE_URL=${{ vars.FARASH_API_BASE_URL || 'https://farash.mhdolatabadi.ir' }}
+      - name: Require private signing for release tasks
+        shell: bash
+        run: |
+          # Exercise the same public build entry point as a real release. Flutter
+          # supplies Gradle properties and generates the wrapper for this SDK.
+          if flutter build apk --release > "$RUNNER_TEMP/unsigned-release-check.log" 2>&1; then
+            echo 'Release validation unexpectedly accepted missing signing material.' >&2
+            exit 1
+          fi
+          if ! grep -q 'Release signing is required' "$RUNNER_TEMP/unsigned-release-check.log"; then
+            echo 'Release failed before reaching the signing guard:' >&2
+            cat "$RUNNER_TEMP/unsigned-release-check.log" >&2
+            exit 1
+          fi
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
@@ -100,6 +114,42 @@ jobs:
         working-directory: deploy
         run: cp .env.example .env && docker compose config --quiet
 
+  release-config:
+    runs-on: ubuntu-latest
+    env:
+      COMPOSE_PROJECT_NAME: farash_release_check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - name: Check workflow, scripts and signing preparation
+        run: |
+          go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          bash -n deploy/deploy.sh deploy/backup.sh tool/verify_android_release.sh
+          python3 -m unittest discover -s tool -p test_android_signing.py
+      - name: Exercise database backup and restore
+        shell: bash
+        run: |
+          cp deploy/.env.example deploy/.env
+          docker compose -f deploy/compose.yaml up -d postgres --wait
+          docker compose -f deploy/compose.yaml exec -T postgres psql -U farash -d farash -v ON_ERROR_STOP=1 -c "CREATE TABLE backup_probe (value text); INSERT INTO backup_probe VALUES ('roundtrip');"
+          bash deploy/backup.sh
+          dump="$(find deploy/backups -name '*.dump' -type f)"
+          sha256sum --check "$dump.sha256"
+          docker compose -f deploy/compose.yaml exec -T postgres createdb -U farash farash_restore_probe
+          docker compose -f deploy/compose.yaml exec -T postgres pg_restore --exit-on-error -U farash -d farash_restore_probe < "$dump"
+          restored="$(docker compose -f deploy/compose.yaml exec -T postgres psql -U farash -d farash_restore_probe -Atc 'SELECT value FROM backup_probe')"
+          [[ "$restored" == 'roundtrip' ]]
+          docker compose -f deploy/compose.yaml stop postgres
+          if bash deploy/backup.sh; then echo 'Backup unexpectedly succeeded without database.' >&2; exit 1; fi
+          [[ "$(find deploy/backups -name '*.dump' -type f | wc -l)" -eq 1 ]]
+          [[ -z "$(find deploy/backups -name '.pending.*' -type f)" ]]
+      - name: Clean isolated test database
+        if: always()
+        run: docker compose -f deploy/compose.yaml down -v
+
   android-ui-review:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -114,6 +164,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - run: flutter pub get
+      - name: Test native capture navigation
+        run: python3 -m unittest discover -s tool -p test_capture_android.py
       - name: Build offline UI review fixture
         run: flutter build apk --debug --target tool/scrum_preview.dart
       - name: Enable emulator acceleration

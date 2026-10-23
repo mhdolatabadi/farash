@@ -1,0 +1,95 @@
+name: Android release
+
+on:
+  push:
+    tags: ['v[0-9]*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (major.minor.patch)'
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve release version
+        id: version
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          version="${INPUT_VERSION:-${GITHUB_REF_NAME#v}}"
+          [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo 'Expected major.minor.patch.' >&2; exit 1; }
+          echo "name=$version" >> "$GITHUB_OUTPUT"
+          echo "code=$((100000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_OUTPUT"
+      - name: Require successful Quality checks on this source commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in $(seq 1 20); do
+            checked="$(gh run list --workflow ci.yml --commit "$GITHUB_SHA" --status success --limit 1 --json headSha --jq '.[0].headSha // ""')"
+            if [[ "$checked" == "$GITHUB_SHA" ]]; then exit 0; fi
+            echo "Waiting for successful Quality checks ($attempt/20)."
+            sleep 15
+          done
+          echo 'Successful Quality checks for this exact commit are required.' >&2
+          exit 1
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: flutter pub get
+      - name: Prepare private release signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: python3 tool/prepare_android_signing.py
+      - name: Build signed release APK and AAB
+        env:
+          API_BASE_URL: ${{ vars.FARASH_API_BASE_URL || 'https://farash.mhdolatabadi.ir' }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+        run: |
+          flutter build apk --release --build-name="$VERSION_NAME" --build-number="$VERSION_CODE" --dart-define=API_BASE_URL="$API_BASE_URL"
+          flutter build appbundle --release --build-name="$VERSION_NAME" --build-number="$VERSION_CODE" --dart-define=API_BASE_URL="$API_BASE_URL"
+      - name: Verify signatures, package and release mode
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: bash tool/verify_android_release.sh
+      - name: Prepare versioned artifacts and checksums
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+        run: |
+          mkdir -p release
+          cp build/app/outputs/flutter-apk/app-release.apk "release/farash-$VERSION_NAME-$VERSION_CODE.apk"
+          cp build/app/outputs/bundle/release/app-release.aab "release/farash-$VERSION_NAME-$VERSION_CODE.aab"
+          (cd release && sha256sum ./*.apk ./*.aab > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: farash-release-${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}
+          path: release/
+          if-no-files-found: error
+          retention-days: 90
+      - name: Remove signing material
+        if: always()
+        run: rm -f android/key.properties "$RUNNER_TEMP/farash-release.jks" "$RUNNER_TEMP/release-cert.der" "$RUNNER_TEMP/aab-cert.der" "$RUNNER_TEMP/aab-cert.pem"

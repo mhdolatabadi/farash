@@ -5,15 +5,15 @@ import 'package:farash/app/surfaces.dart';
 import 'package:flutter/rendering.dart';
 import 'package:farash/app/list_app_bar.dart';
 import 'package:farash/core/api/api_client.dart';
-import 'package:farash/core/calendar/time_zone.dart';
+import 'package:farash/core/calendar/calendar_scope.dart';
+import 'package:farash/core/calendar/date_labels.dart';
+import 'package:farash/features/tasks/application/quick_capture.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
-import 'package:farash/features/labels/data/label.dart';
 import 'package:farash/features/tasks/data/quick_parse.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/app/motion.dart';
-import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/core/widgets/hover_reveal.dart';
 import 'package:farash/features/tasks/presentation/due_picker.dart';
@@ -278,93 +278,39 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     _run(() => _tasks.moveTask(moved.task, section?.id, ids, parent: parent));
   }
 
-  /// Adds the task quick-add text describes: its dates, priority and
-  /// labels, in the project after `#` when that names another one.
+  late final _captureSession = QuickCaptureSession(
+    api: widget.api,
+    sections: widget.sectionsApi,
+    labels: widget.labels,
+    token: widget.token,
+    projects: widget.moveTargets,
+    defaultProject: () => widget.project,
+  );
+
   Future<void> _addParsed(
     QuickTask parsed,
     String raw,
     TaskPriority menuPriority,
   ) async {
-    final priority = parsed.priority == null
-        ? menuPriority
-        : TaskPriority.fromLevel(parsed.priority!);
-    TaskDue? due;
-    if (parsed.day case final day?) {
-      due = parsed.hour == null
-          ? TaskDue.onDay(day)
-          : TaskDue.at(
-              DateTime(
-                day.year,
-                day.month,
-                day.day,
-                parsed.hour!,
-                parsed.minute,
-              ),
-              await deviceTimeZone(),
-            );
-    }
-    final dates = due == null && parsed.deadline == null
-        ? null
-        : TaskDates(
-            due: due,
-            deadline: parsed.deadline == null
-                ? null
-                : dateKey(parsed.deadline!),
-          );
-    final labelIds = await _labelIdsFor(parsed.labels);
-    var title = parsed.title;
-    Project? target;
-    if (parsed.project case final name?) {
-      target = widget
-          .moveTargets()
-          .where(
-            (p) =>
-                !p.isFolder &&
-                p.displayName.toLowerCase() == name.toLowerCase(),
-          )
-          .firstOrNull;
-      // An unknown project stays as text rather than vanishing.
-      if (target == null) title = '$title #$name'.trim();
-    }
-    if (title.isEmpty) title = raw.trim();
-    if (target != null && target.id != widget.project.id) {
-      final token = widget.token();
-      if (token == null) return;
-      await widget.api.createTask(
-        token,
-        TaskDraft(
-          projectId: target.id,
-          title: title,
-          priority: priority,
-          dates: dates,
-          labelIds: labelIds,
-        ),
-      );
-      _snack('«$title» به «${target.displayName}» اضافه شد.');
-      return;
-    }
-    final task = await _tasks.add(
-      title,
-      priority: priority,
-      dates: dates,
-      labelIds: labelIds,
+    final task = await _captureSession.capture(
+      parsed,
+      raw,
+      calendar: CalendarScope.of(context).isJalali ? 'jalali' : 'gregorian',
+      menuPriority: menuPriority,
     );
-    if (mounted) setState(() => _entering.add(task.id));
-  }
-
-  /// The ids of labels named in quick add, making the ones that do not
-  /// exist yet.
-  Future<List<String>?> _labelIdsFor(List<String> names) async {
-    final labels = widget.labels;
-    if (names.isEmpty || labels == null) return null;
-    final ids = <String>[];
-    for (final name in names) {
-      final existing = labels.labels
-          .where((l) => l.name.toLowerCase() == name.toLowerCase())
+    await _tasks.load();
+    if (!mounted) return;
+    if (task.projectId != widget.project.id) {
+      final target = widget
+          .moveTargets()
+          .where((p) => p.id == task.projectId)
           .firstOrNull;
-      ids.add(existing?.id ?? (await labels.create(LabelDraft(name: name))).id);
+      _snack(
+        '«${task.title}» به «${target?.displayName ?? 'پروژه'}» اضافه شد.',
+      );
+    } else {
+      setState(() => _entering.add(task.id));
     }
-    return ids;
   }
 
   Future<void> _addSection() async {
@@ -426,6 +372,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
         final compact = constraints.maxHeight < 240;
         final capture = QuickAddBar(
           key: _captureKey,
+          pending: () => _captureSession.hasPendingRecurrence,
           onAdd: (parsed, raw, priority) async {
             try {
               await _addParsed(parsed, raw, priority);
@@ -969,10 +916,14 @@ class QuickAddBar extends StatefulWidget {
   const QuickAddBar({
     super.key,
     this.hint = 'افزودن کار…',
+    this.error,
+    this.pending,
     required this.onAdd,
   });
 
   final String hint;
+  final String? error;
+  final bool Function()? pending;
 
   /// Returns whether the task was added, so the field keeps its text on
   /// failure.
@@ -995,6 +946,7 @@ class _QuickAddState extends State<QuickAddBar> {
   TaskPriority _priority = TaskPriority.p4;
   int _draftRevision = 0;
   bool _busy = false;
+  bool _submittingRecurring = false;
 
   @override
   void dispose() {
@@ -1008,11 +960,17 @@ class _QuickAddState extends State<QuickAddBar> {
     if (raw.isEmpty || _busy) return;
     final parsed = _text.parsed;
     final revision = _draftRevision;
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      // A recurrence retry must keep the exact captured intent. Plain
+      // captures still allow composing the next task during their request.
+      _submittingRecurring = parsed.recurrence != null;
+    });
     final added = await widget.onAdd(parsed, raw, _priority);
     if (!mounted) return;
     setState(() {
       _busy = false;
+      _submittingRecurring = false;
       if (added && revision == _draftRevision) {
         _text.clear();
         _text.ignore.clear();
@@ -1034,6 +992,22 @@ class _QuickAddState extends State<QuickAddBar> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (widget.error case final error?)
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 4),
+              child: Semantics(
+                liveRegion: true,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 96),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      error,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           // What the text will set, each part dismissable back to text.
           ValueListenableBuilder(
             valueListenable: _text,
@@ -1055,7 +1029,11 @@ class _QuickAddState extends State<QuickAddBar> {
                           visualDensity: VisualDensity.compact,
                           deleteButtonTooltipMessage:
                               'نادیده گرفتن «${token.text}»',
-                          onDeleted: () => _text.dismiss(token),
+                          onDeleted:
+                              (_submittingRecurring ||
+                                  (widget.pending?.call() ?? false))
+                              ? null
+                              : () => _text.dismiss(token),
                         ),
                     ],
                   ),
@@ -1068,6 +1046,9 @@ class _QuickAddState extends State<QuickAddBar> {
               Expanded(
                 child: TextField(
                   controller: _text,
+                  enabled:
+                      !(_submittingRecurring ||
+                          (widget.pending?.call() ?? false)),
                   focusNode: _focus,
                   textInputAction: TextInputAction.send,
                   maxLength: 500,
@@ -1096,6 +1077,9 @@ class _QuickAddState extends State<QuickAddBar> {
                 ),
               ),
               PopupMenuButton<TaskPriority>(
+                enabled:
+                    !(_submittingRecurring ||
+                        (widget.pending?.call() ?? false)),
                 tooltip: 'اولویت: ${_priority.label}',
                 initialValue: _priority,
                 icon: Icon(
@@ -1130,7 +1114,11 @@ class _QuickAddState extends State<QuickAddBar> {
                 builder: (context, value, _) {
                   final ready = value.text.trim().isNotEmpty;
                   return IconButton.filled(
-                    tooltip: 'افزودن کار',
+                    tooltip:
+                        (_submittingRecurring ||
+                            (widget.pending?.call() ?? false))
+                        ? 'ذخیرهٔ تکرار کار ساخته‌شده'
+                        : 'افزودن کار',
                     style: const ButtonStyle(
                       minimumSize: WidgetStatePropertyAll(Size(48, 48)),
                     ),
@@ -1159,6 +1147,8 @@ IconData _tokenIcon(QuickTokenKind kind) => switch (kind) {
   QuickTokenKind.project => Icons.folder_outlined,
   QuickTokenKind.label => Icons.sell_outlined,
   QuickTokenKind.deadline => Icons.hourglass_bottom,
+  QuickTokenKind.section => Icons.view_agenda_outlined,
+  QuickTokenKind.recurrence => Icons.repeat,
 };
 
 class _FolderNotice extends StatelessWidget {

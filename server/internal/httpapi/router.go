@@ -35,6 +35,12 @@ func NewHandler(config Config) http.Handler {
 		mux.HandleFunc("POST /api/v1/auth/register", auth.register)
 		mux.HandleFunc("POST /api/v1/auth/login", auth.login)
 		mux.HandleFunc("GET /api/v1/me", auth.me)
+		if data, ok := config.Store.(searchStore); ok {
+			searchRoutes(mux, auth, data)
+		}
+		if data, ok := config.Store.(commentsStore); ok {
+			commentsRoutes(mux, auth, data)
+		}
 		if data, ok := config.Store.(recurringTasksStore); ok {
 			recurringTaskRoutes(mux, auth, data)
 		}
@@ -52,12 +58,6 @@ func NewHandler(config Config) http.Handler {
 		}
 		if data, ok := config.Store.(collaborationStore); ok {
 			collaborationRoutes(mux, auth, data)
-		}
-		if data, ok := config.Store.(searchStore); ok {
-			searchRoutes(mux, auth, data)
-		}
-		if data, ok := config.Store.(commentsStore); ok {
-			commentsRoutes(mux, auth, data)
 		}
 		if data, ok := config.Store.(agileStore); ok {
 			agileRoutes(mux, auth, data)
