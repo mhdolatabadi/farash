@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:farash/features/habits/habit.dart';
 import 'package:farash/features/habits/habit_stats.dart';
@@ -9,6 +12,16 @@ abstract interface class HabitsApi {
     String path, {
     Map<String, Object?>? body,
   });
+}
+
+/// One editor's create intent, retained across uncertain responses and rebuilds.
+class HabitCreateAttempt {
+  final String requestKey =
+      '${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(0x7fffffff)}';
+  String? _token;
+  Map<String, Object?>? _payload;
+  Habit? _confirmed;
+  Future<Habit?>? _inFlight;
 }
 
 enum HabitSort { manual, name, color, score }
@@ -113,15 +126,46 @@ class HabitsController extends ChangeNotifier {
     }
   }
 
-  Future<Habit?> create(HabitDraft draft) async {
+  Future<Habit?> create(HabitDraft draft, {HabitCreateAttempt? attempt}) {
+    final intent = attempt ?? HabitCreateAttempt();
+    return intent._inFlight ??= _create(draft, intent).whenComplete(() {
+      intent._inFlight = null;
+    });
+  }
+
+  Future<Habit?> _create(HabitDraft draft, HabitCreateAttempt attempt) async {
+    final current = token();
+    if (current == null || _disposed) return null;
+    attempt._token ??= current;
+    if (attempt._token != current) return null;
+    attempt._payload ??= Map.unmodifiable(draft.toJson());
     try {
-      final data = await _call('POST', '/api/v1/habits', draft.toJson());
-      if (data == null) return null;
-      final habit = Habit.fromJson(data['habit'] as Map<String, dynamic>);
-      _set([..._habits, habit]);
+      var habit = attempt._confirmed;
+      if (habit == null) {
+        final data = await _call('POST', '/api/v1/habits', {
+          ...attempt._payload!,
+          'request_key': attempt.requestKey,
+        });
+        if (data == null || _disposed) return null;
+        habit = Habit.fromJson(data['habit'] as Map<String, dynamic>);
+        attempt._confirmed = habit;
+      }
+      // If the draft changed after an uncertain response, first recover the
+      // original create, then edit that same habit instead of creating again.
+      if (jsonEncode(attempt._payload) != jsonEncode(draft.toJson())) {
+        final data = await _call('PATCH', _path(habit.id), draft.toJson());
+        if (data == null || _disposed) return null;
+        habit = Habit.fromJson(data['habit'] as Map<String, dynamic>);
+        attempt._confirmed = habit;
+      }
+      _set([
+        for (final h in _habits)
+          if (h.id != habit.id) h,
+        habit,
+      ]);
       return habit;
     } catch (e) {
-      message.value = 'عادت ساخته نشد: $e';
+      if (!_disposed) message.value = 'عادت ساخته نشد: $e';
       return null;
     }
   }
