@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:farash/app/app_theme.dart';
-import 'package:farash/app/glass.dart';
+import 'package:farash/app/surfaces.dart';
 import 'package:farash/features/home/home_screen.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 import 'package:farash/features/projects/data/project.dart';
@@ -22,9 +22,6 @@ void main() {
     final font = FontLoader('Vazirmatn')
       ..addFont(rootBundle.load('assets/fonts/Vazirmatn-Regular.ttf'));
     await font.load();
-    final naskh = FontLoader('FarashNaskh')
-      ..addFont(rootBundle.load('assets/fonts/NotoNaskhArabic-Bold.ttf'));
-    await naskh.load();
     final icons = FontLoader('MaterialIcons')
       ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
     await icons.load();
@@ -38,7 +35,9 @@ void main() {
     ('landscape', const Size(700, 375), false, 1.0),
     ('landscape-ime', const Size(700, 375), false, 1.0),
   ]) {
-    testWidgets('glass layout and editor: ${layout.$1}', (tester) async {
+    testWidgets('layout, editor, today and focus: ${layout.$1}', (
+      tester,
+    ) async {
       tester.view.physicalSize = layout.$2;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -90,7 +89,7 @@ void main() {
                 textScaler: TextScaler.linear(layout.$4),
                 disableAnimations: true,
               ),
-              child: GlassBackdrop(child: child!),
+              child: child!,
             ),
             home: HomeScreen(
               email: 'demo@example.com',
@@ -111,12 +110,9 @@ void main() {
         expect(find.text('پیش‌نویس محفوظ'), findsOneWidget);
         expect(tester.takeException(), isNull);
       }
-      // One pane of glass per region, never glass on glass.
+      // Panels never nest.
       expect(
-        find.descendant(
-          of: find.byType(GlassSurface),
-          matching: find.byType(GlassSurface),
-        ),
+        find.descendant(of: find.byType(Panel), matching: find.byType(Panel)),
         findsNothing,
       );
       if (layout.$1 != 'landscape-ime') {
@@ -134,7 +130,7 @@ void main() {
         final capture = tester.getRect(
           find.ancestor(
             of: find.byType(TextField),
-            matching: find.byType(GlassSurface),
+            matching: find.byType(Panel),
           ),
         );
         expect(tester.getRect(last).bottom, lessThanOrEqualTo(capture.top));
@@ -183,6 +179,31 @@ void main() {
       }
       expect(find.byType(TaskDetailEditor), findsNothing);
       expect(tester.takeException(), isNull);
+      // Today and focus lay out without overflow too.
+      final phoneNav = find.byType(NavigationBar).evaluate().isNotEmpty;
+      final rail = find.byType(NavigationRail).evaluate().isNotEmpty;
+      Finder destination(String label) => phoneNav
+          ? find.widgetWithText(NavigationDestination, label)
+          : find.descendant(
+              of: find.byType(NavigationRail),
+              matching: find.text(label),
+            );
+      await tester.tap(
+        phoneNav || rail
+            ? destination('امروز')
+            : find.byKey(const ValueKey('view-today')),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await _capture(tester, captureKey, '${layout.$1}-today');
+      await tester.tap(
+        phoneNav || rail
+            ? destination('تمرکز')
+            : find.widgetWithText(ListTile, 'تمرکز'),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await _capture(tester, captureKey, '${layout.$1}-focus');
       await tester.pumpWidget(const SizedBox());
       projects.dispose();
     });

@@ -1,71 +1,58 @@
 import 'package:flutter/material.dart';
 
-/// Every color the app's look depends on, for one brightness: Material
-/// roles plus the glass backdrop and panes. Swapping a palette restyles the
-/// whole app without touching widgets.
+/// Every color the app's look depends on, for one brightness. Swapping a
+/// palette restyles the whole app without touching widgets.
 @immutable
 class FarashColors {
   const FarashColors({
     required this.primary,
     required this.onPrimary,
+    required this.primaryContainer,
+    required this.onPrimaryContainer,
     required this.accent,
     required this.surface,
     required this.onSurface,
     required this.onSurfaceVariant,
-    required this.selected,
-    required this.onSelected,
-    required this.backdrop,
-    required this.glow,
-    required this.pane,
-    required this.paneBorder,
-    required this.shadow,
+    required this.containerLowest,
+    required this.containerLow,
+    required this.container,
+    required this.containerHigh,
+    required this.containerHighest,
+    required this.outline,
+    required this.outlineVariant,
     required this.overdue,
-    required this.light,
-    required this.mist,
-    required this.edge,
     required this.priorities,
   });
 
+  /// The one accent: primary actions, today, the running timer, selection.
   final Color primary;
   final Color onPrimary;
 
-  /// A warm second voice for highlights such as today and selection marks.
+  /// Selected navigation, rows and chips.
+  final Color primaryContainer;
+  final Color onPrimaryContainer;
+
+  /// Tomorrow and other near-future dates.
   final Color accent;
   final Color surface;
   final Color onSurface;
   final Color onSurfaceVariant;
+  final Color containerLowest;
+  final Color containerLow;
+  final Color container;
+  final Color containerHigh;
+  final Color containerHighest;
 
-  /// Selected rows and chips.
-  final Color selected;
-  final Color onSelected;
+  /// Field and control edges.
+  final Color outline;
 
-  /// The diagonal wash behind everything, three stops.
-  final List<Color> backdrop;
+  /// Hairline dividers between rows.
+  final Color outlineVariant;
 
-  /// The lamp: a warm light pooled on the backdrop, which moves with the
-  /// project.
-  final Color glow;
-
-  /// A second, cool light across the room, so glass always has something
-  /// to frost.
-  final Color light;
-
-  /// A third, low light near the floor.
-  final Color mist;
-
-  /// The translucent tint and edge of glass panes.
-  final Color pane;
-  final Color paneBorder;
-  final Color shadow;
-
-  /// Overdue dates, and nothing else.
+  /// Overdue dates and errors, and nothing else.
   final Color overdue;
 
-  /// The lit top edge of a pane.
-  final Color edge;
-
-  /// Priority 1 to 4, tuned for this brightness: the familiar red, orange,
-  /// blue and grey, never the brand honey.
+  /// Priority 1 to 4: the familiar red, orange, blue and grey.
   final List<Color> priorities;
 }
 
@@ -84,77 +71,75 @@ class FarashPalette {
   FarashColors of(Brightness brightness) =>
       brightness == Brightness.dark ? dark : light;
 
-  /// Wool, terracotta, turquoise and midnight ink.
-  static const weaving = FarashPalette(
-    name: 'weaving',
+  /// White and teal by day; near-black and lime by night.
+  static const calm = FarashPalette(
+    name: 'calm',
     light: FarashColors(
-      primary: Color(0xFF98503D),
+      primary: Color(0xFF0E7490),
       onPrimary: Colors.white,
-      accent: Color(0xFF246D72),
-      surface: Color(0xFFFAF5EB),
-      onSurface: Color(0xFF283442),
-      onSurfaceVariant: Color(0xFF69625B),
-      selected: Color(0xFFF0DDD2),
-      onSelected: Color(0xFF283442),
-      backdrop: [Color(0xFFFAF5EB), Color(0xFFFAF5EB), Color(0xFFFAF5EB)],
-      glow: Color(0xFFFAF5EB),
-      light: Color(0xFFFAF5EB),
-      mist: Color(0xFFFAF5EB),
-      pane: Color(0xFFFFFBF3),
-      paneBorder: Color(0x2469625B),
-      shadow: Color(0x00000000),
-      overdue: Color(0xFFB3263A),
-      edge: Color(0x00FFFFFF),
+      primaryContainer: Color(0xFFD9EEF2),
+      onPrimaryContainer: Color(0xFF0B4F63),
+      accent: Color(0xFF0757B5),
+      surface: Colors.white,
+      onSurface: Color(0xFF1B1F24),
+      onSurfaceVariant: Color(0xFF5F6670),
+      containerLowest: Colors.white,
+      containerLow: Color(0xFFF6F7F9),
+      container: Color(0xFFF0F2F4),
+      containerHigh: Color(0xFFEAECEF),
+      containerHighest: Color(0xFFE3E6EA),
+      outline: Color(0xFF878E97),
+      outlineVariant: Color(0xFFE3E6EA),
+      overdue: Color(0xFFB42318),
       priorities: [
-        Color(0xFFD23C4B),
-        Color(0xFFC4670F),
-        Color(0xFF3A63D0),
-        Color(0xFF8B88A0),
+        Color(0xFFD1242F),
+        Color(0xFFC2570C),
+        Color(0xFF0969DA),
+        Color(0xFF8C959F),
       ],
     ),
     dark: FarashColors(
-      primary: Color(0xFFF2B49A),
-      onPrimary: Color(0xFF4C251B),
-      accent: Color(0xFF86CCD0),
-      surface: Color(0xFF19232F),
-      onSurface: Color(0xFFF5EDE1),
-      onSurfaceVariant: Color(0xFFCFC3B7),
-      selected: Color(0xFF553B34),
-      onSelected: Color(0xFFF5EDE1),
-      backdrop: [Color(0xFF19232F), Color(0xFF19232F), Color(0xFF19232F)],
-      glow: Color(0x0019232F),
-      light: Color(0x0019232F),
-      mist: Color(0x0019232F),
-      pane: Color(0xFF24303D),
-      paneBorder: Color(0x24A78D7F),
-      shadow: Color(0x00000000),
-      overdue: Color(0xFFFF9AA6),
-      edge: Color(0x0024303D),
+      primary: Color(0xFFC8F25A),
+      onPrimary: Color(0xFF0F1115),
+      primaryContainer: Color(0xFF2E3A14),
+      onPrimaryContainer: Color(0xFFDDF79A),
+      accent: Color(0xFF74A7FF),
+      surface: Color(0xFF0F1115),
+      onSurface: Color(0xFFECEDEE),
+      onSurfaceVariant: Color(0xFF9BA1A6),
+      containerLowest: Color(0xFF0B0D10),
+      containerLow: Color(0xFF15181D),
+      container: Color(0xFF191C22),
+      containerHigh: Color(0xFF20242B),
+      containerHighest: Color(0xFF262A31),
+      outline: Color(0xFF6B717A),
+      outlineVariant: Color(0xFF262A31),
+      overdue: Color(0xFFFF8A8A),
       priorities: [
-        Color(0xFFFF8A9A),
-        Color(0xFFFFB86B),
-        Color(0xFF9FC2FF),
-        Color(0xFF9A96B2),
+        Color(0xFFFF6B6B),
+        Color(0xFFFFA94D),
+        Color(0xFF74A7FF),
+        Color(0xFF8A9098),
       ],
     ),
   );
 }
 
-/// Hands the palette's glass colors to the backdrop and panes.
-class FarashGlassColors extends ThemeExtension<FarashGlassColors> {
-  const FarashGlassColors(this.colors);
+/// Hands the palette's extra colors, such as priorities, to widgets.
+class FarashPaletteColors extends ThemeExtension<FarashPaletteColors> {
+  const FarashPaletteColors(this.colors);
 
   final FarashColors colors;
 
   static FarashColors of(BuildContext context) =>
-      Theme.of(context).extension<FarashGlassColors>()?.colors ??
-      FarashPalette.weaving.of(Theme.of(context).brightness);
+      Theme.of(context).extension<FarashPaletteColors>()?.colors ??
+      FarashPalette.calm.of(Theme.of(context).brightness);
 
   @override
-  FarashGlassColors copyWith({FarashColors? colors}) =>
-      FarashGlassColors(colors ?? this.colors);
+  FarashPaletteColors copyWith({FarashColors? colors}) =>
+      FarashPaletteColors(colors ?? this.colors);
 
   @override
-  FarashGlassColors lerp(FarashGlassColors? other, double t) =>
+  FarashPaletteColors lerp(FarashPaletteColors? other, double t) =>
       t < 0.5 || other == null ? this : other;
 }

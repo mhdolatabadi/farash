@@ -52,24 +52,29 @@ class ListAppBar extends SliverPersistentHeaderDelegate {
                       icon: const Icon(Icons.menu_rounded),
                       onPressed: scaffold!.openDrawer,
                     ),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(start: 8),
                     child: mark,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Semantics(
                       header: true,
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
+                      // Large text steps the title down a size so long
+                      // names keep more of themselves in the bar; the full
+                      // name stays in the tooltip.
+                      child: Tooltip(
+                        message: title,
+                        excludeFromSemantics: true,
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              (MediaQuery.textScalerOf(context).scale(1) >= 1.5
+                                      ? theme.textTheme.titleMedium
+                                      : theme.textTheme.titleLarge)
+                                  ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),

@@ -38,6 +38,9 @@ func NewHandler(config Config) http.Handler {
 		if data, ok := config.Store.(syncStore); ok {
 			mux.HandleFunc("POST /api/v1/sync", syncHandler(auth, data))
 		}
+		if data, ok := config.Store.(commentsStore); ok {
+			commentsRoutes(mux, auth, data)
+		}
 		if data, ok := config.Store.(recurringTasksStore); ok {
 			recurringTaskRoutes(mux, auth, data)
 		}
