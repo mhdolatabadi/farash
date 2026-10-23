@@ -1,10 +1,8 @@
-import 'package:farash/features/weaving/woven_rug.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:farash/app/atelier.dart';
+import 'package:farash/app/surfaces.dart';
 import 'package:flutter/rendering.dart';
-import 'package:farash/app/glass.dart';
 import 'package:farash/app/list_app_bar.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/time_zone.dart';
@@ -426,9 +424,8 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
         // With a landscape keyboard, reserve no fixed footer: capture and
         // tasks share one scrollable viewport so neither can trap the other.
         final compact = constraints.maxHeight < 240;
-        final capture = _QuickAdd(
+        final capture = QuickAddBar(
           key: _captureKey,
-          projectName: widget.project.displayName,
           onAdd: (parsed, raw, priority) async {
             try {
               await _addParsed(parsed, raw, priority);
@@ -456,7 +453,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
           ),
         );
         // The capture bar floats over the end of the list, which scrolls
-        // under its glass.
+        // under it.
         final list = compact
             ? taskList
             : Stack(
@@ -516,69 +513,6 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     );
   }
 
-  /// What today asks of this project: the open tasks due today and those
-  /// already late, with their planned time. Only real counts; nothing when
-  /// the day is clear.
-  Widget? _todayStrip(BuildContext context) {
-    final theme = Theme.of(context);
-    final now = DateTime.now();
-    var today = 0, late = 0, minutes = 0;
-    for (final t in _tasks.openTasks) {
-      final due = t.due;
-      if (due == null) continue;
-      final offset = daysBetween(now, due.day);
-      if (offset > 0) continue;
-      if (offset < 0) {
-        late++;
-      } else {
-        today++;
-      }
-      minutes += t.durationMinutes ?? 0;
-    }
-    if (today == 0 && late == 0) return null;
-    final primary = theme.colorScheme.primary;
-    final parts = [
-      if (today > 0) '${persianDigits(today)} کار برای امروز',
-      if (late > 0) '${persianDigits(late)} دیرشده',
-      if (minutes > 0) formatDuration(minutes),
-    ];
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      child: AtelierPanel(
-        radius: 20,
-        lifted: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          child: Row(
-            children: [
-              Icon(Icons.wb_twilight, color: primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'امروز',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      parts.join(' · '),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _list(
     BuildContext context, {
     required double width,
@@ -618,7 +552,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
             child: Icon(
               Icons.drag_indicator,
               size: 20,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -626,7 +560,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     );
     final sectionsAvailable = widget.sectionsApi != null;
     final sections = _tasks.sections;
-    // Content keeps a readable width; the app bar's glass spans the whole
+    // Content keeps a readable width; the app bar spans the whole
     // column so the list can pass under it.
     final inset = width > _maxListWidth ? (width - _maxListWidth) / 2 : 0.0;
     Widget pad(Widget sliver) => SliverPadding(
@@ -688,7 +622,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                 actions: [completedToggle],
                 topPadding: topPadding,
                 inset: inset,
-                expandedHeight: compact ? 0 : 56 * scale,
+                expandedHeight: compact ? 0 : 32 * scale,
               ),
             ),
           if (capture != null) pad(SliverToBoxAdapter(child: capture)),
@@ -703,8 +637,6 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
           if (status != null)
             SliverFillRemaining(hasScrollBody: false, child: status)
           else ...[
-            if (widget.showTitle && !selecting && _todayStrip(context) != null)
-              pad(SliverToBoxAdapter(child: _todayStrip(context))),
             if (rows.isEmpty && done.isEmpty)
               pad(
                 SliverToBoxAdapter(
@@ -712,7 +644,11 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                     padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
                     child: Column(
                       children: [
-                        const WovenRug(height: 160),
+                        Icon(
+                          Icons.task_alt_rounded,
+                          size: 48,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'هنوز کاری در «${widget.project.displayName}» نیست.',
@@ -732,7 +668,6 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                   ),
                 ),
               ),
-            // The open list is one pane of glass in the room.
             if (rows.isNotEmpty)
               SliverPadding(
                 padding: EdgeInsets.symmetric(horizontal: inset + 12),
@@ -1008,10 +943,10 @@ class _QuickText extends TextEditingController {
         withComposing: withComposing,
       );
     }
-    final primary = Theme.of(context).colorScheme.primary;
+    final scheme = Theme.of(context).colorScheme;
     final lit = style?.copyWith(
-      color: primary,
-      backgroundColor: primary.withValues(alpha: 0.14),
+      color: scheme.onPrimaryContainer,
+      backgroundColor: scheme.primaryContainer,
     );
     final spans = <TextSpan>[];
     var cursor = 0;
@@ -1030,10 +965,14 @@ class _QuickText extends TextEditingController {
 /// One field and one button, pinned under the list and above the keyboard.
 /// Dates, times, `#project`, `@label`, `p1`–`p4` and `{deadline}` typed in
 /// the text are recognised as you go.
-class _QuickAdd extends StatefulWidget {
-  const _QuickAdd({super.key, required this.projectName, required this.onAdd});
+class QuickAddBar extends StatefulWidget {
+  const QuickAddBar({
+    super.key,
+    this.hint = 'افزودن کار…',
+    required this.onAdd,
+  });
 
-  final String projectName;
+  final String hint;
 
   /// Returns whether the task was added, so the field keeps its text on
   /// failure.
@@ -1045,10 +984,10 @@ class _QuickAdd extends StatefulWidget {
   onAdd;
 
   @override
-  State<_QuickAdd> createState() => _QuickAddState();
+  State<QuickAddBar> createState() => _QuickAddState();
 }
 
-class _QuickAddState extends State<_QuickAdd> {
+class _QuickAddState extends State<QuickAddBar> {
   final _text = _QuickText();
   late final FocusNode _focus = FocusNode()
     ..addListener(() => setState(() => _focused = _focus.hasFocus));
@@ -1086,12 +1025,10 @@ class _QuickAddState extends State<_QuickAdd> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // One pane of glass: the field, its priority and the send button read
-    // as a single control, edged in honey while it has focus.
-    return GlassSurface(
+    // One panel: the field, its priority and the send button read
+    // as a single control, edged in the accent while it has focus.
+    return Panel(
       radius: 22,
-      blur: 0,
-      shadow: true,
       borderColor: _focused ? theme.colorScheme.primary : null,
       padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 8, 4),
       child: Column(
@@ -1142,7 +1079,7 @@ class _QuickAddState extends State<_QuickAdd> {
                         maxLength,
                       }) => null,
                   decoration: InputDecoration(
-                    hintText: 'افزودن کار…',
+                    hintText: widget.hint,
                     filled: false,
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -1187,30 +1124,25 @@ class _QuickAddState extends State<_QuickAdd> {
                     ),
                 ],
               ),
-              // Send wakes up once there is something to add.
+              // Send is disabled until there is something to add.
               ValueListenableBuilder(
                 valueListenable: _text,
-                builder: (context, value, button) {
+                builder: (context, value, _) {
                   final ready = value.text.trim().isNotEmpty;
-                  return AnimatedOpacity(
-                    opacity: ready || _busy ? 1 : 0.55,
-                    duration: Motion.of(context, Motion.quick),
-                    child: button,
+                  return IconButton.filled(
+                    tooltip: 'افزودن کار',
+                    style: const ButtonStyle(
+                      minimumSize: WidgetStatePropertyAll(Size(48, 48)),
+                    ),
+                    onPressed: _busy || !ready ? null : _submit,
+                    icon: _busy
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.add),
                   );
                 },
-                child: IconButton.filled(
-                  tooltip: 'افزودن کار',
-                  style: const ButtonStyle(
-                    minimumSize: WidgetStatePropertyAll(Size(48, 48)),
-                  ),
-                  onPressed: _busy ? null : _submit,
-                  icon: _busy
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.add),
-                ),
               ),
             ],
           ),

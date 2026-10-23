@@ -6,7 +6,7 @@ import 'package:farash/core/calendar/time_zone.dart';
 import 'package:farash/core/settings/start_view.dart';
 import 'package:farash/features/home/home_screen.dart';
 import 'package:farash/features/focus/focus_view.dart';
-import 'package:farash/features/weaving/weaving_home.dart';
+import 'package:farash/features/tasks/presentation/due_tasks_view.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
@@ -96,7 +96,10 @@ void main() {
     );
     await tester.pumpAndSettle();
     final task = (await api.listTasks('token', 'inbox')).first;
-    tester.widget<WeavingHome>(find.byType(WeavingHome)).onTaskFocus!(task);
+    // Focus on a task, as the play button in its details does.
+    TrackerScope.of(tester.element(find.byType(DueTasksView)))!.focusTask!(
+      task,
+    );
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('شروع تمرکز'));
     await tester.tap(find.text('شروع تمرکز'));

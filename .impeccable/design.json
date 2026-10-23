@@ -1,129 +1,33 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-16T00:00:00Z",
-  "title": "Design System: Farash Weaving",
+  "generatedAt": "2026-10-22T00:00:00Z",
+  "title": "Design System: Farash Calm",
   "extensions": {
     "motion": [
-      {
-        "name": "woven-rows",
-        "value": "320ms",
-        "purpose": "Labelled RugPattern row reveal; zero with reduced motion."
-      },
-      {
-        "name": "standard",
-        "value": "280ms",
-        "purpose": "Shell and row transitions; zero with reduced motion."
-      },
-      {
-        "name": "quick",
-        "value": "160ms",
-        "purpose": "Small state changes."
-      },
-      {
-        "name": "linger",
-        "value": "220ms",
-        "purpose": "Completed row hold before folding."
-      }
+      {"name": "standard", "value": "280ms", "purpose": "Shell and row transitions; zero with reduced motion."},
+      {"name": "quick", "value": "160ms", "purpose": "Small state changes."},
+      {"name": "linger", "value": "220ms", "purpose": "Completed row hold before folding."}
     ],
     "breakpoints": [
-      {
-        "name": "sidebar",
-        "value": "840 logical pixels"
-      },
-      {
-        "name": "weaving-columns",
-        "value": ">650 available logical pixels"
-      }
+      {"name": "sidebar", "value": "840 logical pixels"}
     ],
-    "shadows": [
-      {
-        "name": "atelier-lift-light",
-        "value": "0 7px 22px rgba(0,0,0,0.045)",
-        "purpose": "Default lifted AtelierPanel in light mode."
-      },
-      {
-        "name": "atelier-lift-dark",
-        "value": "0 7px 22px rgba(0,0,0,0.12)",
-        "purpose": "Default lifted AtelierPanel in dark mode."
-      }
-    ]
+    "shadows": []
   },
   "components": [
     {
       "name": "Primary button",
       "kind": "button",
-      "description": "Light-mode visual translation of the filled Material action; Flutter supplies native state layers.",
+      "description": "Filled Material action in the theme's one accent; Flutter supplies state layers.",
       "html": "<button class=\"ds-primary\">شروع تمرکز</button>",
-      "css": ".ds-primary{background:#98503D;color:white;min-height:48px;border:0;border-radius:18px;padding:0 24px;font-family:Vazirmatn,sans-serif;font-weight:700}.ds-primary:hover{filter:brightness(1.08)}.ds-primary:active{filter:brightness(.95)}.ds-primary:focus-visible{outline:2px solid #98503D;outline-offset:3px}"
+      "css": ".ds-primary{background:#0E7490;color:white;min-height:48px;border:0;border-radius:999px;padding:0 24px;font-family:Vazirmatn,sans-serif;font-weight:700}.ds-primary:focus-visible{outline:2px solid #0E7490;outline-offset:3px}"
     },
     {
-      "name": "Text action",
-      "kind": "button",
-      "description": "Ink-colored secondary action.",
-      "html": "<button class=\"ds-text\">تازه‌سازی فرش</button>",
-      "css": ".ds-text{background:transparent;color:#283442;min-height:48px;border:0;border-radius:18px;padding:0 16px;font-family:Vazirmatn,sans-serif}.ds-text:hover{background:#F0DDD2}.ds-text:focus-visible{outline:2px solid #98503D;outline-offset:3px}"
-    },
-    {
-      "name": "Task input",
-      "kind": "input",
-      "description": "Approximate web preview: production field fill uses the generated highest Material container; its outline is explicitly warm.",
-      "html": "<input class=\"ds-input\" dir=\"rtl\" aria-label=\"کار تازه\" placeholder=\"کار تازه\">",
-      "css": ".ds-input{color:#283442;background:#FAF5EB;border:1px solid #DDCBB6;border-radius:18px;padding:14px 16px;font-family:Vazirmatn,sans-serif}.ds-input:hover{border-color:#98503D}.ds-input:focus-visible{outline:2px solid #98503D;outline-offset:-2px}"
-    },
-    {
-      "name": "Selected mode",
-      "kind": "chip",
-      "description": "Selected tonal chip with explicit 14 radius, warm outline and native Material state feedback.",
-      "html": "<button class=\"ds-chip\" aria-pressed=\"true\">تمرکز</button>",
-      "css": ".ds-chip{background:#F0DDD2;color:#283442;border:1px solid #DDCBB6;border-radius:14px;padding:8px 16px;font-family:Vazirmatn,sans-serif}.ds-chip:hover{filter:brightness(.97)}.ds-chip:focus-visible{outline:2px solid #98503D;outline-offset:3px}"
-    },
-    {
-      "name": "Phone destinations",
-      "kind": "nav",
-      "description": "Text-only web preview of the time-enabled shell; production adds the custom diamond mark and fine top border. Clients without time support omit زمان‌ها.",
-      "html": "<nav class=\"ds-nav\" dir=\"rtl\" aria-label=\"ناوبری\"><button aria-current=\"page\">فرش</button><button>کارها</button><button>تمرکز</button><button>زمان‌ها</button></nav>",
-      "css": ".ds-nav{display:flex;align-items:center;justify-content:space-around;min-height:72px;background:#FFFAF2;border-top:1px solid #DDCBB6}.ds-nav button{border:0;background:transparent;color:#283442;min-height:48px;padding:8px 16px;font-family:Vazirmatn,sans-serif;border-radius:18px}.ds-nav button[aria-current]{background:#F0DDD2}.ds-nav button:hover{background:#F0DDD2}.ds-nav button:focus-visible{outline:2px solid #98503D;outline-offset:3px}"
-    },
-    {
-      "name": "Atelier panel",
-      "kind": "card",
-      "description": "Light-mode lifted paper panel; theme cards themselves retain zero Material elevation.",
-      "html": "<article class=\"ds-card\" dir=\"rtl\">قدم بعدی</article>",
-      "css": ".ds-card{background:#FFFAF2;color:#283442;border:1px solid rgba(221,203,182,.7);border-radius:24px;padding:16px;box-shadow:0 7px 22px rgba(0,0,0,.045);font-family:Vazirmatn,sans-serif}"
-    },
-    {
-      "name": "Thread ornament",
-      "kind": "custom",
-      "description": "Nested woven diamond shared by account branding, navigation and thread-rule furniture.",
-      "html": "<div class=\"ds-rule\"><svg viewBox=\"0 0 28 28\" aria-hidden=\"true\"><path d=\"M14 1.4 26.6 14 14 26.6 1.4 14Z M14 7.28 20.72 14 14 20.72 7.28 14Z\"/><circle cx=\"14\" cy=\"14\" r=\"1.96\"/></svg></div>",
-      "css": ".ds-rule{display:flex;align-items:center;gap:10px}.ds-rule:before,.ds-rule:after{content:\"\";height:1px;background:#DDCBB6;flex:1}.ds-rule svg{width:14px;height:14px;fill:none;stroke:#98503D;stroke-width:2.1;stroke-linejoin:round}.ds-rule circle{fill:#98503D;stroke:none}"
+      "name": "Task row",
+      "kind": "list-item",
+      "description": "Flat full-width row; priority-colored check circle; hairline divider from the title edge.",
+      "html": "<div class=\"ds-row\"><span class=\"ds-check\"></span><span>خرید نان</span></div>",
+      "css": ".ds-row{display:flex;gap:14px;align-items:center;padding:12px 20px;border-bottom:1px solid #EEF0F2;font-family:Vazirmatn,sans-serif}.ds-check{width:20px;height:20px;border-radius:50%;border:2px solid #8C959F}"
     }
   ],
-  "narrative": {
-    "northStar": "A Persian weaving atelier",
-    "overview": "The owner explicitly rejected similarity to Forest and approved an original Persian woven-rug world. This supersedes the botanical and earlier dew/glass identities. Confirmed work becomes visible woven craft; task utility and a legible focus timer support the atelier. The same high artistic quality is a durable expectation across the UI, including quiet utility surfaces, rather than only the home illustration.",
-    "keyCharacteristics": [
-      "Woven rows grounded in confirmed completed work.",
-      "Wool cream, terracotta and turquoise by day; midnight ink at night.",
-      "Persian-first typography and reversible, direct actions."
-    ],
-    "rules": [
-      {
-        "name": "The Confirmed Weaving Rule",
-        "body": "Never fabricate progress, XP or rewards to decorate a screen.",
-        "section": "colors"
-      }
-    ],
-    "dos": [
-      "Do derive woven rows and collection counts from confirmed completed work and retain undo.",
-      "Do preserve Persian RTL, Persian digits and the isolated LTR timer.",
-      "Do keep task content readable with user text scaling."
-    ],
-    "donts": [
-      "Don't restore decorative glass, ambient gradients or title glow.",
-      "Don't display unavailable account progress as an invented score.",
-      "Don't infer project-specific threads, colors or historical rugs from unavailable completion history.",
-      "Don't present the static loom illustration as the measured progress display."
-    ]
-  }
+  "narrative": "Operate mode. Material 3 structure, one accent per theme (teal by day, lime by night), flat lists, no ornament."
 }

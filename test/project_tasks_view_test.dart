@@ -51,6 +51,7 @@ void main() {
       api = delayed;
       await pumpView(tester);
       await tester.enterText(find.byType(TextField), 'کار نخست');
+      await tester.pump();
       final pending = Completer<void>();
       delayed.pendingCreate = pending;
       await tester.tap(find.byTooltip('افزودن کار'));
@@ -190,6 +191,23 @@ void main() {
     );
   });
 
+  testWidgets('send stays disabled until there is text', (tester) async {
+    await pumpView(tester);
+    IconButton send() => tester.widget<IconButton>(
+      find.ancestor(
+        of: find.byTooltip('افزودن کار'),
+        matching: find.byType(IconButton),
+      ),
+    );
+    expect(send().onPressed, isNull);
+    await tester.enterText(find.byType(TextField), '   ');
+    await tester.pump();
+    expect(send().onPressed, isNull);
+    await tester.enterText(find.byType(TextField), 'نان');
+    await tester.pump();
+    expect(send().onPressed, isNotNull);
+  });
+
   testWidgets('quick add can set a priority', (tester) async {
     await pumpView(tester);
 
@@ -198,6 +216,7 @@ void main() {
     await tester.tap(find.text('اولویت ۱').last);
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Urgent');
+    await tester.pump();
     await tester.tap(find.byTooltip('افزودن کار'));
     await tester.pumpAndSettle();
 

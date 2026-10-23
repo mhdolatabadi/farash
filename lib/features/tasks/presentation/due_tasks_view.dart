@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/atelier.dart';
+import 'package:farash/app/motion.dart';
 import 'package:farash/app/list_app_bar.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
+import 'package:farash/core/calendar/time_zone.dart';
 import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
 import 'package:farash/features/labels/data/label.dart';
 import 'package:farash/features/projects/data/project.dart';
+import 'package:farash/features/tasks/application/tasks_controller.dart';
+import 'package:farash/features/tasks/data/quick_parse.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/features/tasks/presentation/due_picker.dart';
+import 'package:farash/features/tasks/presentation/project_tasks_view.dart';
+import 'package:farash/features/tasks/presentation/task_detail_sheet.dart';
 import 'package:farash/features/tasks/presentation/task_messages.dart';
 import 'package:farash/features/tasks/presentation/task_tile.dart';
 
 /// The views that gather tasks by date from every project.
 enum DueView {
-  today('امروز', Icons.wb_twilight),
+  today('امروز', Icons.today_outlined),
   upcoming('پیش رو', Icons.date_range),
   week('۷ روز آینده', Icons.view_week_outlined),
   all('همه', Icons.all_inbox_outlined);
@@ -35,8 +40,9 @@ const allDays = 365;
 const _maxListWidth = 760.0;
 
 /// امروز: what is late and what is due today, from all projects, with the
-/// late ones movable to today in one action. پیش رو: the coming days as an
-/// agenda under a week strip. Tasks open in their own project.
+/// late ones movable to today in one action, and a capture bar that adds
+/// to the Inbox for today. پیش رو: the coming days as an agenda under a
+/// week strip. A task opens in the editor where it is.
 class DueTasksView extends StatefulWidget {
   const DueTasksView({
     super.key,
@@ -47,6 +53,7 @@ class DueTasksView extends StatefulWidget {
     required this.onOpenProject,
     this.label,
     this.labels,
+    this.sectionsApi,
     this.now,
   });
 
@@ -62,6 +69,9 @@ class DueTasksView extends StatefulWidget {
   /// The account's labels, for the rows' tags and the label's own tasks.
   final LabelsController? labels;
 
+  /// For the editor's section choice; null where sections are unavailable.
+  final SectionsApi? sectionsApi;
+
   /// The clock, for tests.
   final DateTime Function()? now;
 
@@ -72,6 +82,7 @@ class DueTasksView extends StatefulWidget {
 class _DueTasksViewState extends State<DueTasksView> {
   List<Task> _tasks = const [];
   bool _loading = true;
+  bool _openingTask = false;
   Object? _error;
   final _dayKeys = <String, GlobalKey>{};
 
@@ -222,6 +233,130 @@ class _DueTasksViewState extends State<DueTasksView> {
     if (day != null && mounted) await _moveTo(task, day);
   }
 
+  /// Opens [task] in the editor over this view, with its project's tasks
+  /// loaded behind it for sections and subtasks.
+  Future<void> _openTask(Task task) async {
+    if (_openingTask) return;
+    final requestToken = widget.token();
+    if (requestToken == null) return;
+    _openingTask = true;
+    final controller = TasksController(
+      api: widget.api,
+      sectionsApi: widget.sectionsApi,
+      token: widget.token,
+      projectId: task.projectId,
+    );
+    try {
+      // An editor needs the complete project context, including completed
+      // children. A failed load must never open a partial, stale editor.
+      await controller.setShowCompleted(true);
+      if (!mounted || widget.token() != requestToken) return;
+      final current = controller.taskById(task.id);
+      if (controller.error != null || current == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('جزئیات کار دریافت نشد؛ دوباره تلاش کنید.'),
+            action: SnackBarAction(
+              label: 'تلاش دوباره',
+              onPressed: () => _openTask(task),
+            ),
+          ),
+        );
+        return;
+      }
+      final result = await showTaskDetailSheet(
+        context,
+        controller: controller,
+        task: current,
+        projects: widget.projects(),
+        labels: widget.labels,
+      );
+      if (result == TaskSheetResult.deleted) {
+        await _run((_) => controller.delete(current));
+      }
+    } finally {
+      controller.dispose();
+      _openingTask = false;
+    }
+    if (mounted && widget.token() == requestToken) await _load();
+  }
+
+  /// Adds a task from the capture bar: to the Inbox, or a `#project` typed
+  /// in it, due today unless the text names another day.
+  Future<bool> _quickAdd(
+    QuickTask parsed,
+    String raw,
+    TaskPriority menuPriority,
+  ) async {
+    final token = widget.token();
+    if (token == null) return false;
+    try {
+      final projects = widget.projects();
+      var title = parsed.title;
+      Project? target;
+      if (parsed.project case final name?) {
+        target = projects
+            .where(
+              (p) =>
+                  !p.isFolder &&
+                  p.displayName.toLowerCase() == name.toLowerCase(),
+            )
+            .firstOrNull;
+        if (target == null) title = '$title #$name'.trim();
+      }
+      target ??= projects.where((p) => p.isInbox).firstOrNull;
+      if (target == null) return false;
+      if (title.isEmpty) title = raw.trim();
+      final day = parsed.day ?? _today;
+      final due = parsed.hour == null
+          ? TaskDue.onDay(day)
+          : TaskDue.at(
+              DateTime(
+                day.year,
+                day.month,
+                day.day,
+                parsed.hour!,
+                parsed.minute,
+              ),
+              await deviceTimeZone(),
+            );
+      List<String>? labelIds;
+      final labels = widget.labels;
+      if (parsed.labels.isNotEmpty && labels != null) {
+        labelIds = [
+          for (final name in parsed.labels)
+            labels.labels
+                    .where((l) => l.name.toLowerCase() == name.toLowerCase())
+                    .firstOrNull
+                    ?.id ??
+                (await labels.create(LabelDraft(name: name))).id,
+        ];
+      }
+      await widget.api.createTask(
+        token,
+        TaskDraft(
+          projectId: target.id,
+          title: title,
+          priority: parsed.priority == null
+              ? menuPriority
+              : TaskPriority.fromLevel(parsed.priority!),
+          dates: TaskDates(
+            due: due,
+            deadline: parsed.deadline == null
+                ? null
+                : dateKey(parsed.deadline!),
+          ),
+          labelIds: labelIds,
+        ),
+      );
+      await _load();
+      return true;
+    } catch (error) {
+      if (mounted) showTaskError(context, error);
+      return false;
+    }
+  }
+
   Project? _projectOf(Task task) {
     for (final p in widget.projects()) {
       if (p.id == task.projectId) return p;
@@ -235,12 +370,11 @@ class _DueTasksViewState extends State<DueTasksView> {
       key: ValueKey(task.id),
       task: task,
       divider: !last,
+      showToday: widget.view != DueView.today || widget.label != null,
       tag: project == null ? null : _ProjectTag(project: project),
       labels: [for (final id in task.labelIds) ?widget.labels?.byId(id)],
       onToggle: () => _complete(task),
-      onOpen: () {
-        if (project != null) widget.onOpenProject(project);
-      },
+      onOpen: () => _openTask(task),
       trailing: task.due == null
           ? null
           : IconButton(
@@ -282,7 +416,7 @@ class _DueTasksViewState extends State<DueTasksView> {
     ),
   );
 
-  /// One pane of glass holding a day's tasks.
+  /// One panel holding a day's tasks.
   Widget _card(List<Task> tasks) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -461,7 +595,7 @@ class _DueTasksViewState extends State<DueTasksView> {
         final inset = width > _maxListWidth ? (width - _maxListWidth) / 2 : 0.0;
         final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
         final topPadding = MediaQuery.paddingOf(context).top;
-        return RefreshIndicator(
+        final list = RefreshIndicator(
           onRefresh: _load,
           edgeOffset: topPadding + listBarHeight,
           child: CustomScrollView(
@@ -486,7 +620,7 @@ class _DueTasksViewState extends State<DueTasksView> {
                   ],
                   topPadding: topPadding,
                   inset: inset,
-                  expandedHeight: constraints.maxHeight < 240 ? 0 : 76 * scale,
+                  expandedHeight: constraints.maxHeight < 240 ? 0 : 32 * scale,
                 ),
               ),
               if (label == null &&
@@ -505,8 +639,8 @@ class _DueTasksViewState extends State<DueTasksView> {
                         if (target != null) {
                           Scrollable.ensureVisible(
                             target,
-                            duration: const Duration(milliseconds: 280),
-                            curve: Curves.easeOutCubic,
+                            duration: Motion.of(context, Motion.standard),
+                            curve: Motion.enter,
                           );
                         }
                       },
@@ -519,6 +653,20 @@ class _DueTasksViewState extends State<DueTasksView> {
               ),
             ],
           ),
+        );
+        // Today is where the day is planned, so it takes new tasks too.
+        if (label != null || widget.view != DueView.today) return list;
+        return Column(
+          children: [
+            Expanded(child: list),
+            Padding(
+              padding: EdgeInsets.fromLTRB(inset + 12, 4, inset + 12, 12),
+              child: QuickAddBar(
+                hint: 'افزودن کار برای امروز…',
+                onAdd: _quickAdd,
+              ),
+            ),
+          ],
         );
       },
     );
@@ -544,14 +692,9 @@ class _DayHeading extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(24, 20, 12, 8),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 20, 12, 6),
       child: Row(
         children: [
-          WeaveMark(
-            size: 14,
-            color: late ? theme.colorScheme.error : theme.colorScheme.primary,
-          ),
-          const SizedBox(width: 10),
           Expanded(
             child: Semantics(
               header: true,
@@ -560,9 +703,11 @@ class _DayHeading extends StatelessWidget {
                   children: [
                     TextSpan(
                       text: title,
-                      style: theme.textTheme.titleLarge?.copyWith(
+                      style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: late ? theme.colorScheme.error : null,
+                        color: late
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     if (detail != null)
