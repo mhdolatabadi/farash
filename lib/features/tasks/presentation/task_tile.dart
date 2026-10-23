@@ -33,6 +33,7 @@ class TaskTile extends StatelessWidget {
     this.divider = true,
     this.tag,
     this.labels = const [],
+    this.showToday = true,
   });
 
   final Task task;
@@ -69,6 +70,10 @@ class TaskTile extends StatelessWidget {
   /// The task's labels, shown as @tags.
   final List<Label> labels;
 
+  /// Off under a «امروز» heading, where saying «today» again is noise; a
+  /// time or duration still shows.
+  final bool showToday;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -77,7 +82,6 @@ class TaskTile extends StatelessWidget {
     final checklist = parseChecklist(task.description);
     final dated = task.due != null || task.deadline != null;
     final row = InkWell(
-      borderRadius: BorderRadius.circular(18),
       onTap: onOpen,
       onLongPress: onLongPress,
       child: Padding(
@@ -147,7 +151,8 @@ class TaskTile extends StatelessWidget {
                               done: checklist.where((i) => i.done).length,
                               total: checklist.length,
                             ),
-                          if (dated) TaskDateLabels(task: task),
+                          if (dated)
+                            TaskDateLabels(task: task, showToday: showToday),
                           ?tag,
                           for (final label in labels) LabelTag(label: label),
                         ],
@@ -185,41 +190,25 @@ class TaskTile extends StatelessWidget {
         ),
       ),
     );
+    // Flat rows on the page: no boxes, a hairline from the title's edge.
     return Semantics(
       selected: selected,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Material(
-          color: selected
-              ? theme.colorScheme.secondaryContainer
-              : theme.colorScheme.surfaceContainerLow,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-            side: BorderSide(
-              color: theme.colorScheme.outlineVariant.withValues(alpha: .45),
-            ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              row,
-              // A hairline from the title's edge keeps rows apart without boxes.
-              if (divider)
-                Padding(
-                  padding: EdgeInsetsDirectional.only(
-                    start: 56 + subtaskIndent * depth,
-                    end: 12,
-                  ),
-                  child: Divider(
-                    height: 1,
-                    color: theme.colorScheme.outlineVariant.withValues(
-                      alpha: 0.5,
-                    ),
-                  ),
+      child: Material(
+        color: selected
+            ? theme.colorScheme.primaryContainer
+            : Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            row,
+            if (divider)
+              Padding(
+                padding: EdgeInsetsDirectional.only(
+                  start: 56 + subtaskIndent * depth,
                 ),
-            ],
-          ),
+                child: const Divider(height: 1),
+              ),
+          ],
         ),
       ),
     );
@@ -308,7 +297,7 @@ class _Count extends StatelessWidget {
   }
 }
 
-/// «انجام شد», pressed like a rubber stamp in the lamplight color.
+/// «انجام شد» in the accent, so nothing leaves the list without saying so.
 class _DoneStamp extends StatelessWidget {
   const _DoneStamp();
 
@@ -345,10 +334,16 @@ class _DoneStamp extends StatelessWidget {
 /// The due day (with time and duration) and the deadline; red once they
 /// have passed on an open task.
 class TaskDateLabels extends StatelessWidget {
-  const TaskDateLabels({super.key, required this.task, this.now});
+  const TaskDateLabels({
+    super.key,
+    required this.task,
+    this.now,
+    this.showToday = true,
+  });
 
   final Task task;
   final DateTime? now;
+  final bool showToday;
 
   @override
   Widget build(BuildContext context) {
@@ -419,24 +414,32 @@ class TaskDateLabels extends StatelessWidget {
       );
     }
 
+    final quietToday =
+        !showToday && due != null && daysBetween(current, due.day) == 0;
     return Wrap(
       spacing: 12,
       children: [
-        if (due != null)
+        if (due != null &&
+            !(quietToday && !due.isTimed && task.durationMinutes == null))
           label(
             due.isTimed ? Icons.schedule : Icons.event,
             [
-              relativeDay(due.day, settings, today: current),
+              if (!quietToday) relativeDay(due.day, settings, today: current),
               if (due.isTimed) formatTime(due.localTime!),
               if (task.durationMinutes != null)
-                '· ${formatDuration(task.durationMinutes!)}',
+                '${quietToday && !due.isTimed ? '' : '· '}${formatDuration(task.durationMinutes!)}',
             ].join(' '),
             'موعد',
             due.isOverdue(current),
             // Today in the brand color, tomorrow in the accent; later dates
             // stay quiet so the near ones stand out.
             tone: switch (daysBetween(current, due.day)) {
-              0 => theme.colorScheme.primary,
+              // Light pills take the deeper container ink so the small text
+              // clears 4.5:1 on its own tint.
+              0 =>
+                theme.brightness == Brightness.dark
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onPrimaryContainer,
               1 => theme.colorScheme.tertiary,
               _ => null,
             },
@@ -461,11 +464,17 @@ class _PriorityCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final color = task.priority.colorIn(context);
     final done = task.isCompleted;
+    final priority = task.priority == TaskPriority.p4
+        ? ''
+        : '، ${task.priority.label}';
     return Semantics(
       checked: done,
-      label: done ? 'برگرداندن «${task.title}»' : 'انجام «${task.title}»',
+      label: done
+          ? 'برگرداندن «${task.title}»$priority'
+          : 'انجام «${task.title}»$priority',
       child: InkResponse(
         onTap: onToggle,
         radius: 24,
@@ -502,12 +511,16 @@ class _PriorityCheck extends StatelessWidget {
                         Icons.check,
                         key: const ValueKey('checked'),
                         size: 14,
-                        // Light priority tones at night take a dark check.
+                        // Dark fills take the light ink, light fills the dark.
                         color:
                             ThemeData.estimateBrightnessForColor(color) ==
                                 Brightness.dark
-                            ? Colors.white
-                            : const Color(0xFF14182B),
+                            ? (theme.brightness == Brightness.dark
+                                  ? theme.colorScheme.onSurface
+                                  : theme.colorScheme.surface)
+                            : (theme.brightness == Brightness.dark
+                                  ? theme.colorScheme.surface
+                                  : theme.colorScheme.onSurface),
                       )
                     : const SizedBox.shrink(key: ValueKey('open')),
               ),

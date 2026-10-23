@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:farash/features/tasks/presentation/due_tasks_view.dart';
 import 'package:farash/features/tasks/presentation/project_tasks_view.dart';
 import 'package:farash/features/home/home_screen.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
@@ -103,6 +104,51 @@ void main() {
 
     expect(find.text('نام پروژه را بنویسید.'), findsOneWidget);
     expect(api.all, hasLength(1));
+  });
+
+  testWidgets('medium widths move the destinations to a rail', (tester) async {
+    await pumpHome(tester, size: const Size(700, 800));
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationRail),
+        matching: find.text('امروز'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(DueTasksView), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Back returns to the start destination first', (tester) async {
+    await pumpHome(tester, size: const Size(400, 800));
+    await tester.tap(find.widgetWithText(NavigationDestination, 'تمرکز'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProjectTasksView), findsNothing);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(ProjectTasksView), findsOneWidget);
+  });
+
+  testWidgets('a running focus session shows its time on the destination', (
+    tester,
+  ) async {
+    await pumpHome(tester, size: const Size(400, 800));
+    bool badged() => find
+        .byWidgetPredicate((w) => w is Badge && w.isLabelVisible)
+        .evaluate()
+        .isNotEmpty;
+    await tester.tap(find.widgetWithText(NavigationDestination, 'تمرکز'));
+    await tester.pumpAndSettle();
+    expect(badged(), isFalse);
+    await tester.tap(find.text('شروع تمرکز'));
+    await tester.pump();
+    expect(badged(), isTrue);
+    await tester.tap(find.text('مکث'));
+    await tester.pump();
+    expect(badged(), isFalse);
   });
 
   testWidgets('wide screens keep the sidebar open', (tester) async {

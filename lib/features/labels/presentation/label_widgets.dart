@@ -73,6 +73,11 @@ class _LabelEditorState extends State<_LabelEditor> {
     for (final c in ProjectColor.all.take(11)) c.hex.toUpperCase(),
   ];
 
+  /// A spoken name for a swatch, from the project palette.
+  static String _colorName(String hex) => hex == Label.defaultColor
+      ? 'رنگ پیش‌فرض'
+      : 'رنگ ${ProjectColor.all.firstWhere((c) => c.hex.toUpperCase() == hex, orElse: () => ProjectColor(hex, hex)).label}';
+
   @override
   void dispose() {
     _name.dispose();
@@ -144,32 +149,38 @@ class _LabelEditorState extends State<_LabelEditor> {
                 runSpacing: 4,
                 children: [
                   for (final hex in _colors)
-                    Tooltip(
-                      message: 'رنگ $hex',
-                      child: InkResponse(
-                        onTap: () => setState(() => _color = hex),
-                        radius: 24,
-                        child: SizedBox.square(
-                          dimension: 48,
-                          child: Center(
-                            child: Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Label(
-                                  id: '',
-                                  name: '',
-                                  color: hex,
-                                ).swatch,
-                                border: _color == hex
-                                    ? Border.all(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface,
-                                        width: 3,
-                                      )
-                                    : null,
+                    Semantics(
+                      button: true,
+                      selected: _color == hex,
+                      label: _colorName(hex),
+                      excludeSemantics: true,
+                      child: Tooltip(
+                        message: _colorName(hex),
+                        child: InkResponse(
+                          onTap: () => setState(() => _color = hex),
+                          radius: 24,
+                          child: SizedBox.square(
+                            dimension: 48,
+                            child: Center(
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Label(
+                                    id: '',
+                                    name: '',
+                                    color: hex,
+                                  ).swatch,
+                                  border: _color == hex
+                                      ? Border.all(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                          width: 3,
+                                        )
+                                      : null,
+                                ),
                               ),
                             ),
                           ),

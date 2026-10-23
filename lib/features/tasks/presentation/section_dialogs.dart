@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/motion.dart';
 import 'package:farash/features/tasks/data/task.dart';
 
 enum SectionAction { rename, moveUp, moveDown, delete }
@@ -48,7 +49,7 @@ class SectionHeader extends StatelessWidget {
                 onPressed: onToggle,
                 icon: AnimatedRotation(
                   turns: collapsed ? 0.25 : 0,
-                  duration: const Duration(milliseconds: 150),
+                  duration: Motion.of(context, Motion.quick),
                   child: const Icon(Icons.expand_more),
                 ),
               ),
