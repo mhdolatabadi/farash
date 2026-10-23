@@ -4,6 +4,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
+import 'package:farash/core/calendar/time_zone.dart';
+import 'package:farash/app/app_theme.dart';
+import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:farash/core/calendar/calendar_settings.dart';
 import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/features/projects/data/project.dart';
@@ -13,6 +16,7 @@ import 'package:farash/features/tasks/presentation/task_detail_sheet.dart';
 import 'package:farash/features/tasks/presentation/task_tile.dart';
 
 import 'support/fake_tasks_api.dart';
+import 'support/fake_sections_api.dart';
 
 const _inbox = Project(
   id: 'inbox',
@@ -38,6 +42,24 @@ class _DelayedTaskContext extends FakeTasksApi {
     requestedCompleted = showCompleted;
     await ready.future;
     return super.listTasks(token, projectId, showCompleted: showCompleted);
+  }
+}
+
+class _RecurringTodayApi extends FakeTasksApi implements TimeApi {
+  bool failRule = true;
+  final paths = <String>[];
+  @override
+  Future<Map<String, dynamic>> timeRequest(
+    String token,
+    String method,
+    String path, {
+    Map<String, Object?>? body,
+  }) async {
+    paths.add(path);
+    if (failRule) throw StateError('response lost');
+    return {
+      'recurrence': {'schedule': body!['schedule'], 'emitted': 0},
+    };
   }
 }
 
@@ -179,6 +201,108 @@ void main() {
     expect(added.due, TaskDue.onDay(today));
     expect(find.text('خرید نان'), findsOneWidget);
   });
+
+  testWidgets('Today resolves project and section before creating', (
+    tester,
+  ) async {
+    final sections = FakeSectionsApi()..seed('work', 'برنامه');
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DueTasksView(
+            view: DueView.today,
+            api: api,
+            token: () => 'token',
+            projects: () => const [_inbox, _work],
+            onOpenProject: (_) {},
+            sectionsApi: sections,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'مطالعه #کار /برنامه');
+    await tester.tap(find.byTooltip('افزودن کار'));
+    await tester.pumpAndSettle();
+    expect(api.all.single.projectId, 'work');
+    expect(api.all.single.sectionId, sections.all.single.id);
+    expect(api.all.single.due!.day, today);
+    expect(api.all.single.title, 'مطالعه');
+  });
+
+  testWidgets('Today refuses unknown projects instead of Inbox fallback', (
+    tester,
+  ) async {
+    await pump(tester, DueView.today);
+    await tester.enterText(find.byType(TextField), 'مطالعه #گم‌شده');
+    await tester.tap(find.byTooltip('افزودن کار'));
+    await tester.pumpAndSettle();
+    expect(api.all, isEmpty);
+    expect(find.textContaining('پروژه پیدا نشد'), findsOneWidget);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      'مطالعه #گم‌شده',
+    );
+  });
+
+  testWidgets(
+    'Today narrow dark large text retries only confirmed recurrence',
+    (tester) async {
+      final recurring = _RecurringTodayApi();
+      debugTimeZoneOverride = 'Asia/Tehran';
+      addTearDown(() => debugTimeZoneOverride = null);
+      tester.view.physicalSize = const Size(320, 760);
+      tester.view.devicePixelRatio = 1;
+      tester.view.viewInsets = const FakeViewPadding(bottom: 250);
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: FarashTheme.dark(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Scaffold(
+              body: DueTasksView(
+                view: DueView.today,
+                api: recurring,
+                token: () => 'token',
+                projects: () => const [_inbox],
+                onOpenProject: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'مطالعه هر روز');
+      await tester.pumpAndSettle();
+      final send = find.byTooltip('افزودن کار');
+      expect(tester.getRect(send).bottom, lessThanOrEqualTo(510));
+      await tester.tap(send);
+      await tester.pumpAndSettle();
+      expect(recurring.all, hasLength(1));
+      final id = recurring.all.single.id;
+      expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
+      recurring.failRule = false;
+      await tester.tap(find.byTooltip('ذخیرهٔ تکرار کار ساخته‌شده'));
+      await tester.pumpAndSettle();
+      expect(recurring.all, hasLength(1));
+      expect(recurring.paths, [
+        '/api/v1/tasks/$id/recurrence',
+        '/api/v1/tasks/$id/recurrence',
+      ]);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        isEmpty,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('closing the editor asks before dropping edits', (tester) async {
     api.seed('work', 'Now', dates: on(0));
