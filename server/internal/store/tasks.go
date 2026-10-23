@@ -403,8 +403,16 @@ func (s *Store) CompleteTask(ctx context.Context, owner, id string, completed bo
 				return err
 			}
 
+			if previous == nil {
+				if err := advanceRecurrence(ctx, tx, owner, id, "complete"); err != nil {
+					return err
+				}
+			}
 		} else {
 			if previous != nil {
+				if err := undoRecurrence(ctx, tx, owner, id); err != nil {
+					return err
+				}
 				if _, err := tx.Exec(ctx, `UPDATE tasks SET completed_at=NULL WHERE owner_id=$1 AND id=$2`, owner, id); err != nil {
 					return err
 				}
