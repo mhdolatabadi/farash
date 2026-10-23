@@ -82,6 +82,7 @@ class DueTasksView extends StatefulWidget {
 class _DueTasksViewState extends State<DueTasksView> {
   List<Task> _tasks = const [];
   bool _loading = true;
+  bool _openingTask = false;
   Object? _error;
   final _dayKeys = <String, GlobalKey>{};
 
@@ -235,6 +236,10 @@ class _DueTasksViewState extends State<DueTasksView> {
   /// Opens [task] in the editor over this view, with its project's tasks
   /// loaded behind it for sections and subtasks.
   Future<void> _openTask(Task task) async {
+    if (_openingTask) return;
+    final requestToken = widget.token();
+    if (requestToken == null) return;
+    _openingTask = true;
     final controller = TasksController(
       api: widget.api,
       sectionsApi: widget.sectionsApi,
@@ -242,9 +247,23 @@ class _DueTasksViewState extends State<DueTasksView> {
       projectId: task.projectId,
     );
     try {
-      await controller.load();
-      if (!mounted) return;
-      final current = controller.taskById(task.id) ?? task;
+      // An editor needs the complete project context, including completed
+      // children. A failed load must never open a partial, stale editor.
+      await controller.setShowCompleted(true);
+      if (!mounted || widget.token() != requestToken) return;
+      final current = controller.taskById(task.id);
+      if (controller.error != null || current == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('جزئیات کار دریافت نشد؛ دوباره تلاش کنید.'),
+            action: SnackBarAction(
+              label: 'تلاش دوباره',
+              onPressed: () => _openTask(task),
+            ),
+          ),
+        );
+        return;
+      }
       final result = await showTaskDetailSheet(
         context,
         controller: controller,
@@ -257,8 +276,9 @@ class _DueTasksViewState extends State<DueTasksView> {
       }
     } finally {
       controller.dispose();
+      _openingTask = false;
     }
-    await _load();
+    if (mounted && widget.token() == requestToken) await _load();
   }
 
   /// Adds a task from the capture bar: to the Inbox, or a `#project` typed

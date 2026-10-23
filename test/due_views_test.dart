@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,6 +22,24 @@ const _inbox = Project(
 );
 const _work = Project(id: 'work', name: 'کار', color: '#2563eb');
 const _old = Project(id: 'old', name: 'Old', color: '#16a34a');
+
+class _DelayedTaskContext extends FakeTasksApi {
+  final ready = Completer<void>();
+  int loads = 0;
+  bool? requestedCompleted;
+
+  @override
+  Future<List<Task>> listTasks(
+    String token,
+    String projectId, {
+    bool showCompleted = false,
+  }) async {
+    loads++;
+    requestedCompleted = showCompleted;
+    await ready.future;
+    return super.listTasks(token, projectId, showCompleted: showCompleted);
+  }
+}
 
 void main() {
   final today = dayOf(DateTime.now());
@@ -92,6 +112,59 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.scrollUntilVisible(find.text('After change'), 200);
     expect(find.text('After change'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'Today retries failed task context without opening a stale editor',
+    (tester) async {
+      api.seed('work', 'Now', dates: on(0));
+      await pump(tester, DueView.today);
+      api.failNext = StateError('context unavailable');
+      await tester.tap(find.text('Now'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TaskDetailEditor), findsNothing);
+      expect(
+        find.text('جزئیات کار دریافت نشد؛ دوباره تلاش کنید.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('تلاش دوباره'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TaskDetailEditor), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('Today refuses to edit a task removed since its list loaded', (
+    tester,
+  ) async {
+    final task = api.seed('work', 'Removed', dates: on(0));
+    await pump(tester, DueView.today);
+    await api.deleteTask('token', task.id);
+    await tester.tap(find.text('Removed'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TaskDetailEditor), findsNothing);
+    expect(find.text('تلاش دوباره'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Today opens one editor after loading complete task context', (
+    tester,
+  ) async {
+    final delayed = _DelayedTaskContext();
+    api = delayed;
+    api.seed('work', 'Now', dates: on(0));
+    await pump(tester, DueView.today);
+    await tester.tap(find.text('Now'));
+    await tester.pump();
+    await tester.tap(find.text('Now'));
+    await tester.pump();
+    expect(delayed.loads, 1);
+    expect(find.byType(TaskDetailEditor), findsNothing);
+    delayed.ready.complete();
+    await tester.pumpAndSettle();
+    expect(delayed.requestedCompleted, isTrue);
+    expect(find.byType(TaskDetailEditor), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
