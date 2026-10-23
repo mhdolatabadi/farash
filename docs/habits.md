@@ -43,3 +43,11 @@ All routes require a bearer token; another owner's habit answers 404.
 Errors: `invalid_habit`, `invalid_habit_entry` (400), `not_found` (404), `habit_limit_reached` (409, 200 habits per account including archived).
 
 Migration `020_habits.sql` is additive (two new tables). Rolling the client or API back leaves the tables in place; never drop them as a rollback.
+
+## Safe creation retries
+
+New clients send an optional `request_key` (16–128 ASCII letters, digits, `_` or `-`) with habit creation. One editor retains the same key and frozen first payload after a lost response. The server atomically stores the normalized payload hash and original successful result in `021_habit_create_requests.sql`; identical retries recover that result, while changed payloads under the same key return `409 habit_request_conflict`. Keys are scoped to the authenticated owner and never appear in habit representations or exports. Older clients omitting the key retain their previous non-idempotent behavior.
+
+If the user edits an uncertain draft, the editor recovers the original creation first and then patches that same habit with the current draft. A failed patch retries the patch without posting another creation. Session changes block retrying another account's attempt. Attempts last for that editor's lifetime; persistent process-restart recovery remains outside this fix.
+
+Retry records survive habit deletion so a late retry cannot recreate it; their response is the original creation acknowledgement, not a claim that the habit still exists. They are deleted with the account and capped at 10,000 per owner (new creates then return `habit_limit_reached`; existing retries still succeed). There is no automatic expiry that could turn a late retry into a duplicate. Rollback leaves this additive table intact.

@@ -2,8 +2,11 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"math"
+	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -12,10 +15,11 @@ import (
 )
 
 var (
-	ErrHabitNotFound = errors.New("habit not found")
-	ErrInvalidHabit  = errors.New("invalid habit")
-	ErrInvalidEntry  = errors.New("invalid habit entry")
-	ErrHabitLimit    = errors.New("too many habits")
+	ErrHabitNotFound        = errors.New("habit not found")
+	ErrInvalidHabit         = errors.New("invalid habit")
+	ErrInvalidEntry         = errors.New("invalid habit entry")
+	ErrHabitLimit           = errors.New("too many habits")
+	ErrHabitRequestConflict = errors.New("habit request conflict")
 )
 
 // MaxHabits caps habits per account, archived ones included.
@@ -51,6 +55,7 @@ type Habit struct {
 
 // HabitInput creates a habit, or changes the fields that are set.
 type HabitInput struct {
+	RequestKey  string   `json:"request_key,omitempty"`
 	Name        *string  `json:"name"`
 	Question    *string  `json:"question"`
 	Notes       *string  `json:"notes"`
@@ -185,7 +190,12 @@ func (s *Store) ListHabits(ctx context.Context, owner string) ([]Habit, error) {
 	return habits, rows.Err()
 }
 
+var habitRequestKey = regexp.MustCompile(`^[A-Za-z0-9_-]{16,128}$`)
+
 func (s *Store) CreateHabit(ctx context.Context, owner string, in HabitInput) (Habit, error) {
+	if in.RequestKey != "" && !habitRequestKey.MatchString(in.RequestKey) {
+		return Habit{}, ErrInvalidHabit
+	}
 	h := Habit{Color: 8, Kind: "boolean", FreqNum: 1, FreqDen: 1, TargetType: "at_least"}
 	in.Archived = nil
 	if err := in.apply(&h); err != nil {
@@ -194,6 +204,11 @@ func (s *Store) CreateHabit(ctx context.Context, owner string, in HabitInput) (H
 	if h.Kind == "boolean" {
 		h.TargetValue, h.Unit = 0, ""
 	}
+	canonical, _ := json.Marshal(struct {
+		Habit        Habit
+		ExplicitSort bool
+	}{h, in.SortOrder != nil})
+	fingerprint := sha256.Sum256(canonical)
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return Habit{}, err
@@ -202,6 +217,33 @@ func (s *Store) CreateHabit(ctx context.Context, owner string, in HabitInput) (H
 	// Serialize creates so the count limit holds across devices.
 	if _, err = tx.Exec(ctx, `SELECT id FROM users WHERE id=$1 FOR UPDATE`, owner); err != nil {
 		return Habit{}, err
+	}
+	if in.RequestKey != "" {
+		var previousHash []byte
+		var response []byte
+		err = tx.QueryRow(ctx, `SELECT payload_hash, response FROM habit_create_requests WHERE owner_id=$1 AND request_key=$2`, owner, in.RequestKey).Scan(&previousHash, &response)
+		if err == nil {
+			if string(previousHash) != string(fingerprint[:]) {
+				return Habit{}, ErrHabitRequestConflict
+			}
+			var previous Habit
+			if err = json.Unmarshal(response, &previous); err != nil {
+				return Habit{}, err
+			}
+			return previous, tx.Commit(ctx)
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return Habit{}, err
+		}
+	}
+	if in.RequestKey != "" {
+		var requests int
+		if err = tx.QueryRow(ctx, `SELECT count(*) FROM habit_create_requests WHERE owner_id=$1`, owner).Scan(&requests); err != nil {
+			return Habit{}, err
+		}
+		if requests >= 10000 {
+			return Habit{}, ErrHabitLimit
+		}
 	}
 	var count, next int
 	if err = tx.QueryRow(ctx, `SELECT count(*), COALESCE(max(sort_order)+1,0) FROM habits WHERE owner_id=$1`, owner).Scan(&count, &next); err != nil {
@@ -218,6 +260,15 @@ func (s *Store) CreateHabit(ctx context.Context, owner string, in HabitInput) (H
 		newID(), owner, h.Name, h.Question, h.Notes, h.Color, h.Kind, h.FreqNum, h.FreqDen, h.TargetType, h.TargetValue, h.Unit, h.SortOrder))
 	if err != nil {
 		return Habit{}, err
+	}
+	if in.RequestKey != "" {
+		response, err := json.Marshal(created)
+		if err != nil {
+			return Habit{}, err
+		}
+		if _, err = tx.Exec(ctx, `INSERT INTO habit_create_requests(owner_id, request_key, payload_hash, response) VALUES($1,$2,$3,$4)`, owner, in.RequestKey, fingerprint[:], response); err != nil {
+			return Habit{}, err
+		}
 	}
 	return created, tx.Commit(ctx)
 }
