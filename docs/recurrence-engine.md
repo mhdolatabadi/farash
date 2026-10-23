@@ -1,7 +1,8 @@
 # Recurrence engine contract (#54, part of #10)
 
 This pure server package calculates occurrences. It does not attach a rule to a
-stored task, complete a task, write history, or expose an API/editor yet.
+stored task, complete a task, write history, or expose an API/editor itself.
+The stored-task API and client editor are described in task-recurrence.md.
 
 A schedule contains its first due date (`YYYY-MM-DD`, Gregorian wire format),
 optional local `HH:mm`, an explicit IANA timezone, and a structured rule. Rules
@@ -42,6 +43,7 @@ remain dates, with no invented timestamp. Exhaustion (end/count/date range)
 returns no occurrence; malformed input returns an explicit error. The engine
 reads no system clock and mutates no input.
 
-Future integration under #10 must atomically advance a task, record completion
-history, implement skip/undo and retries, retain the immutable anchor and emitted
-counter, enforce owner checks, and add the client recurrence editor.
+The stored-task integration under #10 atomically advances eligible standalone
+leaf tasks, records completion/skip/undo history, preserves the series anchor and
+emitted counter, and enforces owner checks. This engine contract alone does not
+establish full #10 acceptance; see task-recurrence.md for integration limits.
