@@ -1,3 +1,5 @@
+import 'package:farash/features/habits/habits_controller.dart';
+import 'package:farash/features/habits/habits_view.dart';
 import 'package:farash/features/search/search.dart';
 import 'package:farash/features/search/search_view.dart';
 import 'package:farash/features/portability/export_api.dart';
@@ -74,6 +76,11 @@ class _HomeScreenState extends State<HomeScreen> {
   int _section = 1;
   final _focus = FocusController();
   late final TimeTracker? _tracker;
+
+  /// Habits live in the shell so check-ins survive switching sections.
+  late final HabitsController? _habits = widget.tasksApi is HabitsApi
+      ? HabitsController(api: widget.tasksApi as HabitsApi, token: widget.token)
+      : null;
   Task? _focusTask;
   String? _focusEntry;
 
@@ -123,6 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     _tracker?.removeListener(_trackerChanged);
     _tracker?.dispose();
+    _habits?.dispose();
     _focus.dispose();
     widget.startView?.removeListener(_applyStartView);
     _labels?.dispose();
@@ -460,6 +468,15 @@ class _HomeScreenState extends State<HomeScreen> {
     _switchSection(2);
   }
 
+  /// The sections behind the phone's bottom destinations, in order.
+  List<int> get _navSections => [
+    0,
+    1,
+    2,
+    if (_tracker != null) 3,
+    if (_habits != null) 4,
+  ];
+
   Widget _sidebar() => ProjectSidebar(
     controller: widget.projects,
     selectedId: _view == null && _labelId == null ? _selected?.id : null,
@@ -517,6 +534,7 @@ class _HomeScreenState extends State<HomeScreen> {
             (1, Icons.check_circle_outline_rounded, 'کارها'),
             (2, Icons.hourglass_empty_rounded, 'تمرکز'),
             if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
+            if (_habits != null) (4, Icons.task_alt_rounded, 'عادت‌ها'),
           ])
             Material(
               type: MaterialType.transparency,
@@ -582,6 +600,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     beforeStart: _beforeFocusStart,
                     beforePause: _beforeFocusPause,
                     timeLinked: _tracker != null && _focusTask != null,
+                  )
+                : _section == 4 && _habits != null
+                ? HabitsView(
+                    key: const ValueKey('habits-view'),
+                    controller: _habits,
                   )
                 : _section == 3 && _tracker != null
                 ? TimeTrackingView(
@@ -679,8 +702,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   child: NavigationBar(
-                    selectedIndex: _section,
-                    onDestinationSelected: _switchSection,
+                    selectedIndex: _navSections.indexOf(_section),
+                    onDestinationSelected: (i) =>
+                        _switchSection(_navSections[i]),
                     destinations: [
                       const NavigationDestination(
                         icon: WeaveMark(size: 24),
@@ -701,6 +725,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         const NavigationDestination(
                           icon: Icon(Icons.timer_outlined),
                           label: 'زمان‌ها',
+                        ),
+                      if (_habits != null)
+                        const NavigationDestination(
+                          icon: Icon(Icons.task_alt_rounded),
+                          label: 'عادت‌ها',
                         ),
                     ],
                   ),
