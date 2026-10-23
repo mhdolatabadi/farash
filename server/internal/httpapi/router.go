@@ -35,6 +35,9 @@ func NewHandler(config Config) http.Handler {
 		mux.HandleFunc("POST /api/v1/auth/register", auth.register)
 		mux.HandleFunc("POST /api/v1/auth/login", auth.login)
 		mux.HandleFunc("GET /api/v1/me", auth.me)
+		if data, ok := config.Store.(recurringTasksStore); ok {
+			recurringTaskRoutes(mux, auth, data)
+		}
 		if data, ok := config.Store.(exportStore); ok {
 			mux.HandleFunc("GET /api/v1/export", exportHandler(auth, data))
 		}
@@ -44,8 +47,14 @@ func NewHandler(config Config) http.Handler {
 			mux.HandleFunc("PATCH /api/v1/progress", handler)
 			mux.HandleFunc("PATCH /api/v1/progress/challenge", handler)
 		}
+		if data, ok := config.Store.(collaborationStore); ok {
+			collaborationRoutes(mux, auth, data)
+		}
 		if data, ok := config.Store.(agileStore); ok {
 			agileRoutes(mux, auth, data)
+		}
+		if data, ok := config.Store.(habitsStore); ok {
+			habitRoutes(mux, auth, data)
 		}
 		if data, ok := config.Store.(timeStore); ok {
 			handler := timeHandler(auth, data)
