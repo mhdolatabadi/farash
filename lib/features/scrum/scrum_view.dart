@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/atelier.dart';
+import 'package:farash/app/surfaces.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/date_labels.dart';
@@ -176,8 +176,6 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                       onPressed: Scaffold.of(context).openDrawer,
                       icon: const Icon(Icons.menu_rounded),
                     ),
-                  const WeaveMark(size: 22),
-                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       widget.project.displayName,
@@ -245,7 +243,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                                 const SizedBox(height: 8),
                                 Text(
                                   d.method == 'scrum'
-                                      ? 'اسکرام برای خودت؛ بدون نیاز به تیم. امتیاز داستان با زمان واقعی و پاداش فرش فرق دارد.'
+                                      ? 'اسکرام برای خودتان؛ بدون نیاز به تیم. امتیاز داستان با زمان واقعی و پاداش فرش فرق دارد.'
                                       : 'با حرکت کارها بین ستون‌ها، وضعیتشان را روشن نگه دار.',
                                 ),
                                 const SizedBox(height: 20),
@@ -278,7 +276,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                                   reports(d),
                                 if (tab != 2 || d.method == 'kanban') ...[
                                   const SizedBox(height: 24),
-                                  const ThreadRule(),
+                                  const Divider(),
                                   const SizedBox(height: 16),
                                   TextField(
                                     controller: capture,
@@ -340,9 +338,8 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
         ),
         for (final sprint in d.sprints.where((s) => s.state != 'closed')) ...[
           const SizedBox(height: 20),
-          AtelierPanel(
+          Panel(
             padding: const EdgeInsets.all(16),
-            lifted: false,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -421,7 +418,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
         const SizedBox(height: 8),
         if (unassigned.isEmpty)
           const Text(
-            'کار تازه را پایین اضافه کن؛ از گزینه‌های هر کار، برآورد و اسپرینتش را تعیین کن.',
+            'کار تازه را پایین اضافه کنید؛ از گزینه‌های هر کار، برآورد و اسپرینتش را تعیین کنید.',
           ),
         for (final item in unassigned) itemTile(item),
         if (d.items.any((i) => i.task.isCompleted && i.sprintId == null))
@@ -464,7 +461,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
   Widget board(ScrumData d, double width, {bool all = false}) {
     if (!all && d.active == null) {
       return const Text(
-        'اسپرینت فعالی نداری. در بک‌لاگ کار انتخاب کن و اسپرینت را شروع کن.',
+        'اسپرینت فعالی ندارید. در بک‌لاگ کار انتخاب کنید و اسپرینت را شروع کنید.',
       );
     }
     final items = d.items
@@ -627,7 +624,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
         const SizedBox(height: 8),
         Text(
           sprint.retro.isEmpty
-              ? 'رترو اختیاری است: چه چیزی را دفعهٔ بعد عوض می‌کنی؟'
+              ? 'رترو اختیاری است: چه چیزی را دفعهٔ بعد عوض می‌کنید؟'
               : sprint.retro,
         ),
         Align(

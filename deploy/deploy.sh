@@ -22,6 +22,10 @@ git checkout --detach "$revision"
 # changing running containers, so a missing image leaves production untouched.
 export FARASH_IMAGE_TAG="$(git rev-parse HEAD)"
 docker compose pull api web
+# Start only PostgreSQL first. This also backs up a fresh installation and an
+# existing volume whose old container was removed; neither silently skips backup.
+docker compose up -d --no-deps --wait postgres
+bash ./backup.sh
 docker compose up -d --no-build --remove-orphans
 docker image prune -f
 

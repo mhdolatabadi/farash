@@ -6,7 +6,6 @@ import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/calendar_settings.dart';
 import 'package:farash/app/app_configuration.dart';
 import 'package:farash/app/app_theme.dart';
-import 'package:farash/app/glass.dart';
 import 'package:farash/app/backend_gate.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/widgets/app_loading_screen.dart';
@@ -179,10 +178,7 @@ class _FarashAppState extends State<FarashApp> {
       title: 'Farash',
       builder: (context, child) => ThemePreferencesScope(
         preferences: _appearance,
-        child: CalendarScope(
-          settings: _calendar,
-          child: GlassBackdrop(child: child!),
-        ),
+        child: CalendarScope(settings: _calendar, child: child!),
       ),
       debugShowCheckedModeBanner: false,
       // Persian first: right-to-left layout and Persian Material strings

@@ -6,5 +6,5 @@ import 'package:farash/features/tasks/data/task.dart';
 /// one fixed hex, so it keeps its contrast by day and by night.
 extension PriorityColor on TaskPriority {
   Color colorIn(BuildContext context) =>
-      FarashGlassColors.of(context).priorities[level - 1];
+      FarashPaletteColors.of(context).priorities[level - 1];
 }

@@ -14,16 +14,12 @@ class FocusController extends ChangeNotifier {
   String? taskTitle;
   bool get running => _deadline != null;
   Duration get remaining => _remaining;
-  int _design = 0;
-  int get design => _design;
 
-  /// Ten states: empty at zero, fully woven only at the work-session deadline.
-  /// Rest breaks never advance the loom.
-  int get weavingFrame {
-    if (minutes != 25) return 0;
+  /// How much of the session has elapsed, 0 to 1, for the progress ring.
+  double get progress {
     final total = Duration(minutes: minutes).inMilliseconds;
     final elapsed = (total - _remaining.inMilliseconds).clamp(0, total);
-    return elapsed * 9 ~/ total;
+    return elapsed / total;
   }
 
   void choose(int value) {
@@ -43,7 +39,6 @@ class FocusController extends ChangeNotifier {
   void start() {
     if (running) return;
     if (_remaining == Duration.zero) _remaining = Duration(minutes: minutes);
-    if (finished && minutes == 25) _design++;
     finished = false;
     _deadline = _now().add(_remaining);
     _ticker?.cancel();
