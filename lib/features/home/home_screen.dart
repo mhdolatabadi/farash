@@ -1,5 +1,7 @@
 import 'package:farash/features/habits/habits_controller.dart';
 import 'package:farash/features/habits/habits_view.dart';
+import 'package:farash/features/search/search.dart';
+import 'package:farash/features/search/search_view.dart';
 import 'package:farash/features/portability/export_api.dart';
 import 'package:farash/features/portability/export_dialog.dart';
 import 'package:farash/features/scrum/scrum.dart';
@@ -491,6 +493,29 @@ class _HomeScreenState extends State<HomeScreen> {
               : null,
           token: widget.token,
         ),
+        if (widget.tasksApi case final SearchApi api)
+          ListTile(
+            leading: const Icon(Icons.search),
+            title: const Text('جست‌وجو و فیلترها'),
+            onTap: () {
+              _scaffoldKey.currentState?.closeDrawer();
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => TrackerScope(
+                    tracker: _tracker,
+                    child: SearchWorkspace(
+                      api: api,
+                      tasks: widget.tasksApi,
+                      sections: widget.sectionsApi,
+                      labels: _labels,
+                      token: widget.token,
+                      projects: () => widget.projects.projects,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint) ...[
           for (final (index, icon, title) in [
             // Today and the lists are already below; only the tools here.
