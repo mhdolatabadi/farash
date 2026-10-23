@@ -164,6 +164,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - run: flutter pub get
+      - name: Test native capture navigation
+        run: python3 -m unittest discover -s tool -p test_capture_android.py
       - name: Build offline UI review fixture
         run: flutter build apk --debug --target tool/scrum_preview.dart
       - name: Enable emulator acceleration

@@ -944,6 +944,7 @@ class _QuickAddState extends State<QuickAddBar> {
   TaskPriority _priority = TaskPriority.p4;
   int _draftRevision = 0;
   bool _busy = false;
+  bool _submittingRecurring = false;
 
   @override
   void dispose() {
@@ -957,11 +958,17 @@ class _QuickAddState extends State<QuickAddBar> {
     if (raw.isEmpty || _busy) return;
     final parsed = _text.parsed;
     final revision = _draftRevision;
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      // A recurrence retry must keep the exact captured intent. Plain
+      // captures still allow composing the next task during their request.
+      _submittingRecurring = parsed.recurrence != null;
+    });
     final added = await widget.onAdd(parsed, raw, _priority);
     if (!mounted) return;
     setState(() {
       _busy = false;
+      _submittingRecurring = false;
       if (added && revision == _draftRevision) {
         _text.clear();
         _text.ignore.clear();
@@ -1004,7 +1011,9 @@ class _QuickAddState extends State<QuickAddBar> {
                           visualDensity: VisualDensity.compact,
                           deleteButtonTooltipMessage:
                               'نادیده گرفتن «${token.text}»',
-                          onDeleted: (widget.pending?.call() ?? false)
+                          onDeleted:
+                              (_submittingRecurring ||
+                                  (widget.pending?.call() ?? false))
                               ? null
                               : () => _text.dismiss(token),
                         ),
@@ -1019,7 +1028,9 @@ class _QuickAddState extends State<QuickAddBar> {
               Expanded(
                 child: TextField(
                   controller: _text,
-                  enabled: !(widget.pending?.call() ?? false),
+                  enabled:
+                      !(_submittingRecurring ||
+                          (widget.pending?.call() ?? false)),
                   focusNode: _focus,
                   textInputAction: TextInputAction.send,
                   maxLength: 500,
@@ -1048,7 +1059,9 @@ class _QuickAddState extends State<QuickAddBar> {
                 ),
               ),
               PopupMenuButton<TaskPriority>(
-                enabled: !(widget.pending?.call() ?? false),
+                enabled:
+                    !(_submittingRecurring ||
+                        (widget.pending?.call() ?? false)),
                 tooltip: 'اولویت: ${_priority.label}',
                 initialValue: _priority,
                 icon: Icon(
@@ -1083,7 +1096,9 @@ class _QuickAddState extends State<QuickAddBar> {
                 builder: (context, value, _) {
                   final ready = value.text.trim().isNotEmpty;
                   return IconButton.filled(
-                    tooltip: (widget.pending?.call() ?? false)
+                    tooltip:
+                        (_submittingRecurring ||
+                            (widget.pending?.call() ?? false))
                         ? 'ذخیرهٔ تکرار کار ساخته‌شده'
                         : 'افزودن کار',
                     style: const ButtonStyle(

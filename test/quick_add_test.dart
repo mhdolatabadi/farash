@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
@@ -55,6 +57,33 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('recurring capture freezes its draft until request settles', (
+    tester,
+  ) async {
+    final ready = Completer<bool>();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: QuickAddBar(onAdd: (_, _, _) => ready.future)),
+      ),
+    );
+    await tester.enterText(find.byType(TextField), 'مطالعه هر روز');
+    await tester.tap(find.byTooltip('افزودن کار'));
+    await tester.pump();
+    expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
+    expect(
+      tester.widget<InputChip>(find.byType(InputChip).first).onDeleted,
+      isNull,
+    );
+    ready.complete(false);
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(find.byType(TextField)).enabled, isTrue);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      'مطالعه هر روز',
+    );
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('quick add sets date, time, priority and labels from text', (
     tester,
