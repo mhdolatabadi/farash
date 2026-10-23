@@ -51,7 +51,7 @@ jobs:
             case "$state" in
               completed:success) exit 0 ;;
               completed:*) echo "Images workflow failed: $state" >&2; exit 1 ;;
-              *) echo "Waiting for images for $DEPLOY_SHA ($state)"; sleep 15 ;;
+              *) echo "Waiting for images for $DEPLOY_SHA ($state, attempt $attempt/40)"; sleep 15 ;;
             esac
           done
           echo "Timed out waiting for immutable images." >&2
