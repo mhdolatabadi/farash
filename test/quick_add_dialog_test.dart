@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:farash/app/app_theme.dart';
 import 'package:farash/core/calendar/time_zone.dart';
 import 'package:farash/features/projects/data/project.dart';
@@ -5,6 +8,8 @@ import 'package:farash/features/tasks/application/quick_capture.dart';
 import 'package:farash/features/tasks/presentation/quick_add_dialog.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -27,6 +32,14 @@ class _Api extends FakeTasksApi implements TimeApi {
 }
 
 void main() {
+  setUpAll(() async {
+    for (final font in [
+      ('Vazirmatn', 'assets/fonts/Vazirmatn-Regular.ttf'),
+      ('MaterialIcons', 'fonts/MaterialIcons-Regular.otf'),
+    ]) {
+      await (FontLoader(font.$1)..addFont(rootBundle.load(font.$2))).load();
+    }
+  });
   setUp(() => debugTimeZoneOverride = 'Asia/Tehran');
   tearDown(() => debugTimeZoneOverride = null);
   for (final dark in [false, true]) {
@@ -50,30 +63,34 @@ void main() {
         projects: () => [inbox],
         defaultProject: () => inbox,
       );
+      final captureKey = GlobalKey();
       await tester.pumpWidget(
-        MaterialApp(
-          locale: const Locale('fa'),
-          supportedLocales: const [Locale('fa')],
-          localizationsDelegates: GlobalMaterialLocalizations.delegates,
-          theme: dark ? FarashTheme.dark() : FarashTheme.light(),
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.linear(2),
-              disableAnimations: true,
+        RepaintBoundary(
+          key: captureKey,
+          child: MaterialApp(
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa')],
+            localizationsDelegates: GlobalMaterialLocalizations.delegates,
+            theme: dark ? FarashTheme.dark() : FarashTheme.light(),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(2),
+                disableAnimations: true,
+              ),
+              child: child!,
             ),
-            child: child!,
-          ),
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: TextButton(
-                onPressed: () => showDialog<void>(
-                  context: context,
-                  builder: (_) => QuickAddDialog(
-                    session: session,
-                    projectName: 'صندوق ورودی',
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: TextButton(
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => QuickAddDialog(
+                      session: session,
+                      projectName: 'صندوق ورودی',
+                    ),
                   ),
+                  child: const Text('capture'),
                 ),
-                child: const Text('capture'),
               ),
             ),
           ),
@@ -99,6 +116,21 @@ void main() {
       final retry = find.widgetWithText(FilledButton, 'ذخیرهٔ تکرار');
       await tester.ensureVisible(retry);
       expect(tester.getSize(retry).height, greaterThanOrEqualTo(48));
+      if (Platform.environment['CAPTURE_GLASS_UI'] == '1') {
+        await tester.runAsync(() async {
+          final boundary =
+              captureKey.currentContext!.findRenderObject()!
+                  as RenderRepaintBoundary;
+          final image = await boundary.toImage(pixelRatio: 1);
+          final data = await image.toByteData(format: ui.ImageByteFormat.png);
+          final file = File(
+            '.impeccable/review/quick-capture-${dark ? 'dark' : 'light'}-large-text-ime.png',
+          );
+          await file.parent.create(recursive: true);
+          await file.writeAsBytes(data!.buffer.asUint8List());
+          image.dispose();
+        });
+      }
       await tester.tap(retry);
       await tester.pumpAndSettle();
       expect(api.all, hasLength(1));
