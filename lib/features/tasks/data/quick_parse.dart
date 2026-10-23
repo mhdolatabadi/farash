@@ -225,8 +225,9 @@ QuickTask parseQuickTask(
         interval > 1000 ||
         monthDay != null &&
             (frequency != 'month' || monthDay < 1 || monthDay > 31) ||
-        !free(start, match.end))
+        !free(start, match.end)) {
       continue;
+    }
     recurrence = QuickRecurrence(
       frequency: frequency,
       interval: interval,

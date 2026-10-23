@@ -8,6 +8,7 @@ import 'package:farash/app/glass.dart';
 import 'package:farash/app/list_app_bar.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
+import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/features/tasks/application/quick_capture.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
 import 'package:farash/features/tasks/data/quick_parse.dart';
@@ -1070,7 +1071,7 @@ class _QuickAddState extends State<_QuickAdd> {
                           visualDensity: VisualDensity.compact,
                           deleteButtonTooltipMessage:
                               'نادیده گرفتن «${token.text}»',
-                          onDeleted: _busy || widget.pending()
+                          onDeleted: widget.pending()
                               ? null
                               : () => _text.dismiss(token),
                         ),
@@ -1085,7 +1086,7 @@ class _QuickAddState extends State<_QuickAdd> {
               Expanded(
                 child: TextField(
                   controller: _text,
-                  enabled: !_busy && !widget.pending(),
+                  enabled: !widget.pending(),
                   focusNode: _focus,
                   textInputAction: TextInputAction.send,
                   maxLength: 500,
@@ -1114,7 +1115,7 @@ class _QuickAddState extends State<_QuickAdd> {
                 ),
               ),
               PopupMenuButton<TaskPriority>(
-                enabled: !_busy && !widget.pending(),
+                enabled: !widget.pending(),
                 tooltip: 'اولویت: ${_priority.label}',
                 initialValue: _priority,
                 icon: Icon(

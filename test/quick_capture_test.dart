@@ -162,7 +162,11 @@ void main() {
       expect(session.hasPendingRecurrence, isTrue);
       expect(api.all, hasLength(1));
       await expectLater(
-        session.capture(parseQuickTask('دیگر'), 'دیگر', calendar: 'jalali'),
+        session.capture(
+          parseQuickTask('دیگر', now: now),
+          'دیگر',
+          calendar: 'jalali',
+        ),
         throwsException,
       );
       token = 'other';

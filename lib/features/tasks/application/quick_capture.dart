@@ -106,7 +106,11 @@ class QuickCaptureSession {
           day = recurring.firstDay(day ?? now ?? DateTime.now(), calendar);
         }
       }
-      final zone = await deviceTimeZone();
+      // Only timed or recurring captures need the zone; asking the platform
+      // for an all-day task would stall where no plugin answers.
+      final zone = day != null && (parsed.hour != null || recurring != null)
+          ? await deviceTimeZone()
+          : null;
       final due = day == null
           ? null
           : parsed.hour == null
@@ -119,12 +123,12 @@ class QuickCaptureSession {
                 parsed.hour!,
                 parsed.minute,
               ),
-              zone,
+              zone!,
             );
       if (recurring != null) {
         _schedule = recurring.schedule(
           start: due!.date,
-          timezone: zone,
+          timezone: zone!,
           calendar: calendar,
           wallTime: parsed.hour == null
               ? null
