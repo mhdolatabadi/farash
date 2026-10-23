@@ -1,7 +1,18 @@
 import 'package:farash/core/calendar/jalali.dart';
+import 'quick_recurrence.dart';
+export 'quick_recurrence.dart';
 
 /// What a recognised piece of quick-add text means.
-enum QuickTokenKind { date, time, priority, project, label, deadline }
+enum QuickTokenKind {
+  date,
+  time,
+  priority,
+  project,
+  label,
+  deadline,
+  section,
+  recurrence,
+}
 
 /// A recognised piece of the text, by its character range in the input.
 class QuickToken {
@@ -32,6 +43,8 @@ class QuickTask {
     this.deadline,
     this.priority,
     this.project,
+    this.section,
+    this.recurrence,
     this.labels = const [],
     this.tokens = const [],
   });
@@ -52,6 +65,8 @@ class QuickTask {
 
   /// A project name after `#`.
   final String? project;
+  final String? section;
+  final QuickRecurrence? recurrence;
 
   /// Label names after `@`, without the `@`.
   final List<String> labels;
@@ -169,7 +184,7 @@ QuickTask parseQuickTask(
   final text = latinDigits(input);
   final tokens = <QuickToken>[];
   bool free(int start, int end) =>
-      !ignore.contains((start, end)) &&
+      !ignore.any((range) => start < range.$2 && range.$1 < end) &&
       !tokens.any((t) => start < t.end && t.start < end);
   void take(QuickTokenKind kind, int start, int end) {
     if (free(start, end)) {
@@ -187,6 +202,57 @@ QuickTask parseQuickTask(
     }
   }
 
+  QuickRecurrence? recurrence;
+  final weekdayNames = _weekdays.keys.toList()
+    ..sort((a, b) => b.length.compareTo(a.length));
+  final weekdayPattern = weekdayNames.map(RegExp.escape).join('|');
+  final repeated = RegExp(
+    r'(^|\s)(?:every(!?)\s+(?:(\d+)\s+)?(days?|weeks?|months?|years?)|هر\s+(?:(\d+)\s+)?(روز|هفته|ماه|سال))(?:\s+(?:on\s+)?(\d{1,2})(?:ام|م|st|nd|rd|th))?(?=\s|$)',
+    caseSensitive: false,
+  );
+  for (final match in repeated.allMatches(text)) {
+    final start = match.start + match.group(1)!.length;
+    final interval = int.tryParse(match.group(3) ?? match.group(5) ?? '1')!;
+    final unit = match.group(4)?.toLowerCase() ?? match.group(6)!;
+    final frequency = switch (unit) {
+      'day' || 'days' || 'روز' => 'day',
+      'week' || 'weeks' || 'هفته' => 'week',
+      'month' || 'months' || 'ماه' => 'month',
+      _ => 'year',
+    };
+    final monthDay = int.tryParse(match.group(7) ?? '');
+    if (interval < 1 ||
+        interval > 1000 ||
+        monthDay != null &&
+            (frequency != 'month' || monthDay < 1 || monthDay > 31) ||
+        !free(start, match.end))
+      continue;
+    recurrence = QuickRecurrence(
+      frequency: frequency,
+      interval: interval,
+      basis: match.group(2) == '!' ? 'completion' : 'due',
+      monthDay: monthDay,
+    );
+    take(QuickTokenKind.recurrence, start, match.end);
+    break;
+  }
+  if (recurrence == null) {
+    final repeatedWeekday = RegExp(
+      '(^|\\s)(?:every|هر)\\s+($weekdayPattern)(?=\\s|\$)',
+      caseSensitive: false,
+    );
+    for (final match in repeatedWeekday.allMatches(text)) {
+      final start = match.start + match.group(1)!.length;
+      if (!free(start, match.end)) continue;
+      recurrence = QuickRecurrence(
+        frequency: 'week',
+        weekday: _weekdays[match.group(2)!.toLowerCase()],
+      );
+      take(QuickTokenKind.recurrence, start, match.end);
+      break;
+    }
+  }
+
   final words = [
     for (final m in RegExp(r'\S+').allMatches(text))
       if (!tokens.any((t) => m.start < t.end && t.start < m.end))
@@ -195,6 +261,7 @@ QuickTask parseQuickTask(
 
   int? priority;
   String? project;
+  String? section;
   final labels = <String>[];
   for (final w in words) {
     final p = RegExp(r'^(?:[pP]|!!)([1-4])$').firstMatch(w.text);
@@ -211,6 +278,11 @@ QuickTask parseQuickTask(
         free(w.start, w.end)) {
       labels.add(input.substring(w.start + 1, w.end));
       take(QuickTokenKind.label, w.start, w.end);
+    } else if (w.text.length > 1 &&
+        w.text.startsWith('/') &&
+        free(w.start, w.end)) {
+      section = input.substring(w.start + 1, w.end);
+      take(QuickTokenKind.section, w.start, w.end);
     }
   }
 
@@ -405,6 +477,8 @@ QuickTask parseQuickTask(
     deadline: deadline,
     priority: priority,
     project: project,
+    section: section,
+    recurrence: recurrence,
     labels: labels,
     tokens: tokens,
   );

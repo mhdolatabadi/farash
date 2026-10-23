@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:farash/features/tasks/presentation/quick_add_dialog.dart';
 import 'package:farash/features/tasks/presentation/project_tasks_view.dart';
 import 'package:farash/features/home/home_screen.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
@@ -176,6 +178,61 @@ void main() {
     await tester.tap(find.byTooltip('Open navigation menu'));
     await tester.pumpAndSettle();
 
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('q opens one capture dialog and leaves typing alone', (
+    tester,
+  ) async {
+    await pumpHome(tester, size: const Size(1200, 800));
+    await tester.tap(find.byType(TextField).first);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyQ);
+    await tester.pumpAndSettle();
+    expect(find.byType(QuickAddDialog), findsNothing);
+
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyQ);
+    await tester.pumpAndSettle();
+    expect(find.byType(QuickAddDialog), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyQ);
+    await tester.pumpAndSettle();
+    expect(find.byType(QuickAddDialog), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, 'q task');
+    expect(
+      tester.widget<TextField>(find.byType(TextField).last).controller!.text,
+      'q task',
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('q is available on normal pushed pages, but never over a modal', (
+    tester,
+  ) async {
+    await pumpHome(tester, size: const Size(1200, 800));
+    final navigator = Navigator.of(tester.element(find.byType(HomeScreen)));
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(
+          body: Focus(autofocus: true, child: Text('secondary page')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final pageContext = tester.element(find.text('secondary page'));
+    showDialog<void>(
+      context: pageContext,
+      builder: (_) => const AlertDialog(title: Text('existing modal')),
+    );
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyQ);
+    await tester.pumpAndSettle();
+    expect(find.byType(QuickAddDialog), findsNothing);
+    navigator.pop();
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyQ);
+    await tester.pumpAndSettle();
+    expect(find.byType(QuickAddDialog), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
