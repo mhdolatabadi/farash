@@ -4,6 +4,8 @@ on:
   workflow_run:
     workflows: ["Quality checks"]
     types: [completed]
+    # Without this every pull request CI run creates a skipped Deploy run.
+    branches: [main]
   workflow_dispatch:
     inputs:
       ref:
