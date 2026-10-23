@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:farash/features/habits/habit.dart';
 import 'package:farash/features/habits/habit_stats.dart';
+import 'package:farash/features/habits/reminders/habit_reminders.dart';
 
 abstract interface class HabitsApi {
   Future<Map<String, dynamic>> habitRequest(
@@ -16,10 +17,17 @@ enum HabitSort { manual, name, color, score }
 /// The account's habits, with optimistic check-ins that roll back when the
 /// server refuses them.
 class HabitsController extends ChangeNotifier {
-  HabitsController({required this.api, required this.token, DateTime? now})
-    : _now = now;
+  HabitsController({
+    required this.api,
+    required this.token,
+    this.reminders,
+    DateTime? now,
+  }) : _now = now;
 
   final HabitsApi api;
+
+  /// Follows every change, so the device reminds about the current habits.
+  final HabitReminders? reminders;
   final String? Function() token;
   final DateTime? _now;
 
@@ -74,7 +82,9 @@ class HabitsController extends ChangeNotifier {
 
   void _set(List<Habit> habits) {
     _habits = habits;
-    if (!_disposed) notifyListeners();
+    if (_disposed) return;
+    reminders?.sync(habits);
+    notifyListeners();
   }
 
   void _replace(Habit habit) =>
@@ -104,6 +114,7 @@ class HabitsController extends ChangeNotifier {
           for (final h in data['habits'] as List)
             Habit.fromJson(h as Map<String, dynamic>),
         ];
+        reminders?.sync(_habits);
       }
     } catch (e) {
       error = '$e';
@@ -226,6 +237,14 @@ class HabitsController extends ChangeNotifier {
       }
       if (!_disposed) message.value = 'ثبت نشد: $e';
     }
+  }
+
+  /// «انجام شد» on a reminder: records [day] as done for a yes/no habit.
+  Future<void> markDone(String habitId, int day) async {
+    if (byId(habitId) == null) await load();
+    final habit = byId(habitId);
+    if (habit == null || habit.isNumeric) return;
+    await setEntry(habit, day, const HabitEntry(value: 1));
   }
 
   /// Loop's toggle for a yes/no habit: unknown → done → not done → skipped.
