@@ -60,7 +60,13 @@ def tap(label):
                 adb('shell', 'input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
                 return
         time.sleep(1)
-    raise RuntimeError(f'Accessible control not found: {label}')
+    visible = [
+        value.split('\n')[0]
+        for node in ET.fromstring(xml).iter('node')
+        for value in (node.get('text', ''), node.get('content-desc', ''))
+        if value
+    ]
+    raise RuntimeError(f'Accessible control not found: {label}; visible: {visible}')
 
 
 adb('install', '-r', 'build/app/outputs/flutter-apk/app-debug.apk')
