@@ -1,3 +1,4 @@
+import 'package:farash/core/offline/offline_read_cache.dart';
 import 'package:farash/features/habits/habits_controller.dart';
 import 'package:farash/features/search/search.dart';
 import 'package:farash/features/portability/export_api.dart';
@@ -216,7 +217,7 @@ class ApiClient
         ScrumApi,
         SearchApi,
         ExportApi {
-  ApiClient(this.baseUri, {http.Client? client})
+  ApiClient(this.baseUri, {http.Client? client, this.offlineCache})
     : _client = client ?? http.Client();
 
   @override
@@ -280,6 +281,52 @@ class ApiClient
   final completedTask = ValueNotifier<Task?>(null);
   final Uri baseUri;
   final http.Client _client;
+  final OfflineReadCache? offlineCache;
+
+  Future<void> activateOfflineSession(String token) async =>
+      offlineCache?.activate(baseUri, token);
+
+  Future<void> rememberAuthenticatedIdentity(AuthSession session) async {
+    final cache = offlineCache;
+    if (cache == null) return;
+    await cache.activate(baseUri, session.token);
+    await cache.remember(
+      baseUri,
+      session.token,
+      cache.epoch,
+      _uri('/api/v1/me').toString(),
+      {
+        'user': {'id': session.user.id, 'email': session.user.email},
+      },
+    );
+  }
+
+  Future<void> clearOfflineSession() async => offlineCache?.clear();
+
+  bool get isOffline => offlineCache?.isOffline ?? false;
+
+  Future<bool> hasOfflineIdentity(String token) async {
+    final cache = offlineCache;
+    if (cache == null) return false;
+    final body = cache.read(
+      baseUri,
+      token,
+      cache.epoch,
+      _uri('/api/v1/me').toString(),
+    );
+    if (body is! Map<String, dynamic> ||
+        body['user'] is! Map<String, dynamic>) {
+      return false;
+    }
+    final user = body['user'] as Map<String, dynamic>;
+    return user['id'] is String && user['email'] is String;
+  }
+
+  Future<void> reconnect(String token) async {
+    await checkHealth();
+    await _send('GET', '/api/v1/me', token: token, allowCache: false);
+    offlineCache?.reconnected();
+  }
 
   static const _timeout = Duration(seconds: 20);
 
@@ -686,7 +733,20 @@ class ApiClient
     String? token,
     Object? body,
     Map<String, String>? query,
+    bool allowCache = true,
   }) async {
+    final cache = offlineCache;
+    final generation = cache?.epoch ?? 0;
+    final cacheable =
+        allowCache &&
+        token != null &&
+        method == 'GET' &&
+        OfflineReadCache.allows(path);
+    if (method != 'GET' && method != 'HEAD' && cache?.isOffline == true) {
+      throw const ApiException(
+        'حالت آفلاین فقط برای مشاهده است. ابتدا دوباره متصل شوید.',
+      );
+    }
     final request = http.Request(method, _uri(path, query));
     request.headers['Accept'] = 'application/json';
     if (token != null) request.headers['Authorization'] = 'Bearer $token';
@@ -701,13 +761,43 @@ class ApiClient
         await _client.send(request).timeout(_timeout),
       );
     } on Exception {
+      if (cacheable) {
+        final saved = cache?.read(
+          baseUri,
+          token,
+          generation,
+          request.url.toString(),
+        );
+        if (saved != null) {
+          cache?.usedOffline();
+          return saved;
+        }
+      }
       throw const ApiException('اتصال به سرور برقرار نشد.');
     }
 
+    if (response.statusCode == 401 &&
+        cache?.matches(baseUri, token, generation) == true) {
+      await cache?.clear();
+    }
     final decoded = response.body.isEmpty
         ? null
         : _tryDecode(utf8.decode(response.bodyBytes));
     if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (cacheable && decoded is Map<String, dynamic>) {
+        await cache?.remember(
+          baseUri,
+          token,
+          generation,
+          request.url.toString(),
+          decoded,
+        );
+      }
+      if (method != 'GET' &&
+          token != null &&
+          cache?.matches(baseUri, token, generation) == true) {
+        await cache?.invalidateData();
+      }
       if (method != 'GET' &&
           (path.startsWith('/api/v1/tasks') ||
               path.startsWith('/api/v1/projects') ||
