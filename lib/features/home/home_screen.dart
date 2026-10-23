@@ -159,7 +159,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _quickAdd() async {
     if (_quickAdding) return;
-    final selected = _section == 1 && _view == null && _labelId == null
+    final selected =
+        ModalRoute.of(context)?.isCurrent == true &&
+            _section == 1 &&
+            _view == null &&
+            _labelId == null
         ? _selected
         : null;
     final target =
