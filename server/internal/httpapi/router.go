@@ -38,6 +38,9 @@ func NewHandler(config Config) http.Handler {
 		if data, ok := config.Store.(searchStore); ok {
 			searchRoutes(mux, auth, data)
 		}
+		if data, ok := config.Store.(recurringTasksStore); ok {
+			recurringTaskRoutes(mux, auth, data)
+		}
 		if data, ok := config.Store.(exportStore); ok {
 			mux.HandleFunc("GET /api/v1/export", exportHandler(auth, data))
 		}
@@ -52,6 +55,9 @@ func NewHandler(config Config) http.Handler {
 		}
 		if data, ok := config.Store.(agileStore); ok {
 			agileRoutes(mux, auth, data)
+		}
+		if data, ok := config.Store.(habitsStore); ok {
+			habitRoutes(mux, auth, data)
 		}
 		if data, ok := config.Store.(timeStore); ok {
 			handler := timeHandler(auth, data)
