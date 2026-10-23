@@ -25,6 +25,7 @@ class HabitsController extends ChangeNotifier {
 
   List<Habit> _habits = const [];
   final _stats = <String, HabitStats>{};
+  final _entryQueues = <(String, int), Future<void>>{};
   bool loading = false, showArchived = false;
   HabitSort sort = HabitSort.manual;
   String? error;
@@ -170,7 +171,33 @@ class HabitsController extends ChangeNotifier {
   }
 
   /// Records [entry] for [day], or clears the day when it is null.
-  Future<void> setEntry(Habit habit, int day, HabitEntry? entry) async {
+  Future<void> setEntry(Habit habit, int day, HabitEntry? entry) =>
+      _enqueueEntry(habit, day, (_) => entry);
+
+  // Keep every tap, but send one change per day at a time. Its rollback then
+  // finishes before the next intent reads or changes that day's value.
+  Future<void> _enqueueEntry(
+    Habit habit,
+    int day,
+    HabitEntry? Function(HabitEntry?) next,
+  ) {
+    final key = (habit.id, day);
+    final previous = _entryQueues[key] ?? Future<void>.value();
+    late final Future<void> operation;
+    operation = previous
+        .then((_) async {
+          if (_disposed) return;
+          final current = byId(habit.id) ?? habit;
+          await _commitEntry(current, day, next(current.entries[day]));
+        })
+        .whenComplete(() {
+          if (identical(_entryQueues[key], operation)) _entryQueues.remove(key);
+        });
+    _entryQueues[key] = operation;
+    return operation;
+  }
+
+  Future<void> _commitEntry(Habit habit, int day, HabitEntry? entry) async {
     final current = byId(habit.id) ?? habit;
     final entries = {...current.entries};
     if (entry == null) {
@@ -197,21 +224,21 @@ class HabitsController extends ChangeNotifier {
         }
         _replace(latest.copyWith(entries: restored));
       }
-      message.value = 'ثبت نشد: $e';
+      if (!_disposed) message.value = 'ثبت نشد: $e';
     }
   }
 
   /// Loop's toggle for a yes/no habit: unknown → done → not done → skipped.
-  Future<void> toggle(Habit habit, int day) {
-    final e = (byId(habit.id) ?? habit).entries[day];
-    final HabitEntry? next = switch (e) {
+  Future<void> toggle(Habit habit, int day) => _enqueueEntry(
+    habit,
+    day,
+    (entry) => switch (entry) {
       null => const HabitEntry(value: 1),
       HabitEntry(skip: true) => null,
       HabitEntry(value: > 0) => const HabitEntry(value: 0),
       _ => const HabitEntry(value: 0, skip: true),
-    };
-    return setEntry(habit, day, next);
-  }
+    },
+  );
 
   @override
   void dispose() {
