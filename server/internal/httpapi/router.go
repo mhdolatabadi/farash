@@ -50,6 +50,9 @@ func NewHandler(config Config) http.Handler {
 		if data, ok := config.Store.(agileStore); ok {
 			agileRoutes(mux, auth, data)
 		}
+		if data, ok := config.Store.(habitsStore); ok {
+			habitRoutes(mux, auth, data)
+		}
 		if data, ok := config.Store.(timeStore); ok {
 			handler := timeHandler(auth, data)
 			mux.HandleFunc("GET /api/v1/time", handler)
