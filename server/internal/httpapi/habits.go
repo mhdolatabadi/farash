@@ -87,6 +87,8 @@ func habitsHandler(auth *authHandler, data habitsStore) http.HandlerFunc {
 				writeError(w, http.StatusBadRequest, "invalid_habit")
 			case errors.Is(err, store.ErrInvalidEntry):
 				writeError(w, http.StatusBadRequest, "invalid_habit_entry")
+			case errors.Is(err, store.ErrHabitRequestConflict):
+				writeError(w, http.StatusConflict, "habit_request_conflict")
 			case errors.Is(err, store.ErrHabitLimit):
 				writeError(w, http.StatusConflict, "habit_limit_reached")
 			default:
