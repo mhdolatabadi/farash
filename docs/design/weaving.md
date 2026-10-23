@@ -1,3 +1,5 @@
+> Archived: superseded by the calm Material 3 redesign (#116). See root `DESIGN.md`. The weaving code and artwork were removed.
+
 # Weaving redesign
 
 ## Selected world

@@ -15,7 +15,7 @@ API: GET/POST `/api/v1/time`; POST `/api/v1/time/{id}/stop`; PATCH/DELETE `/api/
 ## Direction contract
 
 THESIS: Capture actual work with minimal memory burden while keeping the task primary.
-OWN-WORLD: Extend the existing weaving atelier surfaces, Persian type and quiet controls. No new dashboard or reward currency.
+OWN-WORLD: Use the calm Material 3 surfaces in DESIGN.md, Persian type and quiet controls. No new dashboard or reward currency.
 STORY: Pick a task, focus/record, see the active strip, then review/correct real time.
 FIRST VIEWPORT: A short heading, today/week totals, task-start/manual actions. The active strip reserves layout space rather than covering content. Details/gaps follow in a scrollable column.
 FORM: Ordinary extension of the user-pinned, code-led atelier system; preserve DESIGN.md and sidecar tokens.

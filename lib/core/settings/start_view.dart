@@ -1,16 +1,20 @@
 import 'package:flutter/foundation.dart';
 import 'package:farash/core/calendar/calendar_settings.dart';
 
-/// Which list opens when the app starts on this device: the Inbox
-/// (`inbox`) or a view across projects, by its name.
+/// Which list opens when the app starts on this device: today (`today`),
+/// the Inbox (`inbox`) or another view across projects, by its name.
 class StartView extends ChangeNotifier {
-  StartView({CalendarSettingsStore? store, String value = weaving})
+  StartView({CalendarSettingsStore? store, String value = today})
     : _store = store,
-      _value = value == 'garden' ? weaving : value;
+      _value = _migrate(value);
 
   static const inbox = 'inbox';
-  static const weaving = 'weaving';
+  static const today = 'today';
   static const _key = 'start_view';
+
+  /// The retired garden and weaving homes open today instead.
+  static String _migrate(String value) =>
+      value == 'garden' || value == 'weaving' ? today : value;
 
   final CalendarSettingsStore? _store;
   String _value;
@@ -26,7 +30,7 @@ class StartView extends ChangeNotifier {
     try {
       final saved = await _store?.read(_key);
       if (saved != null && saved.isNotEmpty) {
-        _value = saved == 'garden' ? weaving : saved;
+        _value = _migrate(saved);
       }
     } catch (_) {
       // Unreadable storage keeps the Inbox.
@@ -37,7 +41,7 @@ class StartView extends ChangeNotifier {
 
   Future<void> set(String value) async {
     if (value == _value) return;
-    _value = value == 'garden' ? weaving : value;
+    _value = _migrate(value);
     notifyListeners();
     try {
       await _store?.write(_key, value);

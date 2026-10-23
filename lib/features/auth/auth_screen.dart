@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/atelier.dart';
-import 'package:farash/app/glass.dart';
+import 'package:farash/app/surfaces.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/features/auth/data/auth_models.dart';
 
@@ -25,6 +24,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   var _registerMode = false;
   var _submitting = false;
+  var _showPassword = false;
   String? _error;
 
   @override
@@ -74,7 +74,7 @@ class _AuthScreenState extends State<AuthScreen> {
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
-              child: GlassSurface(
+              child: Panel(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Form(
@@ -84,7 +84,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Center(child: WeaveMark(size: 48)),
+                          const Center(child: FarashMark(size: 48)),
                           const SizedBox(height: 16),
                           Text(
                             title,
@@ -121,16 +121,31 @@ class _AuthScreenState extends State<AuthScreen> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _password,
-                            obscureText: true,
+                            obscureText: !_showPassword,
                             textDirection: TextDirection.ltr,
                             textInputAction: TextInputAction.done,
                             autofillHints: _registerMode
                                 ? const [AutofillHints.newPassword]
                                 : const [AutofillHints.password],
                             onFieldSubmitted: (_) => _submit(),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'رمز عبور',
-                              prefixIcon: Icon(Icons.lock_outline_rounded),
+                              prefixIcon: const Icon(
+                                Icons.lock_outline_rounded,
+                              ),
+                              suffixIcon: IconButton(
+                                tooltip: _showPassword
+                                    ? 'پنهان کردن رمز'
+                                    : 'نمایش رمز',
+                                onPressed: () => setState(
+                                  () => _showPassword = !_showPassword,
+                                ),
+                                icon: Icon(
+                                  _showPassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                              ),
                             ),
                             validator: (value) {
                               final password = value ?? '';

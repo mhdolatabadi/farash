@@ -1,7 +1,9 @@
+import 'package:farash/features/recurrence/recurrence_panel.dart';
+import 'package:farash/features/recurrence/task_recurrence.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:farash/features/time_tracking/time_tracking_view.dart';
 import 'package:flutter/material.dart';
-import 'package:farash/app/glass.dart';
+import 'package:farash/app/surfaces.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
 import 'package:farash/features/labels/presentation/label_widgets.dart';
 import 'package:farash/features/projects/data/project.dart';
@@ -31,6 +33,10 @@ Future<TaskSheetResult?> showTaskDetailSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    // A drag would close the sheet without asking about unsaved edits;
+    // Back and the scrim go through the editor's confirmation instead.
+    enableDrag: false,
+    showDragHandle: false,
     builder: (context) => TaskDetailEditor(
       controller: controller,
       task: task,
@@ -76,6 +82,53 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
   late String? _sectionId = widget.controller.sectionOf(widget.task);
   late TaskDates _dates = widget.task.dates;
   late List<String> _labelIds = [...widget.task.labelIds];
+  late final RecurrenceService? _recurrence = widget.controller.api is TimeApi
+      ? RecurrenceService(
+          widget.controller.api as TimeApi,
+          widget.controller.token,
+        )
+      : null;
+
+  /// The notes as last saved; checklist ticks save them on the spot.
+  late String _savedDescription = widget.task.description;
+
+  bool get _dirty =>
+      _title.text != widget.task.title ||
+      _description.text != _savedDescription ||
+      _priority != widget.task.priority ||
+      _projectId != widget.task.projectId ||
+      _sectionId != widget.controller.sectionOf(widget.task) ||
+      _dates != widget.task.dates ||
+      (widget.labels != null && !_sameLabels(_labelIds, widget.task.labelIds));
+
+  static bool _sameLabels(List<String> a, List<String> b) =>
+      a.length == b.length && a.toSet().containsAll(b);
+
+  /// Closes without saving, asking first when something would be lost.
+  Future<void> _dismiss() async {
+    if (_saving) return;
+    if (_dirty) {
+      final discard = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('تغییرها ذخیره نشده‌اند'),
+          content: const Text('اگر ببندید، تغییرهای این کار از بین می‌روند.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('ادامهٔ ویرایش'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('دور ریختن'),
+            ),
+          ],
+        ),
+      );
+      if (discard != true || !mounted) return;
+    }
+    _close(null);
+  }
 
   Future<void> _pickDates() async {
     final picked = await showDuePicker(context, initial: _dates);
@@ -110,6 +163,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
   /// Checklist changes save at once, like ticking a box should.
   Future<void> _saveChecklist(String description) {
     _description.text = description;
+    _savedDescription = description;
     return _quietly(
       () => widget.controller.saveDescription(widget.task, description),
     );
@@ -226,7 +280,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
           .firstOrNull;
       if (current != null) targets.insert(0, current);
     }
-    // Beside the list the editor is a side sheet of glass; as a modal
+    // Beside the list the editor is a side panel; as a modal
     // bottom sheet it is the sheet itself, over a scrim, with no pane of
     // its own.
     final side = widget.onResult != null;
@@ -270,7 +324,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                       ),
                       IconButton(
                         tooltip: 'بستن ویرایشگر',
-                        onPressed: _saving ? null : () => _close(null),
+                        onPressed: _saving ? null : _dismiss,
                         icon: const Icon(Icons.close),
                       ),
                     ],
@@ -292,6 +346,15 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                   const Divider(),
                   const SizedBox(height: 8),
                   _ScheduleRow(dates: _dates, onTap: _pickDates),
+                  if (_recurrence case final service?)
+                    RecurrencePanel(
+                      task: _task,
+                      service: service,
+                      datesSaved: _dates == _task.dates,
+                      disabled: _saving,
+                      onRefresh: widget.controller.load,
+                      onSkipped: () => _close(TaskSheetResult.saved),
+                    ),
                   if (widget.tracker != null)
                     TaskTimePanel(tracker: widget.tracker!, task: widget.task),
                   _PropertyRow(
@@ -456,10 +519,17 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
         ],
       ),
     );
-    if (side) return GlassSurface(child: body);
+    final guarded = PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _dismiss();
+      },
+      child: body,
+    );
+    if (side) return Panel(child: guarded);
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: body,
+      child: guarded,
     );
   }
 }
