@@ -1,5 +1,8 @@
 import 'package:farash/features/habits/habits_controller.dart';
 import 'package:farash/features/habits/habits_view.dart';
+import 'package:farash/features/habits/habit_detail.dart';
+import 'package:farash/features/habits/reminders/habit_reminders.dart';
+import 'package:farash/features/habits/reminders/local_reminders.dart';
 import 'package:farash/features/search/search.dart';
 import 'package:farash/features/search/search_view.dart';
 import 'package:farash/features/portability/export_api.dart';
@@ -50,6 +53,7 @@ class HomeScreen extends StatefulWidget {
     this.sectionsApi,
     this.startView,
     this.labelsApi,
+    this.habitReminders,
   });
 
   final String email;
@@ -64,6 +68,9 @@ class HomeScreen extends StatefulWidget {
   /// Labels, where the backend offers them.
   final LabelsApi? labelsApi;
 
+  /// The device's habit reminders, where the platform can show them.
+  final HabitReminders? habitReminders;
+
   /// The current access token; null once signed out.
   final String? Function() token;
 
@@ -71,7 +78,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   String? _selectedId;
   int _section = 1;
@@ -84,7 +91,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Habits live in the shell so check-ins survive switching sections.
   late final HabitsController? _habits = widget.tasksApi is HabitsApi
-      ? HabitsController(api: widget.tasksApi as HabitsApi, token: widget.token)
+      ? HabitsController(
+          api: widget.tasksApi as HabitsApi,
+          token: widget.token,
+          reminders: widget.habitReminders,
+        )
       : null;
   Task? _focusTask;
   String? _focusEntry;
@@ -122,6 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     widget.projects.load();
     _labels?.load();
+    _startReminders();
     _applyStartView();
     widget.startView?.addListener(_applyStartView);
     _refreshCount();
@@ -137,6 +149,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _tracker?.removeListener(_trackerChanged);
     _tracker?.dispose();
     _focus.removeListener(_focusChanged);
+    WidgetsBinding.instance.removeObserver(this);
+    widget.habitReminders?.opened.removeListener(_openReminder);
+    if (widget.habitReminders case final LocalHabitReminders local) {
+      local.onDone = null;
+    }
     _habits?.dispose();
     _focus.dispose();
     widget.startView?.removeListener(_applyStartView);
@@ -462,6 +479,42 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       MaterialPageRoute<void>(
         builder: (_) => ArchivedProjectsScreen(controller: widget.projects),
+      ),
+    );
+  }
+
+  /// Reminders need the habits even before their tab is opened, and again
+  /// on return, when a reminder may have been answered in the background.
+  void _startReminders() {
+    final reminders = widget.habitReminders;
+    final habits = _habits;
+    if (reminders == null || habits == null) return;
+    WidgetsBinding.instance.addObserver(this);
+    reminders.opened.addListener(_openReminder);
+    if (reminders case final LocalHabitReminders local) {
+      local.onDone = habits.markDone;
+      local.start();
+    }
+    habits.load().then((_) => _openReminder());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _habits?.load();
+  }
+
+  /// Shows the habit of a reminder the user tapped.
+  void _openReminder() {
+    final reminders = widget.habitReminders;
+    final habits = _habits;
+    final id = reminders?.opened.value;
+    if (reminders == null || habits == null || id == null) return;
+    if (habits.byId(id) == null || !mounted) return;
+    reminders.opened.value = null;
+    _switchSection(4);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => HabitDetailScreen(controller: habits, habitId: id),
       ),
     );
   }

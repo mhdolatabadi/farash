@@ -36,21 +36,25 @@ type HabitEntry struct {
 }
 
 type Habit struct {
-	ID          string       `json:"id"`
-	Name        string       `json:"name"`
-	Question    string       `json:"question"`
-	Notes       string       `json:"notes"`
-	Color       int          `json:"color"`
-	Kind        string       `json:"kind"`
-	FreqNum     int          `json:"freq_num"`
-	FreqDen     int          `json:"freq_den"`
-	TargetType  string       `json:"target_type"`
-	TargetValue float64      `json:"target_value"`
-	Unit        string       `json:"unit"`
-	SortOrder   int          `json:"sort_order"`
-	Archived    bool         `json:"archived"`
-	CreatedAt   time.Time    `json:"created_at"`
-	Entries     []HabitEntry `json:"entries"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Question    string  `json:"question"`
+	Notes       string  `json:"notes"`
+	Color       int     `json:"color"`
+	Kind        string  `json:"kind"`
+	FreqNum     int     `json:"freq_num"`
+	FreqDen     int     `json:"freq_den"`
+	TargetType  string  `json:"target_type"`
+	TargetValue float64 `json:"target_value"`
+	Unit        string  `json:"unit"`
+	SortOrder   int     `json:"sort_order"`
+	Archived    bool    `json:"archived"`
+	// ReminderMinute is the local minute of the day, or nil for no reminder.
+	ReminderMinute *int `json:"reminder_minute"`
+	// ReminderDays is a weekday bitmask: bit 0 Monday ... bit 6 Sunday.
+	ReminderDays int          `json:"reminder_days"`
+	CreatedAt    time.Time    `json:"created_at"`
+	Entries      []HabitEntry `json:"entries"`
 }
 
 // HabitInput creates a habit, or changes the fields that are set.
@@ -68,6 +72,9 @@ type HabitInput struct {
 	Unit        *string  `json:"unit"`
 	SortOrder   *int     `json:"sort_order"`
 	Archived    *bool    `json:"archived"`
+	// ReminderMinute set to null turns the reminder off.
+	ReminderMinute Optional[int] `json:"reminder_minute"`
+	ReminderDays   *int          `json:"reminder_days"`
 }
 
 type HabitEntryInput struct {
@@ -75,11 +82,11 @@ type HabitEntryInput struct {
 	Skip  bool    `json:"skip"`
 }
 
-const habitColumns = `id, name, question, notes, color, kind, freq_num, freq_den, target_type, target_value, unit, sort_order, archived_at IS NOT NULL, created_at`
+const habitColumns = `id, name, question, notes, color, kind, freq_num, freq_den, target_type, target_value, unit, sort_order, archived_at IS NOT NULL, reminder_minute, reminder_days, created_at`
 
 func scanHabit(row pgx.Row) (Habit, error) {
 	var h Habit
-	err := row.Scan(&h.ID, &h.Name, &h.Question, &h.Notes, &h.Color, &h.Kind, &h.FreqNum, &h.FreqDen, &h.TargetType, &h.TargetValue, &h.Unit, &h.SortOrder, &h.Archived, &h.CreatedAt)
+	err := row.Scan(&h.ID, &h.Name, &h.Question, &h.Notes, &h.Color, &h.Kind, &h.FreqNum, &h.FreqDen, &h.TargetType, &h.TargetValue, &h.Unit, &h.SortOrder, &h.Archived, &h.ReminderMinute, &h.ReminderDays, &h.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = ErrHabitNotFound
 	}
@@ -125,6 +132,12 @@ func (in HabitInput) apply(h *Habit) error {
 	if in.Archived != nil {
 		h.Archived = *in.Archived
 	}
+	if in.ReminderMinute.Set {
+		h.ReminderMinute = in.ReminderMinute.Value
+	}
+	if in.ReminderDays != nil {
+		h.ReminderDays = *in.ReminderDays
+	}
 	switch {
 	case h.Name == "" || utf8.RuneCountInString(h.Name) > 200,
 		utf8.RuneCountInString(h.Question) > 300,
@@ -135,7 +148,9 @@ func (in HabitInput) apply(h *Habit) error {
 		h.TargetType != "at_least" && h.TargetType != "at_most",
 		h.FreqDen < 1 || h.FreqDen > 365 || h.FreqNum < 1 || h.FreqNum > h.FreqDen,
 		math.IsNaN(h.TargetValue) || math.IsInf(h.TargetValue, 0) || h.TargetValue < 0 || h.TargetValue > 1e9,
-		h.Kind == "numeric" && h.TargetValue == 0 && h.TargetType == "at_least":
+		h.Kind == "numeric" && h.TargetValue == 0 && h.TargetType == "at_least",
+		h.ReminderMinute != nil && (*h.ReminderMinute < 0 || *h.ReminderMinute > 1439),
+		h.ReminderDays < 1 || h.ReminderDays > 127:
 		return ErrInvalidHabit
 	}
 	return nil
@@ -196,7 +211,7 @@ func (s *Store) CreateHabit(ctx context.Context, owner string, in HabitInput) (H
 	if in.RequestKey != "" && !habitRequestKey.MatchString(in.RequestKey) {
 		return Habit{}, ErrInvalidHabit
 	}
-	h := Habit{Color: 8, Kind: "boolean", FreqNum: 1, FreqDen: 1, TargetType: "at_least"}
+	h := Habit{Color: 8, Kind: "boolean", FreqNum: 1, FreqDen: 1, TargetType: "at_least", ReminderDays: 127}
 	in.Archived = nil
 	if err := in.apply(&h); err != nil {
 		return Habit{}, err
@@ -255,9 +270,9 @@ func (s *Store) CreateHabit(ctx context.Context, owner string, in HabitInput) (H
 	if in.SortOrder == nil {
 		h.SortOrder = next
 	}
-	created, err := scanHabit(tx.QueryRow(ctx, `INSERT INTO habits(id,owner_id,name,question,notes,color,kind,freq_num,freq_den,target_type,target_value,unit,sort_order)
-		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING `+habitColumns,
-		newID(), owner, h.Name, h.Question, h.Notes, h.Color, h.Kind, h.FreqNum, h.FreqDen, h.TargetType, h.TargetValue, h.Unit, h.SortOrder))
+	created, err := scanHabit(tx.QueryRow(ctx, `INSERT INTO habits(id,owner_id,name,question,notes,color,kind,freq_num,freq_den,target_type,target_value,unit,sort_order,reminder_minute,reminder_days)
+		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING `+habitColumns,
+		newID(), owner, h.Name, h.Question, h.Notes, h.Color, h.Kind, h.FreqNum, h.FreqDen, h.TargetType, h.TargetValue, h.Unit, h.SortOrder, h.ReminderMinute, h.ReminderDays))
 	if err != nil {
 		return Habit{}, err
 	}
@@ -311,8 +326,9 @@ func (s *Store) UpdateHabit(ctx context.Context, owner, id string, in HabitInput
 		return Habit{}, err
 	}
 	if _, err = tx.Exec(ctx, `UPDATE habits SET name=$3,question=$4,notes=$5,color=$6,freq_num=$7,freq_den=$8,target_type=$9,target_value=$10,unit=$11,sort_order=$12,
-		archived_at=CASE WHEN $13 THEN COALESCE(archived_at,now()) ELSE NULL END WHERE owner_id=$1 AND id=$2`,
-		owner, id, h.Name, h.Question, h.Notes, h.Color, h.FreqNum, h.FreqDen, h.TargetType, h.TargetValue, h.Unit, h.SortOrder, h.Archived); err != nil {
+		archived_at=CASE WHEN $13 THEN COALESCE(archived_at,now()) ELSE NULL END,
+		reminder_minute=$14,reminder_days=$15 WHERE owner_id=$1 AND id=$2`,
+		owner, id, h.Name, h.Question, h.Notes, h.Color, h.FreqNum, h.FreqDen, h.TargetType, h.TargetValue, h.Unit, h.SortOrder, h.Archived, h.ReminderMinute, h.ReminderDays); err != nil {
 		return Habit{}, err
 	}
 	h, err = s.getHabit(ctx, tx, owner, id)
