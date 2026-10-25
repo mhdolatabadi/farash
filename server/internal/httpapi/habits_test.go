@@ -136,3 +136,55 @@ func TestHabitLimit(t *testing.T) {
 		t.Fatal("limit", code)
 	}
 }
+
+func TestHabitReminders(t *testing.T) {
+	api := newDBAPI(t)
+	token := api.register("habit-reminders@example.com")
+	other := api.register("habit-reminders-other@example.com")
+	for _, body := range []map[string]any{
+		{"name": "x", "reminder_minute": -1},
+		{"name": "x", "reminder_minute": 1440},
+		{"name": "x", "reminder_minute": "09:00"},
+		{"name": "x", "reminder_days": 0},
+		{"name": "x", "reminder_days": 128},
+	} {
+		if code := api.do("POST", "/api/v1/habits", token, body, nil); code != 400 {
+			t.Fatalf("validation %v %d", body, code)
+		}
+	}
+	var created struct{ Habit store.Habit }
+	if code := api.do("POST", "/api/v1/habits", token, map[string]any{"name": "مطالعه"}, &created); code != 201 {
+		t.Fatal("create", code)
+	}
+	if created.Habit.ReminderMinute != nil || created.Habit.ReminderDays != 127 {
+		t.Fatalf("no reminder by default %+v", created.Habit)
+	}
+	path := "/api/v1/habits/" + created.Habit.ID
+	if code := api.do("PATCH", path, other, map[string]any{"reminder_minute": 540}, nil); code != 404 {
+		t.Fatal("private reminder", code)
+	}
+	var updated struct{ Habit store.Habit }
+	if code := api.do("PATCH", path, token, map[string]any{"reminder_minute": 540, "reminder_days": 0b0011111}, &updated); code != 200 ||
+		updated.Habit.ReminderMinute == nil || *updated.Habit.ReminderMinute != 540 || updated.Habit.ReminderDays != 31 {
+		t.Fatalf("set %d %+v", code, updated.Habit)
+	}
+	// Fields that are not sent keep their value.
+	if code := api.do("PATCH", path, token, map[string]any{"name": "کتاب"}, &updated); code != 200 || updated.Habit.ReminderMinute == nil || *updated.Habit.ReminderMinute != 540 {
+		t.Fatalf("kept %d %+v", code, updated.Habit)
+	}
+	if code := api.do("PATCH", path, token, map[string]any{"reminder_days": 0}, nil); code != 400 {
+		t.Fatal("empty days", code)
+	}
+	var list struct{ Habits []store.Habit }
+	if code := api.do("GET", "/api/v1/habits", token, nil, &list); code != 200 || list.Habits[0].ReminderMinute == nil || list.Habits[0].ReminderDays != 31 {
+		t.Fatalf("list %d %+v", code, list)
+	}
+	if code := api.do("PATCH", path, token, map[string]any{"reminder_minute": nil}, &updated); code != 200 || updated.Habit.ReminderMinute != nil || updated.Habit.ReminderDays != 31 {
+		t.Fatalf("off %d %+v", code, updated.Habit)
+	}
+	var withReminder struct{ Habit store.Habit }
+	if code := api.do("POST", "/api/v1/habits", token, map[string]any{"name": "آب", "reminder_minute": 0, "reminder_days": 64}, &withReminder); code != 201 ||
+		withReminder.Habit.ReminderMinute == nil || *withReminder.Habit.ReminderMinute != 0 || withReminder.Habit.ReminderDays != 64 {
+		t.Fatalf("create with reminder %d %+v", code, withReminder.Habit)
+	}
+}

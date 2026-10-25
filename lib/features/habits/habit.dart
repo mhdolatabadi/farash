@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
 
 enum HabitKind { boolean, numeric }
@@ -79,8 +80,13 @@ class Habit {
     this.unit = '',
     this.sortOrder = 0,
     this.archived = false,
+    this.reminderMinute,
+    this.reminderDays = everyDay,
     this.entries = const {},
   });
+
+  /// [reminderDays] with every weekday set.
+  static const everyDay = 127;
 
   factory Habit.fromJson(Map<String, dynamic> j) => Habit(
     id: j['id'] as String,
@@ -98,6 +104,8 @@ class Habit {
     unit: j['unit'] as String? ?? '',
     sortOrder: j['sort_order'] as int? ?? 0,
     archived: j['archived'] == true,
+    reminderMinute: j['reminder_minute'] as int?,
+    reminderDays: j['reminder_days'] as int? ?? everyDay,
     entries: {
       for (final e in (j['entries'] as List? ?? const []))
         parseDayKey((e as Map<String, dynamic>)['day'] as String):
@@ -111,6 +119,16 @@ class Habit {
   final HabitTarget target;
   final double targetValue;
   final bool archived;
+
+  /// The local minute of the day to remind at; null for no reminder.
+  final int? reminderMinute;
+
+  /// The weekdays to remind on: bit `weekday - 1`, Monday first.
+  final int reminderDays;
+
+  bool get hasReminder => reminderMinute != null;
+
+  bool remindsOn(int weekday) => reminderDays & (1 << (weekday - 1)) != 0;
 
   /// Recorded days, keyed by [epochDay].
   final Map<int, HabitEntry> entries;
@@ -138,6 +156,8 @@ class Habit {
     unit: unit,
     sortOrder: sortOrder ?? this.sortOrder,
     archived: archived ?? this.archived,
+    reminderMinute: reminderMinute,
+    reminderDays: reminderDays,
     entries: entries ?? this.entries,
   );
 
@@ -194,10 +214,14 @@ class HabitDraft {
     this.targetValue,
     this.unit,
     this.archived,
+    this.reminder,
   });
 
   final String? name, question, notes, unit;
   final int? color, freqNum, freqDen;
+
+  /// Sets the reminder; [HabitReminder.off] turns it off.
+  final HabitReminder? reminder;
   final HabitKind? kind;
   final HabitTarget? target;
   final double? targetValue;
@@ -216,5 +240,56 @@ class HabitDraft {
     'target_value': ?targetValue,
     'unit': ?unit,
     'archived': ?archived,
+    if (reminder case final r?) ...{
+      'reminder_minute': r.minute,
+      'reminder_days': r.days,
+    },
   };
+}
+
+/// A reminder as the editor sets it: a minute of the day, or none.
+class HabitReminder {
+  const HabitReminder(int this.minute, {this.days = Habit.everyDay});
+
+  const HabitReminder.off({this.days = Habit.everyDay}) : minute = null;
+
+  final int? minute;
+  final int days;
+}
+
+/// Weekdays in the order of a Persian week, Saturday first.
+const persianWeekOrder = [
+  DateTime.saturday,
+  DateTime.sunday,
+  DateTime.monday,
+  DateTime.tuesday,
+  DateTime.wednesday,
+  DateTime.thursday,
+  DateTime.friday,
+];
+
+/// «۰۹:۳۰».
+String formatMinuteOfDay(int minute) => persianDigits(
+  '${(minute ~/ 60).toString().padLeft(2, '0')}:'
+  '${(minute % 60).toString().padLeft(2, '0')}',
+);
+
+/// «هر روز», «هر روز به‌جز جمعه», or the chosen days in week order:
+/// «شنبه و دوشنبه».
+String reminderDaysLabel(int days) {
+  String names(Iterable<int> weekdays) {
+    final list = [for (final d in weekdays) weekdayNames[d - 1]];
+    if (list.length < 2) return list.join();
+    return '${list.sublist(0, list.length - 1).join('، ')} و ${list.last}';
+  }
+
+  final chosen = [
+    for (final d in persianWeekOrder)
+      if (days & (1 << (d - 1)) != 0) d,
+  ];
+  if (chosen.length == 7) return 'هر روز';
+  if (chosen.length >= 4) {
+    return 'هر روز به‌جز ${names(persianWeekOrder.where((d) => !chosen.contains(d)))}';
+  }
+  return names(chosen);
 }
