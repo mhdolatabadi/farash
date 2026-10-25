@@ -337,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'برای «${task.title}» چقدر وقت گذاشتی؟',
+                'برای «${task.title}» چقدر وقت گذاشتید؟',
                 style: Theme.of(sheetContext).textTheme.titleMedium,
               ),
               const SizedBox(height: 12),

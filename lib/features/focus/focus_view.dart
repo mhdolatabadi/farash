@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/spacing.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/focus/focus_controller.dart';
 
@@ -82,7 +83,12 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                  padding: const EdgeInsets.fromLTRB(
+                    Space.gutter,
+                    Space.sm,
+                    Space.gutter,
+                    Space.xxl,
+                  ),
                   child: Column(
                     children: [
                       // One segmented control when the labels fit on a
