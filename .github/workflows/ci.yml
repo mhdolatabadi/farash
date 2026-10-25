@@ -113,6 +113,8 @@ jobs:
       - name: Validate Compose file
         working-directory: deploy
         run: cp .env.example .env && docker compose config --quiet
+      - name: Preserve deployed Compose project and volume identities
+        run: python3 tool/check_deploy_compose.py
 
   release-config:
     runs-on: ubuntu-latest
@@ -120,6 +122,8 @@ jobs:
       COMPOSE_PROJECT_NAME: farash_release_check
     steps:
       - uses: actions/checkout@v4
+      - name: Test immutable server deployment
+        run: python3 -m unittest discover -s tool -p test_deploy_remote.py
       - uses: actions/setup-go@v5
         with:
           go-version-file: server/go.mod

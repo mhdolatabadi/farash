@@ -47,7 +47,10 @@ services:
     environment:
       FARASH_DOMAIN: ${FARASH_DOMAIN:?set FARASH_DOMAIN in .env}
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - type: bind
+        source: ${FARASH_CADDYFILE:-./Caddyfile}
+        target: /etc/caddy/Caddyfile
+        read_only: true
       - caddy-data:/data
       - caddy-config:/config
     depends_on:
