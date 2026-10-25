@@ -210,10 +210,7 @@ class CalendarConnectionsController extends ChangeNotifier {
     final data = await _call(
       'POST',
       '$_base/google/authorize',
-      body: {
-        'client': client,
-        if (connection?.needsReconnect == true) 'consent': true,
-      },
+      body: {'client': client, 'consent': true},
     );
     final uri = Uri.parse(data['start_url'] as String);
     if (uri.scheme != 'https' || uri.host.isEmpty || uri.userInfo.isNotEmpty) {

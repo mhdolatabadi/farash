@@ -165,6 +165,9 @@ void main() {
       expect(controller.connection!.needsReconnect, isTrue);
       expect(controller.events, isEmpty);
       expect(controller.calendars, isEmpty);
+      api.fail = false;
+      await controller.prepareAuthorization('android');
+      expect(api.requests.last.$3, {'client': 'android', 'consent': true});
     },
   );
 
@@ -180,6 +183,7 @@ void main() {
       addTearDown(controller.dispose);
       await controller.load();
       await controller.prepareAuthorization('android');
+      expect(api.requests.last.$3, {'client': 'android', 'consent': true});
       expect(controller.takeAuthorization()!.scheme, 'https');
       expect(controller.takeAuthorization(), isNull);
       await controller.prepareAuthorization('android');
@@ -202,6 +206,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final api = CalendarFixture();
+      final boundaryKey = GlobalKey();
       await tester.pumpWidget(
         MaterialApp(
           theme: dark ? FarashTheme.dark() : FarashTheme.light(),
@@ -214,16 +219,32 @@ void main() {
               child: child!,
             ),
           ),
-          home: CalendarConnectionsView(
-            api: api,
-            token: () => 'a',
-            openBrowser: (_) async {},
+          home: RepaintBoundary(
+            key: boundaryKey,
+            child: CalendarConnectionsView(
+              api: api,
+              token: () => 'a',
+              openBrowser: (_) async {},
+            ),
           ),
         ),
       );
       await tester.pumpAndSettle();
       expect(find.text('حساب Google متصل است.'), findsOneWidget);
       expect(tester.takeException(), isNull);
+      if (Platform.environment['CAPTURE_GLASS_UI'] == '1') {
+        await tester.runAsync(() async {
+          final boundary =
+              boundaryKey.currentContext!.findRenderObject()
+                  as RenderRepaintBoundary;
+          final image = await boundary.toImage(pixelRatio: 1);
+          final data = await image.toByteData(format: ui.ImageByteFormat.png);
+          final file = File('.impeccable/review/calendar-${variant.$1}.png');
+          await file.parent.create(recursive: true);
+          await file.writeAsBytes(data!.buffer.asUint8List());
+          image.dispose();
+        });
+      }
       await tester.scrollUntilVisible(find.text('جلسهٔ مطالعه'), 250);
       expect(find.textContaining('تمام‌روز'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -287,19 +308,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('حساب Google متصل است.'), findsOneWidget);
       expect(tester.takeException(), isNull);
-      if (Platform.environment['CAPTURE_GLASS_UI'] == '1') {
-        await tester.runAsync(() async {
-          final boundary =
-              boundaryKey.currentContext!.findRenderObject()
-                  as RenderRepaintBoundary;
-          final image = await boundary.toImage(pixelRatio: 1);
-          final data = await image.toByteData(format: ui.ImageByteFormat.png);
-          final file = File('.impeccable/review/calendar-${variant.$1}.png');
-          await file.parent.create(recursive: true);
-          await file.writeAsBytes(data!.buffer.asUint8List());
-          image.dispose();
-        });
-      }
     },
   );
 }
