@@ -132,7 +132,7 @@ jobs:
         run: |
           go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
           bash -n deploy/deploy.sh deploy/backup.sh tool/verify_android_release.sh
-          python3 -m unittest discover -s tool -p test_android_signing.py
+          python3 -m unittest discover -s tool -p 'test_android*.py'
       - name: Exercise database backup and restore
         shell: bash
         run: |
