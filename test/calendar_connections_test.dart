@@ -8,6 +8,7 @@ import 'package:farash/features/calendar_connections/calendar_connections.dart';
 import 'package:farash/features/calendar_connections/calendar_connections_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class CalendarFixture implements CalendarConnectionsApi {
@@ -89,6 +90,15 @@ class CalendarFixture implements CalendarConnectionsApi {
 }
 
 void main() {
+  setUpAll(() async {
+    for (final font in [
+      ('Vazirmatn', 'assets/fonts/Vazirmatn-Regular.ttf'),
+      ('MaterialIcons', 'fonts/MaterialIcons-Regular.otf'),
+    ]) {
+      await (FontLoader(font.$1)..addFont(rootBundle.load(font.$2))).load();
+    }
+  });
+
   test('late connection response is discarded when account changes', () async {
     var token = 'a';
     final api = CalendarFixture();
