@@ -227,9 +227,35 @@ class CalendarConnectionsController extends ChangeNotifier {
     final value = authorization;
     authorization = null;
     notice =
-        'پس از تأیید در مرورگر، به برنامه برگردید و وضعیت اتصال را بررسی کنید.';
+        'پس از تأیید در مرورگر، کد یک‌بارمصرف را در این صفحه وارد کنید تا اتصال ثبت شود.';
     _notify();
     return value;
+  }
+
+  Future<void> completeAuthorization(String code) {
+    if (!_valid()) {
+      _notify();
+      return Future<void>.value();
+    }
+    final value = code.trim();
+    if (!RegExp(r'^[A-Za-z0-9_-]{43}$').hasMatch(value)) {
+      error = 'کد تأیید معتبر نیست. کد یک‌بارمصرف مرورگر را کامل وارد کنید.';
+      _notify();
+      return Future<void>.value();
+    }
+    return _run(() async {
+      final data = await _call(
+        'POST',
+        '$_base/google/complete',
+        body: {'completion_code': value},
+      );
+      connection = CalendarConnection.fromJson(
+        Map<String, dynamic>.from(data['connection'] as Map),
+      );
+      authorization = null;
+      await _details();
+      notice = 'اتصال Google ثبت شد.';
+    });
   }
 
   void browserFailed() {

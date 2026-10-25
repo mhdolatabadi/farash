@@ -29,11 +29,15 @@ class _CalendarConnectionsViewState extends State<CalendarConnectionsView>
   late final CalendarConnectionsController controller =
       CalendarConnectionsController(api: widget.api, token: widget.token);
   bool _waitingForBrowser = false;
+  final _completionCode = TextEditingController();
+  late final String? _codeSession = widget.token();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    controller.addListener(_clearExpiredCode);
+    _completionCode.addListener(_codeChanged);
     controller.load();
   }
 
@@ -43,6 +47,28 @@ class _CalendarConnectionsViewState extends State<CalendarConnectionsView>
       _waitingForBrowser = false;
       controller.load();
     }
+  }
+
+  void _codeChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _clearExpiredCode() {
+    if (controller.error != null || widget.token() != _codeSession) {
+      _completionCode.clear();
+    }
+  }
+
+  Future<void> _completeAuthorization() async {
+    if (widget.token() != _codeSession) {
+      _completionCode.clear();
+      await controller.load();
+      return;
+    }
+    final code = _completionCode.text;
+    _completionCode.clear();
+    _waitingForBrowser = false;
+    await controller.completeAuthorization(code);
   }
 
   Future<void> _openBrowser() async {
@@ -83,7 +109,11 @@ class _CalendarConnectionsViewState extends State<CalendarConnectionsView>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    controller.removeListener(_clearExpiredCode);
     controller.dispose();
+    _completionCode.removeListener(_codeChanged);
+    _completionCode.clear();
+    _completionCode.dispose();
     super.dispose();
   }
 
@@ -200,6 +230,41 @@ class _CalendarConnectionsViewState extends State<CalendarConnectionsView>
                         ),
                       ),
                     ],
+                  ],
+                  if (controller.configured &&
+                      (connection == null || connection.needsReconnect)) ...[
+                    const SizedBox(height: 20),
+                    const Text(
+                      'در پایان تأیید مرورگر، یک کد موقت نمایش داده می‌شود. آن را فقط در همین حساب فراش وارد کنید. کد پس از ۱۰ دقیقه منقضی می‌شود.',
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _completionCode,
+                      enabled: !busy,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      obscureText: true,
+                      textDirection: TextDirection.ltr,
+                      keyboardType: TextInputType.visiblePassword,
+                      textInputAction: TextInputAction.done,
+                      maxLength: 43,
+                      decoration: const InputDecoration(
+                        labelText: 'کد تأیید اتصال',
+                        hintText: 'کد یک‌بارمصرف مرورگر',
+                        counterText: '',
+                      ),
+                      onSubmitted: (_) => _completeAuthorization(),
+                    ),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: FilledButton(
+                        onPressed: busy || _completionCode.text.trim().isEmpty
+                            ? null
+                            : _completeAuthorization,
+                        child: const Text('ثبت اتصال'),
+                      ),
+                    ),
                   ],
                   if (connection != null) ...[
                     if (!connection.needsReconnect) ...[

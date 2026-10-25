@@ -32,11 +32,23 @@ class CalendarFixture implements CalendarConnectionsApi {
       pending = null;
       return delayed.future;
     }
-    if (path.endsWith('/authorize'))
+    if (path.endsWith('/complete')) {
+      connected = true;
+      return {
+        'connection': {
+          'id': 'connection',
+          'provider': 'google',
+          'status': 'connected',
+          'version': version,
+        },
+      };
+    }
+    if (path.endsWith('/authorize')) {
       return {
         'start_url':
             'https://todo.example.com/calendar-authorize/start?ticket=one-use',
       };
+    }
     if (method == 'DELETE') {
       connected = false;
       return {'disconnected': true, 'revoked': false};
@@ -47,7 +59,7 @@ class CalendarFixture implements CalendarConnectionsApi {
       version++;
       return {'version': version};
     }
-    if (path.endsWith('/calendars'))
+    if (path.endsWith('/calendars')) {
       return {
         'version': version,
         'calendars': [
@@ -59,7 +71,8 @@ class CalendarFixture implements CalendarConnectionsApi {
           },
         ],
       };
-    if (Uri.parse(path).path.endsWith('/events'))
+    }
+    if (Uri.parse(path).path.endsWith('/events')) {
       return {
         'complete': true,
         'events': [
@@ -73,6 +86,7 @@ class CalendarFixture implements CalendarConnectionsApi {
           },
         ],
       };
+    }
     return {
       'configured': configured,
       'connections': connected
@@ -282,7 +296,7 @@ void main() {
   });
 
   testWidgets(
-    'prepare then explicit browser gesture, resume can verify connection',
+    'browser return stays pending until explicit authenticated completion',
     (tester) async {
       final api = CalendarFixture()..connected = false;
       Uri? launched;
@@ -303,11 +317,55 @@ void main() {
       await tester.pumpAndSettle();
       expect(launched!.host, 'todo.example.com');
       expect(find.text('باز کردن Google'), findsNothing);
-      api.connected = true;
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
+      expect(find.text('حساب Google متصل است.'), findsNothing);
+      await tester.scrollUntilVisible(
+        find.byType(TextField),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.enterText(find.byType(TextField), 'a' * 43);
+      await tester.pump();
+      await tester.scrollUntilVisible(
+        find.text('ثبت اتصال'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('ثبت اتصال'));
+      await tester.pumpAndSettle();
+      expect(api.requests.where((r) => r.$2 == 'POST').last.$3, {
+        'completion_code': 'a' * 43,
+      });
+      expect(find.byType(TextField), findsNothing);
       expect(find.text('حساب Google متصل است.'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  test(
+    'late completion never exposes previous session credentials or events',
+    () async {
+      var token = 'a';
+      final api = CalendarFixture()..connected = false;
+      final controller = CalendarConnectionsController(
+        api: api,
+        token: () => token,
+      );
+      addTearDown(controller.dispose);
+      await controller.load();
+      final reply = api.pending = Completer<Map<String, dynamic>>();
+      final before = api.requests.length;
+      final completion = controller.completeAuthorization('a' * 43);
+      token = 'b';
+      reply.complete({
+        'connection': {'id': 'private-a', 'status': 'connected'},
+      });
+      await completion;
+      expect(controller.connection, isNull);
+      expect(controller.events, isEmpty);
+      expect(api.requests, hasLength(before + 1));
+      expect(controller.error, contains('حساب تغییر'));
     },
   );
 }
