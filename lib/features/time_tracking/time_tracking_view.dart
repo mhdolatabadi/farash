@@ -2,6 +2,7 @@ import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/features/tasks/presentation/due_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:farash/app/spacing.dart';
 import 'package:farash/app/surfaces.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/text/persian_digits.dart';
@@ -130,7 +131,12 @@ class TimeTrackingView extends StatelessWidget {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(
+                  Space.xl,
+                  Space.xl,
+                  Space.xl,
+                  Space.sm,
+                ),
                 child: Text(
                   'انتخاب کار برای ثبت زمان',
                   style: Theme.of(context).textTheme.titleLarge,
@@ -182,6 +188,11 @@ class TimeTrackingView extends StatelessWidget {
     listenable: tracker,
     builder: (context, _) {
       final report = tracker.report;
+      final text = Theme.of(context).textTheme;
+      final section = text.titleMedium?.copyWith(fontWeight: FontWeight.w700);
+      final note = text.bodyMedium?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      );
       return CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -200,19 +211,25 @@ class TimeTrackingView extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 820),
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.fromLTRB(
+                    Space.gutter,
+                    Space.sm,
+                    Space.gutter,
+                    Space.xxl,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'وقتت کجا بافته شد؟',
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        'زمان شما کجا صرف شد؟',
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      const SizedBox(height: 12),
-                      const Text(
+                      const SizedBox(height: Space.xs),
+                      Text(
                         'زمان واقعی کارها؛ جدا از برآورد و امتیاز. هفته از شنبه آغاز می‌شود.',
+                        style: note,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: Space.lg),
                       if (tracker.error != null)
                         TextButton.icon(
                           onPressed: tracker.load,
@@ -223,7 +240,7 @@ class TimeTrackingView extends StatelessWidget {
                         const LinearProgressIndicator(),
                       if (report != null) ...[
                         Panel(
-                          padding: const EdgeInsets.all(20),
+                          padding: const EdgeInsets.all(Space.lg),
                           child: Wrap(
                             spacing: 32,
                             runSpacing: 16,
@@ -236,7 +253,7 @@ class TimeTrackingView extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: Space.lg),
                         FilledButton.icon(
                           onPressed: tracker.busy ? null : () => _pick(context),
                           icon: const Icon(Icons.play_arrow_rounded),
@@ -253,7 +270,7 @@ class TimeTrackingView extends StatelessWidget {
                           icon: const Icon(Icons.edit_calendar_outlined),
                           label: const Text('افزودن بازهٔ دستی'),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: Space.xl),
                         if (tracker.active case final active?) ...[
                           if (active.elapsed(tracker.now) >
                               const Duration(hours: 4))
@@ -299,24 +316,22 @@ class TimeTrackingView extends StatelessWidget {
                               ),
                             ),
                         ],
-                        Text(
-                          'به تفکیک کار و پروژه',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 12),
+                        Text('به تفکیک کار و پروژه', style: section),
+                        const SizedBox(height: Space.sm),
                         if (report.tasks.isEmpty)
-                          const Text(
+                          Text(
                             'هنوز زمانی ثبت نشده. از یک کار کوچک شروع کنید.',
+                            style: note,
                           ),
                         ProjectTimeGroups(tasks: report.tasks),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: Space.xxl),
+                        Text('مرور روزها و بازه‌ها', style: section),
+                        const SizedBox(height: Space.xs),
                         Text(
-                          'مرور روزها و بازه‌ها',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const Text(
                           'فاصلهٔ بین بازه‌ها ثبت نشده است؛ فقط اگر واقعاً کار کرده‌اید آن را دستی اضافه کنید.',
+                          style: note,
                         ),
+                        const SizedBox(height: Space.sm),
                         if (!report.truncated)
                           for (final gap in todayGaps(
                             report.entries,

@@ -14,6 +14,7 @@ import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/app/motion.dart';
+import 'package:farash/app/spacing.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/core/widgets/hover_reveal.dart';
 import 'package:farash/features/tasks/presentation/due_picker.dart';
@@ -395,7 +396,13 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
             width: listWidth,
             compact: compact,
             capture: compact
-                ? Padding(padding: const EdgeInsets.all(12), child: capture)
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Space.gutter,
+                      vertical: Space.md,
+                    ),
+                    child: capture,
+                  )
                 : null,
           ),
         );
@@ -419,7 +426,12 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                       child: SafeArea(
                         top: false,
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                          padding: const EdgeInsets.fromLTRB(
+                            Space.gutter,
+                            0,
+                            Space.gutter,
+                            Space.md,
+                          ),
                           child: Center(
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(
@@ -569,7 +581,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                 actions: [completedToggle],
                 topPadding: topPadding,
                 inset: inset,
-                expandedHeight: compact ? 0 : 32 * scale,
+                expandedHeight: compact ? 0 : 24 * scale,
               ),
             ),
           if (capture != null) pad(SliverToBoxAdapter(child: capture)),
@@ -617,11 +629,12 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
               ),
             if (rows.isNotEmpty)
               SliverPadding(
-                padding: EdgeInsets.symmetric(horizontal: inset + 12),
+                // Rows run edge to edge and carry the gutter themselves.
+                padding: EdgeInsets.symmetric(horizontal: inset),
                 sliver: DecoratedSliver(
                   decoration: const BoxDecoration(),
                   sliver: SliverPadding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.only(top: Space.xs),
                     sliver: SliverReorderableList(
                       itemCount: rows.length,
                       onReorderItem: (from, to) => _onReorder(rows, from, to),
@@ -635,7 +648,6 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                             color: _selected.contains(task.id)
                                 ? theme.colorScheme.secondaryContainer
                                 : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
                             child: HoverRegion(
                               child: TaskTile(
                                 selected: _selected.contains(task.id),
@@ -694,7 +706,13 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
               pad(
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(8, 8, 8, 0),
+                    // The button's own 12 puts its icon on the gutter.
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      Space.xs,
+                      Space.sm,
+                      Space.xs,
+                      0,
+                    ),
                     child: Align(
                       alignment: AlignmentDirectional.centerStart,
                       child: TextButton.icon(
@@ -711,15 +729,16 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsetsDirectional.fromSTEB(
-                      16,
-                      24,
-                      16,
-                      4,
+                      Space.gutter,
+                      Space.sectionTop,
+                      Space.gutter,
+                      Space.sectionBottom,
                     ),
                     child: Text(
                       'انجام‌شده',
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -732,6 +751,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                       TaskTile(
                         key: ValueKey('done-${task.id}'),
                         task: task,
+                        divider: task != done.last,
                         onToggle: () => _toggle(task),
                         onOpen: () => _open(task),
                       ),
@@ -798,7 +818,12 @@ class _ListHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 8, 4),
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        Space.gutter,
+        Space.sm,
+        Space.xs,
+        Space.xs,
+      ),
       child: Row(
         children: [
           Expanded(
