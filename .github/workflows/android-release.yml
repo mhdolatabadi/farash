@@ -10,7 +10,7 @@ on:
         required: true
 
 permissions:
-  contents: read
+  contents: write
   actions: read
 
 concurrency:
@@ -28,11 +28,7 @@ jobs:
         shell: bash
         env:
           INPUT_VERSION: ${{ inputs.version }}
-        run: |
-          version="${INPUT_VERSION:-${GITHUB_REF_NAME#v}}"
-          [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo 'Expected major.minor.patch.' >&2; exit 1; }
-          echo "name=$version" >> "$GITHUB_OUTPUT"
-          echo "code=$((100000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_OUTPUT"
+        run: python3 tool/android_release_metadata.py resolve
       - name: Require successful Quality checks on this source commit
         shell: bash
         env:
@@ -74,6 +70,8 @@ jobs:
         env:
           STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
         run: bash tool/verify_android_release.sh
       - name: Prepare versioned artifacts and checksums
         env:
@@ -90,6 +88,31 @@ jobs:
           path: release/
           if-no-files-found: error
           retention-days: 90
+      - name: Publish immutable tagged release downloads
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+        run: |
+          [[ "$(git rev-parse "$RELEASE_TAG^{commit}")" == "$GITHUB_SHA" ]] || { echo 'Tag source mismatch.' >&2; exit 1; }
+          if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            echo 'Release already exists; assets are never overwritten. Use a new version tag.' >&2
+            exit 1
+          fi
+          cat > "$RUNNER_TEMP/farash-release-notes.md" <<EOF
+          Signed Farash Android release $VERSION_NAME (build $VERSION_CODE).
+
+          - APK: install directly on Android; verify it against SHA256SUMS.
+          - AAB: store submission bundle; not a directly installable APK.
+          - Source: $GITHUB_SHA
+          - Build and checks: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+          Android may request permission to install from this source. Store submission and device upgrade validation are separate rollout steps.
+          EOF
+          gh release create "$RELEASE_TAG" release/*.apk release/*.aab release/SHA256SUMS --verify-tag --draft --title "Farash $VERSION_NAME" --notes-file "$RUNNER_TEMP/farash-release-notes.md"
+          gh release edit "$RELEASE_TAG" --draft=false
       - name: Remove signing material
         if: always()
         run: rm -f android/key.properties "$RUNNER_TEMP/farash-release.jks" "$RUNNER_TEMP/release-cert.der" "$RUNNER_TEMP/aab-cert.der" "$RUNNER_TEMP/aab-cert.pem"

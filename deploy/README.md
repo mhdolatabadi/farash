@@ -91,8 +91,10 @@ never drop production data just to roll back application code.
 The **Android release** workflow runs on tags such as `v1.2.3`, or manual dispatch
 with version `1.2.3`. It waits up to five minutes for successful **Quality checks**
 on the exact source commit. If checks need longer, rerun release after they pass.
-The workflow does not create tags, publish a store listing, or distribute the APK
-automatically. Store rollout remains a separate explicit action.
+The workflow does not create tags or publish a store listing. A version tag publishes
+verified APK/AAB downloads and checksums on a GitHub Release after uploading all
+assets to a draft. Manual dispatch produces private Actions artifacts only and
+never publishes a download page. Store rollout remains a separate explicit action.
 
 Configure these repository secrets without committing their values:
 
@@ -109,13 +111,47 @@ variable and defaults to `https://farash.mhdolatabadi.ir`.
 
 Artifacts contain signed release APK and AAB files plus `SHA256SUMS`. Names include
 the selected version and build number `100000 + workflow run number`, so separate
-runs receive increasing codes. Re-running one workflow keeps its build code.
+runs receive increasing codes. Re-running one workflow keeps its build code. The
+resolver rejects malformed versions, a manual version that disagrees with its tag,
+and version codes above 2100000000 (the Google Play limit). See the official
+[Android versioning guidance](https://developer.android.com/studio/publish/versioning).
 Missing signing configuration fails release tasks instead of silently using the
 shared debug key. Ordinary debug CI remains available.
 
-The workflow verifies the APK package, non-debuggable flag and certificate against
+The workflow verifies the APK package, exact requested version name/build number,
+non-debuggable flag and certificate against
 the supplied production keystore, and verifies the AAB signature and certificate.
 PR checks validate workflow syntax, signing preparation, debug compatibility and
 a real database backup/restore. They do not prove production secrets exist or that
 a signed release ran. Inspect the first signed artifacts and install the APK on
 an Android device before closing #27.
+
+
+### Publication and device rollout gates
+
+A tag must refer to the exact commit whose Quality checks succeeded. Release
+assets are not overwritten: a pre-existing release (including a draft from an
+interrupted upload) stops publication. Inspect that draft before deliberately
+removing it or use a new version tag; never replace a distributed build in place.
+A successful release is downloadable from the repository's Releases page; the
+90-day Actions copy is a build record, not the long-term download location.
+
+Before distributing the first signed APK or submitting an AAB to Cafe Bazaar or
+another store, record the actual results in #120:
+
+- Install the signed release on an Android device; verify package/version and
+  production API reachability. A debug CI APK is not this result.
+- Upgrade from the previous signed release with the same key and a greater build
+  number; verify login, task/history data, settings and offline reads survive.
+  A downgrade rollback requires a new higher build number, not an older APK.
+- Verify Persian RTL, large text/keyboard clearance, focus/time tracking while
+  backgrounded, and calendar authorization return flow when that feature ships.
+- Select the store account and stable product identity, prepare real current
+  screenshots and the privacy/support URLs, and complete the store's data
+  disclosures. Credentials and keystore backups stay outside the repository.
+- Start with the selected store's limited rollout, monitor crash/login/network
+  failures, then expand. Store approval is separate from GitHub publication.
+
+The workflow's existence does not prove signing secrets are configured. No real
+signed workflow run, device upgrade, or store submission was performed by the
+release-readiness implementation. Those results must be recorded explicitly.

@@ -4,12 +4,14 @@ set -euo pipefail
 : "${RUNNER_TEMP:?RUNNER_TEMP is required}"
 : "${STORE_PASSWORD:?Release signing password is required}"
 : "${KEY_ALIAS:?Release signing alias is required}"
+: "${VERSION_NAME:?Selected release version is required}"
+: "${VERSION_CODE:?Selected release build number is required}"
 build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
 apk=build/app/outputs/flutter-apk/app-release.apk
 aab=build/app/outputs/bundle/release/app-release.aab
 "$build_tools/apksigner" verify --verbose --print-certs "$apk" > "$RUNNER_TEMP/apk-signature.txt"
 "$build_tools/aapt" dump badging "$apk" > "$RUNNER_TEMP/apk-package.txt"
-grep -q "package: name='ir.mhdolatabadi.farash'" "$RUNNER_TEMP/apk-package.txt"
+python3 tool/android_release_metadata.py verify-apk "$RUNNER_TEMP/apk-package.txt"
 if grep -q 'application-debuggable' "$RUNNER_TEMP/apk-package.txt"; then
   echo 'Debuggable APK rejected.' >&2
   exit 1
