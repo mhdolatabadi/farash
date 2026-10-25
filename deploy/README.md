@@ -28,14 +28,20 @@ the Flutter web app behind nginx, and Caddy for automatic HTTPS.
    - `ghcr.io/mhdolatabadi/farash/api:<commit-sha>`
    - `ghcr.io/mhdolatabadi/farash/web:<commit-sha>`
 
-7. `Deploy` SSHes to the server and runs:
+7. `Deploy` sends `tool/deploy_remote.sh` from the CI-validated source over SSH.
+   It fetches the selected full commit SHA and exports its deployment files into
+   a private, persistent `.farash-releases/<sha>.<suffix>/` directory. It does not
+   check out, reset, stash or execute the server's mutable `deploy/deploy.sh`.
+   Existing server modifications and untracked files remain in place. From an
+   updated checkout, the equivalent manual entry point is:
 
    ```bash
    bash "$DEPLOY_PATH/deploy/deploy.sh" <commit-sha>
    ```
 
-   The script fetches that commit, sets `FARASH_IMAGE_TAG`, pulls the images,
-   runs `docker compose up -d --no-build --remove-orphans`, and checks:
+   A full 40-character commit SHA is required. The exported `apply.sh` sets
+   `FARASH_IMAGE_TAG`, pulls the images, validates the database backup, then runs
+   `docker compose up -d --no-build --remove-orphans` and checks:
 
    ```bash
    curl https://$FARASH_DOMAIN/api/v1/health
@@ -43,6 +49,20 @@ the Flutter web app behind nginx, and Caddy for automatic HTTPS.
 
 The API applies its database migrations on startup. PostgreSQL is reachable
 only on Docker's internal network.
+
+Compose always uses the original `deploy/` directory as its project directory
+and the original `deploy/.env` as its configuration. This preserves the project
+name (including `COMPOSE_PROJECT_NAME` if configured), database volume, Caddy
+volumes and networks. The Compose source and Caddy bind-mounted configuration
+come from the exported release, not local server edits. Local deployment script
+customizations are retained but no longer executed by CI; move intended shared
+behavior into a reviewed source change.
+
+Keep exported release directories while containers may still reference their
+Caddyfile, including across Docker restarts. No release-directory cleanup is
+automatic. Before removing an old directory, inspect container mounts and retain
+the releases needed for rollback. Backups remain in the original
+`deploy/backups/` directory. Disk retention is an operator responsibility.
 
 ## Manual fallback
 
