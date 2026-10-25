@@ -1,3 +1,4 @@
+import 'package:farash/features/calendar_connections/calendar_connections.dart';
 import 'package:farash/features/habits/habits_controller.dart';
 import 'package:farash/core/offline/offline_read_cache.dart';
 import 'package:farash/features/search/search.dart';
@@ -216,7 +217,8 @@ class ApiClient
         HabitsApi,
         ScrumApi,
         SearchApi,
-        ExportApi {
+        ExportApi,
+        CalendarConnectionsApi {
   ApiClient(this.baseUri, {http.Client? client, this.offlineCache})
     : _client = client ?? http.Client();
 
@@ -245,6 +247,14 @@ class ApiClient
     String path, {
     Map<String, Object?>? body,
   }) => timeRequest(token, method, path, body: body);
+
+  @override
+  Future<Map<String, dynamic>> calendarRequest(
+    String token,
+    String method,
+    String path, {
+    Map<String, Object?>? body,
+  }) => searchRequest(token, method, path, body: body);
 
   @override
   Future<Map<String, dynamic>> habitRequest(

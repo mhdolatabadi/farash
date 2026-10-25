@@ -1,3 +1,5 @@
+import 'package:farash/features/calendar_connections/calendar_connections.dart';
+import 'package:farash/features/calendar_connections/calendar_connections_view.dart';
 import 'package:farash/features/habits/habits_controller.dart';
 import 'package:farash/features/habits/habits_view.dart';
 import 'package:farash/features/search/search.dart';
@@ -565,6 +567,9 @@ class _HomeScreenState extends State<HomeScreen> {
     header: Column(
       children: [
         _AccountHeader(
+          calendarConnectionsApi: widget.tasksApi is CalendarConnectionsApi
+              ? widget.tasksApi as CalendarConnectionsApi
+              : null,
           email: widget.email,
           onLogout: widget.onLogout,
           startView: widget.startView,
@@ -893,7 +898,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-enum _AccountAction { calendar, startView, export, logout }
+enum _AccountAction { calendar, calendarConnections, startView, export, logout }
 
 /// The app's name with the account beneath it, and one menu for the
 /// account's actions, so the email keeps its width.
@@ -903,6 +908,7 @@ class _AccountHeader extends StatelessWidget {
     required this.onLogout,
     this.startView,
     this.exportApi,
+    this.calendarConnectionsApi,
     required this.token,
   });
 
@@ -910,6 +916,7 @@ class _AccountHeader extends StatelessWidget {
   final VoidCallback onLogout;
   final StartView? startView;
   final ExportApi? exportApi;
+  final CalendarConnectionsApi? calendarConnectionsApi;
   final String? Function() token;
 
   @override
@@ -955,6 +962,14 @@ class _AccountHeader extends StatelessWidget {
                 context,
                 CalendarScope.of(context),
               ),
+              _AccountAction.calendarConnections => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CalendarConnectionsView(
+                    api: calendarConnectionsApi!,
+                    token: token,
+                  ),
+                ),
+              ),
               _AccountAction.startView => _pickStartView(context, startView!),
               _AccountAction.export => showAccountExport(
                 context,
@@ -971,6 +986,14 @@ class _AccountHeader extends StatelessWidget {
                   title: Text('تنظیمات تقویم'),
                 ),
               ),
+              if (calendarConnectionsApi != null)
+                const PopupMenuItem(
+                  value: _AccountAction.calendarConnections,
+                  child: ListTile(
+                    leading: Icon(Icons.event_available_outlined),
+                    title: Text('اتصال تقویم‌ها'),
+                  ),
+                ),
               if (startView != null)
                 const PopupMenuItem(
                   value: _AccountAction.startView,
