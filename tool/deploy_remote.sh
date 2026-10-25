@@ -12,6 +12,10 @@ repository="$(pwd -P)"
 grep -qE '^FARASH_DOMAIN=' deploy/.env || { echo 'deploy/.env has no FARASH_DOMAIN.' >&2; exit 1; }
 git fetch --no-tags origin "$revision"
 [[ "$(git rev-parse --verify "${revision}^{commit}")" == "$revision" ]]
+if ! git cat-file -e "$revision:deploy/apply.sh" 2>/dev/null; then
+  echo 'Selected source lacks deploy/apply.sh; see the pre-immutable-runner rollback notes in deploy/README.md.' >&2
+  exit 1
+fi
 
 # Keep these: running Caddy containers bind their validated config from here,
 # including after Docker restarts. Never reset/stash the live checkout.

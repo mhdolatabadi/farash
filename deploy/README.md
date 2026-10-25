@@ -106,6 +106,22 @@ the exact database and snapshot before replacing data. It can discard writes
 after the snapshot. Code rollback normally retains additive tables/history;
 never drop production data just to roll back application code.
 
+The immutable runner can replay source commits containing `deploy/apply.sh`.
+Commits before that change fail a preflight before touching containers. For an
+older image rollback, an operator can instead use a retained, reviewed new
+runner explicitly, keeping its deployment configuration while selecting the
+older API/web image tag:
+
+```bash
+bash /absolute/path/to/.farash-releases/NEW_SHA.SUFFIX/deploy/apply.sh \
+  /absolute/path/to/server-checkout/deploy OLD_FULL_COMMIT_SHA
+```
+
+Check old image availability and compatibility with the retained configuration
+and current database schema first. This is an explicit image rollback, not a
+claim that pre-runner source can be deployed unchanged. It retains the backup
+gate and never restores or drops database records automatically.
+
 ## Signed Android releases
 
 The **Android release** workflow runs on tags such as `v1.2.3`, or manual dispatch

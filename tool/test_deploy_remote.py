@@ -120,6 +120,16 @@ if 'pg_dump' in args:
         self.assertNotEqual(self.deploy().returncode, 0)
         self.assertEqual(self.commands(), [])
 
+    def test_pre_immutable_runner_source_is_rejected_before_commands(self):
+        self.git("rm", "deploy/apply.sh")
+        self.git("commit", "-m", "legacy source without immutable runner")
+        legacy = self.git("rev-parse", "HEAD").strip()
+        self.git("push", "origin", "main")
+        result = self.deploy(legacy)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("lacks deploy/apply.sh", result.stderr)
+        self.assertEqual(self.commands(), [])
+
     def test_invalid_or_unavailable_revision_stops_before_commands(self):
         for sha in ["main", "-bad", "f" * 40]:
             with self.subTest(sha=sha):
