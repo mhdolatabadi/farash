@@ -33,7 +33,7 @@ typography:
   body: {fontFamily: Vazirmatn, fontSize: 16}
   timer: {fontFamily: Vazirmatn, fontWeight: 700, features: tabular}
 rounded: {field: 12, surface: 16, sheet: 28, button: stadium}
-spacing: {compact: 8, standard: 16, page: 20}
+spacing: {xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, gutter: 16, keyline: 56}
 ---
 
 # Design System: Farash Calm
@@ -52,7 +52,9 @@ Vazirmatn for every role, Persian digits, RTL first. Screen titles use `titleLar
 
 ## Layout
 
-Phones: four destinations in the navigation bar, امروز, کارها, تمرکز and, with time support, زمان‌ها (habits add عادت‌ها). The drawer holds views, projects and labels. At 840 logical pixels and wider, a sidebar replaces the bar; it lists the tools (تمرکز, زمان‌ها) and then the same views and projects, so nothing appears twice. Lists keep a readable measure on wide screens. The capture field stays above the navigation and safe areas, and the last task always scrolls clear of it.
+Phones: four destinations in the navigation bar, امروز, کارها, تمرکز and, with time support, زمان‌ها (habits add عادت‌ها). The drawer holds views, projects and labels. At 840 logical pixels and wider, a sidebar replaces the bar; it lists the tools (تمرکز, زمان‌ها) and then the same views and projects, so nothing appears twice. Lists keep a readable measure on wide screens.
+
+Spacing comes from one 4-point scale in `lib/app/spacing.dart` (`Space`), never from one-off numbers. Every list lines up on two keylines: the 16 gutter, where check circles, section labels, the empty-list line and header icon glyphs start, and the 56 content keyline, where row titles, row dividers and the header's mark (beside the menu) start. List rows run edge to edge and carry the gutter themselves; containers do not add their own side padding. The header's open count shares the title's start edge and sits just under it. A section label takes 24 above and 4 below, so it belongs to the rows it names; the first one under the header takes 8. In the task editor, actions such as «افزودن زیرکار» are rows with the same icon and label keylines as the properties above them, not loose text buttons. The capture field stays above the navigation and safe areas, and the last task always scrolls clear of it.
 
 A saved `garden` or `weaving` start view migrates to `today`, which is also the default.
 

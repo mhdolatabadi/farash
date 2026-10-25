@@ -2,6 +2,7 @@ import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:farash/features/time_tracking/time_tracking_view.dart';
 import 'package:flutter/material.dart';
 import 'package:farash/app/motion.dart';
+import 'package:farash/app/spacing.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
@@ -85,11 +86,13 @@ class TaskTile extends StatelessWidget {
       onTap: onOpen,
       onLongPress: onLongPress,
       child: Padding(
+        // The 48 check target starts 4 in, so its 22 circle sits near the
+        // gutter and the title starts on the content keyline.
         padding: EdgeInsetsDirectional.fromSTEB(
-          8 + subtaskIndent * depth,
-          4,
-          4,
-          4,
+          Space.xs + subtaskIndent * depth,
+          Space.xs,
+          Space.xs,
+          Space.xs,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,7 +136,7 @@ class TaskTile extends StatelessWidget {
                         dated ||
                         tag != null ||
                         labels.isNotEmpty) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: Space.xs),
                       Wrap(
                         spacing: 12,
                         crossAxisAlignment: WrapCrossAlignment.center,
@@ -204,7 +207,8 @@ class TaskTile extends StatelessWidget {
             if (divider)
               Padding(
                 padding: EdgeInsetsDirectional.only(
-                  start: 56 + subtaskIndent * depth,
+                  start: Space.keyline + subtaskIndent * depth,
+                  end: Space.gutter,
                 ),
                 child: const Divider(height: 1),
               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:farash/app/motion.dart';
+import 'package:farash/app/spacing.dart';
 import 'package:farash/app/list_app_bar.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
@@ -388,22 +389,14 @@ class _DueTasksViewState extends State<DueTasksView> {
 
   /// One panel holding a day's tasks.
   Widget _card(List<Task> tasks) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(),
-        child: Material(
-          type: MaterialType.transparency,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Column(
-              children: [
-                for (var i = 0; i < tasks.length; i++)
-                  _row(tasks[i], last: i == tasks.length - 1),
-              ],
-            ),
-          ),
-        ),
+    // Rows run edge to edge and carry the gutter themselves.
+    return Material(
+      type: MaterialType.transparency,
+      child: Column(
+        children: [
+          for (var i = 0; i < tasks.length; i++)
+            _row(tasks[i], last: i == tasks.length - 1),
+        ],
       ),
     );
   }
@@ -424,6 +417,7 @@ class _DueTasksViewState extends State<DueTasksView> {
         _DayHeading(
           title: 'دیرشده',
           late: true,
+          first: true,
           action: TextButton.icon(
             onPressed: () => _moveLateToToday(late),
             icon: const Icon(Icons.event_repeat),
@@ -434,6 +428,7 @@ class _DueTasksViewState extends State<DueTasksView> {
       ],
       _DayHeading(
         title: 'امروز',
+        first: late.isEmpty,
         detail: formatDate(today, settings, today: today, withWeekday: true),
       ),
       if (now.isEmpty) const _Quiet('برای امروز کاری نمانده.') else _card(now),
@@ -469,6 +464,7 @@ class _DueTasksViewState extends State<DueTasksView> {
               day,
               _DayHeading(
                 key: key,
+                first: day == _agendaDays.first,
                 title: relativeDay(day, settings, today: today),
                 detail: formatDate(day, settings, today: today),
               ),
@@ -491,10 +487,11 @@ class _DueTasksViewState extends State<DueTasksView> {
     return [
       for (final MapEntry(:key, :value) in groups.entries) ...[
         key.isEmpty
-            ? const _DayHeading(title: 'دیرشده', late: true)
+            ? const _DayHeading(title: 'دیرشده', late: true, first: true)
             : _dropOn(
                 parseDateKey(key),
                 _DayHeading(
+                  first: key == groups.keys.first,
                   title: relativeDay(parseDateKey(key), settings, today: today),
                   detail: formatDate(parseDateKey(key), settings, today: today),
                 ),
@@ -546,7 +543,7 @@ class _DueTasksViewState extends State<DueTasksView> {
       body = SliverList.list(
         children: label != null
             ? [
-                const SizedBox(height: 8),
+                const SizedBox(height: Space.sm),
                 if (_tasks.isEmpty)
                   const _Quiet('هنوز کاری این برچسب را ندارد.')
                 else
@@ -590,7 +587,7 @@ class _DueTasksViewState extends State<DueTasksView> {
                   ],
                   topPadding: topPadding,
                   inset: inset,
-                  expandedHeight: constraints.maxHeight < 240 ? 0 : 32 * scale,
+                  expandedHeight: constraints.maxHeight < 240 ? 0 : 24 * scale,
                 ),
               ),
               if (label == null &&
@@ -630,7 +627,12 @@ class _DueTasksViewState extends State<DueTasksView> {
           children: [
             Expanded(child: list),
             Padding(
-              padding: EdgeInsets.fromLTRB(inset + 12, 4, inset + 12, 12),
+              padding: EdgeInsets.fromLTRB(
+                inset + Space.gutter,
+                Space.sm,
+                inset + Space.gutter,
+                Space.md,
+              ),
               child: QuickAddBar(
                 hint: 'افزودن کار برای امروز…',
                 error: _captureError,
@@ -653,6 +655,7 @@ class _DayHeading extends StatelessWidget {
     this.detail,
     this.action,
     this.late = false,
+    this.first = false,
   });
 
   final String title;
@@ -660,11 +663,19 @@ class _DayHeading extends StatelessWidget {
   final Widget? action;
   final bool late;
 
+  /// Right under the app bar, whose count already leaves room above.
+  final bool first;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 20, 12, 6),
+      padding: EdgeInsetsDirectional.fromSTEB(
+        Space.gutter,
+        first ? Space.sm : Space.sectionTop,
+        Space.xs,
+        Space.sectionBottom,
+      ),
       child: Row(
         children: [
           Expanded(
@@ -710,7 +721,12 @@ class _Quiet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(24, 0, 24, 4),
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        Space.gutter,
+        Space.sm,
+        Space.gutter,
+        Space.sm,
+      ),
       child: Text(
         text,
         style: theme.textTheme.bodyMedium?.copyWith(

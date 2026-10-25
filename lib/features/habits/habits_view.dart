@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:farash/app/spacing.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/calendar_settings.dart';
 import 'package:farash/core/calendar/date_labels.dart';
@@ -82,15 +83,15 @@ class _HabitsViewState extends State<HabitsView> {
           builder: (context, constraints) {
             final width = min(constraints.maxWidth, _maxWidth);
             final inset = (constraints.maxWidth - width) / 2;
-            // Name and ring keep at least 132; the rest becomes day columns.
+            // Name and ring keep at least 150, so a two-word name stays on
+            // one line; the rest, less the end gutter, becomes day columns.
             // Rows and the day header grow with the user's text size.
             final scaler = MediaQuery.textScalerOf(context);
             final rowHeight = max(_rowHeight, scaler.scale(16) * 2.6 + 12);
             final headerHeight = max(48.0, scaler.scale(12) * 3.2 + 8);
-            final columns = ((width - 16 - 132) / habitCellWidth).floor().clamp(
-              1,
-              7,
-            );
+            final columns = ((width - Space.sm - 150) / habitCellWidth)
+                .floor()
+                .clamp(1, 7);
             final list = CustomScrollView(
               slivers: [
                 SliverAppBar(
@@ -339,6 +340,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
                 ),
               ),
             ),
+          const SizedBox(width: Space.sm),
         ],
       ),
     );
@@ -407,7 +409,10 @@ class HabitRow extends StatelessWidget {
                     ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsetsDirectional.only(start: 16),
+                    padding: const EdgeInsetsDirectional.only(
+                      start: Space.gutter,
+                      end: Space.sm,
+                    ),
                     child: Row(
                       children: [
                         Semantics(
@@ -463,6 +468,7 @@ class HabitRow extends StatelessWidget {
                   onTap: () =>
                       recordDay(context, controller, habit, stats.today - i),
                 ),
+              const SizedBox(width: Space.sm),
             ],
           ),
         ),
