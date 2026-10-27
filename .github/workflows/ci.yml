@@ -12,6 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.47.8'
           channel: stable
           cache: true
       - run: flutter pub get
@@ -104,6 +105,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Keep Flutter toolchain aligned
+        run: python3 tool/check_flutter_toolchain.py
       - name: Validate Caddy configuration
         run: >-
           docker run --rm
@@ -161,6 +164,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.47.8'
           channel: stable
           cache: true
       - uses: actions/setup-java@v4
