@@ -134,6 +134,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       COMPOSE_PROJECT_NAME: farash_release_check
+      FARASH_PROXY_NETWORK: farash_release_check_proxy
     steps:
       - uses: actions/checkout@v4
       - name: Test immutable server deployment
@@ -151,6 +152,7 @@ jobs:
         shell: bash
         run: |
           cp deploy/.env.example deploy/.env
+          docker network create "$FARASH_PROXY_NETWORK"
           docker compose -f deploy/compose.yaml up -d postgres --wait
           docker compose -f deploy/compose.yaml exec -T postgres psql -U farash -d farash -v ON_ERROR_STOP=1 -c "CREATE TABLE backup_probe (value text); INSERT INTO backup_probe VALUES ('roundtrip');"
           bash deploy/backup.sh
@@ -166,7 +168,9 @@ jobs:
           [[ -z "$(find deploy/backups -name '.pending.*' -type f)" ]]
       - name: Clean isolated test database
         if: always()
-        run: docker compose -f deploy/compose.yaml down -v
+        run: |
+          docker compose -f deploy/compose.yaml down -v
+          docker network rm "$FARASH_PROXY_NETWORK" >/dev/null 2>&1 || true
 
   android-ui-review:
     runs-on: ubuntu-latest
