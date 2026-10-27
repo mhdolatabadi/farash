@@ -1,17 +1,26 @@
 # Deploy Farash
 
 Farash runs on one Ubuntu server with Docker Compose: the Go API, PostgreSQL,
-the Flutter web app behind nginx, and Caddy for automatic HTTPS.
+and the Flutter web app. The server's existing front nginx owns ports 80/443
+and reaches Farash over the external `proxynet` Docker network. Farash does
+not run a second edge proxy.
 
 ## Production launch
 
-1. Point `FARASH_DOMAIN` at the server and open ports `80` and `443`.
+1. Point `FARASH_DOMAIN` at the server. The shared front nginx already owns
+   host ports `80` and `443`; Farash must not publish either port.
 2. Clone the repository on the server, for example under `/home/apps/farash`.
 3. On the server, create `deploy/.env` from `deploy/.env.example` and fill in
-   the real domain, PostgreSQL password and JWT secret. Never commit `.env`.
+   the real domain, PostgreSQL password and JWT secret. Keep
+   `FARASH_PROXY_NETWORK=proxynet` unless the shared proxy uses another
+   external Docker network. Never commit `.env`.
 4. Make sure the server can pull the GHCR images. If the packages are private,
    log in once on the server with a token that has `read:packages`.
-5. Add these repository secrets in GitHub, matching the Nafir deploy setup:
+5. Verify the shared proxy network exists with `docker network inspect proxynet`.
+   The HTTPS server block for `FARASH_DOMAIN` must include the routes in
+   `deploy/front-proxy.nginx.conf`, which resolve `farash-api:8080` and
+   `farash-web:80` at request time.
+6. Add these repository secrets in GitHub, matching the existing deploy setup:
 
    | Secret | Purpose |
    | --- | --- |
@@ -22,13 +31,13 @@ the Flutter web app behind nginx, and Caddy for automatic HTTPS.
    | `DEPLOY_KNOWN_HOSTS` | Server SSH host key entry |
    | `DEPLOY_PORT` | Optional SSH port; defaults to `22` |
 
-6. Merge to `main`, or run **Images** and then **Deploy** manually from GitHub
+7. Merge to `main`, or run **Images** and then **Deploy** manually from GitHub
    Actions. `Images` publishes immutable images:
 
    - `ghcr.io/mhdolatabadi/farash/api:<commit-sha>`
    - `ghcr.io/mhdolatabadi/farash/web:<commit-sha>`
 
-7. `Deploy` sends `tool/deploy_remote.sh` from the CI-validated source over SSH.
+8. `Deploy` sends `tool/deploy_remote.sh` from the CI-validated source over SSH.
    It fetches the selected full commit SHA and exports its deployment files into
    a private, persistent `.farash-releases/<sha>.<suffix>/` directory. It does not
    check out, reset, stash or execute the server's mutable `deploy/deploy.sh`.
@@ -51,18 +60,16 @@ The API applies its database migrations on startup. PostgreSQL is reachable
 only on Docker's internal network.
 
 Compose always uses the original `deploy/` directory as its project directory
-and the original `deploy/.env` as its configuration. This preserves the project
-name (including `COMPOSE_PROJECT_NAME` if configured), database volume, Caddy
-volumes and networks. The Compose source and Caddy bind-mounted configuration
-come from the exported release, not local server edits. Local deployment script
-customizations are retained but no longer executed by CI; move intended shared
-behavior into a reviewed source change.
+and the original `deploy/.env` as its private configuration. The Compose source
+comes from the exported immutable release. The project is pinned as `farash`,
+the PostgreSQL volume stays `farash_postgres-data`, and only API/web join the
+external shared proxy network; PostgreSQL remains internal-only. Local deployment
+script customizations are retained but no longer executed by CI; move intended
+shared behavior into a reviewed source change.
 
-Keep exported release directories while containers may still reference their
-Caddyfile, including across Docker restarts. No release-directory cleanup is
-automatic. Before removing an old directory, inspect container mounts and retain
-the releases needed for rollback. Backups remain in the original
-`deploy/backups/` directory. Disk retention is an operator responsibility.
+Exported release directories are kept as audit/rollback records; no automatic
+retention policy deletes them. Backups remain in the original `deploy/backups/`
+directory. Disk retention is an operator responsibility.
 
 ## Manual fallback
 
@@ -72,10 +79,27 @@ From the server repository checkout:
 cd deploy
 cp .env.example .env
 # edit .env
+docker network inspect proxynet
 docker compose up -d --build
 ```
 
 Never commit deployment secrets or `.env`.
+
+## Shared front proxy contract
+
+Production currently uses a Dockerized nginx front proxy on the external
+`proxynet` network. Its Farash HTTPS block resolves upstream names at request
+time so nginx stays healthy while the app is being restarted. The reviewed route
+body lives in `deploy/front-proxy.nginx.conf`:
+
+- `/api/` → `farash-api:8080`, with `X-Farash-Client-IP`.
+- everything else → `farash-web:80`.
+
+The proxy configuration and certificate lifecycle are owned by the shared proxy
+stack, not by Farash Compose. Validate nginx before reloading it and never stop
+the shared proxy as part of a Farash deploy. The public deploy health check
+(`/api/v1/health`) verifies the complete path through TLS, nginx, Docker DNS and
+the Farash API.
 
 ## Database backups and rollback
 
