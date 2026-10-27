@@ -17,8 +17,8 @@ if ! git cat-file -e "$revision:deploy/apply.sh" 2>/dev/null; then
   exit 1
 fi
 
-# Keep these: running Caddy containers bind their validated config from here,
-# including after Docker restarts. Never reset/stash the live checkout.
+# Keep the immutable exported source as an audit/rollback record. Never
+# reset or stash the live checkout; its private configuration stays in place.
 mkdir -p .farash-releases
 release="$(mktemp -d "$repository/.farash-releases/${revision}.XXXXXX")"
 git archive "$revision" deploy | tar -x -C "$release"
