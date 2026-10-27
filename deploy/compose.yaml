@@ -1,5 +1,8 @@
+name: farash
+
 services:
   api:
+    container_name: farash-api
     image: ${FARASH_IMAGE_REPO:-ghcr.io/mhdolatabadi/farash}/api:${FARASH_IMAGE_TAG:-latest}
     build:
       context: ../server
@@ -20,15 +23,19 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    networks: [internal, edge]
+    networks:
+      - internal
+      - proxy
 
   web:
+    container_name: farash-web
     image: ${FARASH_IMAGE_REPO:-ghcr.io/mhdolatabadi/farash}/web:${FARASH_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: deploy/Dockerfile.web
     restart: unless-stopped
-    networks: [edge]
+    networks:
+      - proxy
 
   postgres:
     image: postgres:16-alpine
@@ -44,34 +51,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks: [internal]
-
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      FARASH_DOMAIN: ${FARASH_DOMAIN:?set FARASH_DOMAIN in .env}
-    volumes:
-      - type: bind
-        source: ${FARASH_CADDYFILE:-./Caddyfile}
-        target: /etc/caddy/Caddyfile
-        read_only: true
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      - api
-      - web
-    networks: [edge]
+    networks:
+      - internal
 
 networks:
   internal:
     internal: true
-  edge:
+  proxy:
+    external: true
+    name: ${FARASH_PROXY_NETWORK:-proxynet}
 
 volumes:
   postgres-data:
-  caddy-data:
-  caddy-config:
+    name: farash_postgres-data

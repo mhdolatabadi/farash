@@ -1,4 +1,4 @@
-"""Compare real Compose project/volume identities for normal and exported source."""
+"""Verify exported deployment keeps identities and the shared-proxy contract."""
 import json
 import os
 from pathlib import Path
@@ -21,15 +21,34 @@ with tempfile.TemporaryDirectory(prefix="farash exported release ") as temporary
     release = Path(temporary) / "deploy"
     shutil.copytree(config, release, ignore=shutil.ignore_patterns(".env", "backups"))
     env = {**os.environ, "FARASH_IMAGE_TAG": "a" * 40}
-    env.pop("FARASH_CADDYFILE", None)
     previous = resolved(config, env)
-    current = resolved(release, {**env, "FARASH_CADDYFILE": str(release / "Caddyfile")})
+    current = resolved(release, env)
+
     for key in ["name", "volumes", "networks"]:
         assert previous[key] == current[key], f"Compose {key} changed"
     for service in ["api", "web", "postgres"]:
         assert previous["services"][service] == current["services"][service], service
-    volumes = current["services"]["caddy"]["volumes"]
-    caddy = next(v for v in volumes if v["target"] == "/etc/caddy/Caddyfile")
-    assert caddy["source"] == str(release / "Caddyfile")
-    assert caddy["read_only"] is True
-print("Exported deployment preserves Compose project, volumes and networks.")
+
+    assert current["name"] == "farash"
+    assert "caddy" not in current["services"], "Farash must use the shared front proxy"
+
+    proxy = current["networks"]["proxy"]
+    assert proxy["external"] is True
+    assert proxy["name"] == "proxynet"
+
+    api = current["services"]["api"]
+    web = current["services"]["web"]
+    postgres = current["services"]["postgres"]
+    assert api["container_name"] == "farash-api"
+    assert web["container_name"] == "farash-web"
+    assert set(api["networks"]) == {"internal", "proxy"}
+    assert set(web["networks"]) == {"proxy"}
+    assert set(postgres["networks"]) == {"internal"}
+
+    for service in current["services"].values():
+        assert not service.get("ports"), "Production services must not publish host ports"
+
+    volume = current["volumes"]["postgres-data"]
+    assert volume["name"] == "farash_postgres-data"
+
+print("Exported deployment preserves the database and shared-proxy contract.")

@@ -30,7 +30,11 @@ class RemoteDeployTest(unittest.TestCase):
                        check=True, capture_output=True)
         self.git("remote", "add", "origin", str(self.origin))
         self.config = self.repo / "deploy" / ".env"
-        self.config.write_text("FARASH_DOMAIN=test.invalid\nCOMPOSE_PROJECT_NAME=existing-project\n")
+        self.config.write_text(
+            "FARASH_DOMAIN=test.invalid\n"
+            "FARASH_PROXY_NETWORK=proxynet\n"
+            "COMPOSE_PROJECT_NAME=farash\n"
+        )
         self.dirty = self.repo / "deploy" / "deploy.sh"
         self.dirty.write_text("server customization: must not run or disappear\n")
         (self.repo / "deploy" / "local-note").write_text("keep untracked data")
@@ -41,9 +45,10 @@ class RemoteDeployTest(unittest.TestCase):
 import json, os, pathlib, sys
 args=sys.argv[1:]
 record={'command':pathlib.Path(sys.argv[0]).name,'args':args,
-        'tag':os.environ.get('FARASH_IMAGE_TAG'),
-        'caddy':os.environ.get('FARASH_CADDYFILE')}
+        'tag':os.environ.get('FARASH_IMAGE_TAG')}
 with open(os.environ['DEPLOY_TEST_LOG'],'a') as f:f.write(json.dumps(record)+'\\n')
+if args[:2] == ['network', 'inspect'] and os.environ.get('FAIL_PROXY') == '1':
+    sys.exit(8)
 if 'pg_dump' in args:
     if os.environ.get('FAIL_BACKUP')=='1':sys.exit(7)
     sys.stdout.write('PGDMP isolated fixture')
@@ -55,7 +60,7 @@ if 'pg_dump' in args:
         self.env = {**os.environ, "PATH": f"{self.bin}:{os.environ['PATH']}",
                     "DEPLOY_TEST_LOG": str(self.log)}
         for key in ["FARASH_BACKUP_DIR", "FARASH_DEPLOY_CONFIG_DIR", "COMPOSE_FILE",
-                    "COMPOSE_PROJECT_NAME", "FARASH_CADDYFILE"]:
+                    "COMPOSE_PROJECT_NAME", "FARASH_PROXY_NETWORK"]:
             self.env.pop(key, None)
 
     def git(self, *args):
@@ -78,6 +83,7 @@ if 'pg_dump' in args:
         self.assertIn("server customization", self.dirty.read_text())
         self.assertEqual((self.repo / "deploy/local-note").read_text(), "keep untracked data")
         calls = self.commands()
+        self.assertEqual(calls[0]["args"], ["network", "inspect", "proxynet"])
         compose = [c for c in calls if c["args"][:1] == ["compose"]]
         self.assertEqual(len(compose), 5)
         prefix = ["compose", "--project-directory", str(self.repo / "deploy"),
@@ -86,12 +92,24 @@ if 'pg_dump' in args:
             self.assertEqual(call["args"][:5], prefix)
             self.assertEqual(call["tag"], self.sha)
             self.assertIn("/.farash-releases/", call["args"][6])
-            self.assertTrue(Path(call["caddy"]).is_file())
+            self.assertTrue(Path(call["args"][6]).is_file())
         backup = list((self.repo / "deploy/backups").glob("*.dump"))
         self.assertEqual(len(backup), 1)
         self.assertEqual(backup[0].stat().st_mode & 0o777, 0o600)
         self.assertTrue(backup[0].with_suffix(".dump.sha256").exists())
-        self.assertEqual(calls[-1]["args"], ["-fsS", "https://test.invalid/api/v1/health"])
+        self.assertEqual(calls[-1]["args"], [
+            "--connect-timeout", "5", "--max-time", "15", "-fsS",
+            "https://test.invalid/api/v1/health"
+        ])
+
+    def test_missing_proxy_network_stops_before_compose_or_backup(self):
+        result = self.deploy(FAIL_PROXY="1")
+        self.assertNotEqual(result.returncode, 0)
+        calls = self.commands()
+        self.assertEqual(calls[0]["args"], ["network", "inspect", "proxynet"])
+        self.assertFalse(any(c["args"][:1] == ["compose"] for c in calls))
+        self.assertFalse(any(c["command"] == "curl" for c in calls))
+        self.assertFalse(list((self.repo / "deploy/backups").glob("*.dump")))
 
     def test_backup_failure_prevents_api_restart_and_health_probe(self):
         result = self.deploy(FAIL_BACKUP="1")
@@ -104,14 +122,15 @@ if 'pg_dump' in args:
         self.assertFalse(list((self.repo / "deploy/backups").glob(".pending.*")))
 
     def test_selected_commit_is_exported_instead_of_current_head(self):
-        old = (self.repo / "deploy/Caddyfile").read_text()
-        (self.repo / "deploy/Caddyfile").write_text("newer unselected config\n")
-        self.git("add", "deploy/Caddyfile")
+        old = (self.repo / "deploy/compose.yaml").read_text()
+        (self.repo / "deploy/compose.yaml").write_text("name: newer-unselected\nservices: {}\n")
+        self.git("add", "deploy/compose.yaml")
         self.git("commit", "-m", "later source")
         self.git("push", "origin", "main")
         result = self.deploy()
         self.assertEqual(result.returncode, 0, result.stderr)
-        release_file = Path(self.commands()[0]["caddy"])
+        compose_call = next(c for c in self.commands() if c["args"][:1] == ["compose"])
+        release_file = Path(compose_call["args"][6])
         self.assertEqual(release_file.read_text(), old)
         self.assertNotEqual(self.git("rev-parse", "HEAD").strip(), self.sha)
 
