@@ -105,6 +105,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Keep Flutter toolchain aligned
+        run: python3 tool/check_flutter_toolchain.py
       - name: Validate Caddy configuration
         run: >-
           docker run --rm
