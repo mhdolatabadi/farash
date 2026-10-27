@@ -107,12 +107,23 @@ jobs:
       - uses: actions/checkout@v4
       - name: Keep Flutter toolchain aligned
         run: python3 tool/check_flutter_toolchain.py
-      - name: Validate Caddy configuration
-        run: >-
-          docker run --rm
-          -e FARASH_DOMAIN=todo.example.com
-          -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro"
-          caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
+      - name: Validate shared nginx route
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/farash-nginx.conf" <<'EOF'
+          events {}
+          http {
+            server {
+              listen 8080;
+              server_name farash.example;
+              include /etc/nginx/farash.conf;
+            }
+          }
+          EOF
+          docker run --rm \
+            -v "$RUNNER_TEMP/farash-nginx.conf:/etc/nginx/nginx.conf:ro" \
+            -v "$PWD/deploy/front-proxy.nginx.conf:/etc/nginx/farash.conf:ro" \
+            nginx:alpine nginx -t
       - name: Validate Compose file
         working-directory: deploy
         run: cp .env.example .env && docker compose config --quiet
