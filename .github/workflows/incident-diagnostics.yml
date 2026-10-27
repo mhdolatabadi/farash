@@ -62,6 +62,8 @@ jobs:
             if docker exec "$proxy" nginx -v >/dev/null 2>&1; then
               echo '== proxy nginx routes (filtered) ==' 
               docker exec "$proxy" nginx -T 2>&1 | grep -nE 'server_name|proxy_pass|rhythmo|nafir|saatbashi|atid|farash|listen' | head -n 300 || true
+              echo '== exact farash nginx block =='
+              docker exec "$proxy" nginx -T 2>&1 | sed -n '385,417p' || true
             fi
           fi
           echo '== proxynet inspection ==' 
