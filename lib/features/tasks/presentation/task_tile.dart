@@ -35,6 +35,7 @@ class TaskTile extends StatelessWidget {
     this.tag,
     this.labels = const [],
     this.showToday = true,
+    this.dense = false,
   });
 
   final Task task;
@@ -75,6 +76,9 @@ class TaskTile extends StatelessWidget {
   /// time or duration still shows.
   final bool showToday;
 
+  /// Tighter rows for the soft «امروز» well; the check keeps its 48 target.
+  final bool dense;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -102,7 +106,7 @@ class TaskTile extends StatelessWidget {
             const SizedBox(width: 4),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: EdgeInsets.symmetric(vertical: dense ? 6 : 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

@@ -13,6 +13,7 @@ import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:farash/features/time_tracking/time_tracking_view.dart';
 import 'package:farash/features/tasks/data/task.dart';
+import 'package:farash/app/soft.dart';
 import 'package:farash/app/surfaces.dart';
 import 'package:farash/features/focus/focus_controller.dart';
 import 'package:farash/features/focus/focus_view.dart';
@@ -20,7 +21,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:farash/features/tasks/application/quick_capture.dart';
 import 'package:farash/features/tasks/presentation/quick_add_dialog.dart';
+import 'package:farash/features/progress/progress.dart';
 import 'package:farash/features/progress/progress_card.dart';
+import 'package:farash/core/calendar/time_zone.dart';
 import 'package:farash/app/motion.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/calendar_settings_dialog.dart';
@@ -591,6 +594,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     ];
   }
 
+  /// Today, Focus and Habits sit on the soft ground.
+  bool get _softSection =>
+      _section == 0 || _section == 2 || (_section == 4 && _habits != null);
+
+  /// Tasks the server counts as completed today, from the progress
+  /// report; null when the report has no such day.
+  Future<int?> _doneToday() async {
+    final api = widget.tasksApi;
+    final token = widget.token();
+    if (api is! ApiClient || token == null) return null;
+    final progress = await api.loadProgress(token, await deviceTimeZone());
+    final now = DateTime.now();
+    for (final day in progress.weekReport?.days ?? const <ProgressDay>[]) {
+      if (day.date.year == now.year &&
+          day.date.month == now.month &&
+          day.date.day == now.day) {
+        return day.completed;
+      }
+    }
+    return null;
+  }
+
   /// The sections behind the phone's bottom destinations, in order.
   List<int> get _navSections => [
     0,
@@ -715,6 +740,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     onOpenProject: _select,
                     labels: _labels,
                     sectionsApi: widget.sectionsApi,
+                    doneToday: widget.tasksApi is ApiClient ? _doneToday : null,
+                    focus: _focus,
+                    onOpenFocus: () => _switchSection(2),
+                    habits: _habits,
+                    onOpenHabits: _habits == null
+                        ? null
+                        : () => _switchSection(4),
                   )
                 : _section == 2
                 ? FocusView(
@@ -821,7 +853,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     ? null
                     : DecoratedBox(
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
+                          // The soft destinations carry their ground down
+                          // under the bar.
+                          color: _softSection
+                              ? Soft.ground(context)
+                              : Theme.of(context).colorScheme.surface,
                           border: Border(
                             top: BorderSide(
                               color: Theme.of(
@@ -833,6 +869,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         child: ListenableBuilder(
                           listenable: _focus,
                           builder: (context, _) => NavigationBar(
+                            backgroundColor: _softSection
+                                ? Soft.ground(context)
+                                : null,
                             selectedIndex: _navSections.indexOf(_section),
                             onDestinationSelected: (i) =>
                                 _switchSection(_navSections[i]),
