@@ -24,7 +24,7 @@ jobs:
             exit 1
           fi
       - run: flutter analyze
-      - run: flutter test
+      - run: flutter test --reporter github
         env:
           CAPTURE_GLASS_UI: '1'
       - name: Check agenda across daylight-saving changes
