@@ -42,6 +42,7 @@ jobs:
                   out.append(f"::error title={names.get(e['testID'],'?')[:120]}::{msg}")
           print('\n'.join(out[:9]))
           PY
+      - name: Check agenda across daylight-saving changes
         run: flutter test test/due_views_test.dart
         env:
           TZ: Europe/Berlin
