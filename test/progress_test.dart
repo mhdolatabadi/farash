@@ -106,7 +106,7 @@ void main() {
     expect(find.textContaining('سطح ۱ · ۱۰ امتیاز ·'), findsOneWidget);
     await tester.tap(find.text('پیشرفت من'));
     await tester.pumpAndSettle();
-    expect(find.text('قدم‌های کوچک، پیشرفت ماندگار'), findsOneWidget);
+    expect(find.text('هدف هفتگی'), findsOneWidget);
     await tester.tap(find.byType(DropdownButtonFormField<int>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('۵ روز در هفته').last);
@@ -119,6 +119,10 @@ void main() {
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('صد قدم جلوتر'), 180);
+    expect(
+      find.bySemanticsLabel(RegExp('اولین قدم.*دریافت‌شده')),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 

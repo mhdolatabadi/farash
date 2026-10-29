@@ -36,7 +36,7 @@ class WeeklyChallenge extends StatelessWidget {
           Text(
             completed >= target
                 ? 'به هدف این هفته رسیدید.'
-                : '${persianDigits(target - completed)} کار تا هدف؛ با ریتم خودتان ادامه دهید.',
+                : '${persianDigits(target - completed)} کار تا هدف',
           ),
           TextButton(
             onPressed: () => showDialog<void>(

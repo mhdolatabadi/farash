@@ -66,7 +66,8 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('اسپرینت تازه'), findsOneWidget);
-      expect(find.textContaining('نیاز به تیم'), findsOneWidget);
+      // The intro paragraph is gone; the backlog leads.
+      expect(find.textContaining('نیاز به تیم'), findsNothing);
       expect(tester.takeException(), isNull);
       await capture(tester, key, 'scrum-${variant.$1}-backlog');
       await tester.ensureVisible(find.text('شروع اسپرینت'));
@@ -92,7 +93,10 @@ void main() {
       await tester.ensureVisible(find.text('گزارش و مرور'));
       await tester.tap(find.text('گزارش و مرور'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('انجام‌شده: ۱ از ۲'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp('^انجام‌شده: ۱ از ۲')),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
       await capture(tester, key, 'scrum-${variant.$1}-report');
       await tester.ensureVisible(find.text('بک‌لاگ').first);

@@ -189,7 +189,34 @@ class _ProgressPageState extends State<_ProgressPage> {
       color: Theme.of(context).colorScheme.onSurfaceVariant,
     );
     return Scaffold(
-      appBar: AppBar(title: const Text('پیشرفت من')),
+      appBar: AppBar(
+        title: const Text('پیشرفت من'),
+        actions: [
+          // The rules live behind one button instead of under every section.
+          IconButton(
+            tooltip: 'قواعد امتیاز',
+            icon: const Icon(Icons.info_outline),
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('قواعد امتیاز'),
+                content: const Text(
+                  'هر کار تکمیل‌شده ۱۰ امتیاز دارد و زیرکارها هم حساب '
+                  'می‌شوند. بازگرداندن یا حذف کار، امتیاز و نشانش را هم '
+                  'برمی‌گرداند.\n\nهفته از شنبه شروع می‌شود و روز فعال یعنی '
+                  'دست‌کم یک کار انجام‌شده. غیبت جریمه ندارد.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('بستن'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -198,40 +225,29 @@ class _ProgressPageState extends State<_ProgressPage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
                 Space.gutter,
-                Space.lg,
+                Space.sm,
                 Space.gutter,
                 Space.xxl,
               ),
               children: [
-                Text('قدم‌های کوچک، پیشرفت ماندگار', style: text.titleLarge),
-                const SizedBox(height: Space.lg),
                 _LevelTiles(progress: _progress),
-                const SizedBox(height: Space.xxl),
-                if (_progress.weekReport case final report?) ...[
-                  if (_progress.weeklyTaskGoal case final target?) ...[
-                    WeeklyChallenge(
-                      completed: report.completed,
-                      target: target,
-                      onSave: _saveChallenge,
-                    ),
-                    const SizedBox(height: Space.lg),
-                  ],
-                  WeeklyProgressReport(report: report),
-                  const SizedBox(height: Space.xxl),
-                ],
+                const SizedBox(height: Space.md),
                 SoftTile(
                   padding: const EdgeInsets.all(Space.lg),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text('هدف هفتگی', style: section),
-                      const SizedBox(height: Space.sm),
-                      Text(
-                        '${persianDigits(_progress.weeklyDays)} روز فعال این هفته؛ '
-                        'هر روز با انجام حداقل یک کار.',
-                        style: note,
+                      Row(
+                        children: [
+                          Expanded(child: Text('هدف هفتگی', style: section)),
+                          Text(
+                            '${persianDigits(_progress.weeklyDays)} از '
+                            '${persianDigits(_progress.weeklyGoal)} روز فعال',
+                            style: note,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: Space.lg),
+                      const SizedBox(height: Space.md),
                       DropdownButtonFormField<int>(
                         key: ValueKey((_progress.weeklyGoal, _saving)),
                         initialValue: _progress.weeklyGoal,
@@ -259,57 +275,105 @@ class _ProgressPageState extends State<_ProgressPage> {
                             ),
                           ),
                         ),
-                      const SizedBox(height: Space.sm),
-                      Text(
-                        'هفته از شنبه شروع می‌شود. غیبت جریمه ندارد؛ '
-                        'امتیازهای قبلی با شروع هفتهٔ تازه باقی می‌مانند.',
-                        style: note,
-                      ),
                     ],
                   ),
                 ),
-                const SizedBox(height: Space.xxl),
+                if (_progress.weekReport case final report?) ...[
+                  if (_progress.weeklyTaskGoal case final target?) ...[
+                    const SizedBox(height: Space.md),
+                    WeeklyChallenge(
+                      completed: report.completed,
+                      target: target,
+                      onSave: _saveChallenge,
+                    ),
+                  ],
+                  const SizedBox(height: Space.md),
+                  WeeklyProgressReport(report: report),
+                ],
+                const SizedBox(height: Space.xl),
                 Text('نشان‌ها', style: section),
-                const SizedBox(height: Space.xs),
-                SoftWell(
-                  child: Column(
-                    children: [
-                      for (final badge in _badges.entries)
-                        ListTile(
-                          contentPadding: const EdgeInsetsDirectional.fromSTEB(
-                            Space.lg,
-                            0,
-                            Space.lg,
-                            0,
-                          ),
-                          leading: Icon(
-                            _progress.badges.contains(badge.key)
-                                ? Icons.verified_outlined
-                                : Icons.lock_outline,
-                          ),
-                          title: Text(badge.value.$1),
-                          subtitle: Text(badge.value.$2),
-                          trailing: Text(
-                            _progress.badges.contains(badge.key)
-                                ? 'دریافت‌شده'
-                                : 'در پیش رو',
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: Space.lg),
-                Text(
-                  'هر کار تکمیل‌شده ۱۰ امتیاز دارد. بازگرداندن یا حذف '
-                  'آن کار، امتیاز و نشان وابسته را هم بازمی‌گرداند. '
-                  'زیرکارهای تکمیل‌شده هم حساب می‌شوند.',
-                  style: note,
-                ),
+                const SizedBox(height: Space.sm),
+                _Badges(earned: _progress.badges),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Badges as small tiles: earned ones raised, the rest sunk and dim. The
+/// condition is in the tooltip and the label, not under every name.
+class _Badges extends StatelessWidget {
+  const _Badges({required this.earned});
+  final Iterable<String> earned;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (context, box) {
+        final scale = MediaQuery.textScalerOf(context).scale(1);
+        final columns = box.maxWidth >= 420 * scale ? 3 : 2;
+        final width = (box.maxWidth - Space.md * (columns - 1)) / columns;
+        return Wrap(
+          spacing: Space.md,
+          runSpacing: Space.md,
+          children: [
+            for (final badge in _badges.entries)
+              SizedBox(
+                width: width,
+                child: Tooltip(
+                  message: badge.value.$2,
+                  child: Semantics(
+                    label:
+                        '${badge.value.$1}، ${badge.value.$2}، '
+                        '${earned.contains(badge.key) ? 'دریافت‌شده' : 'در پیش رو'}',
+                    excludeSemantics: true,
+                    child: () {
+                      final got = earned.contains(badge.key);
+                      final content = Padding(
+                        padding: const EdgeInsets.all(Space.md),
+                        child: Row(
+                          children: [
+                            Icon(
+                              got
+                                  ? Icons.verified_outlined
+                                  : Icons.lock_outline,
+                              color: got
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: Space.sm),
+                            Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: AlignmentDirectional.centerStart,
+                                child: Text(
+                                  badge.value.$1,
+                                  maxLines: 1,
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: got
+                                        ? null
+                                        : theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                      return got
+                          ? SoftTile(padding: EdgeInsets.zero, child: content)
+                          : SoftWell(padding: EdgeInsets.zero, child: content);
+                    }(),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

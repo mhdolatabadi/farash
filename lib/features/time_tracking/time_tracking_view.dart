@@ -221,16 +221,6 @@ class TimeTrackingView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        'زمان شما کجا صرف شد؟',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: Space.xs),
-                      Text(
-                        'زمان واقعی کارها؛ جدا از برآورد و امتیاز. هفته از شنبه آغاز می‌شود.',
-                        style: note,
-                      ),
-                      const SizedBox(height: Space.lg),
                       if (tracker.error != null)
                         TextButton.icon(
                           onPressed: tracker.load,
@@ -274,21 +264,30 @@ class TimeTrackingView extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: Space.lg),
-                        FilledButton.icon(
-                          onPressed: tracker.busy ? null : () => _pick(context),
-                          icon: const Icon(Icons.play_arrow_rounded),
-                          label: const Text('شروع برای یک کار'),
-                        ),
-                        TextButton.icon(
-                          onPressed: () => _pick(
-                            context,
-                            manualStart: DateTime.now().subtract(
-                              const Duration(minutes: 30),
+                        Wrap(
+                          spacing: Space.sm,
+                          runSpacing: Space.sm,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            FilledButton.icon(
+                              onPressed: tracker.busy
+                                  ? null
+                                  : () => _pick(context),
+                              icon: const Icon(Icons.play_arrow_rounded),
+                              label: const Text('شروع برای یک کار'),
                             ),
-                            manualEnd: DateTime.now(),
-                          ),
-                          icon: const Icon(Icons.edit_calendar_outlined),
-                          label: const Text('افزودن بازهٔ دستی'),
+                            TextButton.icon(
+                              onPressed: () => _pick(
+                                context,
+                                manualStart: DateTime.now().subtract(
+                                  const Duration(minutes: 30),
+                                ),
+                                manualEnd: DateTime.now(),
+                              ),
+                              icon: const Icon(Icons.edit_calendar_outlined),
+                              label: const Text('افزودن بازهٔ دستی'),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: Space.xl),
                         if (tracker.active case final active?) ...[
@@ -346,11 +345,6 @@ class TimeTrackingView extends StatelessWidget {
                         ProjectTimeGroups(tasks: report.tasks),
                         const SizedBox(height: Space.xxl),
                         Text('مرور روزها و بازه‌ها', style: section),
-                        const SizedBox(height: Space.xs),
-                        Text(
-                          'فاصلهٔ بین بازه‌ها ثبت نشده است؛ فقط اگر واقعاً کار کرده‌اید آن را دستی اضافه کنید.',
-                          style: note,
-                        ),
                         const SizedBox(height: Space.sm),
                         if (!report.truncated)
                           for (final gap in todayGaps(
