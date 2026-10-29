@@ -1,5 +1,5 @@
-import 'package:farash/core/offline/offline_read_cache.dart';
 import 'package:farash/features/habits/habits_controller.dart';
+import 'package:farash/core/offline/offline_read_cache.dart';
 import 'package:farash/features/search/search.dart';
 import 'package:farash/features/portability/export_api.dart';
 import 'package:farash/features/scrum/scrum.dart';
@@ -793,9 +793,11 @@ class ApiClient
           decoded,
         );
       }
+      // Other confirmed writes may already have advanced the read generation.
+      // Every successful write in the current session must invalidate snapshots.
       if (method != 'GET' &&
           token != null &&
-          cache?.matches(baseUri, token, generation) == true) {
+          cache?.matchesScope(baseUri, token) == true) {
         await cache?.invalidateData();
       }
       if (method != 'GET' &&

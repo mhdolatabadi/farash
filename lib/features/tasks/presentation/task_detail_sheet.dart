@@ -3,7 +3,8 @@ import 'package:farash/features/recurrence/task_recurrence.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:farash/features/time_tracking/time_tracking_view.dart';
 import 'package:flutter/material.dart';
-import 'package:farash/app/glass.dart';
+import 'package:farash/app/spacing.dart';
+import 'package:farash/app/surfaces.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
 import 'package:farash/features/labels/presentation/label_widgets.dart';
 import 'package:farash/features/projects/data/project.dart';
@@ -33,6 +34,10 @@ Future<TaskSheetResult?> showTaskDetailSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    // A drag would close the sheet without asking about unsaved edits;
+    // Back and the scrim go through the editor's confirmation instead.
+    enableDrag: false,
+    showDragHandle: false,
     builder: (context) => TaskDetailEditor(
       controller: controller,
       task: task,
@@ -85,6 +90,47 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
         )
       : null;
 
+  /// The notes as last saved; checklist ticks save them on the spot.
+  late String _savedDescription = widget.task.description;
+
+  bool get _dirty =>
+      _title.text != widget.task.title ||
+      _description.text != _savedDescription ||
+      _priority != widget.task.priority ||
+      _projectId != widget.task.projectId ||
+      _sectionId != widget.controller.sectionOf(widget.task) ||
+      _dates != widget.task.dates ||
+      (widget.labels != null && !_sameLabels(_labelIds, widget.task.labelIds));
+
+  static bool _sameLabels(List<String> a, List<String> b) =>
+      a.length == b.length && a.toSet().containsAll(b);
+
+  /// Closes without saving, asking first when something would be lost.
+  Future<void> _dismiss() async {
+    if (_saving) return;
+    if (_dirty) {
+      final discard = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('تغییرها ذخیره نشده‌اند'),
+          content: const Text('اگر ببندید، تغییرهای این کار از بین می‌روند.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('ادامهٔ ویرایش'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('دور ریختن'),
+            ),
+          ],
+        ),
+      );
+      if (discard != true || !mounted) return;
+    }
+    _close(null);
+  }
+
   Future<void> _pickDates() async {
     final picked = await showDuePicker(context, initial: _dates);
     if (picked != null && mounted) setState(() => _dates = picked);
@@ -118,6 +164,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
   /// Checklist changes save at once, like ticking a box should.
   Future<void> _saveChecklist(String description) {
     _description.text = description;
+    _savedDescription = description;
     return _quietly(
       () => widget.controller.saveDescription(widget.task, description),
     );
@@ -234,7 +281,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
           .firstOrNull;
       if (current != null) targets.insert(0, current);
     }
-    // Beside the list the editor is a side sheet of glass; as a modal
+    // Beside the list the editor is a side panel; as a modal
     // bottom sheet it is the sheet itself, over a scrim, with no pane of
     // its own.
     final side = widget.onResult != null;
@@ -278,7 +325,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                       ),
                       IconButton(
                         tooltip: 'بستن ویرایشگر',
-                        onPressed: _saving ? null : () => _close(null),
+                        onPressed: _saving ? null : _dismiss,
                         icon: const Icon(Icons.close),
                       ),
                     ],
@@ -473,10 +520,17 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
         ],
       ),
     );
-    if (side) return GlassSurface(child: body);
+    final guarded = PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _dismiss();
+      },
+      child: body,
+    );
+    if (side) return Panel(child: guarded);
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: body,
+      child: guarded,
     );
   }
 }
@@ -598,7 +652,7 @@ class _SectionHeading extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(top: 12, bottom: 4),
+      padding: const EdgeInsets.only(top: Space.lg, bottom: Space.xs),
       child: Text(
         text,
         style: theme.textTheme.labelLarge?.copyWith(
@@ -683,13 +737,10 @@ class _ChecklistState extends State<_Checklist> {
         final items = parseChecklist(value.text);
         final done = items.where((i) => i.done).length;
         if (items.isEmpty && !_adding) {
-          return Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: TextButton.icon(
-              onPressed: () => setState(() => _adding = true),
-              icon: const Icon(Icons.checklist),
-              label: const Text('افزودن چک‌لیست'),
-            ),
+          return _ActionRow(
+            onTap: () => setState(() => _adding = true),
+            icon: Icons.checklist,
+            label: 'افزودن چک‌لیست',
           );
         }
         return Column(
@@ -811,30 +862,67 @@ class _SubtasksState extends State<_Subtasks> {
               ),
             ),
           ),
-        Wrap(
-          spacing: 4,
-          children: [
-            if (!showList && !task.isCompleted)
-              TextButton.icon(
-                onPressed: () => setState(() => _adding = true),
-                icon: const Icon(Icons.subdirectory_arrow_left),
-                label: const Text('افزودن زیرکار'),
-              ),
-            if (above != null && !task.isCompleted)
-              TextButton.icon(
-                onPressed: widget.onIndent,
-                icon: const Icon(Icons.format_indent_increase),
-                label: const Text('زیرکارِ کار بالایی'),
-              ),
-            if (parent != null)
-              TextButton.icon(
-                onPressed: widget.onOutdent,
-                icon: const Icon(Icons.format_indent_decrease),
-                label: const Text('یک سطح بیرون'),
-              ),
-          ],
-        ),
+        if (!showList && !task.isCompleted)
+          _ActionRow(
+            onTap: () => setState(() => _adding = true),
+            icon: Icons.subdirectory_arrow_left,
+            label: 'افزودن زیرکار',
+          ),
+        if (above != null && !task.isCompleted)
+          _ActionRow(
+            onTap: widget.onIndent,
+            icon: Icons.format_indent_increase,
+            label: 'زیرکارِ کار بالایی',
+          ),
+        if (parent != null)
+          _ActionRow(
+            onTap: widget.onOutdent,
+            icon: Icons.format_indent_decrease,
+            label: 'یک سطح بیرون',
+          ),
       ],
+    );
+  }
+}
+
+/// An action laid out like a property row, so its icon and label share the
+/// editor's two keylines instead of a button's own inset.
+class _ActionRow extends StatelessWidget {
+  const _ActionRow({
+    required this.onTap,
+    required this.icon,
+    required this.label,
+  });
+
+  final VoidCallback onTap;
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.primary;
+    return Semantics(
+      button: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Row(
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.bodyLarge?.copyWith(color: color),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -859,7 +947,7 @@ class _PropertyRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: Space.xs),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final heading = Row(
@@ -873,7 +961,11 @@ class _PropertyRow extends StatelessWidget {
           if (!expand && constraints.maxWidth < 480) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [heading, const SizedBox(height: 8), child],
+              children: [
+                heading,
+                const SizedBox(height: Space.sm),
+                child,
+              ],
             );
           }
           return Row(

@@ -1,5 +1,8 @@
+name: farash
+
 services:
   api:
+    container_name: farash-api
     image: ${FARASH_IMAGE_REPO:-ghcr.io/mhdolatabadi/farash}/api:${FARASH_IMAGE_TAG:-latest}
     build:
       context: ../server
@@ -9,18 +12,30 @@ services:
       DATABASE_URL: postgres://farash:${POSTGRES_PASSWORD}@postgres:5432/farash?sslmode=disable
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?set AUTH_JWT_SECRET in .env}
       AUTH_TOKEN_TTL_HOURS: ${AUTH_TOKEN_TTL_HOURS:-24}
+      CALENDAR_GOOGLE_ENABLED: "${CALENDAR_GOOGLE_ENABLED:-false}"
+      CALENDAR_GOOGLE_CLIENT_ID: "${CALENDAR_GOOGLE_CLIENT_ID:-}"
+      CALENDAR_GOOGLE_CLIENT_SECRET: "${CALENDAR_GOOGLE_CLIENT_SECRET:-}"
+      CALENDAR_GOOGLE_CALLBACK_URL: "${CALENDAR_GOOGLE_CALLBACK_URL:-}"
+      CALENDAR_WEB_RETURN_URL: "${CALENDAR_WEB_RETURN_URL:-}"
+      CALENDAR_ANDROID_RETURN_URL: "${CALENDAR_ANDROID_RETURN_URL:-}"
+      CALENDAR_TOKEN_KEY_ID: "${CALENDAR_TOKEN_KEY_ID:-}"
+      CALENDAR_TOKEN_KEYS: "${CALENDAR_TOKEN_KEYS:-}"
     depends_on:
       postgres:
         condition: service_healthy
-    networks: [internal, edge]
+    networks:
+      - internal
+      - proxy
 
   web:
+    container_name: farash-web
     image: ${FARASH_IMAGE_REPO:-ghcr.io/mhdolatabadi/farash}/web:${FARASH_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: deploy/Dockerfile.web
     restart: unless-stopped
-    networks: [edge]
+    networks:
+      - proxy
 
   postgres:
     image: postgres:16-alpine
@@ -36,31 +51,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks: [internal]
-
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      FARASH_DOMAIN: ${FARASH_DOMAIN:?set FARASH_DOMAIN in .env}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      - api
-      - web
-    networks: [edge]
+    networks:
+      - internal
 
 networks:
   internal:
     internal: true
-  edge:
+  proxy:
+    external: true
+    name: ${FARASH_PROXY_NETWORK:-proxynet}
 
 volumes:
   postgres-data:
-  caddy-data:
-  caddy-config:
+    name: farash_postgres-data

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/spacing.dart';
+import 'package:farash/app/motion.dart';
 import 'package:farash/features/tasks/data/task.dart';
 
 enum SectionAction { rename, moveUp, moveDown, delete }
@@ -34,7 +36,13 @@ class SectionHeader extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: Padding(
-        padding: const EdgeInsetsDirectional.only(top: 12),
+        // A section break takes more air above than below; the chevron's
+        // glyph sits on the gutter and the name on the content keyline.
+        padding: const EdgeInsetsDirectional.only(
+          top: Space.sectionTop - Space.sm,
+          start: Space.xs,
+          end: Space.xs,
+        ),
         child: DecoratedBox(
           decoration: BoxDecoration(
             border: Border(
@@ -48,15 +56,16 @@ class SectionHeader extends StatelessWidget {
                 onPressed: onToggle,
                 icon: AnimatedRotation(
                   turns: collapsed ? 0.25 : 0,
-                  duration: const Duration(milliseconds: 150),
+                  duration: Motion.of(context, Motion.quick),
                   child: const Icon(Icons.expand_more),
                 ),
               ),
+              const SizedBox(width: Space.keyline - Space.xs - 48),
               Expanded(
                 child: InkWell(
                   onTap: onToggle,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: Space.md),
                     child: Text.rich(
                       TextSpan(
                         children: [

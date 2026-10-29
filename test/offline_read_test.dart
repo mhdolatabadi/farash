@@ -159,6 +159,83 @@ void main() {
   );
 
   test(
+    'each concurrent mutation invalidates intervening cached reads',
+    () async {
+      final cache = OfflineReadCache(store: MemoryOfflineStore());
+      await cache.activate(_server, 't');
+      final firstStarted = Completer<void>();
+      final secondStarted = Completer<void>();
+      final firstResponse = Completer<http.Response>();
+      final secondResponse = Completer<http.Response>();
+      var online = true;
+      final api = ApiClient(
+        _server,
+        offlineCache: cache,
+        client: MockClient((request) async {
+          if (!online) throw http.ClientException('offline');
+          if (request.method == 'DELETE') {
+            if (request.url.path.endsWith('/first')) {
+              firstStarted.complete();
+              return firstResponse.future;
+            }
+            secondStarted.complete();
+            return secondResponse.future;
+          }
+          return http.Response(
+            jsonEncode({
+              'projects': [
+                {'id': 'second', 'name': 'Still present'},
+              ],
+            }),
+            200,
+          );
+        }),
+      );
+      final first = api.deleteProject('t', 'first');
+      final second = api.deleteProject('t', 'second');
+      await Future.wait([firstStarted.future, secondStarted.future]);
+      firstResponse.complete(http.Response('', 204));
+      await first;
+      expect((await api.listProjects('t')).single.id, 'second');
+      final key = '$_server/api/v1/projects';
+      expect(cache.read(_server, 't', cache.epoch, key), isNotNull);
+      secondResponse.complete(http.Response('', 204));
+      await second;
+      expect(cache.read(_server, 't', cache.epoch, key), isNull);
+      online = false;
+      await expectLater(api.listProjects('t'), throwsA(isA<ApiException>()));
+      expect(api.isOffline, isFalse);
+    },
+  );
+
+  test('late mutation from another session preserves current cache', () async {
+    final cache = OfflineReadCache(store: MemoryOfflineStore());
+    await cache.activate(_server, 'old');
+    final started = Completer<void>();
+    final response = Completer<http.Response>();
+    final api = ApiClient(
+      _server,
+      offlineCache: cache,
+      client: MockClient((_) async {
+        started.complete();
+        return response.future;
+      }),
+    );
+    final pending = api.deleteProject('old', 'p');
+    await started.future;
+    await cache.clear();
+    await cache.activate(_server, 'new');
+    final key = '$_server/api/v1/projects';
+    final body = {'projects': <Object>[]};
+    await cache.remember(_server, 'new', cache.epoch, key, body);
+    final currentGeneration = cache.epoch;
+    response.complete(http.Response('', 204));
+    await pending;
+    expect(cache.epoch, currentGeneration);
+    expect(cache.read(_server, 'new', cache.epoch, key), body);
+  });
+
+  test(
     'transport-only fallback blocks mutations until explicit reconnect',
     () async {
       final cache = OfflineReadCache(store: MemoryOfflineStore());

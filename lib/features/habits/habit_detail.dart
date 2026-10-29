@@ -260,6 +260,14 @@ class _Subtitle extends StatelessWidget {
                     : habit.frequencyLabel,
                 color: muted,
               ),
+              if (habit.reminderMinute case final minute?)
+                _Fact(
+                  icon: Icons.notifications_active_outlined,
+                  text:
+                      '${formatMinuteOfDay(minute)}، '
+                      '${reminderDaysLabel(habit.reminderDays)}',
+                  color: muted,
+                ),
               if (habit.archived)
                 _Fact(
                   icon: Icons.archive_outlined,
@@ -292,9 +300,12 @@ class _Fact extends StatelessWidget {
     children: [
       Icon(icon, size: 18, color: color),
       const SizedBox(width: 6),
-      Text(
-        text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color),
+      // A long list of reminder days wraps instead of overflowing.
+      Flexible(
+        child: Text(
+          text,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color),
+        ),
       ),
     ],
   );

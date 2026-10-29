@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:farash/features/habits/habit.dart';
 import 'package:farash/features/habits/habit_stats.dart';
+import 'package:farash/features/habits/reminders/habit_reminders.dart';
 
 abstract interface class HabitsApi {
   Future<Map<String, dynamic>> habitRequest(
@@ -11,15 +15,32 @@ abstract interface class HabitsApi {
   });
 }
 
+/// One editor's create intent, retained across uncertain responses and rebuilds.
+class HabitCreateAttempt {
+  final String requestKey =
+      '${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(0x7fffffff)}';
+  String? _token;
+  Map<String, Object?>? _payload;
+  Habit? _confirmed;
+  Future<Habit?>? _inFlight;
+}
+
 enum HabitSort { manual, name, color, score }
 
 /// The account's habits, with optimistic check-ins that roll back when the
 /// server refuses them.
 class HabitsController extends ChangeNotifier {
-  HabitsController({required this.api, required this.token, DateTime? now})
-    : _now = now;
+  HabitsController({
+    required this.api,
+    required this.token,
+    this.reminders,
+    DateTime? now,
+  }) : _now = now;
 
   final HabitsApi api;
+
+  /// Follows every change, so the device reminds about the current habits.
+  final HabitReminders? reminders;
   final String? Function() token;
   final DateTime? _now;
 
@@ -74,7 +95,9 @@ class HabitsController extends ChangeNotifier {
 
   void _set(List<Habit> habits) {
     _habits = habits;
-    if (!_disposed) notifyListeners();
+    if (_disposed) return;
+    reminders?.sync(habits);
+    notifyListeners();
   }
 
   void _replace(Habit habit) =>
@@ -104,6 +127,7 @@ class HabitsController extends ChangeNotifier {
           for (final h in data['habits'] as List)
             Habit.fromJson(h as Map<String, dynamic>),
         ];
+        reminders?.sync(_habits);
       }
     } catch (e) {
       error = '$e';
@@ -113,15 +137,46 @@ class HabitsController extends ChangeNotifier {
     }
   }
 
-  Future<Habit?> create(HabitDraft draft) async {
+  Future<Habit?> create(HabitDraft draft, {HabitCreateAttempt? attempt}) {
+    final intent = attempt ?? HabitCreateAttempt();
+    return intent._inFlight ??= _create(draft, intent).whenComplete(() {
+      intent._inFlight = null;
+    });
+  }
+
+  Future<Habit?> _create(HabitDraft draft, HabitCreateAttempt attempt) async {
+    final current = token();
+    if (current == null || _disposed) return null;
+    attempt._token ??= current;
+    if (attempt._token != current) return null;
+    attempt._payload ??= Map.unmodifiable(draft.toJson());
     try {
-      final data = await _call('POST', '/api/v1/habits', draft.toJson());
-      if (data == null) return null;
-      final habit = Habit.fromJson(data['habit'] as Map<String, dynamic>);
-      _set([..._habits, habit]);
+      var habit = attempt._confirmed;
+      if (habit == null) {
+        final data = await _call('POST', '/api/v1/habits', {
+          ...attempt._payload!,
+          'request_key': attempt.requestKey,
+        });
+        if (data == null || _disposed) return null;
+        habit = Habit.fromJson(data['habit'] as Map<String, dynamic>);
+        attempt._confirmed = habit;
+      }
+      // If the draft changed after an uncertain response, first recover the
+      // original create, then edit that same habit instead of creating again.
+      if (jsonEncode(attempt._payload) != jsonEncode(draft.toJson())) {
+        final data = await _call('PATCH', _path(habit.id), draft.toJson());
+        if (data == null || _disposed) return null;
+        habit = Habit.fromJson(data['habit'] as Map<String, dynamic>);
+        attempt._confirmed = habit;
+      }
+      _set([
+        for (final h in _habits)
+          if (h.id != habit.id) h,
+        habit,
+      ]);
       return habit;
     } catch (e) {
-      message.value = 'عادت ساخته نشد: $e';
+      if (!_disposed) message.value = 'عادت ساخته نشد: $e';
       return null;
     }
   }
@@ -226,6 +281,14 @@ class HabitsController extends ChangeNotifier {
       }
       if (!_disposed) message.value = 'ثبت نشد: $e';
     }
+  }
+
+  /// «انجام شد» on a reminder: records [day] as done for a yes/no habit.
+  Future<void> markDone(String habitId, int day) async {
+    if (byId(habitId) == null) await load();
+    final habit = byId(habitId);
+    if (habit == null || habit.isNumeric) return;
+    await setEntry(habit, day, const HabitEntry(value: 1));
   }
 
   /// Loop's toggle for a yes/no habit: unknown → done → not done → skipped.

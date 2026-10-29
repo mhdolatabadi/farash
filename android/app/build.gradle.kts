@@ -19,6 +19,8 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // flutter_local_notifications schedules with java.time on old Android.
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -44,13 +46,7 @@ android {
 
     buildTypes {
         release {
-            // Local release builds keep working with the debug key. CI provides
-            // key.properties and always selects the private production key.
-            signingConfig = if (keystorePropertiesFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
@@ -63,4 +59,15 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+}
+
+// Never silently distribute a release signed with the public Android debug key.
+gradle.taskGraph.whenReady {
+    if (allTasks.any { it.name.contains("Release") } && !keystorePropertiesFile.exists()) {
+        throw GradleException("Release signing is required: configure android/key.properties.")
+    }
 }

@@ -8,13 +8,13 @@ import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/calendar_settings.dart';
 import 'package:farash/app/app_configuration.dart';
 import 'package:farash/app/app_theme.dart';
-import 'package:farash/app/glass.dart';
 import 'package:farash/app/backend_gate.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/widgets/app_loading_screen.dart';
 import 'package:farash/features/auth/auth_screen.dart';
 import 'package:farash/features/auth/data/auth_models.dart';
 import 'package:farash/features/auth/session_store.dart';
+import 'package:farash/features/habits/reminders/habit_reminders.dart';
 import 'package:farash/features/home/home_screen.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 
@@ -35,6 +35,7 @@ class FarashApp extends StatefulWidget {
     this.startView,
     this.labelsApi,
     this.themePreferences,
+    this.habitReminders,
   });
 
   /// Test overrides; by default the app talks to
@@ -51,6 +52,9 @@ class FarashApp extends StatefulWidget {
   final StartView? startView;
   final LabelsApi? labelsApi;
   final ThemePreferences? themePreferences;
+
+  /// Null in tests unless one is given; the platform's otherwise.
+  final HabitReminders? habitReminders;
 
   @override
   State<FarashApp> createState() => _FarashAppState();
@@ -83,6 +87,13 @@ class _FarashAppState extends State<FarashApp> {
       widget.startView ??
       (StartView(store: SecureCalendarSettingsStore())..load());
 
+  /// Tests that bring their own API get no platform reminders.
+  late final HabitReminders? _reminders =
+      widget.habitReminders ??
+      (widget.apiClient == null && widget.tasksApi == null
+          ? HabitReminders.forPlatform()
+          : null);
+
   late final ThemePreferences _appearance =
       widget.themePreferences ??
       (ThemePreferences(store: SecureCalendarSettingsStore())..load());
@@ -96,6 +107,7 @@ class _FarashAppState extends State<FarashApp> {
   void dispose() {
     _projects?.dispose();
     if (widget.themePreferences == null) _appearance.dispose();
+    if (widget.habitReminders == null) _reminders?.dispose();
     super.dispose();
   }
 
@@ -121,7 +133,10 @@ class _FarashAppState extends State<FarashApp> {
       });
     } on ApiException catch (error) {
       if (!mounted || generation != _sessionEpoch) return;
-      if (error.isUnauthorized) await _sessionStore.clear();
+      if (error.isUnauthorized) {
+        await _sessionStore.clear();
+        await _reminders?.clear();
+      }
       if (!mounted) return;
       setState(() {
         _state = error.isUnauthorized
@@ -144,6 +159,7 @@ class _FarashAppState extends State<FarashApp> {
     // Never show one account's data to the next one.
     _projects?.clear();
     await _sessionStore.clear();
+    await _reminders?.clear();
     if (mounted) setState(() => _session = null);
   }
 
@@ -215,6 +231,7 @@ class _FarashAppState extends State<FarashApp> {
           onLogout: _signOut,
           startView: _startView,
           labelsApi: widget.labelsApi ?? _apiClient,
+          habitReminders: _reminders,
         ),
       ),
     };
@@ -231,10 +248,7 @@ class _FarashAppState extends State<FarashApp> {
       title: 'Farash',
       builder: (context, child) => ThemePreferencesScope(
         preferences: _appearance,
-        child: CalendarScope(
-          settings: _calendar,
-          child: GlassBackdrop(child: child!),
-        ),
+        child: CalendarScope(settings: _calendar, child: child!),
       ),
       debugShowCheckedModeBanner: false,
       // Persian first: right-to-left layout and Persian Material strings

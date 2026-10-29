@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/atelier.dart';
+import 'package:farash/app/spacing.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/projects/data/project.dart';
@@ -264,146 +264,163 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 960),
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(vertical: Space.sm),
+            // Controls keep the gutter; result rows run edge to edge and
+            // carry it themselves, like every other task list.
             children: [
-              TextField(
-                controller: query,
-                autofocus: true,
-                maxLength: 1000,
-                textInputAction: TextInputAction.search,
-                onSubmitted: (_) => search(),
-                decoration: InputDecoration(
-                  labelText: 'جست‌وجوی کار یا عبارت فیلتر',
-                  hintText: 'مثلاً امروز & p1',
-                  counterText: '',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: IconButton(
-                    tooltip: 'پاک کردن عبارت',
-                    onPressed: () {
-                      query.clear();
-                      search();
-                    },
-                    icon: const Icon(Icons.clear),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  FilledButton.icon(
-                    onPressed: loading ? null : () => search(),
-                    icon: const Icon(Icons.search),
-                    label: const Text('جست‌وجو'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: busy ? null : save,
-                    icon: const Icon(Icons.bookmark_add_outlined),
-                    label: const Text('ذخیرهٔ فیلتر'),
-                  ),
-                  DropdownButton<String>(
-                    value: sort,
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => sort = value);
+              for (final child in <Widget>[
+                TextField(
+                  controller: query,
+                  autofocus: true,
+                  maxLength: 1000,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => search(),
+                  decoration: InputDecoration(
+                    labelText: 'جست‌وجوی کار یا عبارت فیلتر',
+                    hintText: 'مثلاً امروز & p1',
+                    counterText: '',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: IconButton(
+                      tooltip: 'پاک کردن عبارت',
+                      onPressed: () {
+                        query.clear();
                         search();
-                      }
-                    },
-                    items: [
-                      for (final choice in [
-                        ('due', 'موعد'),
-                        ('priority', 'اولویت'),
-                        ('title', 'عنوان'),
-                        ('project', 'پروژه'),
-                      ])
-                        DropdownMenuItem(
-                          value: choice.$1,
-                          child: Text('مرتب‌سازی: ${choice.$2}'),
-                        ),
-                    ],
-                  ),
-                  FilterChip(
-                    label: const Text('کارهای انجام‌شده'),
-                    selected: completed,
-                    onSelected: (value) {
-                      setState(() => completed = value);
-                      search();
-                    },
-                  ),
-                ],
-              ),
-              ExpansionTile(
-                title: const Text('راهنمای جست‌وجو'),
-                children: const [
-                  Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text(
-                      'متن عنوان و توضیحات، امروز، دیرشده، "no date"، p1 تا p4، #نام‌پروژه و @برچسب. برای ترکیب از &، |، ! و پرانتز استفاده کنید. نام‌های چندکلمه‌ای را در گیومه بگذارید. تاریخ‌ها با روز فعلی دستگاه محاسبه می‌شوند.',
+                      },
+                      icon: const Icon(Icons.clear),
                     ),
                   ),
-                ],
-              ),
-              if (filterError != null) ...[
-                Text(filterError!),
-                TextButton(
-                  onPressed: loadFilters,
-                  child: const Text('دریافت دوبارهٔ فیلترها'),
                 ),
-              ],
-              if (filters.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  'فیلترهای من',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                const SizedBox(height: Space.md),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    for (final filter in filters)
-                      InputChip(
-                        label: Text(filter.name),
-                        onPressed: () {
-                          query.text = filter.query;
-                          setState(() => sort = filter.sort);
+                    FilledButton.icon(
+                      onPressed: loading ? null : () => search(),
+                      icon: const Icon(Icons.search),
+                      label: const Text('جست‌وجو'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: busy ? null : save,
+                      icon: const Icon(Icons.bookmark_add_outlined),
+                      label: const Text('ذخیرهٔ فیلتر'),
+                    ),
+                    DropdownButton<String>(
+                      value: sort,
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => sort = value);
                           search();
-                        },
-                        onDeleted: busy ? null : () => remove(filter),
-                        deleteButtonTooltipMessage: 'حذف فیلتر ${filter.name}',
-                      ),
+                        }
+                      },
+                      items: [
+                        for (final choice in [
+                          ('due', 'موعد'),
+                          ('priority', 'اولویت'),
+                          ('title', 'عنوان'),
+                          ('project', 'پروژه'),
+                        ])
+                          DropdownMenuItem(
+                            value: choice.$1,
+                            child: Text('مرتب‌سازی: ${choice.$2}'),
+                          ),
+                      ],
+                    ),
+                    FilterChip(
+                      label: const Text('کارهای انجام‌شده'),
+                      selected: completed,
+                      onSelected: (value) {
+                        setState(() => completed = value);
+                        search();
+                      },
+                    ),
                   ],
                 ),
-              ],
-              const SizedBox(height: 16),
-              const ThreadRule(),
-              const SizedBox(height: 16),
-              if (loading)
-                const LinearProgressIndicator(
-                  semanticsLabel: 'دریافت نتیجهٔ جست‌وجو',
+                ExpansionTile(
+                  title: const Text('راهنمای جست‌وجو'),
+                  tilePadding: EdgeInsets.zero,
+                  shape: const Border(),
+                  collapsedShape: const Border(),
+                  childrenPadding: const EdgeInsets.only(bottom: Space.lg),
+                  children: const [
+                    Padding(
+                      padding: EdgeInsets.zero,
+                      child: Text(
+                        'متن عنوان و توضیحات، امروز، دیرشده، "no date"، p1 تا p4، #نام‌پروژه و @برچسب. برای ترکیب از &، |، ! و پرانتز استفاده کنید. نام‌های چندکلمه‌ای را در گیومه بگذارید. تاریخ‌ها با روز فعلی دستگاه محاسبه می‌شوند.',
+                      ),
+                    ),
+                  ],
                 ),
-              if (error != null) ...[
-                Text(
-                  error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-                TextButton(
-                  onPressed: () => search(),
-                  child: const Text('تلاش دوباره'),
-                ),
-              ],
-              if (!loading && error == null && tasks.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Text(
-                    'کاری با این عبارت پیدا نشد. عبارت یا فیلتر را تغییر دهید.',
+                if (filterError != null) ...[
+                  Text(filterError!),
+                  TextButton(
+                    onPressed: loadFilters,
+                    child: const Text('دریافت دوبارهٔ فیلترها'),
                   ),
-                ),
-              if (tasks.isNotEmpty)
-                Text(
-                  '${persianDigits(tasks.length)} کار دریافت شد',
-                  style: Theme.of(context).textTheme.bodySmall,
+                ],
+                if (filters.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'فیلترهای من',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final filter in filters)
+                        InputChip(
+                          label: Text(filter.name),
+                          onPressed: () {
+                            query.text = filter.query;
+                            setState(() => sort = filter.sort);
+                            search();
+                          },
+                          onDeleted: busy ? null : () => remove(filter),
+                          deleteButtonTooltipMessage:
+                              'حذف فیلتر ${filter.name}',
+                        ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: Space.sm),
+                const Divider(),
+                const SizedBox(height: Space.lg),
+                if (loading)
+                  const LinearProgressIndicator(
+                    semanticsLabel: 'دریافت نتیجهٔ جست‌وجو',
+                  ),
+                if (error != null) ...[
+                  Text(
+                    error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => search(),
+                    child: const Text('تلاش دوباره'),
+                  ),
+                ],
+                if (!loading && error == null && tasks.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Text(
+                      'کاری با این عبارت پیدا نشد. عبارت یا فیلتر را تغییر دهید.',
+                    ),
+                  ),
+                if (tasks.isNotEmpty)
+                  Text(
+                    '${persianDigits(tasks.length)} کار دریافت شد',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ])
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+                  child: child,
                 ),
               for (final task in tasks)
                 IgnorePointer(
@@ -423,11 +440,17 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
                   ),
                 ),
               if (more && !loading && error == null)
-                TextButton(
-                  onPressed: () => search(next: true),
-                  child: const Text('نتایج بیشتر'),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Space.xs),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton(
+                      onPressed: () => search(next: true),
+                      child: const Text('نتایج بیشتر'),
+                    ),
+                  ),
                 ),
-              const SizedBox(height: 24),
+              const SizedBox(height: Space.xl),
             ],
           ),
         ),

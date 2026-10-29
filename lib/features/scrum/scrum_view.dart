@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/atelier.dart';
+import 'package:farash/app/spacing.dart';
+import 'package:farash/app/surfaces.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/date_labels.dart';
@@ -77,7 +78,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
 
   Widget itemTile(ScrumItem item, {bool drag = false}) {
     final tile = Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: Space.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -114,7 +115,11 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
             ),
           ),
           Padding(
-            padding: const EdgeInsetsDirectional.only(start: 16, end: 12),
+            // Under the title, on the row's content keyline.
+            padding: const EdgeInsetsDirectional.only(
+              start: Space.keyline,
+              end: Space.md,
+            ),
             child: Wrap(
               spacing: 12,
               runSpacing: 4,
@@ -165,7 +170,10 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Space.xs,
+                vertical: Space.xs,
+              ),
               child: Row(
                 children: [
                   if (Scaffold.maybeOf(context)?.hasDrawer ?? false)
@@ -176,14 +184,19 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                       onPressed: Scaffold.of(context).openDrawer,
                       icon: const Icon(Icons.menu_rounded),
                     ),
-                  const WeaveMark(size: 22),
-                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      widget.project.displayName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium,
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                        start: Space.md,
+                      ),
+                      child: Text(
+                        widget.project.displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
                   PopupMenuButton<String>(
@@ -216,7 +229,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
             if (c.busy) const LinearProgressIndicator(minHeight: 2),
             if (c.error != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
                 child: Text(
                   c.error!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -227,7 +240,12 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                   ? widget.simple
                   : LayoutBuilder(
                       builder: (context, box) => SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                        padding: const EdgeInsets.fromLTRB(
+                          Space.gutter,
+                          Space.sm,
+                          Space.gutter,
+                          Space.xxl,
+                        ),
                         child: Center(
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 1140),
@@ -238,17 +256,21 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                                   d.method == 'scrum'
                                       ? 'یک هدف، یک نوبت کار.'
                                       : 'کارها در مسیر انجام.',
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.headlineMedium,
+                                  style: Theme.of(context).textTheme.titleLarge,
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: Space.xs),
                                 Text(
                                   d.method == 'scrum'
-                                      ? 'اسکرام برای خودت؛ بدون نیاز به تیم. امتیاز داستان با زمان واقعی و پاداش فرش فرق دارد.'
-                                      : 'با حرکت کارها بین ستون‌ها، وضعیتشان را روشن نگه دار.',
+                                      ? 'اسکرام برای خودتان؛ بدون نیاز به تیم. امتیاز داستان با زمان واقعی و امتیاز پیشرفت فرق دارد.'
+                                      : 'با حرکت کارها بین ستون‌ها، وضعیتشان را روشن نگه دارید.',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
                                 ),
-                                const SizedBox(height: 20),
+                                const SizedBox(height: Space.lg),
                                 if (d.method == 'scrum')
                                   Wrap(
                                     spacing: 8,
@@ -267,7 +289,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                                         ),
                                     ],
                                   ),
-                                const SizedBox(height: 20),
+                                const SizedBox(height: Space.lg),
                                 if (d.method == 'kanban')
                                   board(d, box.maxWidth, all: true)
                                 else if (tab == 0)
@@ -277,9 +299,9 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                                 else
                                   reports(d),
                                 if (tab != 2 || d.method == 'kanban') ...[
-                                  const SizedBox(height: 24),
-                                  const ThreadRule(),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: Space.xl),
+                                  const Divider(),
+                                  const SizedBox(height: Space.lg),
                                   TextField(
                                     controller: capture,
                                     enabled:
@@ -339,10 +361,9 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
           ),
         ),
         for (final sprint in d.sprints.where((s) => s.state != 'closed')) ...[
-          const SizedBox(height: 20),
-          AtelierPanel(
+          const SizedBox(height: Space.xl),
+          Panel(
             padding: const EdgeInsets.all(16),
-            lifted: false,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -421,7 +442,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
         const SizedBox(height: 8),
         if (unassigned.isEmpty)
           const Text(
-            'کار تازه را پایین اضافه کن؛ از گزینه‌های هر کار، برآورد و اسپرینتش را تعیین کن.',
+            'کار تازه را پایین اضافه کنید؛ از گزینه‌های هر کار، برآورد و اسپرینتش را تعیین کنید.',
           ),
         for (final item in unassigned) itemTile(item),
         if (d.items.any((i) => i.task.isCompleted && i.sprintId == null))
@@ -464,7 +485,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
   Widget board(ScrumData d, double width, {bool all = false}) {
     if (!all && d.active == null) {
       return const Text(
-        'اسپرینت فعالی نداری. در بک‌لاگ کار انتخاب کن و اسپرینت را شروع کن.',
+        'اسپرینت فعالی ندارید. در بک‌لاگ کار انتخاب کنید و اسپرینت را شروع کنید.',
       );
     }
     final items = d.items
@@ -599,7 +620,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
         ),
         const SizedBox(height: 12),
         const Text(
-          'زمان فقط برای کارهای محدودهٔ این اسپرینت و در بازهٔ اجرای آن شمرده می‌شود. امتیازِ بدون برآورد، صفرِ تخمینی نیست؛ شمار کارها را هم ببین.',
+          'زمان فقط برای کارهای محدودهٔ این اسپرینت و در بازهٔ اجرای آن شمرده می‌شود. امتیازِ بدون برآورد، صفرِ تخمینی نیست؛ شمار کارها را هم ببینید.',
         ),
         const SizedBox(height: 24),
         Text('کار باقی‌مانده', style: Theme.of(context).textTheme.titleLarge),
@@ -627,7 +648,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
         const SizedBox(height: 8),
         Text(
           sprint.retro.isEmpty
-              ? 'رترو اختیاری است: چه چیزی را دفعهٔ بعد عوض می‌کنی؟'
+              ? 'رترو اختیاری است: چه چیزی را دفعهٔ بعد عوض می‌کنید؟'
               : sprint.retro,
         ),
         Align(

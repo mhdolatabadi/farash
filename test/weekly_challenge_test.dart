@@ -72,7 +72,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('به هدف این هفته رسیدی.'), findsOneWidget);
+      expect(find.text('به هدف این هفته رسیدید.'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

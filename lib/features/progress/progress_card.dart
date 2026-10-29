@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/spacing.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/time_zone.dart';
 import 'package:farash/core/text/persian_digits.dart';
@@ -181,6 +182,11 @@ class _ProgressPageState extends State<_ProgressPage> {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    // Section titles step below the page title; notes read as asides.
+    final section = text.titleMedium?.copyWith(fontWeight: FontWeight.w700);
+    final note = text.bodyMedium?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
     return Scaffold(
       appBar: AppBar(title: const Text('پیشرفت من')),
       body: SafeArea(
@@ -189,10 +195,15 @@ class _ProgressPageState extends State<_ProgressPage> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: ListView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(
+                Space.gutter,
+                Space.lg,
+                Space.gutter,
+                Space.xxl,
+              ),
               children: [
                 Text('قدم‌های کوچک، پیشرفت ماندگار', style: text.titleLarge),
-                const SizedBox(height: 24),
+                const SizedBox(height: Space.xl),
                 Text(
                   'سطح ${persianDigits(_progress.level)}',
                   style: text.headlineMedium,
@@ -200,20 +211,22 @@ class _ProgressPageState extends State<_ProgressPage> {
                 Text(
                   '${persianDigits(_progress.xp)} امتیاز · '
                   '${persianDigits(_progress.completed)} کار انجام‌شده',
+                  style: note,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Space.md),
                 LinearProgressIndicator(
                   value: _progress.levelXp / 100,
                   semanticsLabel:
                       'پیشرفت سطح، '
                       '${persianDigits(_progress.levelXp)} از ۱۰۰',
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: Space.sm),
                 Text(
                   '${persianDigits(100 - _progress.levelXp)} امتیاز '
                   'تا سطح بعد',
+                  style: note,
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: Space.xxl),
                 if (_progress.weekReport case final report?) ...[
                   if (_progress.weeklyTaskGoal case final target?) ...[
                     WeeklyChallenge(
@@ -221,18 +234,19 @@ class _ProgressPageState extends State<_ProgressPage> {
                       target: target,
                       onSave: _saveChallenge,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: Space.lg),
                   ],
                   WeeklyProgressReport(report: report),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: Space.xxl),
                 ],
-                Text('هدف هفتگی', style: text.titleLarge),
-                const SizedBox(height: 8),
+                Text('هدف هفتگی', style: section),
+                const SizedBox(height: Space.sm),
                 Text(
                   '${persianDigits(_progress.weeklyDays)} روز فعال این هفته؛ '
                   'هر روز با انجام حداقل یک کار.',
+                  style: note,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: Space.lg),
                 DropdownButtonFormField<int>(
                   key: ValueKey((_progress.weeklyGoal, _saving)),
                   initialValue: _progress.weeklyGoal,
@@ -250,7 +264,7 @@ class _ProgressPageState extends State<_ProgressPage> {
                 if (_saving) const LinearProgressIndicator(),
                 if (_error != null)
                   Padding(
-                    padding: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.only(top: Space.sm),
                     child: Text(
                       _error!,
                       style: TextStyle(
@@ -258,14 +272,15 @@ class _ProgressPageState extends State<_ProgressPage> {
                       ),
                     ),
                   ),
-                const SizedBox(height: 12),
-                const Text(
+                const SizedBox(height: Space.sm),
+                Text(
                   'هفته از شنبه شروع می‌شود. غیبت جریمه ندارد؛ '
                   'امتیازهای قبلی با شروع هفتهٔ تازه باقی می‌مانند.',
+                  style: note,
                 ),
-                const SizedBox(height: 32),
-                Text('نشان‌ها', style: text.titleLarge),
-                const SizedBox(height: 8),
+                const SizedBox(height: Space.xxl),
+                Text('نشان‌ها', style: section),
+                const SizedBox(height: Space.xs),
                 for (final badge in _badges.entries)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
@@ -282,11 +297,12 @@ class _ProgressPageState extends State<_ProgressPage> {
                           : 'در پیش رو',
                     ),
                   ),
-                const SizedBox(height: 24),
-                const Text(
+                const SizedBox(height: Space.lg),
+                Text(
                   'هر کار تکمیل‌شده ۱۰ امتیاز دارد. بازگرداندن یا حذف '
                   'آن کار، امتیاز و نشان وابسته را هم بازمی‌گرداند. '
                   'زیرکارهای تکمیل‌شده هم حساب می‌شوند.',
+                  style: note,
                 ),
               ],
             ),
