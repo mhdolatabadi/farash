@@ -30,8 +30,12 @@ if [[ "$actual" != "$expected" ]]; then
 fi
 jarsigner -verify "$aab" > "$RUNNER_TEMP/aab-signature.txt"
 grep -q 'jar verified' "$RUNNER_TEMP/aab-signature.txt"
-if grep -Ei 'unsigned entries|not signed|jar is unsigned' "$RUNNER_TEMP/aab-signature.txt" > /dev/null; then
+# Newer JDKs also warn "Entry … is signed in JarFile but is not signed in JarInputStream"
+# when META-INF is not at the start of the zip, as in Gradle-built bundles. JarFile
+# verification above still covers every entry, so only real unsigned-content warnings fail.
+if grep -Ei 'contains unsigned entries|jar is unsigned' "$RUNNER_TEMP/aab-signature.txt" > /dev/null; then
   echo 'Unsigned AAB content rejected.' >&2
+  cat "$RUNNER_TEMP/aab-signature.txt" >&2
   exit 1
 fi
 keytool -printcert -jarfile "$aab" -rfc > "$RUNNER_TEMP/aab-cert.pem"
