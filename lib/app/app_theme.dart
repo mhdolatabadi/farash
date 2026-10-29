@@ -6,7 +6,7 @@ abstract final class FarashTheme {
   static const palette = FarashPalette.calm;
 
   static const _fieldRadius = 12.0;
-  static const _surfaceRadius = 16.0;
+  static const _tileRadius = 22.0;
 
   static ThemeData light([FarashPalette palette = FarashTheme.palette]) =>
       _build(Brightness.light, palette);
@@ -33,7 +33,8 @@ abstract final class FarashTheme {
           onSecondaryContainer: p.onPrimaryContainer,
           tertiary: p.accent,
           error: p.overdue,
-          surface: p.surface,
+          // Every screen stands on the soft ground (see soft.dart).
+          surface: p.softGround,
           onSurface: p.onSurface,
           onSurfaceVariant: p.onSurfaceVariant,
           surfaceContainerLowest: p.containerLowest,
@@ -51,9 +52,16 @@ abstract final class FarashTheme {
       fontFamily: 'Vazirmatn',
       useMaterial3: true,
     );
+    // Fields are small wells: a touch darker than the ground, with the
+    // hairline.
     final fieldBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(_fieldRadius),
-      borderSide: BorderSide(color: colors.outline),
+      borderSide: BorderSide(color: colors.outlineVariant),
+    );
+    final well = Color.lerp(p.softGround, p.softShade, 0.22)!;
+    final tileShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(_tileRadius),
+      side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.6)),
     );
     const stadium = StadiumBorder();
 
@@ -109,11 +117,8 @@ abstract final class FarashTheme {
       cardTheme: CardThemeData(
         elevation: 0,
         margin: EdgeInsets.zero,
-        color: colors.surfaceContainerLow,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_surfaceRadius),
-          side: BorderSide(color: colors.outlineVariant),
-        ),
+        color: p.softGround,
+        shape: tileShape,
       ),
       dividerTheme: DividerThemeData(
         color: colors.outlineVariant,
@@ -134,7 +139,8 @@ abstract final class FarashTheme {
         selectedTileColor: colors.primaryContainer,
       ),
       inputDecorationTheme: InputDecorationTheme(
-        filled: false,
+        filled: true,
+        fillColor: well,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
@@ -178,9 +184,9 @@ abstract final class FarashTheme {
       chipTheme: base.chipTheme.copyWith(
         iconTheme: IconThemeData(color: colors.onSurfaceVariant, size: 18),
         selectedColor: colors.primaryContainer,
-        backgroundColor: colors.surface,
-        side: BorderSide(color: colors.outline),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        backgroundColor: well,
+        side: BorderSide(color: colors.outlineVariant),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         checkmarkColor: colors.onPrimaryContainer,
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
@@ -193,19 +199,22 @@ abstract final class FarashTheme {
         backgroundColor: colors.primary,
         foregroundColor: colors.onPrimary,
         elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: colors.surfaceContainer,
+        color: p.softGround,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.outlineVariant),
+        ),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: colors.surfaceContainerLow,
+        backgroundColor: p.softGround,
         showDragHandle: true,
         surfaceTintColor: Colors.transparent,
         shape: const RoundedRectangleBorder(
@@ -213,7 +222,7 @@ abstract final class FarashTheme {
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: colors.surfaceContainerLow,
+        backgroundColor: p.softGround,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       ),

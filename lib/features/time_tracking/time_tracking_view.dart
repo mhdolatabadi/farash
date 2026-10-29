@@ -2,6 +2,7 @@ import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/features/tasks/presentation/due_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:farash/app/soft.dart';
 import 'package:farash/app/spacing.dart';
 import 'package:farash/app/surfaces.dart';
 import 'package:farash/core/api/api_client.dart';
@@ -223,16 +224,6 @@ class TimeTrackingView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        'زمان شما کجا صرف شد؟',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: Space.xs),
-                      Text(
-                        'زمان واقعی کارها؛ جدا از برآورد و امتیاز. هفته از شنبه آغاز می‌شود.',
-                        style: note,
-                      ),
-                      const SizedBox(height: Space.lg),
                       if (tracker.error != null)
                         TextButton.icon(
                           onPressed: tracker.load,
@@ -242,39 +233,64 @@ class TimeTrackingView extends StatelessWidget {
                       if (report == null && tracker.error == null)
                         const LinearProgressIndicator(),
                       if (report != null) ...[
-                        Panel(
-                          padding: const EdgeInsets.all(Space.lg),
-                          child: Wrap(
-                            spacing: 32,
-                            runSpacing: 16,
+                        // Today and the week as two raised tiles; stacked
+                        // at large text.
+                        IntrinsicHeight(
+                          child: Flex(
+                            direction:
+                                MediaQuery.textScalerOf(context).scale(1) >= 1.5
+                                ? Axis.vertical
+                                : Axis.horizontal,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              _Total(
-                                label: 'امروز',
-                                seconds: report.today + live,
-                              ),
-                              _Total(
-                                label: 'این هفته',
-                                seconds: report.seconds + live,
-                              ),
+                              for (final (i, total) in [
+                                ('امروز', report.today + live),
+                                ('این هفته', report.seconds + live),
+                              ].indexed) ...[
+                                if (i > 0)
+                                  const SizedBox(
+                                    width: Space.md,
+                                    height: Space.md,
+                                  ),
+                                _wide(
+                                  context,
+                                  Panel(
+                                    padding: const EdgeInsets.all(Space.lg),
+                                    child: _Total(
+                                      label: total.$1,
+                                      seconds: total.$2,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
                         const SizedBox(height: Space.lg),
-                        FilledButton.icon(
-                          onPressed: tracker.busy ? null : () => _pick(context),
-                          icon: const Icon(Icons.play_arrow_rounded),
-                          label: const Text('شروع برای یک کار'),
-                        ),
-                        TextButton.icon(
-                          onPressed: () => _pick(
-                            context,
-                            manualStart: DateTime.now().subtract(
-                              const Duration(minutes: 30),
+                        Wrap(
+                          spacing: Space.sm,
+                          runSpacing: Space.sm,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            FilledButton.icon(
+                              onPressed: tracker.busy
+                                  ? null
+                                  : () => _pick(context),
+                              icon: const Icon(Icons.play_arrow_rounded),
+                              label: const Text('شروع برای یک کار'),
                             ),
-                            manualEnd: DateTime.now(),
-                          ),
-                          icon: const Icon(Icons.edit_calendar_outlined),
-                          label: const Text('افزودن بازهٔ دستی'),
+                            TextButton.icon(
+                              onPressed: () => _pick(
+                                context,
+                                manualStart: DateTime.now().subtract(
+                                  const Duration(minutes: 30),
+                                ),
+                                manualEnd: DateTime.now(),
+                              ),
+                              icon: const Icon(Icons.edit_calendar_outlined),
+                              label: const Text('افزودن بازهٔ دستی'),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: Space.xl),
                         if (tracker.active case final active?) ...[
@@ -338,11 +354,6 @@ class TimeTrackingView extends StatelessWidget {
                         ),
                         const SizedBox(height: Space.xxl),
                         Text('مرور روزها و بازه‌ها', style: section),
-                        const SizedBox(height: Space.xs),
-                        Text(
-                          'فاصلهٔ بین بازه‌ها ثبت نشده است؛ فقط اگر واقعاً کار کرده‌اید آن را دستی اضافه کنید.',
-                          style: note,
-                        ),
                         const SizedBox(height: Space.sm),
                         if (!report.truncated)
                           for (final gap in todayGaps(
@@ -363,25 +374,34 @@ class TimeTrackingView extends StatelessWidget {
                                 ),
                               ),
                             ),
-                        for (final entry in report.entries) ...[
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(entry.title),
-                            subtitle: Text(
-                              '${timeStamp(context, entry.started.toLocal())} · ${trackedTime(entry.elapsed(entry.id == liveId ? tracker.now : report.now))}',
-                            ),
-                            onTap: () => manualTime(
-                              context,
-                              tracker,
-                              Task(
-                                id: entry.taskId ?? '',
-                                projectId: '',
-                                title: entry.title,
+                        if (report.entries.isNotEmpty)
+                          SoftWell(
+                            child: Material(
+                              type: MaterialType.transparency,
+                              child: Column(
+                                children: [
+                                  for (final entry in report.entries) ...[
+                                    ListTile(
+                                      title: Text(entry.title),
+                                      subtitle: Text(
+                                        '${timeStamp(context, entry.started.toLocal())} · ${trackedTime(entry.elapsed(entry.id == liveId ? tracker.now : report.now))}',
+                                      ),
+                                      onTap: () => manualTime(
+                                        context,
+                                        tracker,
+                                        Task(
+                                          id: entry.taskId ?? '',
+                                          projectId: '',
+                                          title: entry.title,
+                                        ),
+                                        editing: entry,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
-                              editing: entry,
                             ),
                           ),
-                        ],
                         if (report.truncated)
                           const Text(
                             '۵۰۰ بازهٔ اخیر نمایش داده شده؛ جمع زمان شامل همهٔ بازه‌های این هفته است.',
@@ -398,6 +418,12 @@ class TimeTrackingView extends StatelessWidget {
     },
   );
 }
+
+/// Fills a horizontal row's share; a vertical stack takes the child as is.
+Widget _wide(BuildContext context, Widget child) =>
+    MediaQuery.textScalerOf(context).scale(1) >= 1.5
+    ? child
+    : Expanded(child: child);
 
 class _Total extends StatelessWidget {
   const _Total({required this.label, required this.seconds});
@@ -801,6 +827,7 @@ class ProjectTimeGroups extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final group in groups.entries) ...[
+          if (group.key != groups.keys.first) const SizedBox(height: Space.sm),
           Padding(
             padding: const EdgeInsets.only(top: 12, bottom: 4),
             child: Text(
@@ -808,15 +835,23 @@ class ProjectTimeGroups extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
-          for (final task in group.value)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(task['title'] as String),
-              subtitle: Text(
-                trackedTime(Duration(seconds: task['seconds'] as int)),
-                textDirection: TextDirection.ltr,
+          SoftWell(
+            child: Material(
+              type: MaterialType.transparency,
+              child: Column(
+                children: [
+                  for (final task in group.value)
+                    ListTile(
+                      title: Text(task['title'] as String),
+                      subtitle: Text(
+                        trackedTime(Duration(seconds: task['seconds'] as int)),
+                        textDirection: TextDirection.ltr,
+                      ),
+                    ),
+                ],
               ),
             ),
+          ),
         ],
       ],
     );

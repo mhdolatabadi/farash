@@ -41,6 +41,10 @@ void main() {
     // RTL: a start edge is measured from the right.
     double start(Finder f) => width - tester.getTopRight(f).dx;
 
+    // Rows sit in a well whose edge is just inside the gutter; inside it,
+    // the gutter and the keyline are measured from the well's edge.
+    const well = Space.gutter - 2;
+
     // Each check circle sits on the gutter.
     final circle = tester.getRect(
       find
@@ -50,11 +54,11 @@ void main() {
           )
           .first,
     );
-    expect(width - circle.right, closeTo(Space.gutter, 2));
+    expect(width - circle.right, closeTo(well + Space.gutter, 2));
 
     // Task titles start on the content keyline.
-    expect(start(find.text('نان')), closeTo(Space.keyline, 1));
-    expect(start(find.text('کتاب')), closeTo(Space.keyline, 1));
+    expect(start(find.text('نان')), closeTo(well + Space.keyline, 1));
+    expect(start(find.text('کتاب')), closeTo(well + Space.keyline, 1));
 
     // The open count shares the title's start and sits close under it.
     expect(start(find.text('۲ کار باز')), start(find.text('کار')));

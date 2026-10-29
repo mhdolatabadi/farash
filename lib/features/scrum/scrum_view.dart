@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/soft.dart';
 import 'package:farash/app/spacing.dart';
 import 'package:farash/app/surfaces.dart';
 import 'package:farash/core/api/api_client.dart';
@@ -84,6 +85,7 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
         children: [
           TaskTile(
             task: item.task,
+            dense: true,
             onToggle: () {
               if (!c.busy) {
                 c.move(item, item.task.isCompleted ? 'todo' : 'done');
@@ -252,25 +254,6 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Text(
-                                  d.method == 'scrum'
-                                      ? 'یک هدف، یک نوبت کار.'
-                                      : 'کارها در مسیر انجام.',
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
-                                const SizedBox(height: Space.xs),
-                                Text(
-                                  d.method == 'scrum'
-                                      ? 'اسکرام برای خودتان؛ بدون نیاز به تیم. امتیاز داستان با زمان واقعی و امتیاز پیشرفت فرق دارد.'
-                                      : 'با حرکت کارها بین ستون‌ها، وضعیتشان را روشن نگه دارید.',
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      ),
-                                ),
-                                const SizedBox(height: Space.lg),
                                 if (d.method == 'scrum')
                                   Wrap(
                                     spacing: 8,
@@ -369,13 +352,13 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
               children: [
                 Text(
                   sprint.name,
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 if (sprint.goal.isNotEmpty) Text(sprint.goal),
-                Text(
-                  '${date(context, sprint.start)} تا ${date(context, sprint.end)}',
-                ),
-                const SizedBox(height: 8),
+                const SizedBox(height: Space.xs),
+                // Dates and load on one muted line.
                 Builder(
                   builder: (_) {
                     final items = d.items
@@ -385,11 +368,21 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
                       0,
                       (n, i) => n + (i.points ?? 0),
                     );
+                    final over =
+                        sprint.capacity != null && points > sprint.capacity!;
                     return Text(
-                      '${persianDigits(items.length)} کار · ${persianDigits(points)} امتیاز داستان${sprint.capacity == null ? '' : ' · ظرفیت ${persianDigits(sprint.capacity!)}'}${sprint.capacity != null && points > sprint.capacity! ? ' · بیشتر از ظرفیت پیشنهادی' : ''}',
+                      '${date(context, sprint.start)} تا ${date(context, sprint.end)} · '
+                      '${persianDigits(items.length)} کار · ${persianDigits(points)} امتیاز'
+                      '${sprint.capacity == null ? '' : ' از ظرفیت ${persianDigits(sprint.capacity!)}'}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: over
+                            ? Theme.of(context).colorScheme.error
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     );
                   },
                 ),
+                const SizedBox(height: Space.sm),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -434,8 +427,11 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
             ),
           ),
           const SizedBox(height: 12),
-          for (final item in d.items.where((i) => i.sprintId == sprint.id))
-            itemTile(item),
+          if (d.items.any((i) => i.sprintId == sprint.id))
+            well([
+              for (final item in d.items.where((i) => i.sprintId == sprint.id))
+                itemTile(item),
+            ]),
         ],
         const SizedBox(height: 24),
         Text('بک‌لاگ', style: Theme.of(context).textTheme.titleLarge),
@@ -444,7 +440,8 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
           const Text(
             'کار تازه را پایین اضافه کنید؛ از گزینه‌های هر کار، برآورد و اسپرینتش را تعیین کنید.',
           ),
-        for (final item in unassigned) itemTile(item),
+        if (unassigned.isNotEmpty)
+          well([for (final item in unassigned) itemTile(item)]),
         if (d.items.any((i) => i.task.isCompleted && i.sprintId == null))
           ExpansionTile(
             title: const Text('انجام‌شده‌های بک‌لاگ'),
@@ -501,28 +498,33 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
     Widget lane(String key) => DragTarget<ScrumItem>(
       onWillAcceptWithDetails: (_) => !c.busy,
       onAcceptWithDetails: (v) => c.move(v.data, key),
-      builder: (context, candidates, rejected) => ColoredBox(
-        color: candidates.isEmpty
-            ? Colors.transparent
-            : Theme.of(context).colorScheme.secondaryContainer,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                '${scrumColumns[key]} · ${persianDigits(items.where((i) => i.column == key).length)}',
-                style: Theme.of(context).textTheme.titleMedium,
+      builder: (context, candidates, rejected) => Padding(
+        padding: const EdgeInsets.all(4),
+        child: SoftWell(
+          child: ColoredBox(
+            color: candidates.isEmpty
+                ? Colors.transparent
+                : Theme.of(context).colorScheme.secondaryContainer,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    '${scrumColumns[key]} · ${persianDigits(items.where((i) => i.column == key).length)}',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  if (!items.any((i) => i.column == key))
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Text('کاری در این ستون نیست.'),
+                    ),
+                  for (final item in items.where((i) => i.column == key))
+                    itemTile(item, drag: wide),
+                ],
               ),
-              const SizedBox(height: 16),
-              if (!items.any((i) => i.column == key))
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Text('کاری در این ستون نیست.'),
-                ),
-              for (final item in items.where((i) => i.column == key))
-                itemTile(item, drag: wide),
-            ],
+            ),
           ),
         ),
       ),
@@ -596,52 +598,90 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
           onChanged: (v) => setState(() => reportId = v),
         ),
         const SizedBox(height: 16),
-        Text(sprint.goal, style: Theme.of(context).textTheme.titleMedium),
-        Wrap(
-          spacing: 24,
-          runSpacing: 8,
+        if (sprint.goal.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: Space.sm),
+            child: Text(
+              sprint.goal,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+        _Stats(
+          stats: [
+            (
+              'انجام‌شده',
+              '${persianDigits(sprint.number('done_count'))} از ${persianDigits(sprint.number('scope_count'))} کار',
+            ),
+            (
+              'امتیاز انجام‌شده',
+              '${persianDigits(sprint.number('done_points'))} از ${persianDigits(sprint.number('scope_points'))}',
+            ),
+            (
+              'تعهد آغاز',
+              '${persianDigits(sprint.number('committed_count'))} کار · ${persianDigits(sprint.number('committed_points'))} امتیاز',
+            ),
+            (
+              'زمان ثبت‌شده',
+              trackedTime(Duration(seconds: sprint.number('tracked_seconds'))),
+            ),
+            (
+              'بدون برآورد',
+              '${persianDigits(sprint.number('unestimated'))} کار',
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        Row(
           children: [
-            Text(
-              'تعهد آغاز: ${persianDigits(sprint.number('committed_count'))} کار · ${persianDigits(sprint.number('committed_points'))} امتیاز',
+            Expanded(
+              child: Text(
+                'کار باقی‌مانده',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ),
-            Text(
-              'انجام‌شده: ${persianDigits(sprint.number('done_count'))} از ${persianDigits(sprint.number('scope_count'))} کار',
-            ),
-            Text(
-              'امتیاز انجام‌شده: ${persianDigits(sprint.number('done_points'))} از ${persianDigits(sprint.number('scope_points'))}',
-            ),
-            Text(
-              'بدون برآورد: ${persianDigits(sprint.number('unestimated'))} کار',
-            ),
-            Text(
-              'زمان ثبت‌شده: ${trackedTime(Duration(seconds: sprint.number('tracked_seconds')))}',
+            IconButton(
+              tooltip: 'دربارهٔ گزارش',
+              icon: const Icon(Icons.info_outline),
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('دربارهٔ گزارش'),
+                  content: const Text(
+                    'زمان فقط برای کارهای محدودهٔ این اسپرینت و در بازهٔ اجرای آن شمرده می‌شود. امتیازِ بدون برآورد، صفرِ تخمینی نیست؛ شمار کارها را هم ببینید.\n\nنمودار از تغییرات ثبت‌شده است؛ خط ایده‌آل یا دادهٔ حدسی ندارد.\n\nسرعت، خروجی واقعی هر نوبت است؛ معیار مقایسه یا امتیاز دادن به افراد نیست.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('بستن'),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        const Text(
-          'زمان فقط برای کارهای محدودهٔ این اسپرینت و در بازهٔ اجرای آن شمرده می‌شود. امتیازِ بدون برآورد، صفرِ تخمینی نیست؛ شمار کارها را هم ببینید.',
+        SoftTile(
+          padding: const EdgeInsets.all(12),
+          child: Burndown(events: events),
         ),
-        const SizedBox(height: 24),
-        Text('کار باقی‌مانده', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 12),
-        Burndown(events: events),
         const SizedBox(height: 24),
         Text(
           'سرعت اسپرینت‌های بسته‌شده',
           style: Theme.of(context).textTheme.titleLarge,
         ),
-        const Text(
-          'خروجی واقعی هر نوبت؛ معیار مقایسه یا امتیاز دادن به افراد نیست.',
-        ),
-        for (final s in d.sprints.where((s) => s.state == 'closed'))
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(s.name),
-            subtitle: Text(
-              '${persianDigits(s.number('done_points'))} امتیاز داستان · ${persianDigits(s.number('done_count'))} کار',
-            ),
-          ),
+        if (d.sprints.any((s) => s.state == 'closed')) ...[
+          const SizedBox(height: 8),
+          well([
+            for (final s in d.sprints.where((s) => s.state == 'closed'))
+              ListTile(
+                title: Text(s.name),
+                subtitle: Text(
+                  '${persianDigits(s.number('done_points'))} امتیاز داستان · ${persianDigits(s.number('done_count'))} کار',
+                ),
+              ),
+          ]),
+        ],
         const SizedBox(height: 20),
         Text('مرور و رترو', style: Theme.of(context).textTheme.titleLarge),
         Text(sprint.review.isEmpty ? 'مرور هنوز نوشته نشده.' : sprint.review),
@@ -660,28 +700,42 @@ class _ProjectWorkspaceState extends State<ProjectWorkspace> {
         ),
         const SizedBox(height: 20),
         Text('محدودهٔ ثبت‌شده', style: Theme.of(context).textTheme.titleLarge),
-        for (final row in scope)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(
-              row['removed_at'] != null
-                  ? Icons.remove_circle_outline
-                  : row['completed'] == true
-                  ? Icons.check_circle_outline
-                  : Icons.radio_button_unchecked,
-            ),
-            title: Text(row['title'] as String),
-            subtitle: Text(
-              row['removed_at'] != null
-                  ? 'از محدوده خارج شد'
-                  : row['points'] == null
-                  ? 'بدون برآورد'
-                  : '${persianDigits(row['points'])} امتیاز داستان',
-            ),
-          ),
+        if (scope.isNotEmpty) const SizedBox(height: 8),
+        if (scope.isNotEmpty)
+          well([
+            for (final row in scope)
+              ListTile(
+                leading: Icon(
+                  row['removed_at'] != null
+                      ? Icons.remove_circle_outline
+                      : row['completed'] == true
+                      ? Icons.check_circle_outline
+                      : Icons.radio_button_unchecked,
+                ),
+                title: Text(row['title'] as String),
+                subtitle: Text(
+                  row['removed_at'] != null
+                      ? 'از محدوده خارج شد'
+                      : row['points'] == null
+                      ? 'بدون برآورد'
+                      : '${persianDigits(row['points'])} امتیاز داستان',
+                ),
+              ),
+          ]),
       ],
     );
   }
+
+  /// A run of rows sunk into the soft ground.
+  Widget well(List<Widget> children) => SoftWell(
+    child: Material(
+      type: MaterialType.transparency,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      ),
+    ),
+  );
 }
 
 String date(BuildContext context, DateTime value) =>
@@ -726,9 +780,6 @@ class _BurndownState extends State<Burndown> {
               painter: _BurnPainter(widget.events, key, color),
             ),
           ),
-        ),
-        const Text(
-          'نمودار از تغییرات ثبت‌شده است؛ خط ایده‌آل یا دادهٔ حدسی ندارد. جدول، همان داده‌ها را نشان می‌دهد.',
         ),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -813,4 +864,61 @@ class _BurnPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _BurnPainter old) =>
       old.events != events || old.key != key || old.color != color;
+}
+
+/// A sprint's numbers as small raised tiles, two or three to a row.
+class _Stats extends StatelessWidget {
+  const _Stats({required this.stats});
+  final List<(String, String)> stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (context, box) {
+        final scale = MediaQuery.textScalerOf(context).scale(1);
+        final columns = box.maxWidth >= 600 * scale
+            ? 3
+            : box.maxWidth >= 280 * scale
+            ? 2
+            : 1;
+        final width = (box.maxWidth - Space.md * (columns - 1)) / columns;
+        return Wrap(
+          spacing: Space.md,
+          runSpacing: Space.md,
+          children: [
+            for (final (label, value) in stats)
+              SizedBox(
+                width: width,
+                child: Semantics(
+                  label: '$label: $value',
+                  excludeSemantics: true,
+                  child: SoftTile(
+                    padding: const EdgeInsets.all(Space.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          value,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
 }

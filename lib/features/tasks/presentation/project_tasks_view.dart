@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:farash/app/soft.dart';
 import 'package:farash/app/surfaces.dart';
 import 'package:flutter/rendering.dart';
 import 'package:farash/app/list_app_bar.dart';
@@ -629,10 +630,13 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
               ),
             if (rows.isNotEmpty)
               SliverPadding(
-                // Rows run edge to edge and carry the gutter themselves.
-                padding: EdgeInsets.symmetric(horizontal: inset),
+                // Rows carry the gutter themselves, inside one well on the
+                // soft ground.
+                padding: EdgeInsets.symmetric(
+                  horizontal: inset + Space.gutter - 2,
+                ),
                 sliver: DecoratedSliver(
-                  decoration: const BoxDecoration(),
+                  decoration: Soft.wellDecoration(context),
                   sliver: SliverPadding(
                     padding: const EdgeInsets.only(top: Space.xs),
                     sliver: SliverReorderableList(
@@ -657,6 +661,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                                     ? task.copyWith(completedAt: DateTime.now())
                                     : task,
                                 stamped: _leaving.containsKey(task.id),
+                                dense: true,
                                 divider: index < rows.length - 1,
                                 labels: [
                                   for (final id in task.labelIds)
@@ -744,18 +749,25 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                   ),
                 ),
               ),
-              pad(
-                SliverList.list(
-                  children: [
-                    for (final task in done)
-                      TaskTile(
-                        key: ValueKey('done-${task.id}'),
-                        task: task,
-                        divider: task != done.last,
-                        onToggle: () => _toggle(task),
-                        onOpen: () => _open(task),
-                      ),
-                  ],
+              SliverPadding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: inset + Space.gutter - 2,
+                ),
+                sliver: DecoratedSliver(
+                  decoration: Soft.wellDecoration(context),
+                  sliver: SliverList.list(
+                    children: [
+                      for (final task in done)
+                        TaskTile(
+                          key: ValueKey('done-${task.id}'),
+                          dense: true,
+                          task: task,
+                          divider: task != done.last,
+                          onToggle: () => _toggle(task),
+                          onOpen: () => _open(task),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ],

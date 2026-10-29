@@ -104,7 +104,7 @@ class FarashPalette {
         Color(0xFFD1242F),
         Color(0xFFC2570C),
         Color(0xFF0969DA),
-        Color(0xFF8C959F),
+        Color(0xFF737B85),
       ],
       softGround: Color(0xFFE9EDF1),
       softLight: Color(0xFFFFFFFF),
