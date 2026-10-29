@@ -18,9 +18,9 @@ if grep -q 'application-debuggable' "$RUNNER_TEMP/apk-package.txt"; then
 fi
 keytool -exportcert -keystore "$RUNNER_TEMP/farash-release.jks" -storepass:env STORE_PASSWORD -alias "$KEY_ALIAS" > "$RUNNER_TEMP/release-cert.der"
 expected="$(sha256sum "$RUNNER_TEMP/release-cert.der" | cut -d' ' -f1)"
-# apksigner labels signers as "Signer #1" or "Signer (minSdkVersion=…)" depending on
+# apksigner labels signers as "Signer #1", "V2 Signer:" or "Signer (minSdkVersion=…)" depending on
 # version and scheme, so match on the digest itself. Certificate digests are public.
-actual="$(sed -n 's/^Signer.* certificate SHA-256 digest: //p' "$RUNNER_TEMP/apk-signature.txt" | tr '[:upper:]' '[:lower:]' | sort -u)"
+actual="$(sed -n 's/^.*Signer.* certificate SHA-256 digest: //p' "$RUNNER_TEMP/apk-signature.txt" | tr '[:upper:]' '[:lower:]' | sort -u)"
 if [[ "$actual" != "$expected" ]]; then
   echo 'Unexpected APK signing certificate.' >&2
   echo "Keystore alias certificate SHA-256: $expected" >&2
