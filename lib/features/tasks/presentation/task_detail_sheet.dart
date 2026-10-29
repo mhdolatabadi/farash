@@ -3,6 +3,7 @@ import 'package:farash/features/recurrence/task_recurrence.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:farash/features/time_tracking/time_tracking_view.dart';
 import 'package:flutter/material.dart';
+import 'package:farash/app/spacing.dart';
 import 'package:farash/app/surfaces.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
 import 'package:farash/features/labels/presentation/label_widgets.dart';
@@ -651,7 +652,7 @@ class _SectionHeading extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(top: 12, bottom: 4),
+      padding: const EdgeInsets.only(top: Space.lg, bottom: Space.xs),
       child: Text(
         text,
         style: theme.textTheme.labelLarge?.copyWith(
@@ -736,13 +737,10 @@ class _ChecklistState extends State<_Checklist> {
         final items = parseChecklist(value.text);
         final done = items.where((i) => i.done).length;
         if (items.isEmpty && !_adding) {
-          return Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: TextButton.icon(
-              onPressed: () => setState(() => _adding = true),
-              icon: const Icon(Icons.checklist),
-              label: const Text('افزودن چک‌لیست'),
-            ),
+          return _ActionRow(
+            onTap: () => setState(() => _adding = true),
+            icon: Icons.checklist,
+            label: 'افزودن چک‌لیست',
           );
         }
         return Column(
@@ -864,30 +862,67 @@ class _SubtasksState extends State<_Subtasks> {
               ),
             ),
           ),
-        Wrap(
-          spacing: 4,
-          children: [
-            if (!showList && !task.isCompleted)
-              TextButton.icon(
-                onPressed: () => setState(() => _adding = true),
-                icon: const Icon(Icons.subdirectory_arrow_left),
-                label: const Text('افزودن زیرکار'),
-              ),
-            if (above != null && !task.isCompleted)
-              TextButton.icon(
-                onPressed: widget.onIndent,
-                icon: const Icon(Icons.format_indent_increase),
-                label: const Text('زیرکارِ کار بالایی'),
-              ),
-            if (parent != null)
-              TextButton.icon(
-                onPressed: widget.onOutdent,
-                icon: const Icon(Icons.format_indent_decrease),
-                label: const Text('یک سطح بیرون'),
-              ),
-          ],
-        ),
+        if (!showList && !task.isCompleted)
+          _ActionRow(
+            onTap: () => setState(() => _adding = true),
+            icon: Icons.subdirectory_arrow_left,
+            label: 'افزودن زیرکار',
+          ),
+        if (above != null && !task.isCompleted)
+          _ActionRow(
+            onTap: widget.onIndent,
+            icon: Icons.format_indent_increase,
+            label: 'زیرکارِ کار بالایی',
+          ),
+        if (parent != null)
+          _ActionRow(
+            onTap: widget.onOutdent,
+            icon: Icons.format_indent_decrease,
+            label: 'یک سطح بیرون',
+          ),
       ],
+    );
+  }
+}
+
+/// An action laid out like a property row, so its icon and label share the
+/// editor's two keylines instead of a button's own inset.
+class _ActionRow extends StatelessWidget {
+  const _ActionRow({
+    required this.onTap,
+    required this.icon,
+    required this.label,
+  });
+
+  final VoidCallback onTap;
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.primary;
+    return Semantics(
+      button: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Row(
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.bodyLarge?.copyWith(color: color),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -912,7 +947,7 @@ class _PropertyRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: Space.xs),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final heading = Row(
@@ -926,7 +961,11 @@ class _PropertyRow extends StatelessWidget {
           if (!expand && constraints.maxWidth < 480) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [heading, const SizedBox(height: 8), child],
+              children: [
+                heading,
+                const SizedBox(height: Space.sm),
+                child,
+              ],
             );
           }
           return Row(

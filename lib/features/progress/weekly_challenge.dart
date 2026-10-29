@@ -35,7 +35,7 @@ class WeeklyChallenge extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             completed >= target
-                ? 'به هدف این هفته رسیدی.'
+                ? 'به هدف این هفته رسیدید.'
                 : '${persianDigits(target - completed)} کار تا هدف؛ با ریتم خودتان ادامه دهید.',
           ),
           TextButton(

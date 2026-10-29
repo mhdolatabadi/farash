@@ -52,6 +52,7 @@ android/local.properties
 .env
 .env.*
 !.env.example
+.farash-releases/
 
 # Android signing material is generated from GitHub Secrets.
 android/key.properties

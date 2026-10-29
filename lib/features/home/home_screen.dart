@@ -2,6 +2,9 @@ import 'package:farash/features/calendar_connections/calendar_connections.dart';
 import 'package:farash/features/calendar_connections/calendar_connections_view.dart';
 import 'package:farash/features/habits/habits_controller.dart';
 import 'package:farash/features/habits/habits_view.dart';
+import 'package:farash/features/habits/habit_detail.dart';
+import 'package:farash/features/habits/reminders/habit_reminders.dart';
+import 'package:farash/features/habits/reminders/local_reminders.dart';
 import 'package:farash/features/search/search.dart';
 import 'package:farash/features/search/search_view.dart';
 import 'package:farash/features/portability/export_api.dart';
@@ -12,6 +15,7 @@ import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:farash/features/time_tracking/time_tracking_view.dart';
 import 'package:farash/features/tasks/data/task.dart';
+import 'package:farash/app/soft.dart';
 import 'package:farash/app/surfaces.dart';
 import 'package:farash/features/focus/focus_controller.dart';
 import 'package:farash/features/focus/focus_view.dart';
@@ -19,7 +23,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:farash/features/tasks/application/quick_capture.dart';
 import 'package:farash/features/tasks/presentation/quick_add_dialog.dart';
+import 'package:farash/features/progress/progress.dart';
 import 'package:farash/features/progress/progress_card.dart';
+import 'package:farash/core/calendar/time_zone.dart';
 import 'package:farash/app/motion.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/calendar_settings_dialog.dart';
@@ -52,6 +58,7 @@ class HomeScreen extends StatefulWidget {
     this.sectionsApi,
     this.startView,
     this.labelsApi,
+    this.habitReminders,
   });
 
   final String email;
@@ -66,6 +73,9 @@ class HomeScreen extends StatefulWidget {
   /// Labels, where the backend offers them.
   final LabelsApi? labelsApi;
 
+  /// The device's habit reminders, where the platform can show them.
+  final HabitReminders? habitReminders;
+
   /// The current access token; null once signed out.
   final String? Function() token;
 
@@ -73,7 +83,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   String? _selectedId;
   int _section = 1;
@@ -86,7 +96,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Habits live in the shell so check-ins survive switching sections.
   late final HabitsController? _habits = widget.tasksApi is HabitsApi
-      ? HabitsController(api: widget.tasksApi as HabitsApi, token: widget.token)
+      ? HabitsController(
+          api: widget.tasksApi as HabitsApi,
+          token: widget.token,
+          reminders: widget.habitReminders,
+        )
       : null;
   Task? _focusTask;
   String? _focusEntry;
@@ -124,6 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     widget.projects.load();
     _labels?.load();
+    _startReminders();
     _applyStartView();
     widget.startView?.addListener(_applyStartView);
     _refreshCount();
@@ -139,6 +154,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _tracker?.removeListener(_trackerChanged);
     _tracker?.dispose();
     _focus.removeListener(_focusChanged);
+    WidgetsBinding.instance.removeObserver(this);
+    widget.habitReminders?.opened.removeListener(_openReminder);
+    if (widget.habitReminders case final LocalHabitReminders local) {
+      local.onDone = null;
+    }
     _habits?.dispose();
     _focus.dispose();
     widget.startView?.removeListener(_applyStartView);
@@ -339,7 +359,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'برای «${task.title}» چقدر وقت گذاشتی؟',
+                'برای «${task.title}» چقدر وقت گذاشتید؟',
                 style: Theme.of(sheetContext).textTheme.titleMedium,
               ),
               const SizedBox(height: 12),
@@ -468,6 +488,42 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Reminders need the habits even before their tab is opened, and again
+  /// on return, when a reminder may have been answered in the background.
+  void _startReminders() {
+    final reminders = widget.habitReminders;
+    final habits = _habits;
+    if (reminders == null || habits == null) return;
+    WidgetsBinding.instance.addObserver(this);
+    reminders.opened.addListener(_openReminder);
+    if (reminders case final LocalHabitReminders local) {
+      local.onDone = habits.markDone;
+      local.start();
+    }
+    habits.load().then((_) => _openReminder());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _habits?.load();
+  }
+
+  /// Shows the habit of a reminder the user tapped.
+  void _openReminder() {
+    final reminders = widget.habitReminders;
+    final habits = _habits;
+    final id = reminders?.opened.value;
+    if (reminders == null || habits == null || id == null) return;
+    if (habits.byId(id) == null || !mounted) return;
+    reminders.opened.value = null;
+    _switchSection(4);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => HabitDetailScreen(controller: habits, habitId: id),
+      ),
+    );
+  }
+
   void _switchSection(int section) {
     _navigated = true;
     setState(() => _section = section);
@@ -538,6 +594,28 @@ class _HomeScreenState extends State<HomeScreen> {
           'عادت‌ها',
         ),
     ];
+  }
+
+  /// Today, Focus and Habits sit on the soft ground.
+  bool get _softSection =>
+      _section == 0 || _section == 2 || (_section == 4 && _habits != null);
+
+  /// Tasks the server counts as completed today, from the progress
+  /// report; null when the report has no such day.
+  Future<int?> _doneToday() async {
+    final api = widget.tasksApi;
+    final token = widget.token();
+    if (api is! ApiClient || token == null) return null;
+    final progress = await api.loadProgress(token, await deviceTimeZone());
+    final now = DateTime.now();
+    for (final day in progress.weekReport?.days ?? const <ProgressDay>[]) {
+      if (day.date.year == now.year &&
+          day.date.month == now.month &&
+          day.date.day == now.day) {
+        return day.completed;
+      }
+    }
+    return null;
   }
 
   /// The sections behind the phone's bottom destinations, in order.
@@ -667,6 +745,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     onOpenProject: _select,
                     labels: _labels,
                     sectionsApi: widget.sectionsApi,
+                    doneToday: widget.tasksApi is ApiClient ? _doneToday : null,
+                    focus: _focus,
+                    onOpenFocus: () => _switchSection(2),
+                    habits: _habits,
+                    onOpenHabits: _habits == null
+                        ? null
+                        : () => _switchSection(4),
                   )
                 : _section == 2
                 ? FocusView(
@@ -773,7 +858,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? null
                     : DecoratedBox(
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
+                          // The soft destinations carry their ground down
+                          // under the bar.
+                          color: _softSection
+                              ? Soft.ground(context)
+                              : Theme.of(context).colorScheme.surface,
                           border: Border(
                             top: BorderSide(
                               color: Theme.of(
@@ -785,6 +874,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: ListenableBuilder(
                           listenable: _focus,
                           builder: (context, _) => NavigationBar(
+                            backgroundColor: _softSection
+                                ? Soft.ground(context)
+                                : null,
                             selectedIndex: _navSections.indexOf(_section),
                             onDestinationSelected: (i) =>
                                 _switchSection(_navSections[i]),

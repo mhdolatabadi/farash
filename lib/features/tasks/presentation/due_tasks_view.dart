@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:farash/app/motion.dart';
+import 'package:farash/app/soft.dart';
+import 'package:farash/app/spacing.dart';
 import 'package:farash/app/list_app_bar.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
+import 'package:farash/features/focus/focus_controller.dart';
+import 'package:farash/features/habits/habits_controller.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
 import 'package:farash/features/labels/data/label.dart';
 import 'package:farash/features/projects/data/project.dart';
@@ -17,6 +21,7 @@ import 'package:farash/features/tasks/presentation/project_tasks_view.dart';
 import 'package:farash/features/tasks/presentation/task_detail_sheet.dart';
 import 'package:farash/features/tasks/presentation/task_messages.dart';
 import 'package:farash/features/tasks/presentation/task_tile.dart';
+import 'package:farash/features/tasks/presentation/today_bento.dart';
 
 /// The views that gather tasks by date from every project.
 enum DueView {
@@ -55,6 +60,11 @@ class DueTasksView extends StatefulWidget {
     this.labels,
     this.sectionsApi,
     this.now,
+    this.doneToday,
+    this.focus,
+    this.onOpenFocus,
+    this.habits,
+    this.onOpenHabits,
   });
 
   final DueView view;
@@ -75,6 +85,16 @@ class DueTasksView extends StatefulWidget {
   /// The clock, for tests.
   final DateTime Function()? now;
 
+  /// How many tasks the server counts as completed today, for the bento's
+  /// progress; null hides the progress.
+  final Future<int?> Function()? doneToday;
+
+  /// The focus timer and today's habits, shown as tiles above «امروز».
+  final FocusController? focus;
+  final VoidCallback? onOpenFocus;
+  final HabitsController? habits;
+  final VoidCallback? onOpenHabits;
+
   @override
   State<DueTasksView> createState() => _DueTasksViewState();
 }
@@ -83,6 +103,7 @@ class _DueTasksViewState extends State<DueTasksView> {
   List<Task> _tasks = const [];
   bool _loading = true;
   bool _openingTask = false;
+  int? _doneToday;
   Object? _error;
   String? _captureError;
   final _dayKeys = <String, GlobalKey>{};
@@ -144,6 +165,7 @@ class _DueTasksViewState extends State<DueTasksView> {
               ),
             };
       if (label != null) labels?.load();
+      if (_bento) _loadDone();
       if (!mounted) return;
       setState(() {
         _tasks = tasks;
@@ -155,6 +177,21 @@ class _DueTasksViewState extends State<DueTasksView> {
         _error = error;
         _loading = false;
       });
+    }
+  }
+
+  /// Today without a label: the bento view.
+  bool get _bento => widget.view == DueView.today && widget.label == null;
+
+  /// The progress is a nicety: a failed count only hides it.
+  Future<void> _loadDone() async {
+    final load = widget.doneToday;
+    if (load == null) return;
+    try {
+      final done = await load();
+      if (mounted) setState(() => _doneToday = done);
+    } catch (_) {
+      if (mounted) setState(() => _doneToday = null);
     }
   }
 
@@ -185,6 +222,7 @@ class _DueTasksViewState extends State<DueTasksView> {
     await widget.api.closeTask(token, task.id);
     if (!mounted) return;
     setState(() => _tasks = [..._tasks]..removeWhere((t) => t.id == task.id));
+    if (_bento) _loadDone();
     _snack(
       '«${task.title}» انجام شد.',
       undo: () => _run((token) async {
@@ -340,6 +378,7 @@ class _DueTasksViewState extends State<DueTasksView> {
       key: ValueKey(task.id),
       task: task,
       divider: !last,
+      dense: _bento,
       showToday: widget.view != DueView.today || widget.label != null,
       tag: project == null ? null : _ProjectTag(project: project),
       labels: [for (final id in task.labelIds) ?widget.labels?.byId(id)],
@@ -388,23 +427,21 @@ class _DueTasksViewState extends State<DueTasksView> {
 
   /// One panel holding a day's tasks.
   Widget _card(List<Task> tasks) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(),
-        child: Material(
-          type: MaterialType.transparency,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Column(
-              children: [
-                for (var i = 0; i < tasks.length; i++)
-                  _row(tasks[i], last: i == tasks.length - 1),
-              ],
-            ),
-          ),
-        ),
+    // Rows run edge to edge and carry the gutter themselves.
+    final list = Material(
+      type: MaterialType.transparency,
+      child: Column(
+        children: [
+          for (var i = 0; i < tasks.length; i++)
+            _row(tasks[i], last: i == tasks.length - 1),
+        ],
       ),
+    );
+    if (!_bento) return list;
+    // On the soft ground a day's tasks sit in one well.
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Space.gutter - 2),
+      child: SoftWell(child: list),
     );
   }
 
@@ -424,6 +461,7 @@ class _DueTasksViewState extends State<DueTasksView> {
         _DayHeading(
           title: 'دیرشده',
           late: true,
+          first: true,
           action: TextButton.icon(
             onPressed: () => _moveLateToToday(late),
             icon: const Icon(Icons.event_repeat),
@@ -434,7 +472,11 @@ class _DueTasksViewState extends State<DueTasksView> {
       ],
       _DayHeading(
         title: 'امروز',
-        detail: formatDate(today, settings, today: today, withWeekday: true),
+        first: late.isEmpty,
+        // The bento's date tile already says which day it is.
+        detail: _bento
+            ? null
+            : formatDate(today, settings, today: today, withWeekday: true),
       ),
       if (now.isEmpty) const _Quiet('برای امروز کاری نمانده.') else _card(now),
     ];
@@ -469,6 +511,7 @@ class _DueTasksViewState extends State<DueTasksView> {
               day,
               _DayHeading(
                 key: key,
+                first: day == _agendaDays.first,
                 title: relativeDay(day, settings, today: today),
                 detail: formatDate(day, settings, today: today),
               ),
@@ -491,10 +534,11 @@ class _DueTasksViewState extends State<DueTasksView> {
     return [
       for (final MapEntry(:key, :value) in groups.entries) ...[
         key.isEmpty
-            ? const _DayHeading(title: 'دیرشده', late: true)
+            ? const _DayHeading(title: 'دیرشده', late: true, first: true)
             : _dropOn(
                 parseDateKey(key),
                 _DayHeading(
+                  first: key == groups.keys.first,
                   title: relativeDay(parseDateKey(key), settings, today: today),
                   detail: formatDate(parseDateKey(key), settings, today: today),
                 ),
@@ -546,7 +590,7 @@ class _DueTasksViewState extends State<DueTasksView> {
       body = SliverList.list(
         children: label != null
             ? [
-                const SizedBox(height: 8),
+                const SizedBox(height: Space.sm),
                 if (_tasks.isEmpty)
                   const _Quiet('هنوز کاری این برچسب را ندارد.')
                 else
@@ -573,6 +617,7 @@ class _DueTasksViewState extends State<DueTasksView> {
               SliverPersistentHeader(
                 pinned: true,
                 delegate: ListAppBar(
+                  background: _bento ? Soft.ground(context) : null,
                   title: label?.tag ?? widget.view.title,
                   subtitle: count,
                   mark: label != null
@@ -590,9 +635,27 @@ class _DueTasksViewState extends State<DueTasksView> {
                   ],
                   topPadding: topPadding,
                   inset: inset,
-                  expandedHeight: constraints.maxHeight < 240 ? 0 : 32 * scale,
+                  // The bento's tiles carry the count on «امروز».
+                  expandedHeight: _bento || constraints.maxHeight < 240
+                      ? 0
+                      : 24 * scale,
                 ),
               ),
+              if (_bento && !(_loading && _tasks.isEmpty))
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: inset),
+                  sliver: SliverToBoxAdapter(
+                    child: TodayBento(
+                      today: _today,
+                      open: _tasks.length,
+                      done: _doneToday,
+                      focus: widget.focus,
+                      onOpenFocus: widget.onOpenFocus,
+                      habits: widget.habits,
+                      onOpenHabits: widget.onOpenHabits,
+                    ),
+                  ),
+                ),
               if (label == null &&
                   (widget.view == DueView.upcoming ||
                       widget.view == DueView.week))
@@ -626,19 +689,27 @@ class _DueTasksViewState extends State<DueTasksView> {
         );
         // Today is where the day is planned, so it takes new tasks too.
         if (label != null || widget.view != DueView.today) return list;
-        return Column(
-          children: [
-            Expanded(child: list),
-            Padding(
-              padding: EdgeInsets.fromLTRB(inset + 12, 4, inset + 12, 12),
-              child: QuickAddBar(
-                hint: 'افزودن کار برای امروز…',
-                error: _captureError,
-                pending: () => _captureSession.hasPendingRecurrence,
-                onAdd: _quickAdd,
+        return ColoredBox(
+          color: Soft.ground(context),
+          child: Column(
+            children: [
+              Expanded(child: list),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  inset + Space.gutter,
+                  Space.sm,
+                  inset + Space.gutter,
+                  Space.md,
+                ),
+                child: QuickAddBar(
+                  hint: 'افزودن کار برای امروز…',
+                  error: _captureError,
+                  pending: () => _captureSession.hasPendingRecurrence,
+                  onAdd: _quickAdd,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -653,6 +724,7 @@ class _DayHeading extends StatelessWidget {
     this.detail,
     this.action,
     this.late = false,
+    this.first = false,
   });
 
   final String title;
@@ -660,11 +732,19 @@ class _DayHeading extends StatelessWidget {
   final Widget? action;
   final bool late;
 
+  /// Right under the app bar, whose count already leaves room above.
+  final bool first;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 20, 12, 6),
+      padding: EdgeInsetsDirectional.fromSTEB(
+        Space.gutter,
+        first ? Space.sm : Space.sectionTop,
+        Space.xs,
+        Space.sectionBottom,
+      ),
       child: Row(
         children: [
           Expanded(
@@ -710,7 +790,12 @@ class _Quiet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(24, 0, 24, 4),
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        Space.gutter,
+        Space.sm,
+        Space.gutter,
+        Space.sm,
+      ),
       child: Text(
         text,
         style: theme.textTheme.bodyMedium?.copyWith(
