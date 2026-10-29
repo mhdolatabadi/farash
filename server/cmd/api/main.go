@@ -14,6 +14,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	cal "github.com/mhdolatabadi/farash/server/internal/calendar"
 	"github.com/mhdolatabadi/farash/server/internal/httpapi"
 	"github.com/mhdolatabadi/farash/server/internal/store"
 )
@@ -39,6 +40,11 @@ func run() error {
 		return errors.New("AUTH_JWT_SECRET is required")
 	}
 
+	calendarConfig, err := cal.ConfigFromEnv(os.Getenv)
+	if err != nil {
+		return err
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -51,10 +57,15 @@ func run() error {
 		return fmt.Errorf("migrate database: %w", err)
 	}
 	appStore := store.New(pool)
+	var calendars *cal.Service
+	if calendarConfig != nil {
+		calendars = &cal.Service{Config: *calendarConfig, Repo: appStore, Provider: &cal.Google{Config: *calendarConfig}}
+	}
 
 	server := &http.Server{
 		Addr: ":" + port,
 		Handler: httpapi.NewHandler(httpapi.Config{
+			Calendar:      calendars,
 			AllowedOrigin: os.Getenv("WEB_ORIGIN"),
 			Ping:          pool.Ping,
 			Store:         appStore,

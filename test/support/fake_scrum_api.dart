@@ -1,11 +1,112 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:farash/features/portability/export_api.dart';
+import 'package:farash/features/search/search.dart';
 // Synthetic, deterministic Scrum API for tests and native review only.
 import 'package:farash/features/scrum/scrum.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import '../../tool/time_preview.dart' show PreviewTimeApi;
 
-class FakeScrumApi extends PreviewTimeApi implements ScrumApi {
+class FakeScrumApi extends PreviewTimeApi
+    implements ScrumApi, ExportApi, SearchApi {
+  // This review fixture is not the search compiler or recurrence engine.
+  // It provides only the deterministic query/editor states captured below.
+  final _recurrences = <String, Map<String, dynamic>>{};
+
+  @override
+  Future<Map<String, dynamic>> searchRequest(
+    String token,
+    String verb,
+    String path, {
+    Map<String, Object?>? body,
+  }) async {
+    final uri = Uri.parse(path);
+    if (verb == 'GET' && uri.path == '/api/v1/filters') {
+      return {
+        'filters': [
+          {
+            'id': 'preview-reading',
+            'name': 'مطالعه',
+            'query': 'مطالعه',
+            'sort': 'title',
+            'is_favorite': true,
+            'color': '#98503D',
+          },
+        ],
+      };
+    }
+    if (verb == 'GET' && uri.path == '/api/v1/search') {
+      final query = uri.queryParameters['q'] ?? '';
+      if (query != '' && query != 'مطالعه') {
+        throw UnsupportedError('Unsupported synthetic preview query');
+      }
+      return {
+        'tasks': [
+          for (final task in all)
+            if (!isDeleted(task.id) &&
+                !task.isCompleted &&
+                (query.isEmpty || task.title.contains(query)))
+              _json(task),
+        ],
+        'has_more': false,
+      };
+    }
+    throw UnsupportedError('Unsupported synthetic preview operation');
+  }
+
+  @override
+  Future<Map<String, dynamic>> timeRequest(
+    String token,
+    String verb,
+    String path, {
+    Map<String, Object?>? body,
+  }) async {
+    final uri = Uri.parse(path);
+    final parts = uri.pathSegments;
+    if (parts.length == 5 && parts.last == 'recurrence') {
+      final id = parts[3];
+      if (verb == 'PUT') {
+        if (body?['schedule'] case final Map schedule) {
+          _recurrences[id] = Map<String, dynamic>.from(schedule);
+        } else {
+          _recurrences.remove(id);
+        }
+      } else if (verb != 'GET') {
+        throw UnsupportedError('Unsupported synthetic preview operation');
+      }
+      return {
+        'recurrence': _recurrences[id] == null
+            ? null
+            : {
+                'schedule': _recurrences[id],
+                'emitted': 1,
+                'advanced_at': null,
+                'next_task_id': null,
+              },
+      };
+    }
+    return super.timeRequest(token, verb, path, body: body);
+  }
+
+  @override
+  Future<Uint8List> exportAccount(String token) async => Uint8List.fromList(
+    utf8.encode(
+      jsonEncode({
+        'format': 'farash-export',
+        'version': 1,
+        'exported_at': '2026-10-21T00:00:00Z',
+        'preferences': <String, Object?>{},
+        'records': {'tasks': <Object?>[]},
+      }),
+    ),
+  );
+
   FakeScrumApi() {
-    seed('inbox', 'مطالعهٔ فصل اول کتاب');
+    seed(
+      'inbox',
+      'مطالعهٔ فصل اول کتاب',
+      dates: const TaskDates(due: TaskDue(date: '2026-10-22')),
+    );
     final a = seed('personal', 'مطالعهٔ فصل دوم کتاب');
     final b = seed('personal', 'خلاصه‌نویسی آموخته‌ها');
     seed('personal', 'انتخاب فصل بعدی');
@@ -150,5 +251,6 @@ class FakeScrumApi extends PreviewTimeApi implements ScrumApi {
     'completed_at': t.completedAt?.toIso8601String(),
     'parent_id': t.parentId,
     'label_ids': t.labelIds,
+    'due': t.due?.toJson(),
   };
 }

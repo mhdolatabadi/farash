@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	cal "github.com/mhdolatabadi/farash/server/internal/calendar"
 	"github.com/mhdolatabadi/farash/server/internal/store"
 )
 
@@ -14,6 +15,7 @@ type healthResponse struct {
 }
 
 type Config struct {
+	Calendar      *cal.Service
 	AllowedOrigin string
 	Ping          func(context.Context) error
 	Store         userStore
@@ -35,9 +37,7 @@ func NewHandler(config Config) http.Handler {
 		mux.HandleFunc("POST /api/v1/auth/register", auth.register)
 		mux.HandleFunc("POST /api/v1/auth/login", auth.login)
 		mux.HandleFunc("GET /api/v1/me", auth.me)
-		if data, ok := config.Store.(syncStore); ok {
-			mux.HandleFunc("POST /api/v1/sync", syncHandler(auth, data))
-		}
+		calendarRoutes(mux, auth, config.Calendar)
 		if data, ok := config.Store.(searchStore); ok {
 			searchRoutes(mux, auth, data)
 		}
@@ -49,6 +49,9 @@ func NewHandler(config Config) http.Handler {
 		}
 		if data, ok := config.Store.(exportStore); ok {
 			mux.HandleFunc("GET /api/v1/export", exportHandler(auth, data))
+		}
+		if data, ok := config.Store.(syncStore); ok {
+			mux.HandleFunc("POST /api/v1/sync", syncHandler(auth, data))
 		}
 		if data, ok := config.Store.(progressStore); ok {
 			handler := progressHandler(auth, data)

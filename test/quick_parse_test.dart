@@ -123,4 +123,75 @@ void main() {
     final time = parse(input).tokens.single;
     expect(input.substring(time.start, time.end), 'ساعت ۵ عصر');
   });
+  test(
+    'section and bounded recurrence are recognized without losing title',
+    () {
+      final task = parse('مطالعه هر ۲ روز #کار /برنامه');
+      expect(task.title, 'مطالعه');
+      expect(task.section, 'برنامه');
+      expect(task.recurrence!.frequency, 'day');
+      expect(task.recurrence!.interval, 2);
+      expect(parse('review every! 3 days').recurrence!.basis, 'completion');
+      expect(parse('review every monday').recurrence!.weekday, DateTime.monday);
+      expect(parse('اجاره هر ماه ۳۱ام').recurrence!.monthDay, 31);
+    },
+  );
+
+  test('dismissed recurrence stays intact rather than becoming a date', () {
+    const raw = 'کلاس هر دوشنبه';
+    final token = parse(raw).tokens.single;
+    final task = parseQuickTask(
+      raw,
+      now: now,
+      ignore: {(token.start, token.end)},
+    );
+    expect(task.recurrence, isNull);
+    expect(task.day, isNull);
+    expect(task.title, raw);
+  });
+
+  test('monthly selectors clamp to calendar month length', () {
+    const rule = QuickRecurrence(frequency: 'month', monthDay: 31);
+    expect(
+      rule.firstDay(DateTime(2026, 2, 1), 'gregorian'),
+      DateTime(2026, 2, 28),
+    );
+    final end = JalaliDate(
+      1405,
+      12,
+      JalaliDate.monthLength(1405, 12),
+    ).toGregorian();
+    expect(rule.accepts(end, 'jalali'), isTrue);
+    expect(
+      rule.schedule(
+        start: '2026-10-19',
+        timezone: 'Asia/Tehran',
+        calendar: 'jalali',
+      )['rule'],
+      {
+        'frequency': 'month',
+        'interval': 1,
+        'calendar': 'jalali',
+        'basis': 'due',
+        'month_day': 31,
+      },
+    );
+    expect(
+      const QuickRecurrence(
+        frequency: 'week',
+        weekday: DateTime.sunday,
+      ).schedule(
+        start: '2026-10-18',
+        timezone: 'Asia/Tehran',
+        calendar: 'gregorian',
+      )['rule'],
+      {
+        'frequency': 'week',
+        'interval': 1,
+        'calendar': 'gregorian',
+        'basis': 'due',
+        'weekdays': [0],
+      },
+    );
+  });
 }

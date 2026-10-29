@@ -2,8 +2,11 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"math"
+	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -12,10 +15,11 @@ import (
 )
 
 var (
-	ErrHabitNotFound = errors.New("habit not found")
-	ErrInvalidHabit  = errors.New("invalid habit")
-	ErrInvalidEntry  = errors.New("invalid habit entry")
-	ErrHabitLimit    = errors.New("too many habits")
+	ErrHabitNotFound        = errors.New("habit not found")
+	ErrInvalidHabit         = errors.New("invalid habit")
+	ErrInvalidEntry         = errors.New("invalid habit entry")
+	ErrHabitLimit           = errors.New("too many habits")
+	ErrHabitRequestConflict = errors.New("habit request conflict")
 )
 
 // MaxHabits caps habits per account, archived ones included.
@@ -32,25 +36,30 @@ type HabitEntry struct {
 }
 
 type Habit struct {
-	ID          string       `json:"id"`
-	Name        string       `json:"name"`
-	Question    string       `json:"question"`
-	Notes       string       `json:"notes"`
-	Color       int          `json:"color"`
-	Kind        string       `json:"kind"`
-	FreqNum     int          `json:"freq_num"`
-	FreqDen     int          `json:"freq_den"`
-	TargetType  string       `json:"target_type"`
-	TargetValue float64      `json:"target_value"`
-	Unit        string       `json:"unit"`
-	SortOrder   int          `json:"sort_order"`
-	Archived    bool         `json:"archived"`
-	CreatedAt   time.Time    `json:"created_at"`
-	Entries     []HabitEntry `json:"entries"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Question    string  `json:"question"`
+	Notes       string  `json:"notes"`
+	Color       int     `json:"color"`
+	Kind        string  `json:"kind"`
+	FreqNum     int     `json:"freq_num"`
+	FreqDen     int     `json:"freq_den"`
+	TargetType  string  `json:"target_type"`
+	TargetValue float64 `json:"target_value"`
+	Unit        string  `json:"unit"`
+	SortOrder   int     `json:"sort_order"`
+	Archived    bool    `json:"archived"`
+	// ReminderMinute is the local minute of the day, or nil for no reminder.
+	ReminderMinute *int `json:"reminder_minute"`
+	// ReminderDays is a weekday bitmask: bit 0 Monday ... bit 6 Sunday.
+	ReminderDays int          `json:"reminder_days"`
+	CreatedAt    time.Time    `json:"created_at"`
+	Entries      []HabitEntry `json:"entries"`
 }
 
 // HabitInput creates a habit, or changes the fields that are set.
 type HabitInput struct {
+	RequestKey  string   `json:"request_key,omitempty"`
 	Name        *string  `json:"name"`
 	Question    *string  `json:"question"`
 	Notes       *string  `json:"notes"`
@@ -63,6 +72,9 @@ type HabitInput struct {
 	Unit        *string  `json:"unit"`
 	SortOrder   *int     `json:"sort_order"`
 	Archived    *bool    `json:"archived"`
+	// ReminderMinute set to null turns the reminder off.
+	ReminderMinute Optional[int] `json:"reminder_minute"`
+	ReminderDays   *int          `json:"reminder_days"`
 }
 
 type HabitEntryInput struct {
@@ -70,11 +82,11 @@ type HabitEntryInput struct {
 	Skip  bool    `json:"skip"`
 }
 
-const habitColumns = `id, name, question, notes, color, kind, freq_num, freq_den, target_type, target_value, unit, sort_order, archived_at IS NOT NULL, created_at`
+const habitColumns = `id, name, question, notes, color, kind, freq_num, freq_den, target_type, target_value, unit, sort_order, archived_at IS NOT NULL, reminder_minute, reminder_days, created_at`
 
 func scanHabit(row pgx.Row) (Habit, error) {
 	var h Habit
-	err := row.Scan(&h.ID, &h.Name, &h.Question, &h.Notes, &h.Color, &h.Kind, &h.FreqNum, &h.FreqDen, &h.TargetType, &h.TargetValue, &h.Unit, &h.SortOrder, &h.Archived, &h.CreatedAt)
+	err := row.Scan(&h.ID, &h.Name, &h.Question, &h.Notes, &h.Color, &h.Kind, &h.FreqNum, &h.FreqDen, &h.TargetType, &h.TargetValue, &h.Unit, &h.SortOrder, &h.Archived, &h.ReminderMinute, &h.ReminderDays, &h.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = ErrHabitNotFound
 	}
@@ -120,6 +132,12 @@ func (in HabitInput) apply(h *Habit) error {
 	if in.Archived != nil {
 		h.Archived = *in.Archived
 	}
+	if in.ReminderMinute.Set {
+		h.ReminderMinute = in.ReminderMinute.Value
+	}
+	if in.ReminderDays != nil {
+		h.ReminderDays = *in.ReminderDays
+	}
 	switch {
 	case h.Name == "" || utf8.RuneCountInString(h.Name) > 200,
 		utf8.RuneCountInString(h.Question) > 300,
@@ -130,7 +148,9 @@ func (in HabitInput) apply(h *Habit) error {
 		h.TargetType != "at_least" && h.TargetType != "at_most",
 		h.FreqDen < 1 || h.FreqDen > 365 || h.FreqNum < 1 || h.FreqNum > h.FreqDen,
 		math.IsNaN(h.TargetValue) || math.IsInf(h.TargetValue, 0) || h.TargetValue < 0 || h.TargetValue > 1e9,
-		h.Kind == "numeric" && h.TargetValue == 0 && h.TargetType == "at_least":
+		h.Kind == "numeric" && h.TargetValue == 0 && h.TargetType == "at_least",
+		h.ReminderMinute != nil && (*h.ReminderMinute < 0 || *h.ReminderMinute > 1439),
+		h.ReminderDays < 1 || h.ReminderDays > 127:
 		return ErrInvalidHabit
 	}
 	return nil
@@ -185,8 +205,13 @@ func (s *Store) ListHabits(ctx context.Context, owner string) ([]Habit, error) {
 	return habits, rows.Err()
 }
 
+var habitRequestKey = regexp.MustCompile(`^[A-Za-z0-9_-]{16,128}$`)
+
 func (s *Store) CreateHabit(ctx context.Context, owner string, in HabitInput) (Habit, error) {
-	h := Habit{Color: 8, Kind: "boolean", FreqNum: 1, FreqDen: 1, TargetType: "at_least"}
+	if in.RequestKey != "" && !habitRequestKey.MatchString(in.RequestKey) {
+		return Habit{}, ErrInvalidHabit
+	}
+	h := Habit{Color: 8, Kind: "boolean", FreqNum: 1, FreqDen: 1, TargetType: "at_least", ReminderDays: 127}
 	in.Archived = nil
 	if err := in.apply(&h); err != nil {
 		return Habit{}, err
@@ -194,6 +219,11 @@ func (s *Store) CreateHabit(ctx context.Context, owner string, in HabitInput) (H
 	if h.Kind == "boolean" {
 		h.TargetValue, h.Unit = 0, ""
 	}
+	canonical, _ := json.Marshal(struct {
+		Habit        Habit
+		ExplicitSort bool
+	}{h, in.SortOrder != nil})
+	fingerprint := sha256.Sum256(canonical)
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return Habit{}, err
@@ -202,6 +232,33 @@ func (s *Store) CreateHabit(ctx context.Context, owner string, in HabitInput) (H
 	// Serialize creates so the count limit holds across devices.
 	if _, err = tx.Exec(ctx, `SELECT id FROM users WHERE id=$1 FOR UPDATE`, owner); err != nil {
 		return Habit{}, err
+	}
+	if in.RequestKey != "" {
+		var previousHash []byte
+		var response []byte
+		err = tx.QueryRow(ctx, `SELECT payload_hash, response FROM habit_create_requests WHERE owner_id=$1 AND request_key=$2`, owner, in.RequestKey).Scan(&previousHash, &response)
+		if err == nil {
+			if string(previousHash) != string(fingerprint[:]) {
+				return Habit{}, ErrHabitRequestConflict
+			}
+			var previous Habit
+			if err = json.Unmarshal(response, &previous); err != nil {
+				return Habit{}, err
+			}
+			return previous, tx.Commit(ctx)
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return Habit{}, err
+		}
+	}
+	if in.RequestKey != "" {
+		var requests int
+		if err = tx.QueryRow(ctx, `SELECT count(*) FROM habit_create_requests WHERE owner_id=$1`, owner).Scan(&requests); err != nil {
+			return Habit{}, err
+		}
+		if requests >= 10000 {
+			return Habit{}, ErrHabitLimit
+		}
 	}
 	var count, next int
 	if err = tx.QueryRow(ctx, `SELECT count(*), COALESCE(max(sort_order)+1,0) FROM habits WHERE owner_id=$1`, owner).Scan(&count, &next); err != nil {
@@ -213,11 +270,20 @@ func (s *Store) CreateHabit(ctx context.Context, owner string, in HabitInput) (H
 	if in.SortOrder == nil {
 		h.SortOrder = next
 	}
-	created, err := scanHabit(tx.QueryRow(ctx, `INSERT INTO habits(id,owner_id,name,question,notes,color,kind,freq_num,freq_den,target_type,target_value,unit,sort_order)
-		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING `+habitColumns,
-		newID(), owner, h.Name, h.Question, h.Notes, h.Color, h.Kind, h.FreqNum, h.FreqDen, h.TargetType, h.TargetValue, h.Unit, h.SortOrder))
+	created, err := scanHabit(tx.QueryRow(ctx, `INSERT INTO habits(id,owner_id,name,question,notes,color,kind,freq_num,freq_den,target_type,target_value,unit,sort_order,reminder_minute,reminder_days)
+		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING `+habitColumns,
+		newID(), owner, h.Name, h.Question, h.Notes, h.Color, h.Kind, h.FreqNum, h.FreqDen, h.TargetType, h.TargetValue, h.Unit, h.SortOrder, h.ReminderMinute, h.ReminderDays))
 	if err != nil {
 		return Habit{}, err
+	}
+	if in.RequestKey != "" {
+		response, err := json.Marshal(created)
+		if err != nil {
+			return Habit{}, err
+		}
+		if _, err = tx.Exec(ctx, `INSERT INTO habit_create_requests(owner_id, request_key, payload_hash, response) VALUES($1,$2,$3,$4)`, owner, in.RequestKey, fingerprint[:], response); err != nil {
+			return Habit{}, err
+		}
 	}
 	return created, tx.Commit(ctx)
 }
@@ -260,8 +326,9 @@ func (s *Store) UpdateHabit(ctx context.Context, owner, id string, in HabitInput
 		return Habit{}, err
 	}
 	if _, err = tx.Exec(ctx, `UPDATE habits SET name=$3,question=$4,notes=$5,color=$6,freq_num=$7,freq_den=$8,target_type=$9,target_value=$10,unit=$11,sort_order=$12,
-		archived_at=CASE WHEN $13 THEN COALESCE(archived_at,now()) ELSE NULL END WHERE owner_id=$1 AND id=$2`,
-		owner, id, h.Name, h.Question, h.Notes, h.Color, h.FreqNum, h.FreqDen, h.TargetType, h.TargetValue, h.Unit, h.SortOrder, h.Archived); err != nil {
+		archived_at=CASE WHEN $13 THEN COALESCE(archived_at,now()) ELSE NULL END,
+		reminder_minute=$14,reminder_days=$15 WHERE owner_id=$1 AND id=$2`,
+		owner, id, h.Name, h.Question, h.Notes, h.Color, h.FreqNum, h.FreqDen, h.TargetType, h.TargetValue, h.Unit, h.SortOrder, h.Archived, h.ReminderMinute, h.ReminderDays); err != nil {
 		return Habit{}, err
 	}
 	h, err = s.getHabit(ctx, tx, owner, id)

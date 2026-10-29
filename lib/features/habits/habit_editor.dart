@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/habits/habit.dart';
 import 'package:farash/features/habits/habits_controller.dart';
@@ -105,8 +106,12 @@ class _HabitEditorState extends State<HabitEditor> {
   late int _num = _old?.freqNum ?? 1;
   late int _den = _old?.freqDen ?? 1;
   late HabitTarget _bound = _old?.target ?? HabitTarget.atLeast;
+  late int? _reminderMinute = _old?.reminderMinute;
+  late int _reminderDays = _old?.reminderDays ?? Habit.everyDay;
+  bool _notificationsBlocked = false;
   String? _nameError, _targetError;
   bool _saving = false;
+  final _createAttempt = HabitCreateAttempt();
 
   bool get _numeric => _kind == HabitKind.numeric;
 
@@ -119,6 +124,7 @@ class _HabitEditorState extends State<HabitEditor> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final name = _name.text.trim();
     final target = _numeric ? parseAmount(_target.text) : 0.0;
     setState(() {
@@ -141,12 +147,17 @@ class _HabitEditorState extends State<HabitEditor> {
       target: _numeric ? _bound : null,
       targetValue: _numeric ? target : null,
       unit: _numeric ? _unit.text.trim() : null,
+      reminder: switch (_reminderMinute) {
+        final minute? => HabitReminder(minute, days: _reminderDays),
+        null when _old != null => HabitReminder.off(days: _reminderDays),
+        null => null,
+      },
     );
     setState(() => _saving = true);
     final old = _old;
     final Habit? saved;
     if (old == null) {
-      saved = await widget.controller.create(draft);
+      saved = await widget.controller.create(draft, attempt: _createAttempt);
     } else {
       saved = await widget.controller.update(old, draft)
           ? widget.controller.byId(old.id)
@@ -274,6 +285,29 @@ class _HabitEditorState extends State<HabitEditor> {
       _num = result.$1;
       _den = result.$2;
     });
+  }
+
+  Future<void> _pickReminder() async {
+    final current = _reminderMinute ?? 9 * 60;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: current ~/ 60, minute: current % 60),
+      helpText: 'ساعت یادآور',
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _reminderMinute = picked.hour * 60 + picked.minute);
+    // Asked from the tap, as browsers require; the reminder is saved anyway
+    // and starts showing once notifications are allowed.
+    final reminders = widget.controller.reminders;
+    if (reminders == null) return;
+    final allowed = await reminders.requestPermission();
+    if (mounted) setState(() => _notificationsBlocked = !allowed);
+  }
+
+  void _toggleDay(int weekday) {
+    final days = _reminderDays ^ (1 << (weekday - 1));
+    // At least one day stays chosen; no days is the same as no reminder.
+    if (days != 0) setState(() => _reminderDays = days);
   }
 
   String _label(int n, int d) =>
@@ -446,6 +480,18 @@ class _HabitEditorState extends State<HabitEditor> {
                     },
                   ),
                 const SizedBox(height: 16),
+                _ReminderField(
+                  minute: _reminderMinute,
+                  days: _reminderDays,
+                  blocked: _notificationsBlocked,
+                  onPick: _pickReminder,
+                  onClear: () => setState(() {
+                    _reminderMinute = null;
+                    _notificationsBlocked = false;
+                  }),
+                  onToggleDay: _toggleDay,
+                ),
+                const SizedBox(height: 16),
                 TextField(
                   controller: _notes,
                   maxLength: 2000,
@@ -458,6 +504,159 @@ class _HabitEditorState extends State<HabitEditor> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Loop's reminder: off, or a time on chosen weekdays.
+class _ReminderField extends StatelessWidget {
+  const _ReminderField({
+    required this.minute,
+    required this.days,
+    required this.blocked,
+    required this.onPick,
+    required this.onClear,
+    required this.onToggleDay,
+  });
+
+  final int? minute;
+  final int days;
+  final bool blocked;
+  final VoidCallback onPick, onClear;
+  final ValueChanged<int> onToggleDay;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final minute = this.minute;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          button: true,
+          label: minute == null
+              ? 'یادآور، خاموش'
+              : 'یادآور، ساعت ${formatMinuteOfDay(minute)}',
+          excludeSemantics: true,
+          child: InkWell(
+            onTap: onPick,
+            borderRadius: BorderRadius.circular(4),
+            child: InputDecorator(
+              decoration: InputDecoration(
+                labelText: 'یادآور',
+                prefixIcon: Icon(
+                  minute == null
+                      ? Icons.notifications_off_outlined
+                      : Icons.notifications_active_outlined,
+                ),
+                suffixIcon: minute == null
+                    ? null
+                    : IconButton(
+                        tooltip: 'خاموش کردن یادآور',
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: onClear,
+                      ),
+                helperText: blocked
+                    ? 'اعلان‌ها مجاز نیستند. آن‌ها را در تنظیمات دستگاه روشن کنید.'
+                    : null,
+                helperMaxLines: 2,
+                helperStyle: blocked ? TextStyle(color: scheme.error) : null,
+              ),
+              child: Text(
+                minute == null ? 'خاموش' : formatMinuteOfDay(minute),
+                style: minute == null
+                    ? theme.textTheme.bodyLarge?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      )
+                    : theme.textTheme.bodyLarge,
+              ),
+            ),
+          ),
+        ),
+        if (minute != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            'روزها',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              for (final weekday in persianWeekOrder)
+                Expanded(
+                  child: _DayToggle(
+                    weekday: weekday,
+                    selected: days & (1 << (weekday - 1)) != 0,
+                    onTap: () => onToggleDay(weekday),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// A round weekday toggle, as in Android's alarm clock. The whole column
+/// width is the touch target.
+class _DayToggle extends StatelessWidget {
+  const _DayToggle({
+    required this.weekday,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final int weekday;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final name = weekdayNames[weekday - 1];
+    return Tooltip(
+      message: name,
+      child: Semantics(
+        label: name,
+        button: true,
+        selected: selected,
+        excludeSemantics: true,
+        child: InkResponse(
+          onTap: onTap,
+          radius: 24,
+          child: SizedBox(
+            height: 48,
+            child: Center(
+              child: AnimatedContainer(
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 150),
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected ? scheme.primary : null,
+                  border: selected ? null : Border.all(color: scheme.outline),
+                ),
+                child: Text(
+                  weekdayInitials[weekday - 1],
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: selected
+                        ? scheme.onPrimary
+                        : scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
