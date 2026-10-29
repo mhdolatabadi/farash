@@ -260,7 +260,7 @@ void main() {
         });
       }
       await tester.scrollUntilVisible(find.text('جلسهٔ مطالعه'), 250);
-      expect(find.textContaining('تمام‌روز'), findsOneWidget);
+      expect(find.textContaining('· تمام‌روز'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.scrollUntilVisible(find.text('قطع اتصال Google'), 250);
       await tester.tap(find.text('قطع اتصال Google'));
