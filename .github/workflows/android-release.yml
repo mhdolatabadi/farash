@@ -128,6 +128,25 @@ jobs:
           EOF
           gh release create "$RELEASE_TAG" release/*.apk release/*.aab release/SHA256SUMS --verify-tag --draft --title "Farash $VERSION_NAME" --notes-file "$RUNNER_TEMP/farash-release-notes.md"
           gh release edit "$RELEASE_TAG" --draft=false
+      - name: Publish main build as a pre-release
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+        run: |
+          # Each build code is unique, so every merge to main gets its own downloadable release.
+          tag="build-$VERSION_NAME-$VERSION_CODE"
+          cat > "$RUNNER_TEMP/farash-release-notes.md" <<EOF
+          Automatic signed Farash Android build $VERSION_NAME (build $VERSION_CODE) from main.
+
+          - APK: install directly on Android; verify it against SHA256SUMS.
+          - AAB: store submission bundle; not a directly installable APK.
+          - Source: $SOURCE_SHA
+          - Build and checks: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          EOF
+          gh release create "$tag" release/*.apk release/*.aab release/SHA256SUMS --target "$SOURCE_SHA" --prerelease --title "Farash $VERSION_NAME (build $VERSION_CODE)" --notes-file "$RUNNER_TEMP/farash-release-notes.md"
       - name: Remove signing material
         if: always()
         run: rm -f android/key.properties "$RUNNER_TEMP/farash-release.jks" "$RUNNER_TEMP/release-cert.der" "$RUNNER_TEMP/aab-cert.der" "$RUNNER_TEMP/aab-cert.pem"
