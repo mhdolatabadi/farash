@@ -98,6 +98,20 @@ def open_drawer():
     tap('باز کردن منو پیمایش', wait_for='حساب و تنظیمات')
 
 
+
+def scroll_to(label, *, upward=True):
+    size = re.search(r'(\d+)x(\d+)', adb('shell', 'wm', 'size').decode())
+    width, height = map(int, size.groups())
+    start, end = (0.78, 0.30) if upward else (0.30, 0.78)
+    for _ in range(8):
+        if matching_nodes(window_xml(), label):
+            return
+        adb('shell', 'input', 'swipe', str(width//2), str(int(height*start)),
+            str(width//2), str(int(height*end)), '350')
+        time.sleep(1)
+    raise RuntimeError(f'Calendar review could not reveal: {label}')
+
+
 def main():
     adb('install', '-r', 'build/app/outputs/flutter-apk/app-debug.apk')
     adb('shell', 'am', 'start', '-n', 'ir.mhdolatabadi.farash/.MainActivity')
@@ -223,6 +237,29 @@ def main():
     tap('بستن')
     adb('shell', 'wm', 'size', 'reset')
     adb('shell', 'wm', 'density', 'reset')
+    time.sleep(3)
+    open_drawer()
+    tap('حساب و تنظیمات')
+    tap('اتصال تقویم‌ها', wait_for='حساب Google متصل است.')
+    adb('shell', 'cmd', 'uimode', 'night', 'no')
+    capture('calendar-phone-light')
+    scroll_to('جلسهٔ مطالعه')
+    capture('calendar-events-phone-light')
+    scroll_to('Google Calendar', upward=False)
+    adb('shell', 'cmd', 'uimode', 'night', 'yes')
+    capture('calendar-phone-dark')
+    adb('shell', 'settings', 'put', 'system', 'font_scale', '1.3')
+    capture('calendar-phone-font-1_3-dark')
+    adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')
+    capture('calendar-phone-large-text-dark')
+    adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')
+    adb('shell', 'wm', 'size', '1920x1200')
+    adb('shell', 'wm', 'density', '160')
+    time.sleep(3)
+    capture('calendar-wide-dark')
+    adb('shell', 'wm', 'size', 'reset')
+    adb('shell', 'wm', 'density', 'reset')
+    adb('shell', 'input', 'keyevent', '4')
     time.sleep(3)
     open_drawer()
     tap('جست‌وجو و فیلترها')

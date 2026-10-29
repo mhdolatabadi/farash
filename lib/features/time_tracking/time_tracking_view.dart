@@ -186,9 +186,12 @@ class TimeTrackingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: tracker,
+    // Ticks too, so a running timer moves the totals live.
+    listenable: Listenable.merge([tracker, tracker.elapsedTicks]),
     builder: (context, _) {
       final report = tracker.report;
+      final live = tracker.unreported.inSeconds;
+      final liveId = live == 0 ? null : tracker.active?.id;
       final text = Theme.of(context).textTheme;
       final section = text.titleMedium?.copyWith(fontWeight: FontWeight.w700);
       final note = text.bodyMedium?.copyWith(
@@ -241,8 +244,8 @@ class TimeTrackingView extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               for (final (i, total) in [
-                                ('امروز', report.today),
-                                ('این هفته', report.seconds),
+                                ('امروز', report.today + live),
+                                ('این هفته', report.seconds + live),
                               ].indexed) ...[
                                 if (i > 0)
                                   const SizedBox(
@@ -342,7 +345,13 @@ class TimeTrackingView extends StatelessWidget {
                             'هنوز زمانی ثبت نشده. از یک کار کوچک شروع کنید.',
                             style: note,
                           ),
-                        ProjectTimeGroups(tasks: report.tasks),
+                        ProjectTimeGroups(
+                          tasks: report.tasks,
+                          liveTaskId: liveId == null
+                              ? null
+                              : tracker.active?.taskId,
+                          liveSeconds: live,
+                        ),
                         const SizedBox(height: Space.xxl),
                         Text('مرور روزها و بازه‌ها', style: section),
                         const SizedBox(height: Space.sm),
@@ -375,7 +384,7 @@ class TimeTrackingView extends StatelessWidget {
                                     ListTile(
                                       title: Text(entry.title),
                                       subtitle: Text(
-                                        '${timeStamp(context, entry.started.toLocal())} · ${trackedTime(entry.elapsed(report.now))}',
+                                        '${timeStamp(context, entry.started.toLocal())} · ${trackedTime(entry.elapsed(entry.id == liveId ? tracker.now : report.now))}',
                                       ),
                                       onTap: () => manualTime(
                                         context,
@@ -667,8 +676,20 @@ class _TaskTimePanelState extends State<TaskTimePanel> {
     super.dispose();
   }
 
+  /// The running entry of this task, when this panel's report covers it.
+  TimeEntry? get _live {
+    final active = widget.tracker.active;
+    if (active == null || report?.active?.id != active.id) return null;
+    return active.taskId == widget.task.id ? active : null;
+  }
+
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: widget.tracker.elapsedTicks,
+    builder: (context, _) => _panel(context, _live),
+  );
+
+  Widget _panel(BuildContext context, TimeEntry? live) => Padding(
     padding: const EdgeInsets.all(12),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -677,7 +698,7 @@ class _TaskTimePanelState extends State<TaskTimePanel> {
         if (error != null) TextButton(onPressed: load, child: Text(error!)),
         if (report != null)
           Text(
-            '${widget.task.durationMinutes == null ? '' : 'برآورد ${persianDigits(widget.task.durationMinutes!)}د · '}واقعی ${trackedTime(Duration(seconds: report!.seconds))}',
+            '${widget.task.durationMinutes == null ? '' : 'برآورد ${persianDigits(widget.task.durationMinutes!)}د · '}واقعی ${trackedTime(Duration(seconds: report!.seconds) + (live == null ? Duration.zero : live.elapsed(widget.tracker.now) - live.elapsed(report!.now)))}',
           ),
         Wrap(
           spacing: 8,
@@ -707,7 +728,7 @@ class _TaskTimePanelState extends State<TaskTimePanel> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(
-              '${formatDate(e.started.toLocal(), CalendarScope.of(context), alwaysYear: true)} · ${trackedTime(e.elapsed(report!.now))}',
+              '${formatDate(e.started.toLocal(), CalendarScope.of(context), alwaysYear: true)} · ${trackedTime(e.elapsed(e.id == live?.id ? widget.tracker.now : report!.now))}',
             ),
             onTap: () =>
                 manualTime(context, widget.tracker, widget.task, editing: e),
@@ -777,12 +798,24 @@ String timeStamp(BuildContext context, DateTime date) =>
     '${formatDate(date, CalendarScope.of(context), alwaysYear: true)} ${persianDigits('${date.hour}:${date.minute.toString().padLeft(2, '0')}')}';
 
 class ProjectTimeGroups extends StatelessWidget {
-  const ProjectTimeGroups({super.key, required this.tasks});
+  const ProjectTimeGroups({
+    super.key,
+    required this.tasks,
+    this.liveTaskId,
+    this.liveSeconds = 0,
+  });
   final List<Map<String, dynamic>> tasks;
+
+  /// The running task and the seconds it gained after the report.
+  final String? liveTaskId;
+  final int liveSeconds;
   @override
   Widget build(BuildContext context) {
     final groups = <String, List<Map<String, dynamic>>>{};
-    for (final task in tasks) {
+    for (var task in tasks) {
+      if (liveTaskId != null && task['task_id'] == liveTaskId) {
+        task = {...task, 'seconds': (task['seconds'] as int) + liveSeconds};
+      }
       groups
           .putIfAbsent(
             task['project_id'] as String? ?? task['project'] as String,
