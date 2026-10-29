@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/soft.dart';
 import 'package:farash/app/spacing.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/text/persian_digits.dart';
@@ -422,20 +423,37 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
                   padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
                   child: child,
                 ),
-              for (final task in tasks)
-                IgnorePointer(
-                  ignoring: busy,
-                  child: TaskTile(
-                    task: task,
-                    onToggle: () => toggle(task),
-                    onOpen: () => open(task),
-                    tag: Text(
-                      widget
-                              .projects()
-                              .where((p) => p.id == task.projectId)
-                              .firstOrNull
-                              ?.name ??
-                          'پروژه',
+              if (tasks.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    Space.gutter - 2,
+                    Space.sm,
+                    Space.gutter - 2,
+                    0,
+                  ),
+                  child: SoftWell(
+                    child: Column(
+                      children: [
+                        for (final task in tasks)
+                          IgnorePointer(
+                            ignoring: busy,
+                            child: TaskTile(
+                              task: task,
+                              dense: true,
+                              divider: task != tasks.last,
+                              onToggle: () => toggle(task),
+                              onOpen: () => open(task),
+                              tag: Text(
+                                widget
+                                        .projects()
+                                        .where((p) => p.id == task.projectId)
+                                        .firstOrNull
+                                        ?.name ??
+                                    'پروژه',
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),

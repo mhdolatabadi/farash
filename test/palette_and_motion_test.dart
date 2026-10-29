@@ -46,9 +46,9 @@ void main() {
     test('the theme reads the calm palette', () {
       final theme = FarashTheme.light();
       expect(theme.colorScheme.primary, const Color(0xFF0E7490));
-      expect(theme.colorScheme.surface, Colors.white);
+      expect(theme.colorScheme.surface, const Color(0xFFE9EDF1));
       expect(FarashTheme.dark().colorScheme.primary, const Color(0xFFC8F25A));
-      expect(FarashTheme.dark().colorScheme.surface, const Color(0xFF0F1115));
+      expect(FarashTheme.dark().colorScheme.surface, const Color(0xFF16191E));
       expect(theme.colorScheme.error, FarashPalette.calm.light.overdue);
       expect(
         theme.extension<FarashPaletteColors>()!.colors,

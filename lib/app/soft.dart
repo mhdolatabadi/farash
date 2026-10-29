@@ -127,7 +127,8 @@ class SoftWell extends StatelessWidget {
                   borderRadius: BorderRadius.circular(radius),
                 ),
         ),
-        child: ColoredBox(
+        // A Material, so rows inside keep their ink and selection.
+        child: Material(
           color: p.softGround,
           child: Padding(padding: padding, child: child),
         ),

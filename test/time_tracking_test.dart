@@ -1,4 +1,9 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:farash/app/app_theme.dart';
 import 'package:farash/core/api/api_client.dart';
@@ -19,6 +24,7 @@ class TrackingFixture extends FakeTasksApi implements TimeApi {
   final calls = <Map<String, Object?>>[];
   bool fail = false;
   bool failRead = false;
+  bool reportTasks = false;
   @override
   Future<Map<String, dynamic>> timeRequest(
     String token,
@@ -55,10 +61,20 @@ class TrackingFixture extends FakeTasksApi implements TimeApi {
       return active ?? {};
     }
     if (failRead) throw const ApiException('offline report');
+    final running = reportTasks ? active : null;
     return {
       'active': active,
-      'entries': <Map<String, dynamic>>[],
-      'tasks': <Map<String, dynamic>>[],
+      'entries': [?running],
+      'tasks': [
+        if (running != null)
+          {
+            'task_id': running['task_id'],
+            'title': running['title'],
+            'project': 'پروژه',
+            'project_id': 'inbox',
+            'seconds': 0,
+          },
+      ],
       'seconds': 0,
       'today_seconds': 0,
       'server_now': DateTime.now().toUtc().toIso8601String(),
@@ -68,6 +84,14 @@ class TrackingFixture extends FakeTasksApi implements TimeApi {
 }
 
 void main() {
+  setUpAll(() async {
+    for (final font in [
+      ('Vazirmatn', 'assets/fonts/Vazirmatn-Regular.ttf'),
+      ('MaterialIcons', 'fonts/MaterialIcons-Regular.otf'),
+    ]) {
+      await (FontLoader(font.$1)..addFont(rootBundle.load(font.$2))).load();
+    }
+  });
   setUp(() => debugTimeZoneOverride = 'Asia/Tehran');
   tearDown(() => debugTimeZoneOverride = null);
   testWidgets('focus records task time, survives navigation and pauses', (
@@ -166,20 +190,23 @@ void main() {
             ).copyWith(textScaler: const TextScaler.linear(2)),
             child: child!,
           ),
-          home: Scaffold(
-            body: Directionality(
-              textDirection: TextDirection.rtl,
-              child: Column(
-                children: [
-                  ActiveTimeBar(tracker: tracker, onOpen: () {}),
-                  Expanded(
-                    child: TimeTrackingView(
-                      tracker: tracker,
-                      tasksApi: api,
-                      projects: projects,
+          home: RepaintBoundary(
+            key: _captureKey,
+            child: Scaffold(
+              body: Directionality(
+                textDirection: TextDirection.rtl,
+                child: Column(
+                  children: [
+                    ActiveTimeBar(tracker: tracker, onOpen: () {}),
+                    Expanded(
+                      child: TimeTrackingView(
+                        tracker: tracker,
+                        tasksApi: api,
+                        projects: projects,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -187,6 +214,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      await _capture(tester, 'time-narrow-dark-large');
       expect(
         tester.getTopLeft(find.byTooltip('توقف ثبت زمان').first).dy,
         greaterThanOrEqualTo(24),
@@ -199,6 +227,39 @@ void main() {
       await tester.pumpAndSettle();
     },
   );
+  testWidgets('times view ticks live after a timer starts', (tester) async {
+    final api = TrackingFixture()..reportTasks = true;
+    final tracker = TimeTracker(api: api, token: () => 'token');
+    await tester.pumpAndSettle();
+    await tracker.start(
+      const Task(id: 'task', projectId: 'inbox', title: 'work'),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TimeTrackingView(
+            tracker: tracker,
+            tasksApi: api,
+            projects: ProjectsController(
+              api: FakeProjectsApi(),
+              token: () => 'token',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    // Today, week, project, task and entry all start from the snapshot.
+    expect(find.textContaining('۰۰:۰۰:۰۰'), findsNWidgets(5));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 2100)),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.textContaining('۰۰:۰۰:۰۰'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    tracker.dispose();
+    await tester.pumpAndSettle();
+  });
   testWidgets('authoritative start and stop survive a failed report refresh', (
     tester,
   ) async {
@@ -286,5 +347,22 @@ void main() {
       entry.elapsed(DateTime.parse('2026-10-16T11:00:00Z')),
       Duration.zero,
     );
+  });
+}
+
+final _captureKey = GlobalKey();
+
+Future<void> _capture(WidgetTester tester, String name) async {
+  if (Platform.environment['CAPTURE_GLASS_UI'] != '1') return;
+  await tester.runAsync(() async {
+    final boundary =
+        _captureKey.currentContext!.findRenderObject()!
+            as RenderRepaintBoundary;
+    final image = await boundary.toImage(pixelRatio: 1);
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    final file = File('.impeccable/review/$name.png');
+    await file.parent.create(recursive: true);
+    await file.writeAsBytes(bytes!.buffer.asUint8List());
+    image.dispose();
   });
 }

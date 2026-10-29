@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/soft.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/progress/progress.dart';
 
@@ -25,10 +26,11 @@ class WeeklyProgressReport extends StatelessWidget {
         ? 'برابر با بازهٔ مشابه هفتهٔ قبل'
         : '${persianDigits(difference.abs())} کار '
               '${difference > 0 ? 'بیشتر' : 'کمتر'} از بازهٔ مشابه هفتهٔ قبل';
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
+    return SoftTile(
+      padding: EdgeInsets.zero,
       child: ExpansionTile(
+        shape: const Border(),
+        collapsedShape: const Border(),
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         title: const Text('گزارش این هفته'),

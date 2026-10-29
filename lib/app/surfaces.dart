@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/soft.dart';
 
 /// The app's mark: a check in a rounded square of the primary color.
 class FarashMark extends StatelessWidget {
@@ -21,13 +22,14 @@ class FarashMark extends StatelessWidget {
   }
 }
 
-/// A flat tonal surface with a hairline edge: no shadow, no ornament.
+/// A raised soft tile with a hairline edge: the one container on the
+/// soft ground (see soft.dart).
 class Panel extends StatelessWidget {
   const Panel({
     super.key,
     required this.child,
     this.padding = EdgeInsets.zero,
-    this.radius = 16,
+    this.radius = Soft.tileRadius,
     this.color,
     this.borderColor,
   });
@@ -38,15 +40,24 @@ class Panel extends StatelessWidget {
   final Color? borderColor;
   @override
   Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme;
-    return Material(
-      color: color ?? c.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(radius),
-        side: BorderSide(color: borderColor ?? c.outlineVariant),
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(radius),
+      side: borderColor == null
+          ? Soft.hairline(context)
+          : BorderSide(color: borderColor!),
+    );
+    return DecoratedBox(
+      decoration: ShapeDecoration(
+        shape: shape,
+        color: color ?? Soft.ground(context),
+        shadows: Soft.raised(context, depth: 4),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Padding(padding: padding, child: child),
+      child: Material(
+        type: MaterialType.transparency,
+        shape: shape,
+        clipBehavior: Clip.antiAlias,
+        child: Padding(padding: padding, child: child),
+      ),
     );
   }
 }

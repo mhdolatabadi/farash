@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/spacing.dart';
+import 'package:farash/app/soft.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/calendar_settings.dart';
 import 'package:farash/core/text/persian_digits.dart';
@@ -92,23 +94,21 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
         final stats = _c.stats(habit);
         final settings = CalendarScope.of(context);
         final color = habitColor(context, habit.color);
-        final onColor =
-            ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-            ? Colors.white
-            : Colors.black;
         return Scaffold(
           appBar: AppBar(
-            backgroundColor: color,
-            foregroundColor: onColor,
-            iconTheme: IconThemeData(color: onColor),
-            actionsIconTheme: IconThemeData(color: onColor),
-            titleTextStyle: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(color: onColor),
-            title: Text(
-              habit.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            // The soft ground; the habit's color marks the title.
+            title: Row(
+              children: [
+                Icon(Icons.circle, size: 12, color: color),
+                const SizedBox(width: Space.sm),
+                Flexible(
+                  child: Text(
+                    habit.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
             actions: [
               IconButton(
@@ -311,7 +311,7 @@ class _Fact extends StatelessWidget {
   );
 }
 
-/// A titled block separated by a hairline, instead of nested cards.
+/// A titled block on its own raised tile.
 class _Section extends StatelessWidget {
   const _Section({
     required this.title,
@@ -328,38 +328,41 @@ class _Section extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Space.gutter - 2,
+        Space.sm,
+        Space.gutter - 2,
+        Space.sm,
       ),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            height: 48,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w700,
+      child: SoftTile(
+        padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: 48,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                ?trailing,
-              ],
+                  ?trailing,
+                ],
+              ),
             ),
-          ),
-          child,
-        ],
+            child,
+          ],
+        ),
       ),
     );
   }

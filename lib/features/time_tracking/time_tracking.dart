@@ -94,6 +94,18 @@ class TimeTracker extends ChangeNotifier with WidgetsBindingObserver {
   DateTime get now => (_anchor ?? DateTime.now().toUtc()).add(_clock.elapsed);
   TimeEntry? _active;
   TimeEntry? get active => _active;
+
+  /// Time the running entry gained since [report] was taken, so the
+  /// snapshot's totals can keep ticking between refreshes.
+  Duration get unreported {
+    final entry = _active, snapshot = report;
+    if (entry == null || snapshot?.active?.id != entry.id) {
+      return Duration.zero;
+    }
+    final extra = entry.elapsed(now) - entry.elapsed(snapshot!.now);
+    return extra.isNegative ? Duration.zero : extra;
+  }
+
   Map<String, dynamic>? _lastMutation;
   ValueChanged<Task>? focusTask;
   String? _pendingStartKey, _pendingTask, _pendingSource;
