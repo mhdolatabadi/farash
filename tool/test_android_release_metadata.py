@@ -13,6 +13,12 @@ class AndroidReleaseMetadataTest(unittest.TestCase):
         self.assertEqual(resolve(self.env(GITHUB_EVENT_NAME='workflow_dispatch',
                                          GITHUB_REF='refs/heads/main', INPUT_VERSION='2.0.0')), ('2.0.0', 100021))
 
+    def test_main_merge_uses_pubspec_version(self):
+        self.assertEqual(resolve(self.env(GITHUB_EVENT_NAME='workflow_run', GITHUB_REF='refs/heads/main',
+                                         PUBSPEC_VERSION='0.1.0+1')), ('0.1.0', 100021))
+        with self.assertRaises(ValueError):
+            resolve(self.env(GITHUB_EVENT_NAME='workflow_run', PUBSPEC_VERSION='0.1'))
+
     def test_manual_tag_cannot_publish_a_different_version(self):
         with self.assertRaises(ValueError):
             resolve(self.env(GITHUB_EVENT_NAME='workflow_dispatch', INPUT_VERSION='9.9.9'))

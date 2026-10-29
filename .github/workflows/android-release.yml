@@ -3,6 +3,11 @@ name: Android release
 on:
   push:
     tags: ['v[0-9]*']
+  # Every merge to main builds a signed APK/AAB once its Quality checks pass.
+  workflow_run:
+    workflows: ["Quality checks"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       version:
@@ -19,10 +24,17 @@ concurrency:
 
 jobs:
   release:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Resolve release version
         id: version
         shell: bash
@@ -30,6 +42,8 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
         run: python3 tool/android_release_metadata.py resolve
       - name: Require successful Quality checks on this source commit
+        # A workflow_run release only starts after Quality checks succeeded on its commit.
+        if: github.event_name != 'workflow_run'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}

@@ -17,6 +17,9 @@ def resolve(env):
         version = selected
         if ref.startswith('refs/tags/') and ref != f'refs/tags/v{version}':
             raise ValueError('Selected version must match the checked-out tag.')
+    elif event == 'workflow_run':
+        # Builds after each merge to main take the version name from pubspec.yaml.
+        version = env.get('PUBSPEC_VERSION', '').split('+', 1)[0]
     else:
         raise ValueError('Release requires a version tag or manual dispatch.')
     if not VERSION.fullmatch(version):
@@ -28,6 +31,12 @@ def resolve(env):
     if code > 2_100_000_000:
         raise ValueError('Android version code budget exhausted.')
     return version, code
+
+
+def pubspec_version(root):
+    text = (Path(root) / 'pubspec.yaml').read_text()
+    match = re.search(r'^version:\s*(\S+)\s*$', text, re.MULTILINE)
+    return match.group(1) if match else ''
 
 
 def verify_apk(text, version, code):
@@ -43,7 +52,7 @@ def verify_apk(text, version, code):
 
 def main():
     if sys.argv[1:] == ['resolve']:
-        version, code = resolve(os.environ)
+        version, code = resolve({**os.environ, 'PUBSPEC_VERSION': pubspec_version(Path.cwd())})
         with Path(os.environ['GITHUB_OUTPUT']).open('a') as output:
             output.write(f'name={version}\ncode={code}\n')
     elif len(sys.argv) == 3 and sys.argv[1] == 'verify-apk':
