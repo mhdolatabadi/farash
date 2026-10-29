@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:farash/app/soft.dart';
+import 'package:farash/app/spacing.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
 import 'package:farash/core/calendar/calendar_settings.dart';
 import 'package:farash/core/calendar/date_labels.dart';
@@ -82,22 +84,37 @@ class _HabitsViewState extends State<HabitsView> {
           builder: (context, constraints) {
             final width = min(constraints.maxWidth, _maxWidth);
             final inset = (constraints.maxWidth - width) / 2;
-            // Name and ring keep at least 132; the rest becomes day columns.
+            // Name and ring keep at least 150, so a two-word name stays on
+            // one line; the rest, less the end gutter, becomes day columns.
             // Rows and the day header grow with the user's text size.
             final scaler = MediaQuery.textScalerOf(context);
             final rowHeight = max(_rowHeight, scaler.scale(16) * 2.6 + 12);
             final headerHeight = max(48.0, scaler.scale(12) * 3.2 + 8);
-            final columns = ((width - 16 - 132) / habitCellWidth).floor().clamp(
-              1,
-              7,
-            );
+            final columns =
+                ((width - Space.sm - 150 - 2 * (Space.gutter - 2)) /
+                        habitCellWidth)
+                    .floor()
+                    .clamp(1, 7);
             final list = CustomScrollView(
               slivers: [
                 SliverAppBar(
                   pinned: true,
+                  backgroundColor: Soft.ground(context),
                   title: const Text('عادت‌ها'),
                   actions: [_FilterMenu(controller: _c)],
                 ),
+                if (habits.isNotEmpty)
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      inset + Space.gutter - 2,
+                      Space.xs,
+                      inset + Space.gutter - 2,
+                      Space.md,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: _Summary(controller: _c, habits: habits),
+                    ),
+                  ),
                 if (habits.isNotEmpty)
                   SliverPersistentHeader(
                     pinned: true,
@@ -108,6 +125,7 @@ class _HabitsViewState extends State<HabitsView> {
                       inset: inset,
                       settings: CalendarScope.of(context),
                       theme: Theme.of(context),
+                      ground: Soft.ground(context),
                     ),
                   ),
                 if (_c.loading && _c.all.isEmpty)
@@ -144,38 +162,51 @@ class _HabitsViewState extends State<HabitsView> {
                   )
                 else
                   SliverPadding(
-                    padding: EdgeInsets.fromLTRB(inset, 0, inset, 96),
-                    sliver: SliverReorderableList(
-                      itemCount: habits.length,
-                      onReorderItem: (from, to) {
-                        final habit = habits[from];
-                        final shown = [...habits]..removeAt(from);
-                        final rest = [..._c.all]..remove(habit);
-                        // Map the visible slot onto the full manual order,
-                        // which may hold hidden archived habits.
-                        final index = to < shown.length
-                            ? rest.indexOf(shown[to])
-                            : rest.indexOf(shown.last) + 1;
-                        _c.reorder(habit, index);
-                      },
-                      itemBuilder: (context, i) {
-                        final habit = habits[i];
-                        final row = HabitRow(
-                          key: ValueKey(habit.id),
-                          habit: habit,
-                          stats: _c.stats(habit),
-                          columns: columns,
-                          height: rowHeight,
-                          controller: _c,
-                        );
-                        return _c.sort == HabitSort.manual
-                            ? ReorderableDelayedDragStartListener(
-                                key: ValueKey(habit.id),
-                                index: i,
-                                child: row,
-                              )
-                            : KeyedSubtree(key: ValueKey(habit.id), child: row);
-                      },
+                    padding: EdgeInsets.fromLTRB(
+                      inset + Space.gutter - 2,
+                      0,
+                      inset + Space.gutter - 2,
+                      96,
+                    ),
+                    // The rows sit in one well on the soft ground.
+                    sliver: DecoratedSliver(
+                      decoration: Soft.wellDecoration(context),
+                      sliver: SliverReorderableList(
+                        itemCount: habits.length,
+                        onReorderItem: (from, to) {
+                          final habit = habits[from];
+                          final shown = [...habits]..removeAt(from);
+                          final rest = [..._c.all]..remove(habit);
+                          // Map the visible slot onto the full manual order,
+                          // which may hold hidden archived habits.
+                          final index = to < shown.length
+                              ? rest.indexOf(shown[to])
+                              : rest.indexOf(shown.last) + 1;
+                          _c.reorder(habit, index);
+                        },
+                        itemBuilder: (context, i) {
+                          final habit = habits[i];
+                          final row = HabitRow(
+                            key: ValueKey(habit.id),
+                            habit: habit,
+                            stats: _c.stats(habit),
+                            columns: columns,
+                            height: rowHeight,
+                            controller: _c,
+                            divider: i != habits.length - 1,
+                          );
+                          return _c.sort == HabitSort.manual
+                              ? ReorderableDelayedDragStartListener(
+                                  key: ValueKey(habit.id),
+                                  index: i,
+                                  child: row,
+                                )
+                              : KeyedSubtree(
+                                  key: ValueKey(habit.id),
+                                  child: row,
+                                );
+                        },
+                      ),
                     ),
                   ),
               ],
@@ -184,7 +215,7 @@ class _HabitsViewState extends State<HabitsView> {
             // last row thanks to the list's bottom padding.
             return Stack(
               children: [
-                list,
+                ColoredBox(color: Soft.ground(context), child: list),
                 if (_c.all.isNotEmpty)
                   PositionedDirectional(
                     end: 16 + inset,
@@ -288,8 +319,10 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
     required this.inset,
     required this.settings,
     required this.theme,
+    required this.ground,
   });
 
+  final Color ground;
   final int today, columns;
   final double inset, height;
   final CalendarSettings settings;
@@ -305,12 +338,12 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
     final muted = theme.colorScheme.onSurfaceVariant;
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: ground,
         border: Border(
           bottom: BorderSide(color: theme.colorScheme.outlineVariant),
         ),
       ),
-      padding: EdgeInsets.symmetric(horizontal: inset),
+      padding: EdgeInsets.symmetric(horizontal: inset + Space.gutter - 2),
       child: Row(
         children: [
           const Spacer(),
@@ -339,6 +372,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
                 ),
               ),
             ),
+          const SizedBox(width: Space.sm),
         ],
       ),
     );
@@ -351,6 +385,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
       old.columns != columns ||
       old.inset != inset ||
       old.theme != theme ||
+      old.ground != ground ||
       old.settings.system != settings.system;
 }
 
@@ -370,8 +405,11 @@ class HabitRow extends StatelessWidget {
     required this.columns,
     required this.controller,
     this.height = _rowHeight,
+    this.divider = true,
   });
 
+  /// The hairline under the row; off for the last row of the well.
+  final bool divider;
   final Habit habit;
   final HabitStats stats;
   final int columns;
@@ -386,9 +424,11 @@ class HabitRow extends StatelessWidget {
     // Flat rows separated by hairlines, as in Loop.
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
+        border: divider
+            ? Border(
+                bottom: BorderSide(color: theme.colorScheme.outlineVariant),
+              )
+            : null,
       ),
       child: Material(
         type: MaterialType.transparency,
@@ -407,7 +447,10 @@ class HabitRow extends StatelessWidget {
                     ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsetsDirectional.only(start: 16),
+                    padding: const EdgeInsetsDirectional.only(
+                      start: Space.gutter,
+                      end: Space.sm,
+                    ),
                     child: Row(
                       children: [
                         Semantics(
@@ -463,6 +506,7 @@ class HabitRow extends StatelessWidget {
                   onTap: () =>
                       recordDay(context, controller, habit, stats.today - i),
                 ),
+              const SizedBox(width: Space.sm),
             ],
           ),
         ),
@@ -777,6 +821,95 @@ class _AmountDialogState extends State<_AmountDialog> {
         ),
         FilledButton(onPressed: _save, child: const Text('ثبت')),
       ],
+    );
+  }
+}
+
+/// Two tiles over the grid: today's done count, and the longest streak
+/// still running. Both come from the habits' own entries.
+class _Summary extends StatelessWidget {
+  const _Summary({required this.controller, required this.habits});
+
+  final HabitsController controller;
+  final List<Habit> habits;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final today = controller.today;
+    final active = [
+      for (final h in habits)
+        if (!h.archived) h,
+    ];
+    final done = active.where((h) => controller.stats(h).counts(today)).length;
+    final streak = active.fold<int>(
+      0,
+      (best, h) => max(best, controller.stats(h).currentStreak?.length ?? 0),
+    );
+    Widget tile(String caption, String value, {Widget? lead}) => Expanded(
+      child: Semantics(
+        label: '$caption: $value',
+        excludeSemantics: true,
+        child: SoftTile(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            children: [
+              if (lead != null) ...[lead, const SizedBox(width: 10)],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      caption,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text(
+                        value,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          tile(
+            'امروز',
+            '${persianDigits(done)} از ${persianDigits(active.length)}',
+            lead: active.isEmpty
+                ? null
+                : SizedBox.square(
+                    dimension: 40,
+                    child: CircularProgressIndicator(
+                      value: done / active.length,
+                      strokeWidth: 6,
+                      strokeCap: StrokeCap.round,
+                      backgroundColor: theme.colorScheme.outlineVariant,
+                    ),
+                  ),
+          ),
+          const SizedBox(width: Space.md),
+          tile('بهترین زنجیرهٔ جاری', '${persianDigits(streak)} روز'),
+        ],
+      ),
     );
   }
 }
