@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/soft.dart';
 import 'package:farash/core/text/persian_digits.dart';
 
 class WeeklyChallenge extends StatelessWidget {
@@ -13,11 +14,10 @@ class WeeklyChallenge extends StatelessWidget {
   final Future<void> Function(int) onSave;
 
   @override
-  Widget build(BuildContext context) => Card(
-    elevation: 0,
-    margin: EdgeInsets.zero,
+  Widget build(BuildContext context) => SoftTile(
+    padding: const EdgeInsets.all(16),
     child: Padding(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

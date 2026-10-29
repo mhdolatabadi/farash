@@ -1,4 +1,9 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:farash/app/app_theme.dart';
 import 'package:farash/core/api/api_client.dart';
@@ -68,6 +73,14 @@ class TrackingFixture extends FakeTasksApi implements TimeApi {
 }
 
 void main() {
+  setUpAll(() async {
+    for (final font in [
+      ('Vazirmatn', 'assets/fonts/Vazirmatn-Regular.ttf'),
+      ('MaterialIcons', 'fonts/MaterialIcons-Regular.otf'),
+    ]) {
+      await (FontLoader(font.$1)..addFont(rootBundle.load(font.$2))).load();
+    }
+  });
   setUp(() => debugTimeZoneOverride = 'Asia/Tehran');
   tearDown(() => debugTimeZoneOverride = null);
   testWidgets('focus records task time, survives navigation and pauses', (
@@ -166,20 +179,23 @@ void main() {
             ).copyWith(textScaler: const TextScaler.linear(2)),
             child: child!,
           ),
-          home: Scaffold(
-            body: Directionality(
-              textDirection: TextDirection.rtl,
-              child: Column(
-                children: [
-                  ActiveTimeBar(tracker: tracker, onOpen: () {}),
-                  Expanded(
-                    child: TimeTrackingView(
-                      tracker: tracker,
-                      tasksApi: api,
-                      projects: projects,
+          home: RepaintBoundary(
+            key: _captureKey,
+            child: Scaffold(
+              body: Directionality(
+                textDirection: TextDirection.rtl,
+                child: Column(
+                  children: [
+                    ActiveTimeBar(tracker: tracker, onOpen: () {}),
+                    Expanded(
+                      child: TimeTrackingView(
+                        tracker: tracker,
+                        tasksApi: api,
+                        projects: projects,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -187,6 +203,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      await _capture(tester, 'time-narrow-dark-large');
       expect(
         tester.getTopLeft(find.byTooltip('توقف ثبت زمان').first).dy,
         greaterThanOrEqualTo(24),
@@ -286,5 +303,22 @@ void main() {
       entry.elapsed(DateTime.parse('2026-10-16T11:00:00Z')),
       Duration.zero,
     );
+  });
+}
+
+final _captureKey = GlobalKey();
+
+Future<void> _capture(WidgetTester tester, String name) async {
+  if (Platform.environment['CAPTURE_GLASS_UI'] != '1') return;
+  await tester.runAsync(() async {
+    final boundary =
+        _captureKey.currentContext!.findRenderObject()!
+            as RenderRepaintBoundary;
+    final image = await boundary.toImage(pixelRatio: 1);
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    final file = File('.impeccable/review/$name.png');
+    await file.parent.create(recursive: true);
+    await file.writeAsBytes(bytes!.buffer.asUint8List());
+    image.dispose();
   });
 }

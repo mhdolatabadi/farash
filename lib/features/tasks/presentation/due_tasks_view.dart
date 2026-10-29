@@ -378,7 +378,7 @@ class _DueTasksViewState extends State<DueTasksView> {
       key: ValueKey(task.id),
       task: task,
       divider: !last,
-      dense: _bento,
+      dense: true,
       showToday: widget.view != DueView.today || widget.label != null,
       tag: project == null ? null : _ProjectTag(project: project),
       labels: [for (final id in task.labelIds) ?widget.labels?.byId(id)],
@@ -437,7 +437,6 @@ class _DueTasksViewState extends State<DueTasksView> {
         ],
       ),
     );
-    if (!_bento) return list;
     // On the soft ground a day's tasks sit in one well.
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Space.gutter - 2),
@@ -617,7 +616,7 @@ class _DueTasksViewState extends State<DueTasksView> {
               SliverPersistentHeader(
                 pinned: true,
                 delegate: ListAppBar(
-                  background: _bento ? Soft.ground(context) : null,
+                  background: Soft.ground(context),
                   title: label?.tag ?? widget.view.title,
                   subtitle: count,
                   mark: label != null

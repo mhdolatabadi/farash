@@ -3,6 +3,7 @@ import 'package:farash/features/recurrence/task_recurrence.dart';
 import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:farash/features/time_tracking/time_tracking_view.dart';
 import 'package:flutter/material.dart';
+import 'package:farash/app/soft.dart';
 import 'package:farash/app/spacing.dart';
 import 'package:farash/app/surfaces.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
@@ -343,135 +344,159 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                       decoration: _bare(theme, 'توضیحات'),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Divider(),
-                  const SizedBox(height: 8),
-                  _ScheduleRow(dates: _dates, onTap: _pickDates),
-                  if (_recurrence case final service?)
-                    RecurrencePanel(
-                      task: _task,
-                      service: service,
-                      datesSaved: _dates == _task.dates,
-                      disabled: _saving,
-                      onRefresh: widget.controller.load,
-                      onSkipped: () => _close(TaskSheetResult.saved),
-                    ),
-                  if (widget.tracker != null)
-                    TaskTimePanel(tracker: widget.tracker!, task: widget.task),
-                  _PropertyRow(
-                    icon: Icons.flag_outlined,
-                    label: 'اولویت',
-                    child: PriorityPicker(
-                      value: _priority,
-                      onChanged: (p) => setState(() => _priority = p),
-                    ),
-                  ),
-                  if (targets.isNotEmpty)
-                    _PropertyRow(
-                      icon: Icons.folder_outlined,
-                      label: 'پروژه',
-                      expand: true,
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _projectId,
-                        isExpanded: true,
-                        decoration: _bareChoice,
-                        items: [
-                          for (final p in targets)
-                            DropdownMenuItem(
-                              value: p.id,
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    p.isInbox
-                                        ? Icons.inbox_outlined
-                                        : Icons.circle,
-                                    size: p.isInbox ? 18 : 10,
-                                    color: p.isInbox ? null : p.swatch,
+                  const SizedBox(height: 12),
+                  // The properties sit in one well, the checklist and
+                  // subtasks in another.
+                  SoftWell(
+                    padding: const EdgeInsetsDirectional.fromSTEB(12, 4, 8, 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _ScheduleRow(dates: _dates, onTap: _pickDates),
+                        if (_recurrence case final service?)
+                          RecurrencePanel(
+                            task: _task,
+                            service: service,
+                            datesSaved: _dates == _task.dates,
+                            disabled: _saving,
+                            onRefresh: widget.controller.load,
+                            onSkipped: () => _close(TaskSheetResult.saved),
+                          ),
+                        if (widget.tracker != null)
+                          TaskTimePanel(
+                            tracker: widget.tracker!,
+                            task: widget.task,
+                          ),
+                        _PropertyRow(
+                          icon: Icons.flag_outlined,
+                          label: 'اولویت',
+                          child: PriorityPicker(
+                            value: _priority,
+                            onChanged: (p) => setState(() => _priority = p),
+                          ),
+                        ),
+                        if (targets.isNotEmpty)
+                          _PropertyRow(
+                            icon: Icons.folder_outlined,
+                            label: 'پروژه',
+                            expand: true,
+                            child: DropdownButtonFormField<String>(
+                              initialValue: _projectId,
+                              isExpanded: true,
+                              decoration: _bareChoice,
+                              items: [
+                                for (final p in targets)
+                                  DropdownMenuItem(
+                                    value: p.id,
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          p.isInbox
+                                              ? Icons.inbox_outlined
+                                              : Icons.circle,
+                                          size: p.isInbox ? 18 : 10,
+                                          color: p.isInbox ? null : p.swatch,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            p.displayName,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
+                              ],
+                              onChanged: (id) => setState(() {
+                                _projectId = id!;
+                                // Sections belong to one project.
+                                if (_projectId != widget.task.projectId) {
+                                  _sectionId = null;
+                                }
+                              }),
+                            ),
+                          ),
+                        // A subtask stays in its parent's section.
+                        if (_projectId == widget.task.projectId &&
+                            widget.task.parentId == null &&
+                            widget.controller.sections.isNotEmpty)
+                          _PropertyRow(
+                            icon: Icons.view_agenda_outlined,
+                            label: 'بخش',
+                            expand: true,
+                            child: DropdownButtonFormField<String?>(
+                              initialValue: _sectionId,
+                              isExpanded: true,
+                              decoration: _bareChoice,
+                              items: [
+                                const DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Text('بدون بخش'),
+                                ),
+                                for (final section
+                                    in widget.controller.sections)
+                                  DropdownMenuItem<String?>(
+                                    value: section.id,
                                     child: Text(
-                                      p.displayName,
+                                      section.name,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                ],
-                              ),
+                              ],
+                              onChanged: (id) =>
+                                  setState(() => _sectionId = id),
                             ),
-                        ],
-                        onChanged: (id) => setState(() {
-                          _projectId = id!;
-                          // Sections belong to one project.
-                          if (_projectId != widget.task.projectId) {
-                            _sectionId = null;
-                          }
-                        }),
-                      ),
-                    ),
-                  // A subtask stays in its parent's section.
-                  if (_projectId == widget.task.projectId &&
-                      widget.task.parentId == null &&
-                      widget.controller.sections.isNotEmpty)
-                    _PropertyRow(
-                      icon: Icons.view_agenda_outlined,
-                      label: 'بخش',
-                      expand: true,
-                      child: DropdownButtonFormField<String?>(
-                        initialValue: _sectionId,
-                        isExpanded: true,
-                        decoration: _bareChoice,
-                        items: [
-                          const DropdownMenuItem<String?>(
-                            value: null,
-                            child: Text('بدون بخش'),
                           ),
-                          for (final section in widget.controller.sections)
-                            DropdownMenuItem<String?>(
-                              value: section.id,
-                              child: Text(
-                                section.name,
-                                overflow: TextOverflow.ellipsis,
+                        if (widget.labels case final labels?)
+                          _PropertyRow(
+                            icon: Icons.sell_outlined,
+                            label: 'برچسب‌ها',
+                            expand: true,
+                            child: _LabelPicker(
+                              labels: labels,
+                              selected: _labelIds,
+                              onChanged: (ids) =>
+                                  setState(() => _labelIds = ids),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SoftWell(
+                    padding: const EdgeInsetsDirectional.fromSTEB(12, 4, 8, 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _Checklist(
+                          description: _description,
+                          newItem: _newItem,
+                          onChanged: _saveChecklist,
+                          onAdd: _addItem,
+                        ),
+                        ListenableBuilder(
+                          listenable: widget.controller,
+                          builder: (context, _) => _Subtasks(
+                            controller: widget.controller,
+                            task: _task,
+                            newSubtask: _newSubtask,
+                            onAdd: _addSubtask,
+                            onOpen: _openSubtask,
+                            onToggle: (t) => _quietly(
+                              () => widget.controller.setCompleted(
+                                t,
+                                !t.isCompleted,
                               ),
                             ),
-                        ],
-                        onChanged: (id) => setState(() => _sectionId = id),
-                      ),
-                    ),
-                  if (widget.labels case final labels?)
-                    _PropertyRow(
-                      icon: Icons.sell_outlined,
-                      label: 'برچسب‌ها',
-                      expand: true,
-                      child: _LabelPicker(
-                        labels: labels,
-                        selected: _labelIds,
-                        onChanged: (ids) => setState(() => _labelIds = ids),
-                      ),
-                    ),
-                  const SizedBox(height: 8),
-                  const Divider(),
-                  const SizedBox(height: 4),
-                  _Checklist(
-                    description: _description,
-                    newItem: _newItem,
-                    onChanged: _saveChecklist,
-                    onAdd: _addItem,
-                  ),
-                  ListenableBuilder(
-                    listenable: widget.controller,
-                    builder: (context, _) => _Subtasks(
-                      controller: widget.controller,
-                      task: _task,
-                      newSubtask: _newSubtask,
-                      onAdd: _addSubtask,
-                      onOpen: _openSubtask,
-                      onToggle: (t) => _quietly(
-                        () => widget.controller.setCompleted(t, !t.isCompleted),
-                      ),
-                      onIndent: () =>
-                          _quietly(() => widget.controller.indent(_task)),
-                      onOutdent: () =>
-                          _quietly(() => widget.controller.outdent(_task)),
+                            onIndent: () =>
+                                _quietly(() => widget.controller.indent(_task)),
+                            onOutdent: () => _quietly(
+                              () => widget.controller.outdent(_task),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
