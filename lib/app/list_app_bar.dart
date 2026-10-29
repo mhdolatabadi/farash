@@ -16,6 +16,7 @@ class ListAppBar extends SliverPersistentHeaderDelegate {
     required this.topPadding,
     required this.inset,
     required this.expandedHeight,
+    this.background,
   });
   final String title;
   final String subtitle;
@@ -24,6 +25,9 @@ class ListAppBar extends SliverPersistentHeaderDelegate {
   final double topPadding;
   final double inset;
   final double expandedHeight;
+
+  /// The bar's fill; the surface unless the page has its own ground.
+  final Color? background;
   @override
   double get minExtent => topPadding + listBarHeight;
   @override
@@ -44,7 +48,7 @@ class ListAppBar extends SliverPersistentHeaderDelegate {
     final markStart = drawer ? Space.keyline : Space.gutter;
     final textStart = markStart + _markSlot + Space.md;
     return ColoredBox(
-      color: theme.colorScheme.surface,
+      color: background ?? theme.colorScheme.surface,
       // The count rises into the bar's empty lower edge, so it reads with
       // the title; the clip keeps it inside the header as it scrolls away.
       child: ClipRect(

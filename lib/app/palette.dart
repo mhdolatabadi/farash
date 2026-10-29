@@ -22,6 +22,9 @@ class FarashColors {
     required this.outlineVariant,
     required this.overdue,
     required this.priorities,
+    required this.softGround,
+    required this.softLight,
+    required this.softShade,
   });
 
   /// The one accent: primary actions, today, the running timer, selection.
@@ -54,6 +57,12 @@ class FarashColors {
 
   /// Priority 1 to 4: the familiar red, orange, blue and grey.
   final List<Color> priorities;
+
+  /// The ground under raised tiles and inset wells on the main
+  /// destinations, and the two shadows that lift or sink them.
+  final Color softGround;
+  final Color softLight;
+  final Color softShade;
 }
 
 @immutable
@@ -97,6 +106,9 @@ class FarashPalette {
         Color(0xFF0969DA),
         Color(0xFF8C959F),
       ],
+      softGround: Color(0xFFE9EDF1),
+      softLight: Color(0xFFFFFFFF),
+      softShade: Color(0xFFC9D0D7),
     ),
     dark: FarashColors(
       primary: Color(0xFFC8F25A),
@@ -121,6 +133,9 @@ class FarashPalette {
         Color(0xFF74A7FF),
         Color(0xFF8A9098),
       ],
+      softGround: Color(0xFF16191E),
+      softLight: Color(0xFF22262D),
+      softShade: Color(0xFF0A0C0F),
     ),
   );
 }
