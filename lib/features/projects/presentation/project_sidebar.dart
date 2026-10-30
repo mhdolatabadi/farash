@@ -67,183 +67,222 @@ class ProjectSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: controller,
-      builder: (context, _) {
-        final theme = Theme.of(context);
-        final inbox = controller.inbox;
-        final favorites = controller.favorites;
-        final tree = controller.tree;
-        Widget hint(String text) => Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(
-            Space.md,
-            Space.xs,
-            Space.md,
-            Space.sm,
-          ),
-          child: Text(
-            text,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+    return _Folding(
+      builder: (context, open, toggle) => ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) {
+          final theme = Theme.of(context);
+          final inbox = controller.inbox;
+          final favorites = controller.favorites;
+          final tree = controller.tree;
+          Widget hint(String text) => Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(
+              Space.md,
+              Space.xs,
+              Space.md,
+              Space.sm,
             ),
-          ),
-        );
-        final tools = this.tools ?? const <Widget>[];
-        final footer = this.footer;
-        final account = this.account;
-        return SidebarTheme(
-          child: SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(
-                      Space.md,
-                      Space.md,
-                      Space.md,
-                      Space.lg,
-                    ),
-                    children:
-                        <Widget>[
-                              header,
-                              const SizedBox(height: Space.md),
-                              if (inbox != null)
-                                _ProjectTile(
-                                  project: inbox,
-                                  icon: Icons.inbox_outlined,
-                                  selected: inbox.id == selectedId,
-                                  onTap: () => onSelect(inbox),
-                                  controller: controller,
-                                ),
-                              if (onSelectView != null)
-                                for (final view in DueView.values)
-                                  SidebarRow(
-                                    key: ValueKey('view-${view.name}'),
-                                    selected: view == selectedView,
-                                    child: ListTile(
-                                      selected: view == selectedView,
-                                      leading: Icon(view.icon),
-                                      title: Text(view.title),
-                                      trailing: SidebarCount(viewCounts[view]),
-                                      onTap: () => onSelectView!(view),
-                                    ),
-                                  ),
-                              if (controller.error != null &&
-                                  controller.projects.isEmpty)
-                                _LoadError(onRetry: controller.load),
-                              if (tools.isNotEmpty) ...[
-                                const _SectionTitle('ابزارها'),
-                                ...tools,
-                              ],
-                              if (favorites.isNotEmpty) ...[
-                                const _SectionTitle('علاقه‌مندی‌ها'),
-                                for (final project in favorites)
+            child: Text(
+              text,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          );
+          final tools = this.tools ?? const <Widget>[];
+          final footer = this.footer;
+          final account = this.account;
+          return SidebarTheme(
+            child: SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(
+                        Space.md,
+                        Space.md,
+                        Space.md,
+                        Space.lg,
+                      ),
+                      children:
+                          <Widget>[
+                                header,
+                                const SizedBox(height: Space.md),
+                                if (inbox != null)
                                   _ProjectTile(
-                                    key: ValueKey('favorite-${project.id}'),
-                                    project: project,
-                                    selected: project.id == selectedId,
-                                    onTap: () => onSelect(project),
+                                    project: inbox,
+                                    icon: Icons.inbox_outlined,
+                                    selected: inbox.id == selectedId,
+                                    onTap: () => onSelect(inbox),
                                     controller: controller,
                                   ),
-                              ],
-                              _SectionTitle(
-                                'پروژه‌ها',
-                                actions: [
-                                  _SectionAction(
-                                    icon: Icons.inventory_2_outlined,
-                                    tooltip: 'پروژه‌های بایگانی‌شده',
-                                    onPressed: onOpenArchived,
-                                  ),
-                                  _SectionAction(
-                                    tooltip: 'پروژهٔ تازه',
-                                    onPressed: () => showProjectEditor(
-                                      context,
-                                      controller: controller,
-                                      onCreated: onSelect,
+                                if (onSelectView != null)
+                                  for (final view in DueView.values)
+                                    SidebarRow(
+                                      key: ValueKey('view-${view.name}'),
+                                      selected: view == selectedView,
+                                      child: ListTile(
+                                        selected: view == selectedView,
+                                        leading: Icon(view.icon),
+                                        title: Text(view.title),
+                                        trailing: SidebarCount(
+                                          viewCounts[view],
+                                        ),
+                                        onTap: () => onSelectView!(view),
+                                      ),
                                     ),
-                                  ),
+                                if (controller.error != null &&
+                                    controller.projects.isEmpty)
+                                  _LoadError(onRetry: controller.load),
+                                if (tools.isNotEmpty) ...[
+                                  const _SectionTitle('ابزارها'),
+                                  ...tools,
                                 ],
-                              ),
-                              if (tree.isEmpty &&
-                                  controller.projects.isNotEmpty)
-                                hint(
-                                  'کارها را در پروژه‌ها دسته‌بندی کنید؛ مثلاً «کار» یا «خانه».',
-                                ),
-                              for (final node in tree)
-                                _ProjectTile(
-                                  key: ValueKey('tree-${node.project.id}'),
-                                  project: node.project,
-                                  depth: node.depth,
-                                  selected: node.project.id == selectedId,
-                                  onTap: () => onSelect(node.project),
-                                  controller: controller,
-                                ),
-                              if (labels case final labels?) ...[
+                                if (favorites.isNotEmpty) ...[
+                                  const _SectionTitle('علاقه‌مندی‌ها'),
+                                  for (final project in favorites)
+                                    _ProjectTile(
+                                      key: ValueKey('favorite-${project.id}'),
+                                      project: project,
+                                      selected: project.id == selectedId,
+                                      onTap: () => onSelect(project),
+                                      controller: controller,
+                                    ),
+                                ],
                                 _SectionTitle(
-                                  'برچسب‌ها',
+                                  'پروژه‌ها',
+                                  open: open('projects'),
+                                  onToggle: () => toggle('projects'),
                                   actions: [
                                     _SectionAction(
-                                      tooltip: 'برچسب تازه',
-                                      onPressed: () async {
-                                        final created = await showLabelEditor(
-                                          context,
-                                          controller: labels,
-                                        );
-                                        if (created != null) {
-                                          onSelectLabel?.call(created);
-                                        }
-                                      },
+                                      icon: Icons.inventory_2_outlined,
+                                      tooltip: 'پروژه‌های بایگانی‌شده',
+                                      onPressed: onOpenArchived,
+                                    ),
+                                    _SectionAction(
+                                      tooltip: 'پروژهٔ تازه',
+                                      onPressed: () => showProjectEditor(
+                                        context,
+                                        controller: controller,
+                                        onCreated: onSelect,
+                                      ),
                                     ),
                                   ],
                                 ),
-                                if (labels.labels.isEmpty)
+                                if (open('projects') &&
+                                    tree.isEmpty &&
+                                    controller.projects.isNotEmpty)
                                   hint(
-                                    'کارهای مرتبط را از پروژه‌های مختلف با برچسبی مثل «@تلفن» کنار هم ببینید.',
+                                    'کارها را در پروژه‌ها دسته‌بندی کنید؛ مثلاً «کار» یا «خانه».',
                                   ),
-                                for (final label in labels.labels)
-                                  _LabelTile(
-                                    key: ValueKey('label-${label.id}'),
-                                    label: label,
-                                    controller: labels,
-                                    selected: label.id == selectedLabelId,
-                                    onTap: () => onSelectLabel?.call(label),
+                                if (open('projects'))
+                                  for (final node in tree)
+                                    _ProjectTile(
+                                      key: ValueKey('tree-${node.project.id}'),
+                                      project: node.project,
+                                      depth: node.depth,
+                                      selected: node.project.id == selectedId,
+                                      onTap: () => onSelect(node.project),
+                                      controller: controller,
+                                    ),
+                                if (labels case final labels?) ...[
+                                  _SectionTitle(
+                                    'برچسب‌ها',
+                                    open: open('labels'),
+                                    onToggle: () => toggle('labels'),
+                                    actions: [
+                                      _SectionAction(
+                                        tooltip: 'برچسب تازه',
+                                        onPressed: () async {
+                                          final created = await showLabelEditor(
+                                            context,
+                                            controller: labels,
+                                          );
+                                          if (created != null) {
+                                            onSelectLabel?.call(created);
+                                          }
+                                        },
+                                      ),
+                                    ],
                                   ),
-                              ],
-                            ]
-                            .map(
-                              (row) => Material(
-                                type: MaterialType.transparency,
-                                child: row,
-                              ),
-                            )
-                            .toList(),
-                  ),
-                ),
-                if (footer != null || account != null)
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      border: Border(top: Soft.hairline(context)),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        Space.md,
-                        Space.sm,
-                        Space.md,
-                        Space.sm,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [?footer, ?account],
-                      ),
+                                  if (open('labels') && labels.labels.isEmpty)
+                                    hint(
+                                      'کارهای مرتبط را از پروژه‌های مختلف با برچسبی مثل «@تلفن» کنار هم ببینید.',
+                                    ),
+                                  if (open('labels'))
+                                    for (final label in labels.labels)
+                                      _LabelTile(
+                                        key: ValueKey('label-${label.id}'),
+                                        label: label,
+                                        controller: labels,
+                                        selected: label.id == selectedLabelId,
+                                        onTap: () => onSelectLabel?.call(label),
+                                      ),
+                                ],
+                              ]
+                              .map(
+                                (row) => Material(
+                                  type: MaterialType.transparency,
+                                  child: row,
+                                ),
+                              )
+                              .toList(),
                     ),
                   ),
-              ],
+                  if (footer != null || account != null)
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        border: Border(top: Soft.hairline(context)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          Space.md,
+                          Space.sm,
+                          Space.md,
+                          Space.sm,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [?footer, ?account],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
+}
+
+/// Keeps which of the sidebar's groups are folded away while it lives.
+class _Folding extends StatefulWidget {
+  const _Folding({required this.builder});
+
+  final Widget Function(
+    BuildContext context,
+    bool Function(String group) open,
+    void Function(String group) toggle,
+  )
+  builder;
+
+  @override
+  State<_Folding> createState() => _FoldingState();
+}
+
+class _FoldingState extends State<_Folding> {
+  final _folded = <String>{};
+
+  @override
+  Widget build(BuildContext context) => widget.builder(
+    context,
+    (group) => !_folded.contains(group),
+    (group) => setState(() {
+      if (!_folded.remove(group)) _folded.add(group);
+    }),
+  );
 }
 
 /// The sidebar's one row style: an 18 icon, a medium title and a quiet
@@ -290,7 +329,7 @@ class SidebarTheme extends StatelessWidget {
   }
 }
 
-/// A sidebar row; the open one stands off the ground as a raised pill.
+/// A sidebar row; the open one sits on a soft tint of the accent.
 class SidebarRow extends StatelessWidget {
   const SidebarRow({super.key, required this.selected, required this.child});
 
@@ -307,13 +346,9 @@ class SidebarRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1),
       child: DecoratedBox(
-        decoration: ShapeDecoration(
-          color: Soft.ground(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radius),
-            side: Soft.hairline(context),
-          ),
-          shadows: Soft.raised(context, depth: 3),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(radius),
         ),
         child: row,
       ),
@@ -377,7 +412,7 @@ class _SectionAction extends StatelessWidget {
 
 enum _LabelAction { edit, favorite, delete }
 
-class _LabelTile extends StatelessWidget {
+class _LabelTile extends StatefulWidget {
   const _LabelTile({
     super.key,
     required this.label,
@@ -390,6 +425,18 @@ class _LabelTile extends StatelessWidget {
   final LabelsController controller;
   final bool selected;
   final VoidCallback onTap;
+
+  @override
+  State<_LabelTile> createState() => _LabelTileState();
+}
+
+class _LabelTileState extends State<_LabelTile> {
+  final _menu = GlobalKey<PopupMenuButtonState<_LabelAction>>();
+
+  Label get label => widget.label;
+  LabelsController get controller => widget.controller;
+  bool get selected => widget.selected;
+  VoidCallback get onTap => widget.onTap;
 
   Future<void> _run(BuildContext context, _LabelAction action) async {
     try {
@@ -419,11 +466,13 @@ class _LabelTile extends StatelessWidget {
         child: ListTile(
           selected: selected,
           onTap: onTap,
+          onLongPress: () => _menu.currentState?.showButtonMenu(),
           leading: Icon(Icons.sell_outlined, size: 18, color: label.swatch),
           title: Text(label.tag, maxLines: 1, overflow: TextOverflow.ellipsis),
           trailing: HoverSwap(
             idle: SidebarCount(label.openTaskCount),
             active: PopupMenuButton<_LabelAction>(
+              key: _menu,
               tooltip: 'گزینه‌های برچسب',
               onSelected: (action) => _run(context, action),
               itemBuilder: (context) => [
@@ -455,10 +504,60 @@ class _LabelTile extends StatelessWidget {
 /// A group's name: small and muted, closer to its rows than to the
 /// group above.
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.title, {this.actions = const []});
+  const _SectionTitle(
+    this.title, {
+    this.actions = const [],
+    this.open = true,
+    this.onToggle,
+  });
 
   final String title;
   final List<Widget> actions;
+
+  /// Whether the group's rows show; with [onToggle] the name folds them.
+  final bool open;
+  final VoidCallback? onToggle;
+
+  Widget _foldable(BuildContext context, ThemeData theme) {
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final name = Text(
+      title,
+      style: theme.textTheme.labelMedium?.copyWith(
+        color: muted,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+    final onToggle = this.onToggle;
+    if (onToggle == null) return name;
+    return Semantics(
+      expanded: open,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(6),
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsetsDirectional.only(end: Space.xs),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              name,
+              const SizedBox(width: 2),
+              AnimatedRotation(
+                turns: open
+                    ? 0
+                    : (Directionality.of(context) == TextDirection.rtl
+                          ? 0.25
+                          : -0.25),
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 150),
+                child: Icon(Icons.expand_more, size: 16, color: muted),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -475,12 +574,9 @@ class _SectionTitle extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Text(
-                title,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: _foldable(context, theme),
               ),
             ),
             ...actions,
@@ -522,7 +618,7 @@ enum _ProjectAction {
   delete,
 }
 
-class _ProjectTile extends StatelessWidget {
+class _ProjectTile extends StatefulWidget {
   const _ProjectTile({
     super.key,
     required this.project,
@@ -539,6 +635,20 @@ class _ProjectTile extends StatelessWidget {
   final ProjectsController controller;
   final int depth;
   final IconData? icon;
+
+  @override
+  State<_ProjectTile> createState() => _ProjectTileState();
+}
+
+class _ProjectTileState extends State<_ProjectTile> {
+  final _menu = GlobalKey<PopupMenuButtonState<_ProjectAction>>();
+
+  Project get project => widget.project;
+  bool get selected => widget.selected;
+  VoidCallback get onTap => widget.onTap;
+  ProjectsController get controller => widget.controller;
+  int get depth => widget.depth;
+  IconData? get icon => widget.icon;
 
   Future<void> _run(BuildContext context, _ProjectAction action) async {
     try {
@@ -602,6 +712,7 @@ class _ProjectTile extends StatelessWidget {
           child: ListTile(
             selected: selected,
             onTap: onTap,
+            onLongPress: () => _menu.currentState?.showButtonMenu(),
             leading: icon != null
                 ? Icon(icon)
                 : project.isFolder
@@ -615,6 +726,7 @@ class _ProjectTile extends StatelessWidget {
             trailing: HoverSwap(
               idle: SidebarCount(project.openTasks),
               active: PopupMenuButton<_ProjectAction>(
+                key: _menu,
                 tooltip: 'گزینه‌های پروژه',
                 onSelected: (action) => _run(context, action),
                 itemBuilder: (context) => [

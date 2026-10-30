@@ -17,6 +17,7 @@ import 'package:farash/features/time_tracking/time_tracking_view.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/app/soft.dart';
 import 'package:farash/app/spacing.dart';
+import 'package:farash/core/widgets/hover_reveal.dart';
 import 'package:farash/app/surfaces.dart';
 import 'package:farash/features/focus/focus_controller.dart';
 import 'package:farash/features/focus/focus_view.dart';
@@ -197,6 +198,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _quickAdding = false;
 
   KeyEventResult _quickKey(KeyEvent event) {
+    final keyboard = HardwareKeyboard.instance;
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.keyK &&
+        (keyboard.isControlPressed || keyboard.isMetaPressed) &&
+        !keyboard.isAltPressed &&
+        !keyboard.isShiftPressed &&
+        mounted) {
+      final route = ModalRoute.of(
+        FocusManager.instance.primaryFocus?.context ?? context,
+      );
+      if (widget.tasksApi case final SearchApi api
+          when route is! PopupRoute && route?.isCurrent == true) {
+        _openSearch(api);
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    }
     if (event is! KeyDownEvent ||
         event.logicalKey != LogicalKeyboardKey.keyQ ||
         HardwareKeyboard.instance.isControlPressed ||
@@ -952,17 +970,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               body: SafeArea(
                 child: Row(
                   children: [
-                    // The sidebar lies on the same ground as the page, set
-                    // off by one hairline; only the open row stands up.
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        border: BorderDirectional(end: Soft.hairline(context)),
+                    // The sidebar is one raised panel floating on the
+                    // ground, like the page's tiles.
+                    Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        Space.md,
+                        Space.md,
+                        0,
+                        Space.md,
                       ),
                       child: SizedBox(
-                        width: 264,
-                        child: ListenableBuilder(
-                          listenable: _focus,
-                          builder: (context, _) => _sidebar(),
+                        width: 260,
+                        child: Panel(
+                          radius: 18,
+                          child: ListenableBuilder(
+                            listenable: _focus,
+                            builder: (context, _) => _sidebar(),
+                          ),
                         ),
                       ),
                     ),
@@ -1187,6 +1211,29 @@ class _SearchField extends StatelessWidget {
                       style: theme.textTheme.bodyMedium?.copyWith(color: muted),
                     ),
                   ),
+                  if (!HoverReveal.isTouch(context))
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(end: Space.sm),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.fromBorderSide(Soft.hairline(context)),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          child: Text(
+                            'Ctrl K',
+                            textDirection: TextDirection.ltr,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: muted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

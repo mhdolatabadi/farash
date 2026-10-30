@@ -212,6 +212,19 @@ void main() {
     );
   });
 
+  testWidgets('a long press opens a project row menu on touch', (tester) async {
+    await pumpHome(tester, size: const Size(400, 800));
+    final work = await projects.create(name: 'Work', color: '#2563eb');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.byKey(ValueKey('tree-${work.id}')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('بایگانی'), findsOneWidget);
+  });
+
   testWidgets('the Inbox menu has no rename, archive or delete', (
     tester,
   ) async {
