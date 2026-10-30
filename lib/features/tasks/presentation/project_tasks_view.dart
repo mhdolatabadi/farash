@@ -598,32 +598,46 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
             SliverFillRemaining(hasScrollBody: false, child: status)
           else ...[
             if (rows.isEmpty && done.isEmpty)
-              pad(
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.task_alt_rounded,
-                          size: 48,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'هنوز کاری در «${widget.project.displayName}» نیست.',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'کار تازه را در کادر افزودن بنویسید.',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+              // The empty list keeps the list's place: the same well,
+              // holding one quiet line instead of rows.
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  inset + Space.gutter - 2,
+                  Space.xs,
+                  inset + Space.gutter - 2,
+                  0,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: DecoratedBox(
+                    decoration: Soft.wellDecoration(context),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Space.xl,
+                        vertical: Space.xxl,
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.task_alt_rounded,
+                            size: 28,
+                            color: theme.colorScheme.primary,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: Space.md),
+                          Text(
+                            'هنوز کاری در «${widget.project.displayName}» نیست.',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.titleSmall,
+                          ),
+                          const SizedBox(height: Space.xs),
+                          Text(
+                            'کار تازه را در کادر افزودن بنویسید.',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

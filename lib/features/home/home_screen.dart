@@ -627,6 +627,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (_habits != null) 4,
   ];
 
+  void _openSearch(SearchApi api) {
+    _scaffoldKey.currentState?.closeDrawer();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => TrackerScope(
+          tracker: _tracker,
+          child: SearchWorkspace(
+            api: api,
+            tasks: widget.tasksApi,
+            sections: widget.sectionsApi,
+            labels: _labels,
+            token: widget.token,
+            projects: () => widget.projects.projects,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _sidebar() => ProjectSidebar(
     controller: widget.projects,
     selectedId: _section == 1 && _view == null && _labelId == null
@@ -643,6 +662,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     viewCounts: {DueView.today: ?_todayCount},
     onOpenArchived: _openArchived,
     header: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _AccountHeader(
           calendarConnectionsApi: widget.tasksApi is CalendarConnectionsApi
@@ -657,59 +677,38 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           token: widget.token,
         ),
         if (widget.tasksApi case final SearchApi api)
-          ListTile(
-            leading: const Icon(Icons.search),
-            title: const Text('جست‌وجو و فیلترها'),
-            onTap: () {
-              _scaffoldKey.currentState?.closeDrawer();
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => TrackerScope(
-                    tracker: _tracker,
-                    child: SearchWorkspace(
-                      api: api,
-                      tasks: widget.tasksApi,
-                      sections: widget.sectionsApi,
-                      labels: _labels,
-                      token: widget.token,
-                      projects: () => widget.projects.projects,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ListTile(
-          leading: const Icon(Icons.add_task),
-          title: const Text('افزودن سریع کار'),
-          subtitle: const Text('میانبر: q'),
-          onTap: _quickAdd,
-        ),
-        if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint) ...[
-          for (final (index, icon, title) in [
-            // Today and the lists are already below; only the tools here.
-            (2, Icons.timelapse_outlined, 'تمرکز'),
-            if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
-            if (_habits != null) (4, Icons.task_alt_rounded, 'عادت‌ها'),
-          ])
-            Material(
-              type: MaterialType.transparency,
-              child: ListTile(
-                leading: Icon(icon),
-                title: Text(title),
-                selected: _section == index,
-                onTap: () => _switchSection(index),
-              ),
-            ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(),
-          ),
-        ],
-        if (widget.tasksApi case final ApiClient api)
-          ProgressCard(api: api, token: widget.token),
+          _SearchField(onTap: () => _openSearch(api)),
       ],
     ),
+    // On a phone these are already in the bottom bar.
+    tools: MediaQuery.sizeOf(context).width >= sidebarBreakpoint
+        ? [
+            for (final (index, icon, title) in [
+              (2, Icons.timelapse_outlined, 'تمرکز'),
+              if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
+              if (_habits != null) (4, Icons.task_alt_rounded, 'عادت‌ها'),
+            ])
+              SidebarRow(
+                selected: _section == index,
+                child: ListTile(
+                  leading: Icon(icon),
+                  title: Text(title),
+                  trailing: index == 2 && _focusBadge != null
+                      ? Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 8),
+                          child: Text(_focusBadge!),
+                        )
+                      : null,
+                  selected: _section == index,
+                  onTap: () => _switchSection(index),
+                ),
+              ),
+          ]
+        : null,
+    footer: switch (widget.tasksApi) {
+      final ApiClient api => ProgressCard(api: api, token: widget.token),
+      _ => null,
+    },
   );
 
   @override
@@ -853,7 +852,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 appBar: selected == null && view == null && label == null
                     ? AppBar(title: const Text('فراش'))
                     : null,
-                drawer: Drawer(child: _sidebar()),
+                drawer: Drawer(
+                  backgroundColor: Soft.ground(context),
+                  child: _sidebar(),
+                ),
                 bottomNavigationBar: rail
                     ? null
                     : DecoratedBox(
@@ -948,16 +950,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               body: SafeArea(
                 child: Row(
                   children: [
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                        12,
-                        12,
-                        0,
-                        12,
-                      ),
-                      child: SizedBox(
-                        width: 288,
-                        child: Panel(child: _sidebar()),
+                    // The sidebar lies on the same ground as the page; only
+                    // the open row stands up from it.
+                    SizedBox(
+                      width: 272,
+                      child: ListenableBuilder(
+                        listenable: _focus,
+                        builder: (context, _) => _sidebar(),
                       ),
                     ),
                     Expanded(
@@ -992,8 +991,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
 enum _AccountAction { calendar, calendarConnections, startView, export, logout }
 
-/// The app's name with the account beneath it, and one menu for the
-/// account's actions, so the email keeps its width.
+/// The app's name and, at the other end, the account: one round button
+/// with the account's initial whose menu names the email and holds the
+/// account's actions.
 class _AccountHeader extends StatelessWidget {
   const _AccountHeader({
     required this.email,
@@ -1014,41 +1014,35 @@ class _AccountHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final initial = email.isEmpty ? '?' : email.characters.first.toUpperCase();
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 0, 8),
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 4, 0, 12),
       child: Row(
         children: [
+          const FarashMark(size: 24),
+          const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const FarashMark(size: 28),
-                    const SizedBox(width: 10),
-                    Text(
-                      'فراش',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  email,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textDirection: TextDirection.ltr,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+            child: Text(
+              'فراش',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           PopupMenuButton<_AccountAction>(
             tooltip: 'حساب و تنظیمات',
-            icon: const Icon(Icons.account_circle_outlined),
+            icon: CircleAvatar(
+              radius: 15,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              foregroundColor: theme.colorScheme.onPrimaryContainer,
+              child: Text(
+                initial,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
             onSelected: (action) => switch (action) {
               _AccountAction.calendar => showCalendarSettings(
                 context,
@@ -1071,6 +1065,19 @@ class _AccountHeader extends StatelessWidget {
               _AccountAction.logout => onLogout(),
             },
             itemBuilder: (context) => [
+              PopupMenuItem(
+                enabled: false,
+                child: Text(
+                  email,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textDirection: TextDirection.ltr,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              const PopupMenuDivider(),
               const PopupMenuItem(
                 value: _AccountAction.calendar,
                 child: ListTile(
@@ -1112,6 +1119,50 @@ class _AccountHeader extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Search as a field sunk into the ground; it opens the search page.
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Semantics(
+        button: true,
+        label: 'جست‌وجو و فیلترها',
+        excludeSemantics: true,
+        child: SoftWell(
+          radius: 14,
+          padding: EdgeInsets.zero,
+          child: InkWell(
+            onTap: onTap,
+            child: SizedBox(
+              height: 44,
+              child: Row(
+                children: [
+                  const SizedBox(width: 12),
+                  Icon(Icons.search, size: 20, color: muted),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'جست‌وجو',
+                      style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
