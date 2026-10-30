@@ -8,7 +8,8 @@ import 'package:farash/features/progress/progress.dart';
 import 'package:farash/features/progress/week_report.dart';
 import 'package:farash/features/progress/weekly_challenge.dart';
 
-/// A quiet summary in the navigation; details open only on request.
+/// A quiet summary pinned under the navigation: the level, and this
+/// week's days against the goal as a thin bar. Details open on request.
 class ProgressCard extends StatefulWidget {
   const ProgressCard({super.key, required this.api, required this.token});
 
@@ -93,27 +94,82 @@ class _ProgressCardState extends State<ProgressCard>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
     final progress = _progress;
-    if (_error != null) {
-      return ListTile(
-        leading: const Icon(Icons.cloud_off_outlined),
-        title: const Text('پیشرفت من'),
-        subtitle: Text(_error!),
-        onTap: _load,
-      );
-    }
-    return ListTile(
-      leading: const Icon(Icons.insights_outlined),
-      title: const Text('پیشرفت من'),
-      subtitle: progress == null
-          ? const Text('در حال دریافت…')
-          : Text(
-              'سطح ${persianDigits(progress.level)} · '
-              '${persianDigits(progress.xp)} امتیاز · '
-              '${persianDigits(progress.weeklyDays)} از '
-              '${persianDigits(progress.weeklyGoal)} روز',
-            ),
-      onTap: progress == null ? null : _open,
+    final error = _error;
+    final week = progress == null || progress.weeklyGoal <= 0
+        ? null
+        : (progress.weeklyDays / progress.weeklyGoal).clamp(0.0, 1.0);
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: error != null ? _load : (progress == null ? null : _open),
+        child: Padding(
+          padding: const EdgeInsets.all(Space.sm),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    error != null
+                        ? Icons.cloud_off_outlined
+                        : Icons.insights_outlined,
+                    size: 16,
+                    color: error != null ? muted : theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: Space.sm),
+                  Expanded(
+                    child: Text(
+                      'پیشرفت من',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (progress != null && error == null)
+                    Text(
+                      'سطح ${persianDigits(progress.level)}',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: muted,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: Space.sm),
+              if (error != null)
+                Text(
+                  error,
+                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                )
+              else ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: week ?? 0,
+                    minHeight: 3,
+                    backgroundColor: theme.colorScheme.outlineVariant
+                        .withValues(alpha: 0.5),
+                  ),
+                ),
+                const SizedBox(height: Space.xs),
+                Text(
+                  progress == null
+                      ? 'در حال دریافت…'
+                      : '${persianDigits(progress.weeklyDays)} از '
+                            '${persianDigits(progress.weeklyGoal)} روز این هفته · '
+                            '${persianDigits(progress.xp)} امتیاز',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(color: muted),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

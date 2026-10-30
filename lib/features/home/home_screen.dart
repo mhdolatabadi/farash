@@ -16,6 +16,8 @@ import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:farash/features/time_tracking/time_tracking_view.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/app/soft.dart';
+import 'package:farash/app/spacing.dart';
+import 'package:farash/core/widgets/hover_reveal.dart';
 import 'package:farash/app/surfaces.dart';
 import 'package:farash/features/focus/focus_controller.dart';
 import 'package:farash/features/focus/focus_view.dart';
@@ -196,6 +198,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _quickAdding = false;
 
   KeyEventResult _quickKey(KeyEvent event) {
+    final keyboard = HardwareKeyboard.instance;
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.keyK &&
+        (keyboard.isControlPressed || keyboard.isMetaPressed) &&
+        !keyboard.isAltPressed &&
+        !keyboard.isShiftPressed &&
+        mounted) {
+      final route = ModalRoute.of(
+        FocusManager.instance.primaryFocus?.context ?? context,
+      );
+      if (widget.tasksApi case final SearchApi api
+          when route is! PopupRoute && route?.isCurrent == true) {
+        _openSearch(api);
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    }
     if (event is! KeyDownEvent ||
         event.logicalKey != LogicalKeyboardKey.keyQ ||
         HardwareKeyboard.instance.isControlPressed ||
@@ -627,6 +646,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (_habits != null) 4,
   ];
 
+  void _openSearch(SearchApi api) {
+    _scaffoldKey.currentState?.closeDrawer();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => TrackerScope(
+          tracker: _tracker,
+          child: SearchWorkspace(
+            api: api,
+            tasks: widget.tasksApi,
+            sections: widget.sectionsApi,
+            labels: _labels,
+            token: widget.token,
+            projects: () => widget.projects.projects,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _sidebar() => ProjectSidebar(
     controller: widget.projects,
     selectedId: _section == 1 && _view == null && _labelId == null
@@ -643,73 +681,54 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     viewCounts: {DueView.today: ?_todayCount},
     onOpenArchived: _openArchived,
     header: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _AccountHeader(
-          calendarConnectionsApi: widget.tasksApi is CalendarConnectionsApi
-              ? widget.tasksApi as CalendarConnectionsApi
-              : null,
-          email: widget.email,
-          onLogout: widget.onLogout,
-          startView: widget.startView,
-          exportApi: widget.tasksApi is ExportApi
-              ? widget.tasksApi as ExportApi
-              : null,
-          token: widget.token,
-        ),
+        const _Brand(),
         if (widget.tasksApi case final SearchApi api)
-          ListTile(
-            leading: const Icon(Icons.search),
-            title: const Text('جست‌وجو و فیلترها'),
-            onTap: () {
-              _scaffoldKey.currentState?.closeDrawer();
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => TrackerScope(
-                    tracker: _tracker,
-                    child: SearchWorkspace(
-                      api: api,
-                      tasks: widget.tasksApi,
-                      sections: widget.sectionsApi,
-                      labels: _labels,
-                      token: widget.token,
-                      projects: () => widget.projects.projects,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ListTile(
-          leading: const Icon(Icons.add_task),
-          title: const Text('افزودن سریع کار'),
-          subtitle: const Text('میانبر: q'),
-          onTap: _quickAdd,
-        ),
-        if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint) ...[
-          for (final (index, icon, title) in [
-            // Today and the lists are already below; only the tools here.
-            (2, Icons.timelapse_outlined, 'تمرکز'),
-            if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
-            if (_habits != null) (4, Icons.task_alt_rounded, 'عادت‌ها'),
-          ])
-            Material(
-              type: MaterialType.transparency,
-              child: ListTile(
-                leading: Icon(icon),
-                title: Text(title),
-                selected: _section == index,
-                onTap: () => _switchSection(index),
-              ),
-            ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(),
-          ),
-        ],
-        if (widget.tasksApi case final ApiClient api)
-          ProgressCard(api: api, token: widget.token),
+          _SearchField(onTap: () => _openSearch(api)),
       ],
     ),
+    account: _AccountRow(
+      calendarConnectionsApi: widget.tasksApi is CalendarConnectionsApi
+          ? widget.tasksApi as CalendarConnectionsApi
+          : null,
+      email: widget.email,
+      onLogout: widget.onLogout,
+      startView: widget.startView,
+      exportApi: widget.tasksApi is ExportApi
+          ? widget.tasksApi as ExportApi
+          : null,
+      token: widget.token,
+    ),
+    // On a phone these are already in the bottom bar.
+    tools: MediaQuery.sizeOf(context).width >= sidebarBreakpoint
+        ? [
+            for (final (index, icon, title) in [
+              (2, Icons.timelapse_outlined, 'تمرکز'),
+              if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
+              if (_habits != null) (4, Icons.task_alt_rounded, 'عادت‌ها'),
+            ])
+              SidebarRow(
+                selected: _section == index,
+                child: ListTile(
+                  leading: Icon(icon),
+                  title: Text(title),
+                  trailing: index == 2 && _focusBadge != null
+                      ? Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 8),
+                          child: Text(_focusBadge!),
+                        )
+                      : null,
+                  selected: _section == index,
+                  onTap: () => _switchSection(index),
+                ),
+              ),
+          ]
+        : null,
+    footer: switch (widget.tasksApi) {
+      final ApiClient api => ProgressCard(api: api, token: widget.token),
+      _ => null,
+    },
   );
 
   @override
@@ -853,7 +872,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 appBar: selected == null && view == null && label == null
                     ? AppBar(title: const Text('فراش'))
                     : null,
-                drawer: Drawer(child: _sidebar()),
+                drawer: Drawer(
+                  backgroundColor: Soft.ground(context),
+                  child: _sidebar(),
+                ),
                 bottomNavigationBar: rail
                     ? null
                     : DecoratedBox(
@@ -948,16 +970,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               body: SafeArea(
                 child: Row(
                   children: [
+                    // The sidebar is one raised panel floating on the
+                    // ground, like the page's tiles.
                     Padding(
                       padding: const EdgeInsetsDirectional.fromSTEB(
-                        12,
-                        12,
+                        Space.md,
+                        Space.md,
                         0,
-                        12,
+                        Space.md,
                       ),
                       child: SizedBox(
-                        width: 288,
-                        child: Panel(child: _sidebar()),
+                        width: 260,
+                        child: Panel(
+                          radius: 18,
+                          child: ListenableBuilder(
+                            listenable: _focus,
+                            builder: (context, _) => _sidebar(),
+                          ),
+                        ),
                       ),
                     ),
                     Expanded(
@@ -992,10 +1022,39 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
 enum _AccountAction { calendar, calendarConnections, startView, export, logout }
 
-/// The app's name with the account beneath it, and one menu for the
-/// account's actions, so the email keeps its width.
-class _AccountHeader extends StatelessWidget {
-  const _AccountHeader({
+/// The app's mark and name at the top of the sidebar.
+class _Brand extends StatelessWidget {
+  const _Brand();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        Space.md,
+        Space.xs,
+        Space.md,
+        Space.md,
+      ),
+      child: Row(
+        children: [
+          const FarashMark(size: 22),
+          const SizedBox(width: Space.sm),
+          Text(
+            'فراش',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The account at the bottom of the sidebar: the initial and the email,
+/// one row whose menu holds the account's actions.
+class _AccountRow extends StatelessWidget {
+  const _AccountRow({
     required this.email,
     required this.onLogout,
     this.startView,
@@ -1014,104 +1073,172 @@ class _AccountHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 0, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const FarashMark(size: 28),
-                    const SizedBox(width: 10),
-                    Text(
-                      'فراش',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final initial = email.isEmpty ? '?' : email.characters.first.toUpperCase();
+    return PopupMenuButton<_AccountAction>(
+      tooltip: 'حساب و تنظیمات',
+      position: PopupMenuPosition.over,
+      borderRadius: BorderRadius.circular(SidebarRow.radius),
+      // The tooltip names the button; the initial and email are what it
+      // shows, not what it is called.
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Space.sm,
+            vertical: Space.sm,
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: theme.colorScheme.primaryContainer,
+                foregroundColor: theme.colorScheme.onPrimaryContainer,
+                child: Text(
+                  initial,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                Text(
+              ),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Text(
                   email,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textDirection: TextDirection.ltr,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          PopupMenuButton<_AccountAction>(
-            tooltip: 'حساب و تنظیمات',
-            icon: const Icon(Icons.account_circle_outlined),
-            onSelected: (action) => switch (action) {
-              _AccountAction.calendar => showCalendarSettings(
-                context,
-                CalendarScope.of(context),
-              ),
-              _AccountAction.calendarConnections => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => CalendarConnectionsView(
-                    api: calendarConnectionsApi!,
-                    token: token,
-                  ),
+                  textAlign: TextAlign.end,
+                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
                 ),
               ),
-              _AccountAction.startView => _pickStartView(context, startView!),
-              _AccountAction.export => showAccountExport(
-                context,
-                exportApi!,
-                token,
-              ),
-              _AccountAction.logout => onLogout(),
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: _AccountAction.calendar,
-                child: ListTile(
-                  leading: Icon(Icons.calendar_month_outlined),
-                  title: Text('تنظیمات تقویم'),
-                ),
-              ),
-              if (calendarConnectionsApi != null)
-                const PopupMenuItem(
-                  value: _AccountAction.calendarConnections,
-                  child: ListTile(
-                    leading: Icon(Icons.event_available_outlined),
-                    title: Text('اتصال تقویم‌ها'),
-                  ),
-                ),
-              if (startView != null)
-                const PopupMenuItem(
-                  value: _AccountAction.startView,
-                  child: ListTile(
-                    leading: Icon(Icons.home_outlined),
-                    title: Text('صفحهٔ آغاز'),
-                  ),
-                ),
-              if (exportApi != null)
-                const PopupMenuItem(
-                  value: _AccountAction.export,
-                  child: ListTile(
-                    leading: Icon(Icons.download_outlined),
-                    title: Text('خروجی داده‌های من'),
-                  ),
-                ),
-              const PopupMenuItem(
-                value: _AccountAction.logout,
-                child: ListTile(
-                  leading: Icon(Icons.logout),
-                  title: Text('خروج'),
-                ),
-              ),
+              const SizedBox(width: Space.sm),
+              Icon(Icons.unfold_more, size: 18, color: muted),
             ],
           ),
-        ],
+        ),
+      ),
+      onSelected: (action) => switch (action) {
+        _AccountAction.calendar => showCalendarSettings(
+          context,
+          CalendarScope.of(context),
+        ),
+        _AccountAction.calendarConnections => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => CalendarConnectionsView(
+              api: calendarConnectionsApi!,
+              token: token,
+            ),
+          ),
+        ),
+        _AccountAction.startView => _pickStartView(context, startView!),
+        _AccountAction.export => showAccountExport(context, exportApi!, token),
+        _AccountAction.logout => onLogout(),
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: _AccountAction.calendar,
+          child: ListTile(
+            leading: Icon(Icons.calendar_month_outlined),
+            title: Text('تنظیمات تقویم'),
+          ),
+        ),
+        if (calendarConnectionsApi != null)
+          const PopupMenuItem(
+            value: _AccountAction.calendarConnections,
+            child: ListTile(
+              leading: Icon(Icons.event_available_outlined),
+              title: Text('اتصال تقویم‌ها'),
+            ),
+          ),
+        if (startView != null)
+          const PopupMenuItem(
+            value: _AccountAction.startView,
+            child: ListTile(
+              leading: Icon(Icons.home_outlined),
+              title: Text('صفحهٔ آغاز'),
+            ),
+          ),
+        if (exportApi != null)
+          const PopupMenuItem(
+            value: _AccountAction.export,
+            child: ListTile(
+              leading: Icon(Icons.download_outlined),
+              title: Text('خروجی داده‌های من'),
+            ),
+          ),
+        const PopupMenuItem(
+          value: _AccountAction.logout,
+          child: ListTile(leading: Icon(Icons.logout), title: Text('خروج')),
+        ),
+      ],
+    );
+  }
+}
+
+/// Search as a field sunk into the ground; it opens the search page.
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Padding(
+      padding: EdgeInsets.zero,
+      child: Semantics(
+        container: true,
+        button: true,
+        label: 'جست‌وجو و فیلترها',
+        excludeSemantics: true,
+        child: SoftWell(
+          radius: SidebarRow.radius,
+          padding: EdgeInsets.zero,
+          child: InkWell(
+            onTap: onTap,
+            child: SizedBox(
+              height: 40,
+              child: Row(
+                children: [
+                  const SizedBox(width: 12),
+                  Icon(Icons.search, size: 18, color: muted),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'جست‌وجو',
+                      style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+                    ),
+                  ),
+                  if (!HoverReveal.isTouch(context))
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(end: Space.sm),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.fromBorderSide(Soft.hairline(context)),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          child: Text(
+                            'Ctrl K',
+                            textDirection: TextDirection.ltr,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: muted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:farash/app/soft.dart';
+import 'package:farash/app/spacing.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/core/widgets/hover_reveal.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
@@ -10,8 +12,11 @@ import 'package:farash/features/projects/presentation/project_editor.dart';
 import 'package:farash/features/projects/presentation/project_messages.dart';
 import 'package:farash/features/tasks/presentation/due_tasks_view.dart';
 
-/// The navigation list: Inbox, favourites, the project tree and archived
-/// projects. Used as the phone drawer and the wide-screen sidebar.
+/// The navigation list: Inbox, the views across projects, favourites,
+/// the project tree and labels, with the progress and the account pinned
+/// under it. Used as the phone drawer and the wide-screen sidebar, on the
+/// soft ground: compact rows in labelled groups, the open row standing up
+/// as a raised pill and everything else flat.
 class ProjectSidebar extends StatelessWidget {
   const ProjectSidebar({
     super.key,
@@ -20,6 +25,9 @@ class ProjectSidebar extends StatelessWidget {
     required this.onSelect,
     required this.onOpenArchived,
     required this.header,
+    this.tools,
+    this.footer,
+    this.account,
     this.selectedView,
     this.onSelectView,
     this.viewCounts = const {},
@@ -33,8 +41,17 @@ class ProjectSidebar extends StatelessWidget {
   final ValueChanged<Project> onSelect;
   final VoidCallback onOpenArchived;
 
-  /// The account row at the top.
+  /// The app's name and search, at the top.
   final Widget header;
+
+  /// Destinations that are not lists, such as Focus, under the views.
+  final List<Widget>? tools;
+
+  /// Pinned under the list, as the progress summary.
+  final Widget? footer;
+
+  /// The account row, pinned at the very bottom.
+  final Widget? account;
 
   /// The view across projects that is open, if any.
   final DueView? selectedView;
@@ -50,149 +67,352 @@ class ProjectSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: controller,
-      builder: (context, _) {
-        final theme = Theme.of(context);
-        final inbox = controller.inbox;
-        final favorites = controller.favorites;
-        final tree = controller.tree;
-        return SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-            children: <Widget>[
-              header,
-              const SizedBox(height: 8),
-              if (onSelectView != null)
-                for (final view in DueView.values)
-                  ListTile(
-                    key: ValueKey('view-${view.name}'),
-                    selected: view == selectedView,
-                    leading: Icon(view.icon),
-                    title: Text(view.title),
-                    trailing: switch (viewCounts[view]) {
-                      final count? when count > 0 => Semantics(
-                        label: '${persianDigits(count)} کار',
-                        excludeSemantics: true,
-                        child: Badge(
-                          label: Text(persianDigits(count)),
-                          backgroundColor: theme.colorScheme.primary,
-                          textColor: theme.colorScheme.onPrimary,
+    return _Folding(
+      builder: (context, open, toggle) => ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) {
+          final theme = Theme.of(context);
+          final inbox = controller.inbox;
+          final favorites = controller.favorites;
+          final tree = controller.tree;
+          Widget hint(String text) => Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(
+              Space.md,
+              Space.xs,
+              Space.md,
+              Space.sm,
+            ),
+            child: Text(
+              text,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          );
+          final tools = this.tools ?? const <Widget>[];
+          final footer = this.footer;
+          final account = this.account;
+          return SidebarTheme(
+            child: SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(
+                        Space.md,
+                        Space.md,
+                        Space.md,
+                        Space.lg,
+                      ),
+                      children:
+                          <Widget>[
+                                header,
+                                const SizedBox(height: Space.md),
+                                if (inbox != null)
+                                  _ProjectTile(
+                                    project: inbox,
+                                    icon: Icons.inbox_outlined,
+                                    selected: inbox.id == selectedId,
+                                    onTap: () => onSelect(inbox),
+                                    controller: controller,
+                                  ),
+                                if (onSelectView != null)
+                                  for (final view in DueView.values)
+                                    SidebarRow(
+                                      key: ValueKey('view-${view.name}'),
+                                      selected: view == selectedView,
+                                      child: ListTile(
+                                        selected: view == selectedView,
+                                        leading: Icon(view.icon),
+                                        title: Text(view.title),
+                                        trailing: SidebarCount(
+                                          viewCounts[view],
+                                        ),
+                                        onTap: () => onSelectView!(view),
+                                      ),
+                                    ),
+                                if (controller.error != null &&
+                                    controller.projects.isEmpty)
+                                  _LoadError(onRetry: controller.load),
+                                if (tools.isNotEmpty) ...[
+                                  const _SectionTitle('ابزارها'),
+                                  ...tools,
+                                ],
+                                if (favorites.isNotEmpty) ...[
+                                  const _SectionTitle('علاقه‌مندی‌ها'),
+                                  for (final project in favorites)
+                                    _ProjectTile(
+                                      key: ValueKey('favorite-${project.id}'),
+                                      project: project,
+                                      selected: project.id == selectedId,
+                                      onTap: () => onSelect(project),
+                                      controller: controller,
+                                    ),
+                                ],
+                                _SectionTitle(
+                                  'پروژه‌ها',
+                                  open: open('projects'),
+                                  onToggle: () => toggle('projects'),
+                                  actions: [
+                                    _SectionAction(
+                                      icon: Icons.inventory_2_outlined,
+                                      tooltip: 'پروژه‌های بایگانی‌شده',
+                                      onPressed: onOpenArchived,
+                                    ),
+                                    _SectionAction(
+                                      tooltip: 'پروژهٔ تازه',
+                                      onPressed: () => showProjectEditor(
+                                        context,
+                                        controller: controller,
+                                        onCreated: onSelect,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (open('projects') &&
+                                    tree.isEmpty &&
+                                    controller.projects.isNotEmpty)
+                                  hint(
+                                    'کارها را در پروژه‌ها دسته‌بندی کنید؛ مثلاً «کار» یا «خانه».',
+                                  ),
+                                if (open('projects'))
+                                  for (final node in tree)
+                                    _ProjectTile(
+                                      key: ValueKey('tree-${node.project.id}'),
+                                      project: node.project,
+                                      depth: node.depth,
+                                      selected: node.project.id == selectedId,
+                                      onTap: () => onSelect(node.project),
+                                      controller: controller,
+                                    ),
+                                if (labels case final labels?) ...[
+                                  _SectionTitle(
+                                    'برچسب‌ها',
+                                    open: open('labels'),
+                                    onToggle: () => toggle('labels'),
+                                    actions: [
+                                      _SectionAction(
+                                        tooltip: 'برچسب تازه',
+                                        onPressed: () async {
+                                          final created = await showLabelEditor(
+                                            context,
+                                            controller: labels,
+                                          );
+                                          if (created != null) {
+                                            onSelectLabel?.call(created);
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  if (open('labels') && labels.labels.isEmpty)
+                                    hint(
+                                      'کارهای مرتبط را از پروژه‌های مختلف با برچسبی مثل «@تلفن» کنار هم ببینید.',
+                                    ),
+                                  if (open('labels'))
+                                    for (final label in labels.labels)
+                                      _LabelTile(
+                                        key: ValueKey('label-${label.id}'),
+                                        label: label,
+                                        controller: labels,
+                                        selected: label.id == selectedLabelId,
+                                        onTap: () => onSelectLabel?.call(label),
+                                      ),
+                                ],
+                              ]
+                              .map(
+                                (row) => Material(
+                                  type: MaterialType.transparency,
+                                  child: row,
+                                ),
+                              )
+                              .toList(),
+                    ),
+                  ),
+                  if (footer != null || account != null)
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        border: Border(top: Soft.hairline(context)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          Space.md,
+                          Space.sm,
+                          Space.md,
+                          Space.sm,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [?footer, ?account],
                         ),
                       ),
-                      _ => null,
-                    },
-                    onTap: () => onSelectView!(view),
-                  ),
-              if (inbox != null)
-                _ProjectTile(
-                  project: inbox,
-                  icon: Icons.inbox_outlined,
-                  selected: inbox.id == selectedId,
-                  onTap: () => onSelect(inbox),
-                  controller: controller,
-                ),
-              if (controller.error != null && controller.projects.isEmpty)
-                _LoadError(onRetry: controller.load),
-              if (favorites.isNotEmpty) ...[
-                const _SectionTitle('علاقه‌مندی‌ها'),
-                for (final project in favorites)
-                  _ProjectTile(
-                    key: ValueKey('favorite-${project.id}'),
-                    project: project,
-                    selected: project.id == selectedId,
-                    onTap: () => onSelect(project),
-                    controller: controller,
-                  ),
-              ],
-              _SectionTitle(
-                'پروژه‌ها',
-                action: IconButton(
-                  tooltip: 'پروژهٔ تازه',
-                  icon: const Icon(Icons.add),
-                  onPressed: () => showProjectEditor(
-                    context,
-                    controller: controller,
-                    onCreated: onSelect,
-                  ),
-                ),
+                    ),
+                ],
               ),
-              if (tree.isEmpty && controller.projects.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Text(
-                    'کارها را در پروژه‌ها دسته‌بندی کنید؛ مثلاً «کار» یا «خانه».',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              for (final node in tree)
-                _ProjectTile(
-                  key: ValueKey('tree-${node.project.id}'),
-                  project: node.project,
-                  depth: node.depth,
-                  selected: node.project.id == selectedId,
-                  onTap: () => onSelect(node.project),
-                  controller: controller,
-                ),
-              if (labels case final labels?) ...[
-                _SectionTitle(
-                  'برچسب‌ها',
-                  action: IconButton(
-                    tooltip: 'برچسب تازه',
-                    icon: const Icon(Icons.add),
-                    onPressed: () async {
-                      final created = await showLabelEditor(
-                        context,
-                        controller: labels,
-                      );
-                      if (created != null) onSelectLabel?.call(created);
-                    },
-                  ),
-                ),
-                if (labels.labels.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: Text(
-                      'کارهای مرتبط را از پروژه‌های مختلف با برچسبی مثل «@تلفن» کنار هم ببینید.',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                for (final label in labels.labels)
-                  _LabelTile(
-                    key: ValueKey('label-${label.id}'),
-                    label: label,
-                    controller: labels,
-                    selected: label.id == selectedLabelId,
-                    onTap: () => onSelectLabel?.call(label),
-                  ),
-              ],
-              const SizedBox(height: 8),
-              ListTile(
-                leading: const Icon(Icons.archive_outlined),
-                title: const Text('پروژه‌های بایگانی‌شده'),
-                onTap: onOpenArchived,
-              ),
-            ].map((row) => Material(type: MaterialType.transparency, child: row)).toList(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Keeps which of the sidebar's groups are folded away while it lives.
+class _Folding extends StatefulWidget {
+  const _Folding({required this.builder});
+
+  final Widget Function(
+    BuildContext context,
+    bool Function(String group) open,
+    void Function(String group) toggle,
+  )
+  builder;
+
+  @override
+  State<_Folding> createState() => _FoldingState();
+}
+
+class _FoldingState extends State<_Folding> {
+  final _folded = <String>{};
+
+  @override
+  Widget build(BuildContext context) => widget.builder(
+    context,
+    (group) => !_folded.contains(group),
+    (group) => setState(() {
+      if (!_folded.remove(group)) _folded.add(group);
+    }),
+  );
+}
+
+/// The sidebar's one row style: an 18 icon, a medium title and a quiet
+/// count; 36 high where a pointer is used and 48 on touch.
+class SidebarTheme extends StatelessWidget {
+  const SidebarTheme({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final pointer = switch (theme.platform) {
+      TargetPlatform.android || TargetPlatform.iOS => false,
+      _ => MediaQuery.sizeOf(context).width >= 840,
+    };
+    return ListTileTheme(
+      data: ListTileThemeData(
+        dense: true,
+        minTileHeight: pointer ? 36 : 48,
+        minLeadingWidth: 18,
+        minVerticalPadding: 0,
+        visualDensity: VisualDensity.compact,
+        horizontalTitleGap: Space.md,
+        contentPadding: const EdgeInsetsDirectional.only(
+          start: Space.md,
+          end: Space.xs,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(SidebarRow.radius),
+        ),
+        iconColor: scheme.onSurfaceVariant,
+        textColor: scheme.onSurface,
+        selectedColor: scheme.primary,
+        selectedTileColor: Colors.transparent,
+        titleTextStyle: theme.textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w500,
+        ),
+        leadingAndTrailingTextStyle: theme.textTheme.labelMedium,
+      ),
+      child: IconTheme.merge(data: const IconThemeData(size: 18), child: child),
+    );
+  }
+}
+
+/// A sidebar row; the open one sits on a soft tint of the accent.
+class SidebarRow extends StatelessWidget {
+  const SidebarRow({super.key, required this.selected, required this.child});
+
+  /// The corner of every row and of the open row's pill.
+  static const radius = 10.0;
+
+  final bool selected;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final row = Material(type: MaterialType.transparency, child: child);
+    if (!selected) return row;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(radius),
+        ),
+        child: row,
+      ),
+    );
+  }
+}
+
+/// A muted count at a row's end; nothing when there is none.
+class SidebarCount extends StatelessWidget {
+  const SidebarCount(this.count, {super.key});
+
+  final int? count;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = this.count;
+    if (count == null || count <= 0) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(end: Space.sm),
+      child: Semantics(
+        label: '${persianDigits(count)} کار',
+        excludeSemantics: true,
+        child: Text(
+          persianDigits(count),
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontFeatures: const [FontFeature.tabularFigures()],
           ),
-        );
-      },
+        ),
+      ),
+    );
+  }
+}
+
+/// A quiet button beside a section's name, such as add.
+class _SectionAction extends StatelessWidget {
+  const _SectionAction({
+    required this.tooltip,
+    required this.onPressed,
+    this.icon = Icons.add,
+  });
+
+  final String tooltip;
+  final VoidCallback onPressed;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      iconSize: 16,
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+      padding: EdgeInsets.zero,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+      icon: Icon(icon),
+      onPressed: onPressed,
     );
   }
 }
 
 enum _LabelAction { edit, favorite, delete }
 
-class _LabelTile extends StatelessWidget {
+class _LabelTile extends StatefulWidget {
   const _LabelTile({
     super.key,
     required this.label,
@@ -205,6 +425,18 @@ class _LabelTile extends StatelessWidget {
   final LabelsController controller;
   final bool selected;
   final VoidCallback onTap;
+
+  @override
+  State<_LabelTile> createState() => _LabelTileState();
+}
+
+class _LabelTileState extends State<_LabelTile> {
+  final _menu = GlobalKey<PopupMenuButtonState<_LabelAction>>();
+
+  Label get label => widget.label;
+  LabelsController get controller => widget.controller;
+  bool get selected => widget.selected;
+  VoidCallback get onTap => widget.onTap;
 
   Future<void> _run(BuildContext context, _LabelAction action) async {
     try {
@@ -228,75 +460,128 @@ class _LabelTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return HoverRegion(
-      child: ListTile(
-        selected: selected,
-        onTap: onTap,
-        leading: Icon(Icons.sell_outlined, color: label.swatch),
-        title: Text(label.tag, maxLines: 1, overflow: TextOverflow.ellipsis),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (label.openTaskCount > 0)
-              Text(
-                persianDigits(label.openTaskCount),
-                style: Theme.of(context).textTheme.labelMedium,
-              ),
-            HoverReveal(
-              child: PopupMenuButton<_LabelAction>(
-                tooltip: 'گزینه‌های برچسب',
-                onSelected: (action) => _run(context, action),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: _LabelAction.edit,
-                    child: Text('ویرایش'),
+    return SidebarRow(
+      selected: selected,
+      child: HoverRegion(
+        child: ListTile(
+          selected: selected,
+          onTap: onTap,
+          onLongPress: () => _menu.currentState?.showButtonMenu(),
+          leading: Icon(Icons.sell_outlined, size: 18, color: label.swatch),
+          title: Text(label.tag, maxLines: 1, overflow: TextOverflow.ellipsis),
+          trailing: HoverSwap(
+            idle: SidebarCount(label.openTaskCount),
+            active: PopupMenuButton<_LabelAction>(
+              key: _menu,
+              tooltip: 'گزینه‌های برچسب',
+              onSelected: (action) => _run(context, action),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: _LabelAction.edit,
+                  child: Text('ویرایش'),
+                ),
+                PopupMenuItem(
+                  value: _LabelAction.favorite,
+                  child: Text(
+                    label.isFavorite
+                        ? 'حذف از علاقه‌مندی‌ها'
+                        : 'افزودن به علاقه‌مندی‌ها',
                   ),
-                  PopupMenuItem(
-                    value: _LabelAction.favorite,
-                    child: Text(
-                      label.isFavorite
-                          ? 'حذف از علاقه‌مندی‌ها'
-                          : 'افزودن به علاقه‌مندی‌ها',
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: _LabelAction.delete,
-                    child: Text('حذف'),
-                  ),
-                ],
-              ),
+                ),
+                const PopupMenuItem(
+                  value: _LabelAction.delete,
+                  child: Text('حذف'),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
+/// A group's name: small and muted, closer to its rows than to the
+/// group above.
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.title, {this.action});
+  const _SectionTitle(
+    this.title, {
+    this.actions = const [],
+    this.open = true,
+    this.onToggle,
+  });
 
   final String title;
-  final Widget? action;
+  final List<Widget> actions;
+
+  /// Whether the group's rows show; with [onToggle] the name folds them.
+  final bool open;
+  final VoidCallback? onToggle;
+
+  Widget _foldable(BuildContext context, ThemeData theme) {
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final name = Text(
+      title,
+      style: theme.textTheme.labelMedium?.copyWith(
+        color: muted,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+    final onToggle = this.onToggle;
+    if (onToggle == null) return name;
+    return Semantics(
+      expanded: open,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(6),
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsetsDirectional.only(end: Space.xs),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              name,
+              const SizedBox(width: 2),
+              AnimatedRotation(
+                turns: open
+                    ? 0
+                    : (Directionality.of(context) == TextDirection.rtl
+                          ? 0.25
+                          : -0.25),
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 150),
+                child: Icon(Icons.expand_more, size: 16, color: muted),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsetsDirectional.only(start: 16, top: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        Space.md,
+        Space.lg,
+        Space.xs,
+        Space.xs,
+      ),
+      child: SizedBox(
+        height: 32,
+        child: Row(
+          children: [
+            Expanded(
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: _foldable(context, theme),
               ),
             ),
-          ),
-          ?action,
-        ],
+            ...actions,
+          ],
+        ),
       ),
     );
   }
@@ -333,7 +618,7 @@ enum _ProjectAction {
   delete,
 }
 
-class _ProjectTile extends StatelessWidget {
+class _ProjectTile extends StatefulWidget {
   const _ProjectTile({
     super.key,
     required this.project,
@@ -350,6 +635,20 @@ class _ProjectTile extends StatelessWidget {
   final ProjectsController controller;
   final int depth;
   final IconData? icon;
+
+  @override
+  State<_ProjectTile> createState() => _ProjectTileState();
+}
+
+class _ProjectTileState extends State<_ProjectTile> {
+  final _menu = GlobalKey<PopupMenuButtonState<_ProjectAction>>();
+
+  Project get project => widget.project;
+  bool get selected => widget.selected;
+  VoidCallback get onTap => widget.onTap;
+  ProjectsController get controller => widget.controller;
+  int get depth => widget.depth;
+  IconData? get icon => widget.icon;
 
   Future<void> _run(BuildContext context, _ProjectAction action) async {
     try {
@@ -405,69 +704,75 @@ class _ProjectTile extends StatelessWidget {
         ? const <Project>[]
         : controller.siblingsOf(project);
     final index = siblings.indexWhere((p) => p.id == project.id);
-    return Padding(
-      padding: EdgeInsetsDirectional.only(start: 16.0 * depth),
-      child: HoverRegion(
-        child: ListTile(
-          selected: selected,
-          onTap: onTap,
-          leading: icon != null
-              ? Icon(icon)
-              : project.isFolder
-              ? Icon(Icons.folder_outlined, color: project.swatch)
-              : Icon(Icons.circle, size: 12, color: project.swatch),
-          title: Text(
-            project.displayName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          trailing: HoverReveal(
-            child: PopupMenuButton<_ProjectAction>(
-              tooltip: 'گزینه‌های پروژه',
-              onSelected: (action) => _run(context, action),
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: _ProjectAction.edit,
-                  child: Text('ویرایش'),
-                ),
-                PopupMenuItem(
-                  value: _ProjectAction.favorite,
-                  child: Text(
-                    project.isFavorite
-                        ? 'حذف از علاقه‌مندی‌ها'
-                        : 'افزودن به علاقه‌مندی‌ها',
+    return SidebarRow(
+      selected: selected,
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(start: 16.0 * depth),
+        child: HoverRegion(
+          child: ListTile(
+            selected: selected,
+            onTap: onTap,
+            onLongPress: () => _menu.currentState?.showButtonMenu(),
+            leading: icon != null
+                ? Icon(icon)
+                : project.isFolder
+                ? Icon(Icons.folder_outlined, size: 18, color: project.swatch)
+                : Icon(Icons.circle, size: 10, color: project.swatch),
+            title: Text(
+              project.displayName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: HoverSwap(
+              idle: SidebarCount(project.openTasks),
+              active: PopupMenuButton<_ProjectAction>(
+                key: _menu,
+                tooltip: 'گزینه‌های پروژه',
+                onSelected: (action) => _run(context, action),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: _ProjectAction.edit,
+                    child: Text('ویرایش'),
                   ),
-                ),
-                if (!project.isInbox) ...[
                   PopupMenuItem(
-                    value: _ProjectAction.addChild,
+                    value: _ProjectAction.favorite,
                     child: Text(
-                      project.isFolder
-                          ? 'افزودن پروژه به پوشه'
-                          : 'افزودن زیرپروژه',
+                      project.isFavorite
+                          ? 'حذف از علاقه‌مندی‌ها'
+                          : 'افزودن به علاقه‌مندی‌ها',
                     ),
                   ),
-                  if (index > 0)
+                  if (!project.isInbox) ...[
+                    PopupMenuItem(
+                      value: _ProjectAction.addChild,
+                      child: Text(
+                        project.isFolder
+                            ? 'افزودن پروژه به پوشه'
+                            : 'افزودن زیرپروژه',
+                      ),
+                    ),
+                    if (index > 0)
+                      const PopupMenuItem(
+                        value: _ProjectAction.moveUp,
+                        child: Text('انتقال به بالا'),
+                      ),
+                    if (index >= 0 && index < siblings.length - 1)
+                      const PopupMenuItem(
+                        value: _ProjectAction.moveDown,
+                        child: Text('انتقال به پایین'),
+                      ),
+                    const PopupMenuDivider(),
                     const PopupMenuItem(
-                      value: _ProjectAction.moveUp,
-                      child: Text('انتقال به بالا'),
+                      value: _ProjectAction.archive,
+                      child: Text('بایگانی'),
                     ),
-                  if (index >= 0 && index < siblings.length - 1)
                     const PopupMenuItem(
-                      value: _ProjectAction.moveDown,
-                      child: Text('انتقال به پایین'),
+                      value: _ProjectAction.delete,
+                      child: Text('حذف'),
                     ),
-                  const PopupMenuDivider(),
-                  const PopupMenuItem(
-                    value: _ProjectAction.archive,
-                    child: Text('بایگانی'),
-                  ),
-                  const PopupMenuItem(
-                    value: _ProjectAction.delete,
-                    child: Text('حذف'),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),

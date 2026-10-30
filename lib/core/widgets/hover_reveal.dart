@@ -68,3 +68,36 @@ class HoverReveal extends StatelessWidget {
     );
   }
 }
+
+/// Shows [idle], such as a count, until its [HoverRegion] is hovered or
+/// focused, then [active], such as the row's menu, in the same place. On
+/// touch platforms [idle] stays, and the row opens [active] on a long
+/// press instead.
+class HoverSwap extends StatelessWidget {
+  const HoverSwap({super.key, required this.idle, required this.active});
+
+  final Widget idle;
+  final Widget active;
+
+  @override
+  Widget build(BuildContext context) {
+    final hovered =
+        !HoverReveal.isTouch(context) &&
+        (context.dependOnInheritedWidgetOfExactType<_HoverScope>()?.active ??
+            true);
+    return Stack(
+      alignment: AlignmentDirectional.centerEnd,
+      children: [
+        Visibility(
+          visible: !hovered,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: idle,
+        ),
+        // Kept in the tree, so keyboard focus can still reach the menu.
+        Opacity(opacity: hovered ? 1 : 0, child: active),
+      ],
+    );
+  }
+}
