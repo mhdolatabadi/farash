@@ -13,9 +13,10 @@ import 'package:farash/features/projects/presentation/project_messages.dart';
 import 'package:farash/features/tasks/presentation/due_tasks_view.dart';
 
 /// The navigation list: Inbox, the views across projects, favourites,
-/// the project tree, labels and archived projects. Used as the phone
-/// drawer and the wide-screen sidebar, on the soft ground: the open row
-/// stands up as a raised pill and everything else stays flat.
+/// the project tree and labels, with the progress and the account pinned
+/// under it. Used as the phone drawer and the wide-screen sidebar, on the
+/// soft ground: compact rows in labelled groups, the open row standing up
+/// as a raised pill and everything else flat.
 class ProjectSidebar extends StatelessWidget {
   const ProjectSidebar({
     super.key,
@@ -26,6 +27,7 @@ class ProjectSidebar extends StatelessWidget {
     required this.header,
     this.tools,
     this.footer,
+    this.account,
     this.selectedView,
     this.onSelectView,
     this.viewCounts = const {},
@@ -39,7 +41,7 @@ class ProjectSidebar extends StatelessWidget {
   final ValueChanged<Project> onSelect;
   final VoidCallback onOpenArchived;
 
-  /// The app's name, the account and search, at the top.
+  /// The app's name and search, at the top.
   final Widget header;
 
   /// Destinations that are not lists, such as Focus, under the views.
@@ -47,6 +49,9 @@ class ProjectSidebar extends StatelessWidget {
 
   /// Pinned under the list, as the progress summary.
   final Widget? footer;
+
+  /// The account row, pinned at the very bottom.
+  final Widget? account;
 
   /// The view across projects that is open, if any.
   final DueView? selectedView;
@@ -70,9 +75,11 @@ class ProjectSidebar extends StatelessWidget {
         final favorites = controller.favorites;
         final tree = controller.tree;
         Widget hint(String text) => Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Space.md,
-            vertical: Space.xs,
+          padding: const EdgeInsetsDirectional.fromSTEB(
+            Space.md,
+            Space.xs,
+            Space.md,
+            Space.sm,
           ),
           child: Text(
             text,
@@ -82,6 +89,8 @@ class ProjectSidebar extends StatelessWidget {
           ),
         );
         final tools = this.tools ?? const <Widget>[];
+        final footer = this.footer;
+        final account = this.account;
         return SidebarTheme(
           child: SafeArea(
             child: Column(
@@ -90,14 +99,14 @@ class ProjectSidebar extends StatelessWidget {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(
                       Space.md,
-                      Space.sm,
+                      Space.md,
                       Space.md,
                       Space.lg,
                     ),
                     children:
                         <Widget>[
                               header,
-                              const SizedBox(height: Space.sm),
+                              const SizedBox(height: Space.md),
                               if (inbox != null)
                                 _ProjectTile(
                                   project: inbox,
@@ -123,7 +132,7 @@ class ProjectSidebar extends StatelessWidget {
                                   controller.projects.isEmpty)
                                 _LoadError(onRetry: controller.load),
                               if (tools.isNotEmpty) ...[
-                                const SizedBox(height: Space.md),
+                                const _SectionTitle('ابزارها'),
                                 ...tools,
                               ],
                               if (favorites.isNotEmpty) ...[
@@ -139,14 +148,21 @@ class ProjectSidebar extends StatelessWidget {
                               ],
                               _SectionTitle(
                                 'پروژه‌ها',
-                                action: _SectionAdd(
-                                  tooltip: 'پروژهٔ تازه',
-                                  onPressed: () => showProjectEditor(
-                                    context,
-                                    controller: controller,
-                                    onCreated: onSelect,
+                                actions: [
+                                  _SectionAction(
+                                    icon: Icons.inventory_2_outlined,
+                                    tooltip: 'پروژه‌های بایگانی‌شده',
+                                    onPressed: onOpenArchived,
                                   ),
-                                ),
+                                  _SectionAction(
+                                    tooltip: 'پروژهٔ تازه',
+                                    onPressed: () => showProjectEditor(
+                                      context,
+                                      controller: controller,
+                                      onCreated: onSelect,
+                                    ),
+                                  ),
+                                ],
                               ),
                               if (tree.isEmpty &&
                                   controller.projects.isNotEmpty)
@@ -165,18 +181,20 @@ class ProjectSidebar extends StatelessWidget {
                               if (labels case final labels?) ...[
                                 _SectionTitle(
                                   'برچسب‌ها',
-                                  action: _SectionAdd(
-                                    tooltip: 'برچسب تازه',
-                                    onPressed: () async {
-                                      final created = await showLabelEditor(
-                                        context,
-                                        controller: labels,
-                                      );
-                                      if (created != null) {
-                                        onSelectLabel?.call(created);
-                                      }
-                                    },
-                                  ),
+                                  actions: [
+                                    _SectionAction(
+                                      tooltip: 'برچسب تازه',
+                                      onPressed: () async {
+                                        final created = await showLabelEditor(
+                                          context,
+                                          controller: labels,
+                                        );
+                                        if (created != null) {
+                                          onSelectLabel?.call(created);
+                                        }
+                                      },
+                                    ),
+                                  ],
                                 ),
                                 if (labels.labels.isEmpty)
                                   hint(
@@ -191,17 +209,6 @@ class ProjectSidebar extends StatelessWidget {
                                     onTap: () => onSelectLabel?.call(label),
                                   ),
                               ],
-                              const SizedBox(height: Space.md),
-                              ListTile(
-                                leading: const Icon(Icons.archive_outlined),
-                                title: Text(
-                                  'پروژه‌های بایگانی‌شده',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                                onTap: onOpenArchived,
-                              ),
                             ]
                             .map(
                               (row) => Material(
@@ -212,15 +219,23 @@ class ProjectSidebar extends StatelessWidget {
                             .toList(),
                   ),
                 ),
-                if (footer case final footer?)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      Space.md,
-                      Space.xs,
-                      Space.md,
-                      Space.md,
+                if (footer != null || account != null)
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border(top: Soft.hairline(context)),
                     ),
-                    child: footer,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        Space.md,
+                        Space.sm,
+                        Space.md,
+                        Space.sm,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [?footer, ?account],
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -231,8 +246,8 @@ class ProjectSidebar extends StatelessWidget {
   }
 }
 
-/// The sidebar's one row style: icon, title and a quiet count, shorter
-/// where a pointer is used and at least 48 on touch.
+/// The sidebar's one row style: an 18 icon, a medium title and a quiet
+/// count; 36 high where a pointer is used and 48 on touch.
 class SidebarTheme extends StatelessWidget {
   const SidebarTheme({super.key, required this.child});
 
@@ -249,14 +264,18 @@ class SidebarTheme extends StatelessWidget {
     return ListTileTheme(
       data: ListTileThemeData(
         dense: true,
-        minTileHeight: pointer ? 40 : 48,
-        minLeadingWidth: 20,
+        minTileHeight: pointer ? 36 : 48,
+        minLeadingWidth: 18,
+        minVerticalPadding: 0,
+        visualDensity: VisualDensity.compact,
         horizontalTitleGap: Space.md,
         contentPadding: const EdgeInsetsDirectional.only(
           start: Space.md,
           end: Space.xs,
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(SidebarRow.radius),
+        ),
         iconColor: scheme.onSurfaceVariant,
         textColor: scheme.onSurface,
         selectedColor: scheme.primary,
@@ -266,7 +285,7 @@ class SidebarTheme extends StatelessWidget {
         ),
         leadingAndTrailingTextStyle: theme.textTheme.labelMedium,
       ),
-      child: IconTheme.merge(data: const IconThemeData(size: 20), child: child),
+      child: IconTheme.merge(data: const IconThemeData(size: 18), child: child),
     );
   }
 }
@@ -274,6 +293,9 @@ class SidebarTheme extends StatelessWidget {
 /// A sidebar row; the open one stands off the ground as a raised pill.
 class SidebarRow extends StatelessWidget {
   const SidebarRow({super.key, required this.selected, required this.child});
+
+  /// The corner of every row and of the open row's pill.
+  static const radius = 10.0;
 
   final bool selected;
   final Widget child;
@@ -283,12 +305,12 @@ class SidebarRow extends StatelessWidget {
     final row = Material(type: MaterialType.transparency, child: child);
     if (!selected) return row;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 1),
       child: DecoratedBox(
         decoration: ShapeDecoration(
           color: Soft.ground(context),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(radius),
             side: Soft.hairline(context),
           ),
           shadows: Soft.raised(context, depth: 3),
@@ -326,20 +348,28 @@ class SidebarCount extends StatelessWidget {
   }
 }
 
-class _SectionAdd extends StatelessWidget {
-  const _SectionAdd({required this.tooltip, required this.onPressed});
+/// A quiet button beside a section's name, such as add.
+class _SectionAction extends StatelessWidget {
+  const _SectionAction({
+    required this.tooltip,
+    required this.onPressed,
+    this.icon = Icons.add,
+  });
 
   final String tooltip;
   final VoidCallback onPressed;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
       tooltip: tooltip,
-      iconSize: 18,
+      iconSize: 16,
       visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+      padding: EdgeInsets.zero,
       color: Theme.of(context).colorScheme.onSurfaceVariant,
-      icon: const Icon(Icons.add),
+      icon: Icon(icon),
       onPressed: onPressed,
     );
   }
@@ -391,35 +421,30 @@ class _LabelTile extends StatelessWidget {
           onTap: onTap,
           leading: Icon(Icons.sell_outlined, size: 18, color: label.swatch),
           title: Text(label.tag, maxLines: 1, overflow: TextOverflow.ellipsis),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SidebarCount(label.openTaskCount),
-              HoverReveal(
-                child: PopupMenuButton<_LabelAction>(
-                  tooltip: 'گزینه‌های برچسب',
-                  onSelected: (action) => _run(context, action),
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: _LabelAction.edit,
-                      child: Text('ویرایش'),
-                    ),
-                    PopupMenuItem(
-                      value: _LabelAction.favorite,
-                      child: Text(
-                        label.isFavorite
-                            ? 'حذف از علاقه‌مندی‌ها'
-                            : 'افزودن به علاقه‌مندی‌ها',
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: _LabelAction.delete,
-                      child: Text('حذف'),
-                    ),
-                  ],
+          trailing: HoverSwap(
+            idle: SidebarCount(label.openTaskCount),
+            active: PopupMenuButton<_LabelAction>(
+              tooltip: 'گزینه‌های برچسب',
+              onSelected: (action) => _run(context, action),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: _LabelAction.edit,
+                  child: Text('ویرایش'),
                 ),
-              ),
-            ],
+                PopupMenuItem(
+                  value: _LabelAction.favorite,
+                  child: Text(
+                    label.isFavorite
+                        ? 'حذف از علاقه‌مندی‌ها'
+                        : 'افزودن به علاقه‌مندی‌ها',
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: _LabelAction.delete,
+                  child: Text('حذف'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -427,30 +452,40 @@ class _LabelTile extends StatelessWidget {
   }
 }
 
+/// A group's name: small and muted, closer to its rows than to the
+/// group above.
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.title, {this.action});
+  const _SectionTitle(this.title, {this.actions = const []});
 
   final String title;
-  final Widget? action;
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsetsDirectional.only(start: Space.md, top: Space.lg),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        Space.md,
+        Space.lg,
+        Space.xs,
+        Space.xs,
+      ),
+      child: SizedBox(
+        height: 32,
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
-          ?action,
-        ],
+            ...actions,
+          ],
+        ),
       ),
     );
   }
@@ -577,8 +612,9 @@ class _ProjectTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            trailing: HoverReveal(
-              child: PopupMenuButton<_ProjectAction>(
+            trailing: HoverSwap(
+              idle: SidebarCount(project.openTasks),
+              active: PopupMenuButton<_ProjectAction>(
                 tooltip: 'گزینه‌های پروژه',
                 onSelected: (action) => _run(context, action),
                 itemBuilder: (context) => [

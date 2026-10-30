@@ -101,18 +101,13 @@ class _ProgressCardState extends State<ProgressCard>
     final week = progress == null || progress.weeklyGoal <= 0
         ? null
         : (progress.weeklyDays / progress.weeklyGoal).clamp(0.0, 1.0);
-    return SoftWell(
-      radius: 16,
-      padding: EdgeInsets.zero,
+    return Material(
+      type: MaterialType.transparency,
       child: InkWell(
+        borderRadius: BorderRadius.circular(10),
         onTap: error != null ? _load : (progress == null ? null : _open),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            Space.md,
-            Space.md,
-            Space.md,
-            Space.md,
-          ),
+          padding: const EdgeInsets.all(Space.sm),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -122,15 +117,15 @@ class _ProgressCardState extends State<ProgressCard>
                     error != null
                         ? Icons.cloud_off_outlined
                         : Icons.insights_outlined,
-                    size: 18,
+                    size: 16,
                     color: error != null ? muted : theme.colorScheme.primary,
                   ),
                   const SizedBox(width: Space.sm),
                   Expanded(
                     child: Text(
                       'پیشرفت من',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -154,20 +149,21 @@ class _ProgressCardState extends State<ProgressCard>
                   borderRadius: BorderRadius.circular(2),
                   child: LinearProgressIndicator(
                     value: week ?? 0,
-                    minHeight: 4,
+                    minHeight: 3,
                     backgroundColor: theme.colorScheme.outlineVariant
                         .withValues(alpha: 0.5),
                   ),
                 ),
-                const SizedBox(height: Space.sm),
+                const SizedBox(height: Space.xs),
                 Text(
                   progress == null
                       ? 'در حال دریافت…'
                       : '${persianDigits(progress.weeklyDays)} از '
                             '${persianDigits(progress.weeklyGoal)} روز این هفته · '
                             '${persianDigits(progress.xp)} امتیاز',
-                  maxLines: 2,
-                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(color: muted),
                 ),
               ],
             ],

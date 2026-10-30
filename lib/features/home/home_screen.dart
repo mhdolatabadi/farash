@@ -16,6 +16,7 @@ import 'package:farash/features/time_tracking/time_tracking.dart';
 import 'package:farash/features/time_tracking/time_tracking_view.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:farash/app/soft.dart';
+import 'package:farash/app/spacing.dart';
 import 'package:farash/app/surfaces.dart';
 import 'package:farash/features/focus/focus_controller.dart';
 import 'package:farash/features/focus/focus_view.dart';
@@ -664,21 +665,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     header: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _AccountHeader(
-          calendarConnectionsApi: widget.tasksApi is CalendarConnectionsApi
-              ? widget.tasksApi as CalendarConnectionsApi
-              : null,
-          email: widget.email,
-          onLogout: widget.onLogout,
-          startView: widget.startView,
-          exportApi: widget.tasksApi is ExportApi
-              ? widget.tasksApi as ExportApi
-              : null,
-          token: widget.token,
-        ),
+        const _Brand(),
         if (widget.tasksApi case final SearchApi api)
           _SearchField(onTap: () => _openSearch(api)),
       ],
+    ),
+    account: _AccountRow(
+      calendarConnectionsApi: widget.tasksApi is CalendarConnectionsApi
+          ? widget.tasksApi as CalendarConnectionsApi
+          : null,
+      email: widget.email,
+      onLogout: widget.onLogout,
+      startView: widget.startView,
+      exportApi: widget.tasksApi is ExportApi
+          ? widget.tasksApi as ExportApi
+          : null,
+      token: widget.token,
     ),
     // On a phone these are already in the bottom bar.
     tools: MediaQuery.sizeOf(context).width >= sidebarBreakpoint
@@ -950,13 +952,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               body: SafeArea(
                 child: Row(
                   children: [
-                    // The sidebar lies on the same ground as the page; only
-                    // the open row stands up from it.
-                    SizedBox(
-                      width: 272,
-                      child: ListenableBuilder(
-                        listenable: _focus,
-                        builder: (context, _) => _sidebar(),
+                    // The sidebar lies on the same ground as the page, set
+                    // off by one hairline; only the open row stands up.
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        border: BorderDirectional(end: Soft.hairline(context)),
+                      ),
+                      child: SizedBox(
+                        width: 264,
+                        child: ListenableBuilder(
+                          listenable: _focus,
+                          builder: (context, _) => _sidebar(),
+                        ),
                       ),
                     ),
                     Expanded(
@@ -991,11 +998,39 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
 enum _AccountAction { calendar, calendarConnections, startView, export, logout }
 
-/// The app's name and, at the other end, the account: one round button
-/// with the account's initial whose menu names the email and holds the
-/// account's actions.
-class _AccountHeader extends StatelessWidget {
-  const _AccountHeader({
+/// The app's mark and name at the top of the sidebar.
+class _Brand extends StatelessWidget {
+  const _Brand();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        Space.md,
+        Space.xs,
+        Space.md,
+        Space.md,
+      ),
+      child: Row(
+        children: [
+          const FarashMark(size: 22),
+          const SizedBox(width: Space.sm),
+          Text(
+            'فراش',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The account at the bottom of the sidebar: the initial and the email,
+/// one row whose menu holds the account's actions.
+class _AccountRow extends StatelessWidget {
+  const _AccountRow({
     required this.email,
     required this.onLogout,
     this.startView,
@@ -1014,115 +1049,105 @@ class _AccountHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
     final initial = email.isEmpty ? '?' : email.characters.first.toUpperCase();
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(12, 4, 0, 12),
-      child: Row(
-        children: [
-          const FarashMark(size: 24),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'فراش',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+    return PopupMenuButton<_AccountAction>(
+      tooltip: 'حساب و تنظیمات',
+      position: PopupMenuPosition.over,
+      borderRadius: BorderRadius.circular(SidebarRow.radius),
+      // The tooltip names the button; the initial and email are what it
+      // shows, not what it is called.
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Space.sm,
+            vertical: Space.sm,
           ),
-          PopupMenuButton<_AccountAction>(
-            tooltip: 'حساب و تنظیمات',
-            // The tooltip names the button; the initial is decoration.
-            icon: ExcludeSemantics(
-              child: CircleAvatar(
-                radius: 15,
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 14,
                 backgroundColor: theme.colorScheme.primaryContainer,
                 foregroundColor: theme.colorScheme.onPrimaryContainer,
                 child: Text(
                   initial,
-                  style: theme.textTheme.labelLarge?.copyWith(
+                  style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onPrimaryContainer,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-            ),
-            onSelected: (action) => switch (action) {
-              _AccountAction.calendar => showCalendarSettings(
-                context,
-                CalendarScope.of(context),
-              ),
-              _AccountAction.calendarConnections => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => CalendarConnectionsView(
-                    api: calendarConnectionsApi!,
-                    token: token,
-                  ),
-                ),
-              ),
-              _AccountAction.startView => _pickStartView(context, startView!),
-              _AccountAction.export => showAccountExport(
-                context,
-                exportApi!,
-                token,
-              ),
-              _AccountAction.logout => onLogout(),
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                enabled: false,
+              const SizedBox(width: Space.md),
+              Expanded(
                 child: Text(
                   email,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textDirection: TextDirection.ltr,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                  textAlign: TextAlign.end,
+                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
                 ),
               ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: _AccountAction.calendar,
-                child: ListTile(
-                  leading: Icon(Icons.calendar_month_outlined),
-                  title: Text('تنظیمات تقویم'),
-                ),
-              ),
-              if (calendarConnectionsApi != null)
-                const PopupMenuItem(
-                  value: _AccountAction.calendarConnections,
-                  child: ListTile(
-                    leading: Icon(Icons.event_available_outlined),
-                    title: Text('اتصال تقویم‌ها'),
-                  ),
-                ),
-              if (startView != null)
-                const PopupMenuItem(
-                  value: _AccountAction.startView,
-                  child: ListTile(
-                    leading: Icon(Icons.home_outlined),
-                    title: Text('صفحهٔ آغاز'),
-                  ),
-                ),
-              if (exportApi != null)
-                const PopupMenuItem(
-                  value: _AccountAction.export,
-                  child: ListTile(
-                    leading: Icon(Icons.download_outlined),
-                    title: Text('خروجی داده‌های من'),
-                  ),
-                ),
-              const PopupMenuItem(
-                value: _AccountAction.logout,
-                child: ListTile(
-                  leading: Icon(Icons.logout),
-                  title: Text('خروج'),
-                ),
-              ),
+              const SizedBox(width: Space.sm),
+              Icon(Icons.unfold_more, size: 18, color: muted),
             ],
           ),
-        ],
+        ),
       ),
+      onSelected: (action) => switch (action) {
+        _AccountAction.calendar => showCalendarSettings(
+          context,
+          CalendarScope.of(context),
+        ),
+        _AccountAction.calendarConnections => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => CalendarConnectionsView(
+              api: calendarConnectionsApi!,
+              token: token,
+            ),
+          ),
+        ),
+        _AccountAction.startView => _pickStartView(context, startView!),
+        _AccountAction.export => showAccountExport(context, exportApi!, token),
+        _AccountAction.logout => onLogout(),
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: _AccountAction.calendar,
+          child: ListTile(
+            leading: Icon(Icons.calendar_month_outlined),
+            title: Text('تنظیمات تقویم'),
+          ),
+        ),
+        if (calendarConnectionsApi != null)
+          const PopupMenuItem(
+            value: _AccountAction.calendarConnections,
+            child: ListTile(
+              leading: Icon(Icons.event_available_outlined),
+              title: Text('اتصال تقویم‌ها'),
+            ),
+          ),
+        if (startView != null)
+          const PopupMenuItem(
+            value: _AccountAction.startView,
+            child: ListTile(
+              leading: Icon(Icons.home_outlined),
+              title: Text('صفحهٔ آغاز'),
+            ),
+          ),
+        if (exportApi != null)
+          const PopupMenuItem(
+            value: _AccountAction.export,
+            child: ListTile(
+              leading: Icon(Icons.download_outlined),
+              title: Text('خروجی داده‌های من'),
+            ),
+          ),
+        const PopupMenuItem(
+          value: _AccountAction.logout,
+          child: ListTile(leading: Icon(Icons.logout), title: Text('خروج')),
+        ),
+      ],
     );
   }
 }
@@ -1138,23 +1163,23 @@ class _SearchField extends StatelessWidget {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.zero,
       child: Semantics(
         container: true,
         button: true,
         label: 'جست‌وجو و فیلترها',
         excludeSemantics: true,
         child: SoftWell(
-          radius: 14,
+          radius: SidebarRow.radius,
           padding: EdgeInsets.zero,
           child: InkWell(
             onTap: onTap,
             child: SizedBox(
-              height: 44,
+              height: 40,
               child: Row(
                 children: [
                   const SizedBox(width: 12),
-                  Icon(Icons.search, size: 20, color: muted),
+                  Icon(Icons.search, size: 18, color: muted),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
