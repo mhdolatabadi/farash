@@ -53,6 +53,19 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('the account button is named by its tooltip, not the initial', (
+    tester,
+  ) async {
+    await pumpHome(tester, size: const Size(1200, 800));
+    final semantics = tester.ensureSemantics();
+    // Android reads the tooltip as the button's name only while the
+    // avatar's initial stays out of the label.
+    final node = tester.getSemantics(find.byTooltip('حساب و تنظیمات'));
+    expect(node.tooltip, 'حساب و تنظیمات');
+    expect(node.label, isEmpty);
+    semantics.dispose();
+  });
+
   testWidgets('opens on the Inbox', (tester) async {
     await pumpHome(tester, size: const Size(400, 800));
 

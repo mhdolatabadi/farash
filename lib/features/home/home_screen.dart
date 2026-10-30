@@ -1031,15 +1031,18 @@ class _AccountHeader extends StatelessWidget {
           ),
           PopupMenuButton<_AccountAction>(
             tooltip: 'حساب و تنظیمات',
-            icon: CircleAvatar(
-              radius: 15,
-              backgroundColor: theme.colorScheme.primaryContainer,
-              foregroundColor: theme.colorScheme.onPrimaryContainer,
-              child: Text(
-                initial,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w700,
+            // The tooltip names the button; the initial is decoration.
+            icon: ExcludeSemantics(
+              child: CircleAvatar(
+                radius: 15,
+                backgroundColor: theme.colorScheme.primaryContainer,
+                foregroundColor: theme.colorScheme.onPrimaryContainer,
+                child: Text(
+                  initial,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
@@ -1137,6 +1140,7 @@ class _SearchField extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Semantics(
+        container: true,
         button: true,
         label: 'جست‌وجو و فیلترها',
         excludeSemantics: true,
