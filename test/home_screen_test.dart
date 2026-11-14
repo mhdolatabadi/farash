@@ -53,6 +53,19 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('the account button is named by its tooltip, not the initial', (
+    tester,
+  ) async {
+    await pumpHome(tester, size: const Size(1200, 800));
+    final semantics = tester.ensureSemantics();
+    // Android reads the tooltip as the button's name only while the
+    // avatar's initial stays out of the label.
+    final node = tester.getSemantics(find.byTooltip('حساب و تنظیمات'));
+    expect(node.tooltip, 'حساب و تنظیمات');
+    expect(node.label, isEmpty);
+    semantics.dispose();
+  });
+
   testWidgets('opens on the Inbox', (tester) async {
     await pumpHome(tester, size: const Size(400, 800));
 
@@ -197,6 +210,19 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('a long press opens a project row menu on touch', (tester) async {
+    await pumpHome(tester, size: const Size(400, 800));
+    final work = await projects.create(name: 'Work', color: '#2563eb');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.byKey(ValueKey('tree-${work.id}')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('بایگانی'), findsOneWidget);
   });
 
   testWidgets('the Inbox menu has no rename, archive or delete', (

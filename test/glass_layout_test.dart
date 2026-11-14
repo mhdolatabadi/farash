@@ -199,7 +199,7 @@ void main() {
       await tester.tap(
         phoneNav || rail
             ? destination('تمرکز')
-            : find.widgetWithText(ListTile, 'تمرکز'),
+            : find.widgetWithText(ListTile, 'تمرکز').first,
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);

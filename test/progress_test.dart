@@ -103,7 +103,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('سطح ۱ · ۱۰ امتیاز ·'), findsOneWidget);
+    expect(find.textContaining('این هفته · ۱۰ امتیاز'), findsOneWidget);
     await tester.tap(find.text('پیشرفت من'));
     await tester.pumpAndSettle();
     expect(find.text('هدف هفتگی'), findsOneWidget);
@@ -151,7 +151,7 @@ void main() {
       failing = false;
       await tester.tap(find.text('پیشرفت من'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('سطح ۱ · ۱۰ امتیاز ·'), findsOneWidget);
+      expect(find.textContaining('این هفته · ۱۰ امتیاز'), findsOneWidget);
     },
   );
 
@@ -172,11 +172,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('سطح ۱ · ۰ امتیاز ·'), findsOneWidget);
+    expect(find.textContaining('این هفته · ۰ امتیاز'), findsOneWidget);
     completed = 1;
     api.progressChanges.value++;
     await tester.pumpAndSettle();
-    expect(find.textContaining('سطح ۱ · ۱۰ امتیاز ·'), findsOneWidget);
+    expect(find.textContaining('این هفته · ۱۰ امتیاز'), findsOneWidget);
   });
 }
 
