@@ -28,6 +28,10 @@ func TestSearchAndSavedFilterAPI(t *testing.T) {
 	if code := api.do("GET", "/api/v1/search?today=2026-10-21&q="+url.QueryEscape(`#"کار شخصی" & no date`), alice, nil, &page); code != 200 || len(page.Tasks) != 2 {
 		t.Fatal("project and date filter", code, page)
 	}
+	// A negated date keeps undated tasks: !today means "not due today".
+	if code := api.do("GET", "/api/v1/search?today=2026-10-21&q="+url.QueryEscape(`#"کار شخصی" & !(today | overdue)`), alice, nil, &page); code != 200 || len(page.Tasks) != 2 {
+		t.Fatal("negated date keeps undated tasks", code, page)
+	}
 	if code := api.do("GET", "/api/v1/search?today=2026-10-21&limit=1", alice, nil, &page); code != 200 || len(page.Tasks) != 1 || !page.HasMore {
 		t.Fatal("bounded page", code, page)
 	}

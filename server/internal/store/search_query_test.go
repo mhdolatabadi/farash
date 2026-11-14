@@ -30,7 +30,7 @@ func TestSearchNormalizationAndGrammar(t *testing.T) {
 		t.Fatal("query values must remain bound", sql, args, err)
 	}
 	sql, _, _ = compileSearch("p1 | p2 & today", "2026-10-21")
-	if !strings.Contains(sql, "OR (priority=$4 AND due_date=$2::date)") {
+	if !strings.Contains(sql, "OR (priority=$4 AND COALESCE(due_date=$2::date, FALSE))") {
 		t.Fatal("AND precedence", sql)
 	}
 }

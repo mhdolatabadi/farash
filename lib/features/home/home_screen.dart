@@ -5,6 +5,9 @@ import 'package:farash/features/habits/habits_view.dart';
 import 'package:farash/features/habits/habit_detail.dart';
 import 'package:farash/features/habits/reminders/habit_reminders.dart';
 import 'package:farash/features/habits/reminders/local_reminders.dart';
+import 'package:farash/core/calendar/calendar_settings.dart';
+import 'package:farash/features/matrix/matrix.dart';
+import 'package:farash/features/matrix/matrix_view.dart';
 import 'package:farash/features/search/search.dart';
 import 'package:farash/features/search/search_view.dart';
 import 'package:farash/features/portability/export_api.dart';
@@ -61,6 +64,7 @@ class HomeScreen extends StatefulWidget {
     this.startView,
     this.labelsApi,
     this.habitReminders,
+    this.settingsStore,
   });
 
   final String email;
@@ -77,6 +81,10 @@ class HomeScreen extends StatefulWidget {
 
   /// The device's habit reminders, where the platform can show them.
   final HabitReminders? habitReminders;
+
+  /// Where device-only choices such as the matrix rules are kept; the
+  /// secure device store when null.
+  final CalendarSettingsStore? settingsStore;
 
   /// The current access token; null once signed out.
   final String? Function() token;
@@ -165,6 +173,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _focus.dispose();
     widget.startView?.removeListener(_applyStartView);
     _labels?.dispose();
+    _matrix?.dispose();
     super.dispose();
   }
 
@@ -646,6 +655,31 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (_habits != null) 4,
   ];
 
+  MatrixRules? _matrix;
+  MatrixRules get _matrixRules => _matrix ??= MatrixRules(
+    store: widget.settingsStore ?? SecureCalendarSettingsStore(),
+  )..load();
+
+  void _openMatrix(SearchApi api) {
+    _scaffoldKey.currentState?.closeDrawer();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => TrackerScope(
+          tracker: _tracker,
+          child: MatrixView(
+            search: api,
+            tasks: widget.tasksApi,
+            sections: widget.sectionsApi,
+            labels: _labels,
+            token: widget.token,
+            projects: () => widget.projects.projects,
+            rules: _matrixRules,
+          ),
+        ),
+      ),
+    );
+  }
+
   void _openSearch(SearchApi api) {
     _scaffoldKey.currentState?.closeDrawer();
     Navigator.of(context).push(
@@ -701,30 +735,39 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       token: widget.token,
     ),
     // On a phone these are already in the bottom bar.
-    tools: MediaQuery.sizeOf(context).width >= sidebarBreakpoint
-        ? [
-            for (final (index, icon, title) in [
-              (2, Icons.timelapse_outlined, 'تمرکز'),
-              if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
-              if (_habits != null) (4, Icons.task_alt_rounded, 'عادت‌ها'),
-            ])
-              SidebarRow(
-                selected: _section == index,
-                child: ListTile(
-                  leading: Icon(icon),
-                  title: Text(title),
-                  trailing: index == 2 && _focusBadge != null
-                      ? Padding(
-                          padding: const EdgeInsetsDirectional.only(end: 8),
-                          child: Text(_focusBadge!),
-                        )
-                      : null,
-                  selected: _section == index,
-                  onTap: () => _switchSection(index),
-                ),
-              ),
-          ]
-        : null,
+    tools: [
+      if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint)
+        for (final (index, icon, title) in [
+          (2, Icons.timelapse_outlined, 'تمرکز'),
+          if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
+          if (_habits != null) (4, Icons.task_alt_rounded, 'عادت‌ها'),
+        ])
+          SidebarRow(
+            selected: _section == index,
+            child: ListTile(
+              leading: Icon(icon),
+              title: Text(title),
+              trailing: index == 2 && _focusBadge != null
+                  ? Padding(
+                      padding: const EdgeInsetsDirectional.only(end: 8),
+                      child: Text(_focusBadge!),
+                    )
+                  : null,
+              selected: _section == index,
+              onTap: () => _switchSection(index),
+            ),
+          ),
+      if (widget.tasksApi case final SearchApi api)
+        SidebarRow(
+          key: const ValueKey('tool-matrix'),
+          selected: false,
+          child: ListTile(
+            leading: const Icon(Icons.grid_view_outlined),
+            title: const Text('ماتریس آیزنهاور'),
+            onTap: () => _openMatrix(api),
+          ),
+        ),
+    ],
     footer: switch (widget.tasksApi) {
       final ApiClient api => ProgressCard(api: api, token: widget.token),
       _ => null,

@@ -210,13 +210,13 @@ func (p *searchParser) atom(token searchToken) (string, error) {
 		}
 		switch key {
 		case "today", "امروز":
-			return "due_date=$2::date", nil
+			return "COALESCE(due_date=$2::date, FALSE)", nil
 		case "overdue", "دیرشده", "عقب‌افتاده", "عقبافتاده":
-			return "due_date<$2::date", nil
+			return "COALESCE(due_date<$2::date, FALSE)", nil
 		case "nodate", "بی‌تاریخ", "بیتاریخ":
 			return "due_date IS NULL", nil
 		case "7days", "۷روز", "7روز":
-			return "due_date BETWEEN $2::date AND $2::date+6", nil
+			return "COALESCE(due_date BETWEEN $2::date AND $2::date+6, FALSE)", nil
 		case "all", "همه":
 			return "TRUE", nil
 		}
