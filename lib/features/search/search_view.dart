@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:farash/app/soft.dart';
 import 'package:farash/app/spacing.dart';
+import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/api/api_client.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
+import 'package:farash/features/search/filter_editor.dart';
 import 'package:farash/features/search/search.dart';
 import 'package:farash/features/tasks/application/tasks_controller.dart';
 import 'package:farash/features/tasks/data/task.dart';
@@ -21,8 +23,16 @@ class SearchWorkspace extends StatefulWidget {
     required this.projects,
     this.sections,
     this.labels,
+    this.filters,
+    this.initialFilter,
   });
   final SearchApi api;
+
+  /// The account's saved filters; the page makes its own when null.
+  final FiltersController? filters;
+
+  /// Opens the page with this filter's query, sort and grouping.
+  final SavedFilter? initialFilter;
   final TasksApi tasks;
   final SectionsApi? sections;
   final LabelsController? labels;
@@ -35,23 +45,30 @@ class SearchWorkspace extends StatefulWidget {
 class _SearchWorkspaceState extends State<SearchWorkspace> {
   final query = TextEditingController();
   List<Task> tasks = [];
-  List<SavedFilter> filters = [];
-  String sort = 'due';
+  late final FiltersController filters =
+      widget.filters ?? FiltersController(api: widget.api, token: widget.token);
+  late SavedFilter? applied = widget.initialFilter;
+  late String sort = widget.initialFilter?.sort ?? 'due';
+  late String group = widget.initialFilter?.groupBy ?? 'none';
   bool completed = false, loading = false, busy = false, more = false;
-  String? error, filterError;
+  String? error;
   int generation = 0, nextOffset = 0;
   String activeQuery = '';
 
   @override
   void initState() {
     super.initState();
-    loadFilters();
+    query.text = widget.initialFilter?.query ?? '';
+    filters.addListener(_filtersChanged);
+    filters.load();
     search();
   }
 
   @override
   void dispose() {
     generation++;
+    filters.removeListener(_filtersChanged);
+    if (widget.filters == null) filters.dispose();
     query.dispose();
     super.dispose();
   }
@@ -62,26 +79,21 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
     return value;
   }
 
-  Future<void> loadFilters() async {
-    try {
-      final result = await widget.api.searchRequest(
-        token,
-        'GET',
-        '/api/v1/filters',
-      );
-      if (!mounted) return;
-      setState(() {
-        filters = [
-          for (final f in result['filters'] as List<dynamic>)
-            SavedFilter.fromJson(f as Map<String, dynamic>),
-        ];
-        filterError = null;
-      });
-    } catch (_) {
-      if (mounted) {
-        setState(() => filterError = 'فیلترهای ذخیره‌شده دریافت نشدند.');
-      }
-    }
+  void _filtersChanged() {
+    if (!mounted) return;
+    // Keep the applied filter's name current; drop it once it is deleted.
+    setState(() => applied = filters.byId(applied?.id));
+  }
+
+  /// Runs [filter]'s query with its sort and grouping.
+  void apply(SavedFilter filter) {
+    query.text = filter.query;
+    setState(() {
+      applied = filter;
+      sort = filter.sort;
+      group = filter.groupBy;
+    });
+    search();
   }
 
   Future<void> search({bool next = false}) async {
@@ -192,63 +204,37 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
     }
   }
 
-  Future<void> save() async {
+  List<String> get _projectNames => [
+    for (final p in widget.projects())
+      if (!p.isInbox) p.name,
+  ];
+
+  List<String> get _labelNames => [
+    for (final l in widget.labels?.labels ?? const []) l.name,
+  ];
+
+  /// Saves the current query as a new filter, or edits [filter].
+  Future<void> save([SavedFilter? filter]) async {
     if (busy) return;
-    final picked = await showDialog<String>(
-      context: context,
-      builder: (context) => const _FilterNameDialog(),
+    final saved = await showFilterEditor(
+      context,
+      controller: filters,
+      filter: filter,
+      initialQuery: query.text.trim(),
+      initialSort: sort,
+      initialGroup: group,
+      projectNames: _projectNames,
+      labelNames: _labelNames,
     );
-    if (!mounted || picked == null) return;
-    setState(() => busy = true);
-    try {
-      await widget.api.searchRequest(
-        token,
-        'POST',
-        '/api/v1/filters',
-        body: {
-          'name': picked,
-          'query': query.text.trim(),
-          'sort': sort,
-          'is_favorite': true,
-          'color': '#98503D',
-        },
-      );
-      if (mounted) await loadFilters();
-    } catch (_) {
-      if (mounted) setState(() => error = 'فیلتر ذخیره نشد؛ دوباره تلاش کنید.');
-    } finally {
-      if (mounted) setState(() => busy = false);
-    }
+    if (mounted && saved != null) apply(saved);
   }
 
   Future<void> remove(SavedFilter filter) async {
     if (busy) return;
-    final yes = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('حذف فیلتر «${filter.name}»؟'),
-        content: const Text('کارها حذف نمی‌شوند.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('انصراف'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('حذف فیلتر'),
-          ),
-        ],
-      ),
-    );
-    if (yes != true || !mounted) return;
+    if (!await confirmFilterDelete(context, filter) || !mounted) return;
     setState(() => busy = true);
     try {
-      await widget.api.searchRequest(
-        token,
-        'DELETE',
-        '/api/v1/filters/${Uri.encodeComponent(filter.id)}',
-      );
-      if (mounted) await loadFilters();
+      await filters.delete(filter);
     } catch (_) {
       if (mounted) setState(() => error = 'فیلتر حذف نشد؛ دوباره تلاش کنید.');
     } finally {
@@ -258,7 +244,17 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('جست‌وجو و فیلترها')),
+    appBar: AppBar(
+      title: Text(applied?.name ?? 'جست‌وجو و فیلترها'),
+      actions: [
+        if (applied case final filter?)
+          IconButton(
+            tooltip: 'ویرایش فیلتر',
+            onPressed: busy ? null : () => save(filter),
+            icon: const Icon(Icons.edit_outlined),
+          ),
+      ],
+    ),
     body: SafeArea(
       child: Align(
         alignment: Alignment.topCenter,
@@ -303,7 +299,7 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
                       label: const Text('جست‌وجو'),
                     ),
                     OutlinedButton.icon(
-                      onPressed: busy ? null : save,
+                      onPressed: busy ? null : () => save(),
                       icon: const Icon(Icons.bookmark_add_outlined),
                       label: const Text('ذخیرهٔ فیلتر'),
                     ),
@@ -316,15 +312,23 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
                         }
                       },
                       items: [
-                        for (final choice in [
-                          ('due', 'موعد'),
-                          ('priority', 'اولویت'),
-                          ('title', 'عنوان'),
-                          ('project', 'پروژه'),
-                        ])
+                        for (final choice in filterSorts)
                           DropdownMenuItem(
                             value: choice.$1,
                             child: Text('مرتب‌سازی: ${choice.$2}'),
+                          ),
+                      ],
+                    ),
+                    DropdownButton<String>(
+                      value: group,
+                      onChanged: (value) {
+                        if (value != null) setState(() => group = value);
+                      },
+                      items: [
+                        for (final choice in filterGroups)
+                          DropdownMenuItem(
+                            value: choice.$1,
+                            child: Text('گروه: ${choice.$2}'),
                           ),
                       ],
                     ),
@@ -348,19 +352,19 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
                     Padding(
                       padding: EdgeInsets.zero,
                       child: Text(
-                        'متن عنوان و توضیحات، امروز، دیرشده، "no date"، p1 تا p4، #نام‌پروژه و @برچسب. برای ترکیب از &، |، ! و پرانتز استفاده کنید. نام‌های چندکلمه‌ای را در گیومه بگذارید. تاریخ‌ها با روز فعلی دستگاه محاسبه می‌شوند.',
+                        'متن عنوان، توضیحات و نظرها، امروز، دیرشده، "7 days"، "no date"، p1 تا p4، #نام‌پروژه، ##پروژه‌با‌زیرپروژه‌ها و @برچسب. برای ترکیب از &، |، ! و پرانتز استفاده کنید. نام‌های چندکلمه‌ای را در گیومه بگذارید. تاریخ‌ها با روز فعلی دستگاه محاسبه می‌شوند.',
                       ),
                     ),
                   ],
                 ),
-                if (filterError != null) ...[
-                  Text(filterError!),
+                if (filters.error != null) ...[
+                  const Text('فیلترهای ذخیره‌شده دریافت نشدند.'),
                   TextButton(
-                    onPressed: loadFilters,
+                    onPressed: filters.load,
                     child: const Text('دریافت دوبارهٔ فیلترها'),
                   ),
                 ],
-                if (filters.isNotEmpty) ...[
+                if (filters.filters.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Text(
                     'فیلترهای من',
@@ -370,14 +374,16 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      for (final filter in filters)
+                      for (final filter in filters.filters)
                         InputChip(
+                          avatar: Icon(
+                            Icons.filter_alt_outlined,
+                            color: filterSwatch(filter.color),
+                          ),
                           label: Text(filter.name),
-                          onPressed: () {
-                            query.text = filter.query;
-                            setState(() => sort = filter.sort);
-                            search();
-                          },
+                          selected: filter.id == applied?.id,
+                          showCheckmark: false,
+                          onPressed: () => apply(filter),
                           onDeleted: busy ? null : () => remove(filter),
                           deleteButtonTooltipMessage:
                               'حذف فیلتر ${filter.name}',
@@ -423,7 +429,25 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
                   padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
                   child: child,
                 ),
-              if (tasks.isNotEmpty)
+              for (final (title, rows) in groupTasks(
+                tasks,
+                group,
+                projects: widget.projects(),
+                labelName: (id) => widget.labels?.byId(id)?.name,
+              )) ...[
+                if (title != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      Space.gutter,
+                      Space.md,
+                      Space.gutter,
+                      Space.xs,
+                    ),
+                    child: Text(
+                      '$title · ${persianDigits(rows.length)}',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                  ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     Space.gutter - 2,
@@ -434,13 +458,13 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
                   child: SoftWell(
                     child: Column(
                       children: [
-                        for (final task in tasks)
+                        for (final task in rows)
                           IgnorePointer(
                             ignoring: busy,
                             child: TaskTile(
                               task: task,
                               dense: true,
-                              divider: task != tasks.last,
+                              divider: task != rows.last,
                               onToggle: () => toggle(task),
                               onOpen: () => open(task),
                               tag: Text(
@@ -457,6 +481,7 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
                     ),
                   ),
                 ),
+              ],
               if (more && !loading && error == null)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: Space.xs),
@@ -477,40 +502,87 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
   );
 }
 
-class _FilterNameDialog extends StatefulWidget {
-  const _FilterNameDialog();
-  @override
-  State<_FilterNameDialog> createState() => _FilterNameDialogState();
-}
-
-class _FilterNameDialogState extends State<_FilterNameDialog> {
-  final name = TextEditingController();
-  @override
-  void dispose() {
-    name.dispose();
-    super.dispose();
-  }
-
-  void submit() {
-    if (name.text.trim().isNotEmpty) Navigator.pop(context, name.text.trim());
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('ذخیرهٔ فیلتر'),
-    content: TextField(
-      controller: name,
-      autofocus: true,
-      maxLength: 80,
-      decoration: const InputDecoration(labelText: 'نام فیلتر'),
-      onSubmitted: (_) => submit(),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('انصراف'),
+/// Asks before deleting [filter]; its tasks stay.
+Future<bool> confirmFilterDelete(
+  BuildContext context,
+  SavedFilter filter,
+) async =>
+    await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('حذف فیلتر «${filter.name}»؟'),
+        content: const Text('کارها حذف نمی‌شوند.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('انصراف'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('حذف فیلتر'),
+          ),
+        ],
       ),
-      FilledButton(onPressed: submit, child: const Text('ذخیره')),
-    ],
-  );
+    ) ==
+    true;
+
+/// Splits [tasks] by [group], keeping their order inside each group. A null
+/// title means one ungrouped list.
+List<(String?, List<Task>)> groupTasks(
+  List<Task> tasks,
+  String group, {
+  required List<Project> projects,
+  required String? Function(String id) labelName,
+  DateTime? today,
+}) {
+  if (tasks.isEmpty) return const [];
+  final day = dayOf(today ?? DateTime.now());
+  final keyed = <(int, String), List<Task>>{};
+  void put(int rank, String title, Task task) =>
+      (keyed[(rank, title)] ??= []).add(task);
+  for (final task in tasks) {
+    switch (group) {
+      case 'date':
+        final due = task.due;
+        if (due == null) {
+          put(5, 'بی‌تاریخ', task);
+        } else {
+          final offset = daysBetween(day, due.day);
+          final (rank, title) = switch (offset) {
+            < 0 => (0, 'دیرشده'),
+            0 => (1, 'امروز'),
+            1 => (2, 'فردا'),
+            < 7 => (3, 'هفت روز آینده'),
+            _ => (4, 'بعدتر'),
+          };
+          put(rank, title, task);
+        }
+      case 'priority':
+        put(task.priority.level, task.priority.label, task);
+      case 'project':
+        final index = projects.indexWhere((p) => p.id == task.projectId);
+        put(
+          index < 0 ? projects.length : index,
+          index < 0 ? 'پروژه' : projects[index].name,
+          task,
+        );
+      case 'label':
+        final names = [for (final id in task.labelIds) ?labelName(id)]..sort();
+        if (names.isEmpty) {
+          put(1, 'بدون برچسب', task);
+        } else {
+          for (final name in names) {
+            put(0, '@$name', task);
+          }
+        }
+      default:
+        return [(null, tasks)];
+    }
+  }
+  final keys = keyed.keys.toList()
+    ..sort((a, b) {
+      final rank = a.$1.compareTo(b.$1);
+      return rank != 0 ? rank : a.$2.compareTo(b.$2);
+    });
+  return [for (final k in keys) (k.$2, keyed[k]!)];
 }

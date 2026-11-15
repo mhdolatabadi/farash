@@ -255,5 +255,7 @@ func (p *searchParser) atom(token searchToken) (string, error) {
 		return "", ErrInvalidSearch
 	}
 	arg := p.bind(key)
-	return "(strpos(" + normalizedSQL("title") + "," + arg + ")>0 OR strpos(" + normalizedSQL("description") + "," + arg + ")>0)", nil
+	// Comments are owner-scoped like the task itself; deleted ones never match.
+	return "(strpos(" + normalizedSQL("title") + "," + arg + ")>0 OR strpos(" + normalizedSQL("description") + "," + arg + ")>0" +
+		" OR id IN (SELECT c.task_id FROM comments c WHERE c.owner_id=$1 AND c.task_id IS NOT NULL AND c.deleted_at IS NULL AND strpos(" + normalizedSQL("c.body") + "," + arg + ")>0))", nil
 }

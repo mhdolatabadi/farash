@@ -82,6 +82,7 @@ type SavedFilter struct {
 	Color      string    `json:"color"`
 	IsFavorite bool      `json:"is_favorite"`
 	Sort       string    `json:"sort"`
+	GroupBy    string    `json:"group_by"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
@@ -92,13 +93,14 @@ type SavedFilterInput struct {
 	Color      string `json:"color"`
 	IsFavorite bool   `json:"is_favorite"`
 	Sort       string `json:"sort"`
+	GroupBy    string `json:"group_by"`
 }
 
-const savedFilterColumns = "id, name, query, color, is_favorite, sort, created_at, updated_at"
+const savedFilterColumns = "id, name, query, color, is_favorite, sort, group_by, created_at, updated_at"
 
 func scanSavedFilter(row projectScanner) (SavedFilter, error) {
 	var filter SavedFilter
-	err := row.Scan(&filter.ID, &filter.Name, &filter.Query, &filter.Color, &filter.IsFavorite, &filter.Sort, &filter.CreatedAt, &filter.UpdatedAt)
+	err := row.Scan(&filter.ID, &filter.Name, &filter.Query, &filter.Color, &filter.IsFavorite, &filter.Sort, &filter.GroupBy, &filter.CreatedAt, &filter.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return SavedFilter{}, ErrFilterNotFound
 	}
@@ -113,6 +115,14 @@ func validSavedFilter(input *SavedFilterInput) bool {
 	}
 	if input.Sort == "" {
 		input.Sort = "due"
+	}
+	if input.GroupBy == "" {
+		input.GroupBy = "none"
+	}
+	switch input.GroupBy {
+	case "none", "date", "priority", "project", "label":
+	default:
+		return false
 	}
 	if len([]rune(input.Name)) < 1 || len([]rune(input.Name)) > 80 || strings.ContainsAny(input.Name, "\r\n") || !labelColor.MatchString(input.Color) {
 		return false
@@ -146,12 +156,12 @@ func (s *Store) SaveFilter(ctx context.Context, owner, id string, input SavedFil
 		return SavedFilter{}, ErrInvalidFilter
 	}
 	if id == "" {
-		return scanSavedFilter(s.pool.QueryRow(ctx, `INSERT INTO saved_filters (id, owner_id, name, query, color, is_favorite, sort)
-			VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING `+savedFilterColumns,
-			newID(), owner, input.Name, input.Query, input.Color, input.IsFavorite, input.Sort))
+		return scanSavedFilter(s.pool.QueryRow(ctx, `INSERT INTO saved_filters (id, owner_id, name, query, color, is_favorite, sort, group_by)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING `+savedFilterColumns,
+			newID(), owner, input.Name, input.Query, input.Color, input.IsFavorite, input.Sort, input.GroupBy))
 	}
-	return scanSavedFilter(s.pool.QueryRow(ctx, `UPDATE saved_filters SET name=$3, query=$4, color=$5, is_favorite=$6, sort=$7
-		WHERE owner_id=$1 AND id=$2 RETURNING `+savedFilterColumns, owner, id, input.Name, input.Query, input.Color, input.IsFavorite, input.Sort))
+	return scanSavedFilter(s.pool.QueryRow(ctx, `UPDATE saved_filters SET name=$3, query=$4, color=$5, is_favorite=$6, sort=$7, group_by=$8
+		WHERE owner_id=$1 AND id=$2 RETURNING `+savedFilterColumns, owner, id, input.Name, input.Query, input.Color, input.IsFavorite, input.Sort, input.GroupBy))
 }
 
 func (s *Store) DeleteSavedFilter(ctx context.Context, owner, id string) error {

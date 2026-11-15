@@ -51,7 +51,17 @@ class SearchFixture extends FakeTasksApi implements SearchApi {
         'has_more': hasMore,
       };
     }
-    if (method == 'POST') filters.add({'id': 'saved', ...body!});
+    if (method == 'POST') {
+      final saved = {'id': 'saved${filters.length}', ...body!};
+      filters.add(saved);
+      return {'filter': saved};
+    }
+    if (method == 'PUT') {
+      final id = uri.pathSegments.last;
+      final saved = {'id': id, ...body!};
+      filters[filters.indexWhere((f) => f['id'] == id)] = saved;
+      return {'filter': saved};
+    }
     if (method == 'DELETE') filters.clear();
     return {'filters': filters};
   }
@@ -186,9 +196,18 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'ذخیره'));
     await tester.pumpAndSettle();
     expect(api.filters.single['query'], 'p1');
-    await tester.tap(find.text('مهم‌ها'));
+    expect(api.filters.single['group_by'], 'none');
+    // The saved filter is applied: its name heads the page.
+    expect(find.widgetWithText(AppBar, 'مهم‌ها'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, 'other');
+    await tester.tap(find.widgetWithText(InputChip, 'مهم‌ها'));
     await tester.pumpAndSettle();
-    expect(api.requests.last.queryParameters['q'], 'p1');
+    expect(
+      api.requests
+          .lastWhere((r) => r.path == '/api/v1/search')
+          .queryParameters['q'],
+      'p1',
+    );
     expect(tester.takeException(), isNull);
   });
 

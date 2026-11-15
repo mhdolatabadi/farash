@@ -40,6 +40,23 @@ func TestSearchAndSavedFilterAPI(t *testing.T) {
 			t.Fatal("invalid query", query, code)
 		}
 	}
+	// Comment text finds its task; deleted comments and other owners' never do.
+	commented := api.createTask(alice, project.ID, "تماس")
+	var note store.Comment
+	if code := api.do("POST", "/api/v1/tasks/"+commented.ID+"/comments", alice, map[string]any{"body": "شماره پيگيري ۴۲", "request_key": "search-comment"}, &note); code != 200 {
+		t.Fatal("comment", code)
+	}
+	gone := api.createTask(alice, project.ID, "گذشته")
+	var removed store.Comment
+	api.do("POST", "/api/v1/tasks/"+gone.ID+"/comments", alice, map[string]any{"body": "پیگیری قدیمی", "request_key": "search-comment-gone"}, &removed)
+	if code := api.do("DELETE", "/api/v1/tasks/"+gone.ID+"/comments/"+removed.ID, alice, nil, nil); code/100 != 2 {
+		t.Fatal("delete comment", code)
+	}
+	foreign := api.createTask(bob, "", "foreign")
+	api.do("POST", "/api/v1/tasks/"+foreign.ID+"/comments", bob, map[string]any{"body": "پیگیری", "request_key": "search-comment-bob"}, nil)
+	if code := api.do("GET", "/api/v1/search?today=2026-10-21&q="+url.QueryEscape("پیگیری"), alice, nil, &page); code != 200 || len(page.Tasks) != 1 || page.Tasks[0].ID != commented.ID {
+		t.Fatal("comment search", code, page)
+	}
 	var saved struct {
 		Filter store.SavedFilter `json:"filter"`
 	}
@@ -48,6 +65,9 @@ func TestSearchAndSavedFilterAPI(t *testing.T) {
 		t.Fatal("save", code, saved)
 	}
 	id := saved.Filter.ID
+	if saved.Filter.GroupBy != "none" {
+		t.Fatal("default grouping", saved.Filter)
+	}
 	for _, method := range []string{"PUT", "DELETE"} {
 		if code := api.do(method, "/api/v1/filters/"+id, bob, input, nil); code != 404 {
 			t.Fatal("foreign filter", method, code)
@@ -62,10 +82,10 @@ func TestSearchAndSavedFilterAPI(t *testing.T) {
 	if code := api.do("GET", "/api/v1/filters", alice, nil, &list); code != 200 || len(list.Filters) != 1 || list.Filters[0].ID != id {
 		t.Fatal("own filter list", code, list)
 	}
-	if code := api.do("PUT", "/api/v1/filters/"+id, alice, map[string]any{"name": "edited", "query": "no date", "color": "#123456", "sort": "priority"}, &saved); code != 200 || saved.Filter.Query != "no date" {
+	if code := api.do("PUT", "/api/v1/filters/"+id, alice, map[string]any{"name": "edited", "query": "no date", "color": "#123456", "sort": "priority", "group_by": "label"}, &saved); code != 200 || saved.Filter.Query != "no date" || saved.Filter.GroupBy != "label" {
 		t.Fatal("edit filter", code, saved)
 	}
-	for _, invalid := range []map[string]any{{"name": "", "query": "today"}, {"name": "x", "query": "("}, {"name": "x", "query": "today", "color": "red"}, {"name": "x", "query": "today", "sort": "forged"}, {"name": "x", "owner_id": "forged"}} {
+	for _, invalid := range []map[string]any{{"name": "", "query": "today"}, {"name": "x", "query": "("}, {"name": "x", "query": "today", "color": "red"}, {"name": "x", "query": "today", "sort": "forged"}, {"name": "x", "query": "today", "group_by": "forged"}, {"name": "x", "owner_id": "forged"}} {
 		if code := api.do("POST", "/api/v1/filters", alice, invalid, nil); code != 400 {
 			t.Fatal("invalid filter", code)
 		}

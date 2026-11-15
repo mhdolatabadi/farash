@@ -8,6 +8,7 @@ import 'package:farash/features/habits/reminders/local_reminders.dart';
 import 'package:farash/core/calendar/calendar_settings.dart';
 import 'package:farash/features/matrix/matrix.dart';
 import 'package:farash/features/matrix/matrix_view.dart';
+import 'package:farash/features/search/filter_editor.dart';
 import 'package:farash/features/search/search.dart';
 import 'package:farash/features/search/search_view.dart';
 import 'package:farash/features/portability/export_api.dart';
@@ -129,6 +130,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ? null
       : LabelsController(api: widget.labelsApi!, token: widget.token);
 
+  late final FiltersController? _filters = switch (widget.tasksApi) {
+    final SearchApi api => FiltersController(api: api, token: widget.token),
+    _ => null,
+  };
+
   /// The label whose tasks are open, if any.
   String? _labelId;
 
@@ -148,6 +154,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
     widget.projects.load();
     _labels?.load();
+    _filters?.load();
     _startReminders();
     _applyStartView();
     widget.startView?.addListener(_applyStartView);
@@ -174,6 +181,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     widget.startView?.removeListener(_applyStartView);
     _labels?.dispose();
     _matrix?.dispose();
+    _filters?.dispose();
     super.dispose();
   }
 
@@ -680,7 +688,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-  void _openSearch(SearchApi api) {
+  void _openSearch(SearchApi api, {SavedFilter? filter}) {
     _scaffoldKey.currentState?.closeDrawer();
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -691,6 +699,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             tasks: widget.tasksApi,
             sections: widget.sectionsApi,
             labels: _labels,
+            filters: _filters,
+            initialFilter: filter,
             token: widget.token,
             projects: () => widget.projects.projects,
           ),
@@ -699,12 +709,35 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  Future<void> _newFilter() async {
+    final filters = _filters;
+    if (filters == null) return;
+    final saved = await showFilterEditor(
+      context,
+      controller: filters,
+      projectNames: [
+        for (final p in widget.projects.projects)
+          if (!p.isInbox) p.name,
+      ],
+      labelNames: [for (final l in _labels?.labels ?? const []) l.name],
+    );
+    if (saved != null && mounted && widget.tasksApi is SearchApi) {
+      _openSearch(widget.tasksApi as SearchApi, filter: saved);
+    }
+  }
+
   Widget _sidebar() => ProjectSidebar(
     controller: widget.projects,
     selectedId: _section == 1 && _view == null && _labelId == null
         ? _selected?.id
         : null,
     labels: _labels,
+    filters: _filters,
+    onSelectFilter: switch (widget.tasksApi) {
+      final SearchApi api => (filter) => _openSearch(api, filter: filter),
+      _ => null,
+    },
+    onNewFilter: _filters == null ? null : _newFilter,
     selectedLabelId: _labelId,
     onSelectLabel: _selectLabel,
     selectedView: _section == 0

@@ -6,6 +6,8 @@ import 'package:farash/core/widgets/hover_reveal.dart';
 import 'package:farash/features/labels/application/labels_controller.dart';
 import 'package:farash/features/labels/data/label.dart';
 import 'package:farash/features/labels/presentation/label_widgets.dart';
+import 'package:farash/features/search/filter_editor.dart';
+import 'package:farash/features/search/search.dart';
 import 'package:farash/features/projects/application/projects_controller.dart';
 import 'package:farash/features/projects/data/project.dart';
 import 'package:farash/features/projects/presentation/project_editor.dart';
@@ -34,6 +36,9 @@ class ProjectSidebar extends StatelessWidget {
     this.labels,
     this.selectedLabelId,
     this.onSelectLabel,
+    this.filters,
+    this.onSelectFilter,
+    this.onNewFilter,
   });
 
   final ProjectsController controller;
@@ -65,11 +70,18 @@ class ProjectSidebar extends StatelessWidget {
   final String? selectedLabelId;
   final ValueChanged<Label>? onSelectLabel;
 
+  /// The account's saved filters, listed above the labels.
+  final FiltersController? filters;
+  final ValueChanged<SavedFilter>? onSelectFilter;
+
+  /// Starts a new filter from the sidebar.
+  final VoidCallback? onNewFilter;
+
   @override
   Widget build(BuildContext context) {
     return _Folding(
       builder: (context, open, toggle) => ListenableBuilder(
-        listenable: controller,
+        listenable: Listenable.merge([controller, ?filters]),
         builder: (context, _) {
           final theme = Theme.of(context);
           final inbox = controller.inbox;
@@ -185,6 +197,51 @@ class ProjectSidebar extends StatelessWidget {
                                       onTap: () => onSelect(node.project),
                                       controller: controller,
                                     ),
+                                if (filters case final filters?)
+                                  ...() {
+                                    final saved = filters.filters;
+                                    return <Widget>[
+                                      _SectionTitle(
+                                        'فیلترها',
+                                        open: open('filters'),
+                                        onToggle: () => toggle('filters'),
+                                        actions: [
+                                          if (onNewFilter != null)
+                                            _SectionAction(
+                                              tooltip: 'فیلتر تازه',
+                                              onPressed: onNewFilter!,
+                                            ),
+                                        ],
+                                      ),
+                                      if (open('filters') && saved.isEmpty)
+                                        hint(
+                                          'نماهای خودتان را بسازید؛ مثلاً «امروز و اولویت ۱».',
+                                        ),
+                                      if (open('filters'))
+                                        for (final filter in saved)
+                                          SidebarRow(
+                                            key: ValueKey(
+                                              'filter-${filter.id}',
+                                            ),
+                                            selected: false,
+                                            child: ListTile(
+                                              leading: Icon(
+                                                Icons.filter_alt_outlined,
+                                                color: filterSwatch(
+                                                  filter.color,
+                                                ),
+                                              ),
+                                              title: Text(
+                                                filter.name,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              onTap: () =>
+                                                  onSelectFilter?.call(filter),
+                                            ),
+                                          ),
+                                    ];
+                                  }(),
                                 if (labels case final labels?) ...[
                                   _SectionTitle(
                                     'برچسب‌ها',

@@ -20,6 +20,8 @@ import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/core/widgets/hover_reveal.dart';
 import 'package:farash/features/tasks/presentation/due_picker.dart';
 import 'package:farash/features/tasks/presentation/priority_color.dart';
+import 'package:farash/core/calendar/calendar_settings.dart';
+import 'package:farash/features/tasks/presentation/board_view.dart';
 import 'package:farash/features/tasks/presentation/section_dialogs.dart';
 import 'package:farash/features/tasks/presentation/task_detail_sheet.dart';
 import 'package:farash/features/tasks/presentation/task_messages.dart';
@@ -39,6 +41,7 @@ class ProjectTasksView extends StatefulWidget {
     this.sectionsApi,
     this.showTitle = false,
     this.labels,
+    this.layouts,
   });
 
   final Project project;
@@ -56,6 +59,10 @@ class ProjectTasksView extends StatefulWidget {
 
   /// The account's labels, for the editor and the rows' tags.
   final LabelsController? labels;
+
+  /// Where each project's list or board choice is kept; the secure device
+  /// store when null.
+  final ProjectLayouts? layouts;
 
   @override
   State<ProjectTasksView> createState() => _ProjectTasksViewState();
@@ -91,6 +98,27 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
   void initState() {
     super.initState();
     if (!widget.project.isFolder) _tasks.load();
+    _layouts.read(widget.project.id).then((layout) {
+      if (mounted && layout != _layout) setState(() => _layout = layout);
+    });
+  }
+
+  late final ProjectLayouts _layouts =
+      widget.layouts ?? ProjectLayouts(store: SecureCalendarSettingsStore());
+  ProjectLayout _layout = ProjectLayout.list;
+
+  void _setLayout(ProjectLayout layout) {
+    setState(() {
+      _layout = layout;
+      _editingTask = null;
+    });
+    _layouts.write(widget.project.id, layout);
+  }
+
+  Future<void> _addTaskToBoard(Section? section) async {
+    if (section != null) return _addTaskTo(section);
+    final title = await askTaskTitle(context, 'بدون بخش');
+    if (title != null) await _run(() => _tasks.add(title));
   }
 
   @override
@@ -547,6 +575,14 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
       onPressed: () =>
           _run(() => _tasks.setShowCompleted(!_tasks.showCompleted)),
     );
+    final board = _layout == ProjectLayout.board;
+    final layoutToggle = IconButton(
+      key: const ValueKey('layout-toggle'),
+      tooltip: board ? 'نمایش فهرست' : 'نمایش بورد',
+      icon: Icon(board ? Icons.view_list_outlined : Icons.view_kanban_outlined),
+      onPressed: () =>
+          _setLayout(board ? ProjectLayout.list : ProjectLayout.board),
+    );
     final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
     final topPadding = MediaQuery.paddingOf(context).top;
     final selecting = _selectedTasks.isNotEmpty;
@@ -579,7 +615,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
                         size: 12,
                         color: widget.project.swatch,
                       ),
-                actions: [completedToggle],
+                actions: [layoutToggle, completedToggle],
                 topPadding: topPadding,
                 inset: inset,
                 expandedHeight: compact ? 0 : 24 * scale,
@@ -591,11 +627,32 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
           else if (!widget.showTitle)
             pad(
               SliverToBoxAdapter(
-                child: _ListHeader(count: countText, toggle: completedToggle),
+                child: _ListHeader(
+                  count: countText,
+                  toggle: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [layoutToggle, completedToggle],
+                  ),
+                ),
               ),
             ),
           if (status != null)
             SliverFillRemaining(hasScrollBody: false, child: status)
+          else if (board)
+            SliverFillRemaining(
+              child: ProjectBoard(
+                tasks: _tasks,
+                labels: widget.labels,
+                bottomInset: _dockHeight,
+                onToggle: _toggle,
+                onOpen: _open,
+                onMove: (task, sectionId, ids) =>
+                    _run(() => _tasks.moveTask(task, sectionId, ids)),
+                onAddTask: _addTaskToBoard,
+                onAddSection: sectionsAvailable ? _addSection : null,
+                onSectionAction: _sectionAction,
+              ),
+            )
           else ...[
             if (rows.isEmpty && done.isEmpty)
               // The empty list keeps the list's place: the same well,
