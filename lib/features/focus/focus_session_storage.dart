@@ -79,7 +79,8 @@ class FocusSessionStorage {
     required String server,
     CalendarSettingsStore? store,
   }) : _store = store ?? SecureCalendarSettingsStore(),
-       _key = 'focus_v1_${sha256.convert(utf8.encode('$server|${account.trim().toLowerCase()}'))}';
+       _key =
+           'focus_v1_${sha256.convert(utf8.encode('$server|${account.trim().toLowerCase()}'))}';
 
   final CalendarSettingsStore _store;
   final String _key;
