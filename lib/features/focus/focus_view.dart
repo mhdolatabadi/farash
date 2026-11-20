@@ -282,7 +282,7 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                         Text(
                           widget.timeLinked && work
                               ? 'شروع تمرکز، ثبت زمان این کار را هم فعال می‌کند. برای پایان زودتر مکث کنید؛ ثبت سرور حداکثر تا پایان نوبت ادامه دارد.'
-                              : 'تایمر با جابه‌جایی بین صفحه‌ها ادامه دارد. با بستن برنامه، جلسه پایان می‌یابد.',
+                              : 'تایمر با جابه‌جایی بین صفحه‌ها ادامه دارد و با بازکردن دوبارهٔ برنامه بازیابی می‌شود.',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colors.onSurfaceVariant,
