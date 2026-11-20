@@ -267,13 +267,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _signOutFromHome() async {
     if (_signingOut) return;
     _signingOut = true;
+    // Sign-out is a primary navigation action, never wait for local storage.
+    // Queue deletion after older writes so they cannot resurrect the snapshot.
+    widget.onLogout();
     await _focusWrites;
     try {
       await _focusStorage.save(null);
     } catch (_) {
-      // Sign-out must not be blocked by unreadable device storage.
+      // Logout already took effect, even with unavailable device storage.
     }
-    widget.onLogout();
   }
 
   /// A finished session is announced wherever the user is, not only on
