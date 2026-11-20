@@ -307,4 +307,33 @@ void main() {
     expect(find.byType(QuickAddDialog), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('tool screens keep quick capture visible on a narrow phone', (
+    tester,
+  ) async {
+    await pumpHome(tester, size: const Size(320, 740));
+    await tester.tap(find.widgetWithText(NavigationDestination, 'تمرکز'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('افزودن کار'), findsOneWidget);
+    await tester.tap(find.byTooltip('افزودن کار'));
+    await tester.pumpAndSettle();
+    expect(find.byType(QuickAddDialog), findsOneWidget);
+    await tester.tap(find.text('بستن'));
+    await tester.pumpAndSettle();
+    expect(find.byType(QuickAddDialog), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('focus quick capture does not duplicate list capture', (
+    tester,
+  ) async {
+    await pumpHome(tester, size: const Size(400, 800));
+    expect(find.byType(FloatingActionButton), findsNothing);
+    await tester.tap(find.widgetWithText(NavigationDestination, 'تمرکز'));
+    await tester.pumpAndSettle();
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+    await tester.tap(find.widgetWithText(NavigationDestination, 'کارها'));
+    await tester.pumpAndSettle();
+    expect(find.byType(FloatingActionButton), findsNothing);
+  });
 }
