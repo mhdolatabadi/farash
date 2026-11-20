@@ -68,7 +68,12 @@ class TodayBento extends StatelessWidget {
     // Large text stacks the tiles; otherwise the date takes the height of
     // the two tiles beside it.
     final stacked = scale >= 1.5;
-    final date = _DateTile(today: today, tall: !stacked);
+    final narrow = !stacked && MediaQuery.sizeOf(context).width < 380;
+    final date = _DateTile(
+      today: today,
+      tall: !stacked && !narrow,
+      horizontal: narrow,
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         Space.gutter - 2,
@@ -87,6 +92,19 @@ class TodayBento extends StatelessWidget {
               const SizedBox(height: Space.md),
               focusTile,
             ],
+          ] else if (narrow) ...[
+            date,
+            const SizedBox(height: Space.sm),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: tasks),
+                if (focusTile != null) ...[
+                  const SizedBox(width: Space.sm),
+                  Expanded(child: focusTile),
+                ],
+              ],
+            ),
           ] else
             IntrinsicHeight(
               child: Row(
@@ -136,9 +154,14 @@ class _Caption extends StatelessWidget {
 }
 
 class _DateTile extends StatelessWidget {
-  const _DateTile({required this.today, required this.tall});
+  const _DateTile({
+    required this.today,
+    required this.tall,
+    this.horizontal = false,
+  });
   final DateTime today;
   final bool tall;
+  final bool horizontal;
 
   @override
   Widget build(BuildContext context) {
@@ -156,34 +179,69 @@ class _DateTile extends StatelessWidget {
       label: '$weekday ${parts.join(' ')}',
       excludeSemantics: true,
       child: SoftTile(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _Caption(weekday),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: AlignmentDirectional.centerStart,
-              child: Text(
-                parts.first,
-                style: theme.textTheme.displayLarge?.copyWith(
-                  fontSize: tall ? 76 : 56,
-                  height: 1.05,
-                  fontWeight: FontWeight.w900,
-                  color: theme.colorScheme.primary,
-                ),
+        padding: horizontal
+            ? const EdgeInsets.symmetric(horizontal: 16, vertical: 8)
+            : const EdgeInsets.all(14),
+        child: horizontal
+            ? Row(
+                children: [
+                  Text(
+                    parts.first,
+                    style: theme.textTheme.displayMedium?.copyWith(
+                      fontSize: 42,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: Space.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _Caption(weekday),
+                        Text(
+                          parts.skip(1).join(' '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _Caption(weekday),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(
+                      parts.first,
+                      style: theme.textTheme.displayLarge?.copyWith(
+                        fontSize: tall ? 76 : 56,
+                        height: 1.05,
+                        fontWeight: FontWeight.w900,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    parts.skip(1).join(' '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            Text(
-              parts.skip(1).join(' '),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -315,16 +373,12 @@ class _FocusTile extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: running
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.primaryContainer,
+                    color: theme.colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
-                    running ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    color: running
-                        ? theme.colorScheme.onPrimary
-                        : theme.colorScheme.onPrimaryContainer,
+                    Icons.chevron_left_rounded,
+                    color: theme.colorScheme.onPrimaryContainer,
                   ),
                 ),
               ],

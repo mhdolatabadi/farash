@@ -23,9 +23,10 @@ const _maxWidth = 760.0;
 /// Loop Habit Tracker's main screen: every habit with its strength ring and
 /// a checkmark grid of the most recent days, today first.
 class HabitsView extends StatefulWidget {
-  const HabitsView({super.key, required this.controller});
+  const HabitsView({super.key, required this.controller, this.onQuickAdd});
 
   final HabitsController controller;
+  final VoidCallback? onQuickAdd;
 
   @override
   State<HabitsView> createState() => _HabitsViewState();
@@ -101,7 +102,15 @@ class _HabitsViewState extends State<HabitsView> {
                   pinned: true,
                   backgroundColor: Soft.ground(context),
                   title: const Text('عادت‌ها'),
-                  actions: [_FilterMenu(controller: _c)],
+                  actions: [
+                    if (widget.onQuickAdd != null)
+                      IconButton(
+                        tooltip: 'افزودن کار',
+                        onPressed: widget.onQuickAdd,
+                        icon: const Icon(Icons.add_task_rounded),
+                      ),
+                    _FilterMenu(controller: _c),
+                  ],
                 ),
                 if (habits.isNotEmpty)
                   SliverPadding(

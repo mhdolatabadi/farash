@@ -91,7 +91,7 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                       Space.gutter,
                       Space.sm,
                       Space.gutter,
-                      Space.xxl,
+                      Space.xxl + 88, // Clear the shell's global capture FAB.
                     ),
                     child: Column(
                       children: [
@@ -226,8 +226,11 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                           style: theme.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: Space.md,
+                          runSpacing: Space.md,
                           children: [
                             Tooltip(
                               message: 'از نو',
@@ -251,7 +254,6 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 16),
                             FilledButton.icon(
                               style: FilledButton.styleFrom(
                                 minimumSize: const Size(160, 64),
