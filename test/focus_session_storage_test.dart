@@ -18,7 +18,10 @@ void main() {
     expect(decoded?.deadlineMs, value.deadlineMs);
     expect(decoded?.taskTitle, value.taskTitle);
     expect(decoded?.entryId, 'entry-1');
-    expect(FocusSessionData.decode('{"version":1,"minutes":99,"remaining_ms":0}'), isNull);
+    expect(
+      FocusSessionData.decode('{"version":1,"minutes":99,"remaining_ms":0}'),
+      isNull,
+    );
     expect(FocusSessionData.decode('not-json'), isNull);
   });
 
@@ -76,10 +79,7 @@ void main() {
     var now = DateTime(2026, 11, 20, 11);
     final paused = FocusController(now: () => now);
     addTearDown(paused.dispose);
-    paused.restoreState(
-      mode: 5,
-      remaining: const Duration(minutes: 3),
-    );
+    paused.restoreState(mode: 5, remaining: const Duration(minutes: 3));
     now = now.add(const Duration(hours: 5));
     paused.refresh();
     expect(paused.running, isFalse);
