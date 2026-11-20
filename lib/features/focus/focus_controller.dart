@@ -62,7 +62,9 @@ class FocusController extends ChangeNotifier {
         _remaining = Duration.zero;
         finished = true;
       } else {
-        _remaining = Duration(milliseconds: left.inMilliseconds.clamp(0, total));
+        _remaining = Duration(
+          milliseconds: left.inMilliseconds.clamp(0, total),
+        );
         _deadline = deadline;
         finished = false;
         _ticker = Timer.periodic(const Duration(seconds: 1), (_) => refresh());
