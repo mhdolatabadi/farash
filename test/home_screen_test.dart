@@ -315,13 +315,11 @@ void main() {
     await tester.tap(find.widgetWithText(NavigationDestination, 'تمرکز'));
     await tester.pumpAndSettle();
     final focusError = tester.takeException();
-    if (focusError != null) debugPrint('FOCUS_LAYOUT: $focusError');
     expect(focusError, isNull);
     expect(find.byTooltip('افزودن کار'), findsOneWidget);
     await tester.tap(find.byTooltip('افزودن کار'));
     await tester.pumpAndSettle();
     final dialogError = tester.takeException();
-    if (dialogError != null) debugPrint('CAPTURE_LAYOUT: $dialogError');
     expect(dialogError, isNull);
     expect(find.byType(QuickAddDialog), findsOneWidget);
     await tester.tap(find.text('بستن'));
