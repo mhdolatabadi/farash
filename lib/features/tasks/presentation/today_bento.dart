@@ -69,7 +69,11 @@ class TodayBento extends StatelessWidget {
     // the two tiles beside it.
     final stacked = scale >= 1.5;
     final narrow = !stacked && MediaQuery.sizeOf(context).width < 380;
-    final date = _DateTile(today: today, tall: !stacked && !narrow, horizontal: narrow);
+    final date = _DateTile(
+      today: today,
+      tall: !stacked && !narrow,
+      horizontal: narrow,
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         Space.gutter - 2,
@@ -150,7 +154,11 @@ class _Caption extends StatelessWidget {
 }
 
 class _DateTile extends StatelessWidget {
-  const _DateTile({required this.today, required this.tall, this.horizontal = false});
+  const _DateTile({
+    required this.today,
+    required this.tall,
+    this.horizontal = false,
+  });
   final DateTime today;
   final bool tall;
   final bool horizontal;
@@ -207,33 +215,33 @@ class _DateTile extends StatelessWidget {
                 ],
               )
             : Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _Caption(weekday),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: AlignmentDirectional.centerStart,
-              child: Text(
-                parts.first,
-                style: theme.textTheme.displayLarge?.copyWith(
-                  fontSize: tall ? 76 : 56,
-                  height: 1.05,
-                  fontWeight: FontWeight.w900,
-                  color: theme.colorScheme.primary,
-                ),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _Caption(weekday),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(
+                      parts.first,
+                      style: theme.textTheme.displayLarge?.copyWith(
+                        fontSize: tall ? 76 : 56,
+                        height: 1.05,
+                        fontWeight: FontWeight.w900,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    parts.skip(1).join(' '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            Text(
-              parts.skip(1).join(' '),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
