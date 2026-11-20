@@ -62,6 +62,11 @@ class _QuickAddDialogState extends State<QuickAddDialog> {
     return PopScope(
       canPop: !_busy,
       child: AlertDialog(
+        // Make room for the action buttons on compact Android screens.
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: MediaQuery.sizeOf(context).width < 400 ? 16 : 40,
+          vertical: 24,
+        ),
         title: const Text('افزودن سریع کار'),
         scrollable: true,
         content: SizedBox(
