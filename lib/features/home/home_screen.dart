@@ -817,6 +817,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ? HabitsView(
                     key: const ValueKey('habits-view'),
                     controller: _habits,
+                    onQuickAdd: _quickAdd,
                   )
                 : _section == 3 && _tracker != null
                 ? TimeTrackingView(
@@ -902,6 +903,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               // with the drawer button, so nothing frames the list twice.
               return Scaffold(
                 key: _scaffoldKey,
+                floatingActionButton: _section == 2 || _section == 3
+                    ? FloatingActionButton(
+                        heroTag: 'farash-tool-capture',
+                        tooltip: 'افزودن کار',
+                        onPressed: _quickAdd,
+                        child: const Icon(Icons.add_rounded),
+                      )
+                    : null,
                 appBar: selected == null && view == null && label == null
                     ? AppBar(title: const Text('فراش'))
                     : null,
@@ -1000,6 +1009,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             }
             return Scaffold(
               key: _scaffoldKey,
+              floatingActionButton: _section == 2 || _section == 3
+                  ? FloatingActionButton(
+                      heroTag: 'farash-tool-capture',
+                      tooltip: 'افزودن کار',
+                      onPressed: _quickAdd,
+                      child: const Icon(Icons.add_rounded),
+                    )
+                  : null,
               body: SafeArea(
                 child: Row(
                   children: [
