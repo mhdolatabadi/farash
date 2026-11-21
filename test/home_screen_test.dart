@@ -161,9 +161,7 @@ void main() {
     await tester.pump();
     expect(runningDot, findsWidgets);
     expect(
-      find.byWidgetPredicate(
-        (w) => w is Badge && w.label is Text,
-      ),
+      find.byWidgetPredicate((w) => w is Badge && w.label is Text),
       findsNothing,
     );
     expect(tester.takeException(), isNull);

@@ -829,6 +829,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ),
       );
     }
+
     return [
       (
         const Icon(Icons.today_outlined),
