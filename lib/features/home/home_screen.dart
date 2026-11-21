@@ -820,8 +820,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     Widget focusIcon(IconData data) {
       if (badge == null) return Icon(data);
       return Semantics(
-        label: 'تمرکز در جریان، ${badge} باقی‌مانده',
-        child: Badge.small(
+        label: 'تمرکز در جریان، $badge باقی‌مانده',
+        child: Badge(
+          isLabelVisible: true,
+          label: null,
           backgroundColor: Theme.of(context).colorScheme.primary,
           alignment: AlignmentDirectional.topEnd,
           offset: const Offset(2, -2),
