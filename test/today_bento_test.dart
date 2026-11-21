@@ -130,6 +130,23 @@ void main() {
     expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
   });
 
+  testWidgets('390px Android Today keeps tasks above the fold', (tester) async {
+    await pump(
+      tester,
+      size: const Size(390, 844),
+      textScale: 1.3,
+      dark: true,
+      doneToday: () async => 1,
+    );
+    final bento = find.byType(TodayBento);
+    expect(
+      find.descendant(of: bento, matching: find.byType(IntrinsicHeight)),
+      findsNothing,
+    );
+    expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('320px Today uses a compact date row above actions', (
     tester,
   ) async {
