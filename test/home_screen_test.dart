@@ -157,6 +157,13 @@ void main() {
     await tester.tap(find.widgetWithText(NavigationDestination, 'تمرکز'));
     await tester.pumpAndSettle();
     expect(runningDot, findsNothing);
+    // At 320px the global capture FAB can cover the lower action until
+    // the focus surface is scrolled. Tap it only once in view.
+    await tester.drag(
+      find.byType(CustomScrollView).last,
+      const Offset(0, -220),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('شروع تمرکز'));
     await tester.pump();
     expect(runningDot, findsWidgets);
