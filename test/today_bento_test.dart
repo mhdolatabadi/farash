@@ -160,9 +160,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('600px Today uses the wider tablet composition', (
-    tester,
-  ) async {
+  testWidgets('600px Today uses the wider tablet composition', (tester) async {
     await pump(tester, size: const Size(600, 850), doneToday: () async => 1);
     final bento = find.byType(TodayBento);
     expect(
