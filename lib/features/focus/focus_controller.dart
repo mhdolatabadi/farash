@@ -13,6 +13,7 @@ class FocusController extends ChangeNotifier {
   bool finished = false;
   String? taskTitle;
   bool get running => _deadline != null;
+  DateTime? get deadline => _deadline;
   Duration get remaining => _remaining;
 
   /// How much of the session has elapsed, 0 to 1, for the progress ring.
@@ -33,6 +34,42 @@ class FocusController extends ChangeNotifier {
     final total = Duration(minutes: minutes).inMilliseconds;
     _remaining = Duration(milliseconds: value.inMilliseconds.clamp(0, total));
     finished = false;
+    notifyListeners();
+  }
+
+  /// Restore a session after process restart. A running deadline is always
+  /// evaluated against the wall clock; a paused session never advances.
+  void restoreState({
+    required int mode,
+    required Duration remaining,
+    DateTime? deadline,
+    String? title,
+    bool wasFinished = false,
+  }) {
+    if (running || !const [5, 15, 25].contains(mode)) return;
+    _ticker?.cancel();
+    minutes = mode;
+    taskTitle = title;
+    final total = Duration(minutes: mode).inMilliseconds;
+    _remaining = Duration(
+      milliseconds: remaining.inMilliseconds.clamp(0, total),
+    );
+    _deadline = null;
+    finished = wasFinished && _remaining == Duration.zero;
+    if (deadline != null) {
+      final left = deadline.difference(_now());
+      if (left <= Duration.zero) {
+        _remaining = Duration.zero;
+        finished = true;
+      } else {
+        _remaining = Duration(
+          milliseconds: left.inMilliseconds.clamp(0, total),
+        );
+        _deadline = deadline;
+        finished = false;
+        _ticker = Timer.periodic(const Duration(seconds: 1), (_) => refresh());
+      }
+    }
     notifyListeners();
   }
 

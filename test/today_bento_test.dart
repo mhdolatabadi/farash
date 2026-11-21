@@ -105,6 +105,13 @@ void main() {
   testWidgets('the focus tile opens Focus', (tester) async {
     var opened = 0;
     await pump(tester, onOpenFocus: () => opened++);
+    expect(
+      find.descendant(
+        of: find.byType(TodayBento),
+        matching: find.byIcon(Icons.chevron_left_rounded),
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.bySemanticsLabel('باز کردن تمرکز'));
     expect(opened, 1);
   });
@@ -121,5 +128,19 @@ void main() {
     );
     expect(tester.takeException(), isNull);
     expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
+  });
+
+  testWidgets('320px Today uses a compact date row above actions', (
+    tester,
+  ) async {
+    await pump(tester, size: const Size(320, 740), doneToday: () async => 1);
+    final bento = find.byType(TodayBento);
+    expect(
+      find.descendant(of: bento, matching: find.byType(IntrinsicHeight)),
+      findsNothing,
+    );
+    expect(find.text('۱ از ۲'), findsOneWidget);
+    expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:farash/app/app_configuration.dart';
+import 'package:farash/features/focus/focus_session_storage.dart';
 import 'package:farash/features/calendar_connections/calendar_connections.dart';
 import 'package:farash/features/calendar_connections/calendar_connections_view.dart';
 import 'package:farash/features/habits/habits_controller.dart';
@@ -66,6 +70,7 @@ class HomeScreen extends StatefulWidget {
     this.labelsApi,
     this.habitReminders,
     this.settingsStore,
+    this.focusSessionStorage,
   });
 
   final String email;
@@ -87,6 +92,9 @@ class HomeScreen extends StatefulWidget {
   /// secure device store when null.
   final CalendarSettingsStore? settingsStore;
 
+  /// Optional injectable store for deterministic restart tests.
+  final FocusSessionStorage? focusSessionStorage;
+
   /// The current access token; null once signed out.
   final String? Function() token;
 
@@ -102,6 +110,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// Where the app opens, and where Back returns to before leaving.
   int _startSection = 1;
   final _focus = FocusController();
+  late final FocusSessionStorage _focusStorage =
+      widget.focusSessionStorage ??
+      FocusSessionStorage(
+        account: widget.email,
+        server: AppConfiguration.apiBaseUri?.origin ?? 'local',
+      );
+  Future<void> _focusWrites = Future<void>.value();
+  String? _lastFocusPayload;
+  bool _restoringFocus = true;
+  bool _signingOut = false;
   bool _focusWasFinished = false;
   late final TimeTracker? _tracker;
 
@@ -148,6 +166,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _tracker?.focusTask = _startTaskFocus;
     _tracker?.addListener(_trackerChanged);
     _focus.addListener(_focusChanged);
+    unawaited(_restoreFocus());
     if (widget.tasksApi case final ApiClient api) {
       api.completedTask.addListener(_completedTime);
       api.progressChanges.addListener(_refreshTracker);
@@ -185,11 +204,94 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  /// Restore only local focus presentation. Server entries remain the source
+  /// of truth for linked work; a missing/disconnected entry pauses focus.
+  Future<void> _restoreFocus() async {
+    final saved = await _focusStorage.read();
+    if (!mounted || _signingOut) return;
+    if (saved != null &&
+        !_focus.running &&
+        _focus.taskTitle == null &&
+        _focus.minutes == 25 &&
+        _focus.remaining == const Duration(minutes: 25)) {
+      DateTime? deadline = saved.deadlineMs == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(saved.deadlineMs!);
+      var remaining = Duration(milliseconds: saved.remainingMs);
+      var finished = saved.finished;
+      if (saved.entryId != null && deadline != null) {
+        await _tracker?.load();
+        if (!mounted || _signingOut) return;
+        if (_tracker?.error == null &&
+            _tracker?.active?.id == saved.entryId &&
+            _tracker?.active?.source == 'focus') {
+          _focusEntry = saved.entryId;
+        } else {
+          // Do not imply that offline or server-ended work is still tracked.
+          final left = deadline.difference(DateTime.now());
+          remaining = left > Duration.zero ? left : Duration.zero;
+          finished = left <= Duration.zero;
+          deadline = null;
+        }
+      }
+      if (saved.taskId != null) {
+        _focusTask = Task(
+          id: saved.taskId!,
+          projectId: '',
+          title: saved.taskTitle ?? '',
+        );
+      }
+      _focus.restoreState(
+        mode: saved.minutes,
+        remaining: remaining,
+        deadline: deadline,
+        title: saved.taskTitle,
+        wasFinished: finished,
+      );
+      _focusWasFinished = _focus.finished;
+    }
+    _restoringFocus = false;
+    _persistFocus();
+  }
+
+  void _persistFocus() {
+    if (_restoringFocus || _signingOut) return;
+    final state = FocusSessionData(
+      minutes: _focus.minutes,
+      remainingMs: _focus.running ? 0 : _focus.remaining.inMilliseconds,
+      deadlineMs: _focus.deadline?.millisecondsSinceEpoch,
+      taskTitle: _focus.taskTitle,
+      taskId: _focusTask?.id,
+      entryId: _focusEntry,
+      finished: _focus.finished,
+    );
+    final payload = state.encode();
+    if (_lastFocusPayload == payload) return; // Not once per timer tick.
+    _lastFocusPayload = payload;
+    _focusWrites = _focusWrites
+        .then((_) => _focusStorage.save(state))
+        .catchError((_) {});
+  }
+
+  Future<void> _signOutFromHome() async {
+    if (_signingOut) return;
+    _signingOut = true;
+    // Sign-out is a primary navigation action, never wait for local storage.
+    // Queue deletion after older writes so they cannot resurrect the snapshot.
+    widget.onLogout();
+    await _focusWrites;
+    try {
+      await _focusStorage.save(null);
+    } catch (_) {
+      // Logout already took effect, even with unavailable device storage.
+    }
+  }
+
   /// A finished session is announced wherever the user is, not only on
   /// the focus screen.
   void _focusChanged() {
     final finished = _focus.finished;
-    if (finished && !_focusWasFinished && mounted) {
+    if (!_restoringFocus && finished && !_focusWasFinished && mounted) {
       HapticFeedback.heavyImpact();
       ScaffoldMessenger.maybeOf(context)
         ?..hideCurrentSnackBar()
@@ -210,6 +312,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         );
     }
     _focusWasFinished = finished;
+    _persistFocus();
   }
 
   bool _quickAdding = false;
@@ -313,6 +416,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (_focusEntry != null && _tracker?.active?.id != _focusEntry) {
       _focus.pause();
       _focusEntry = null;
+      _persistFocus();
     }
   }
 
@@ -323,6 +427,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
     _startFocus(task.title);
     _focusTask = task;
+    _persistFocus();
   }
 
   Future<bool> _beforeFocusStart() async {
@@ -356,6 +461,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
     if (ok) {
       _focusEntry = tracker.active?.id;
+      _persistFocus();
       final end = tracker.active?.plannedEnd;
       if (end != null) {
         final remaining = end.difference(tracker.now);
@@ -541,7 +647,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _habits?.load();
+    if (state == AppLifecycleState.resumed) {
+      _focus.refresh();
+      _habits?.load();
+    }
   }
 
   /// Shows the habit of a reminder the user tapped.
@@ -580,6 +689,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _focusTask = null;
       if (_focus.taskTitle != title || _focus.minutes != 25) _focus.choose(25);
       _focus.taskTitle = title;
+      _persistFocus();
     }
     _switchSection(2);
   }
@@ -760,7 +870,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ? widget.tasksApi as CalendarConnectionsApi
           : null,
       email: widget.email,
-      onLogout: widget.onLogout,
+      onLogout: () => unawaited(_signOutFromHome()),
       startView: widget.startView,
       exportApi: widget.tasksApi is ExportApi
           ? widget.tasksApi as ExportApi
@@ -860,6 +970,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ? HabitsView(
                     key: const ValueKey('habits-view'),
                     controller: _habits,
+                    onQuickAdd: _quickAdd,
                   )
                 : _section == 3 && _tracker != null
                 ? TimeTrackingView(
@@ -945,6 +1056,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               // with the drawer button, so nothing frames the list twice.
               return Scaffold(
                 key: _scaffoldKey,
+                floatingActionButton: _section == 2 || _section == 3
+                    ? FloatingActionButton(
+                        heroTag: 'farash-tool-capture',
+                        tooltip: 'افزودن کار',
+                        onPressed: _quickAdd,
+                        child: const Icon(Icons.add_rounded),
+                      )
+                    : null,
                 appBar: selected == null && view == null && label == null
                     ? AppBar(title: const Text('فراش'))
                     : null,
@@ -1043,6 +1162,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             }
             return Scaffold(
               key: _scaffoldKey,
+              floatingActionButton: _section == 2 || _section == 3
+                  ? FloatingActionButton(
+                      heroTag: 'farash-tool-capture',
+                      tooltip: 'افزودن کار',
+                      onPressed: _quickAdd,
+                      child: const Icon(Icons.add_rounded),
+                    )
+                  : null,
               body: SafeArea(
                 child: Row(
                   children: [
