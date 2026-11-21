@@ -147,23 +147,34 @@ void main() {
     expect(find.byType(ProjectTasksView), findsOneWidget);
   });
 
-  testWidgets('a running focus session shows its time on the destination', (
+  testWidgets('running focus uses a compact status dot in navigation', (
     tester,
   ) async {
-    await pumpHome(tester, size: const Size(400, 800));
-    bool badged() => find
-        .byWidgetPredicate((w) => w is Badge && w.isLabelVisible)
-        .evaluate()
-        .isNotEmpty;
+    await pumpHome(tester, size: const Size(320, 740));
+    final runningDot = find.byWidgetPredicate(
+      (w) => w is Badge && w.label == null && w.isLabelVisible,
+    );
     await tester.tap(find.widgetWithText(NavigationDestination, 'تمرکز'));
     await tester.pumpAndSettle();
-    expect(badged(), isFalse);
+    expect(runningDot, findsNothing);
+    // At 320px the global capture FAB can cover the lower action until
+    // the focus surface is scrolled. Tap it only once in view.
+    await tester.drag(
+      find.byType(CustomScrollView).last,
+      const Offset(0, -220),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('شروع تمرکز'));
     await tester.pump();
-    expect(badged(), isTrue);
+    expect(runningDot, findsWidgets);
+    expect(
+      find.byWidgetPredicate((w) => w is Badge && w.label is Text),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
     await tester.tap(find.text('مکث'));
     await tester.pump();
-    expect(badged(), isFalse);
+    expect(runningDot, findsNothing);
   });
 
   testWidgets('wide screens keep the sidebar open', (tester) async {

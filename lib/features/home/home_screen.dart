@@ -817,11 +817,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// The top-level destinations, shared by the bottom bar and the rail.
   List<(Widget icon, Widget selectedIcon, String label)> _destinations() {
     final badge = _focusBadge;
-    Widget focusIcon(IconData data) => Badge(
-      isLabelVisible: badge != null,
-      label: Text(badge ?? ''),
-      child: Icon(data),
-    );
+    Widget focusIcon(IconData data) {
+      if (badge == null) return Icon(data);
+      return Semantics(
+        label: 'تمرکز در جریان، $badge باقی‌مانده',
+        child: Badge(
+          isLabelVisible: true,
+          label: null,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          alignment: AlignmentDirectional.topEnd,
+          offset: const Offset(2, -2),
+          child: Icon(data),
+        ),
+      );
+    }
+
     return [
       (
         const Icon(Icons.today_outlined),
