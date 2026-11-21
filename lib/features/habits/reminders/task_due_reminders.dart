@@ -66,16 +66,20 @@ List<TaskDueReminder> planTaskDueReminders(
   final reminders = <TaskDueReminder>[];
   for (final task in tasks) {
     final at = task.due?.datetime;
-    if (task.isCompleted || at == null || !at.isAfter(now) ||
+    if (task.isCompleted ||
+        at == null ||
+        !at.isAfter(now) ||
         at.isAfter(until)) {
       continue;
     }
-    reminders.add(TaskDueReminder(
-      taskId: task.id,
-      projectId: task.projectId,
-      title: task.title,
-      at: at,
-    ));
+    reminders.add(
+      TaskDueReminder(
+        taskId: task.id,
+        projectId: task.projectId,
+        title: task.title,
+        at: at,
+      ),
+    );
   }
   reminders.sort((a, b) {
     final byTime = a.at.compareTo(b.at);
@@ -89,8 +93,8 @@ List<TaskDueReminder> planTaskDueReminders(
 /// A stable, Android-safe ID. The task namespace is distinct from habits.
 int taskDueReminderId(String taskId, DateTime at) {
   var hash = 0x811c9dc5;
-  for (final unit in 'task-due/$taskId/${at.toUtc().millisecondsSinceEpoch}'
-      .codeUnits) {
+  for (final unit
+      in 'task-due/$taskId/${at.toUtc().millisecondsSinceEpoch}'.codeUnits) {
     hash = ((hash ^ unit) * 0x01000193) & 0xffffffff;
   }
   return hash & 0x7fffffff;

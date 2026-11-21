@@ -707,7 +707,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           _signingOut ||
           !_taskDueNotificationsOn ||
           generation != _taskDueSyncGeneration ||
-          token != widget.token()) {
+          token != widget.token() ||
+          (widget.tasksApi is ApiClient &&
+              (widget.tasksApi as ApiClient).isOffline)) {
         return;
       }
       await (widget.habitReminders as LocalHabitReminders).syncTaskDues(tasks);
@@ -731,9 +733,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final permitted = await reminders.requestPermission();
     if (!mounted || _signingOut) return;
     if (!permitted) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(const SnackBar(
-        content: Text('برای اعلان سررسید، اجازهٔ اعلان‌ها را در تنظیمات دستگاه فعال کنید.'),
-      ));
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'برای اعلان سررسید، اجازهٔ اعلان‌ها را در تنظیمات دستگاه فعال کنید.',
+          ),
+        ),
+      );
       return;
     }
     setState(() => _taskDueNotificationsOn = true);
@@ -1008,9 +1014,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           key: const ValueKey('tool-task-due-notifications'),
           selected: false,
           child: ListTile(
-            leading: Icon(_taskDueNotificationsOn
-                ? Icons.notifications_active_outlined
-                : Icons.notifications_none_outlined),
+            leading: Icon(
+              _taskDueNotificationsOn
+                  ? Icons.notifications_active_outlined
+                  : Icons.notifications_none_outlined,
+            ),
             title: const Text('اعلان سررسید کارها'),
             trailing: _taskDueNotificationsOn
                 ? const Icon(Icons.check_circle_outline)

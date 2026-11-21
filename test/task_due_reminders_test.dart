@@ -18,18 +18,18 @@ Task _task(
 
 void main() {
   final now = DateTime.utc(2026, 11, 21, 12);
-  TaskDue at(DateTime when) => TaskDue(
-    date: '2026-11-21',
-    datetime: when,
-    timezone: 'Asia/Tehran',
-  );
+  TaskDue at(DateTime when) =>
+      TaskDue(date: '2026-11-21', datetime: when, timezone: 'Asia/Tehran');
 
   test('only future timed open tasks create alarms', () {
     final planned = planTaskDueReminders([
       _task('past', due: at(now.subtract(const Duration(minutes: 1)))),
       _task('all-day', due: TaskDue.onDay(DateTime(2026, 11, 21))),
-      _task('finished', due: at(now.add(const Duration(hours: 2))),
-          completed: true),
+      _task(
+        'finished',
+        due: at(now.add(const Duration(hours: 2))),
+        completed: true,
+      ),
       _task('future', due: at(now.add(const Duration(hours: 1)))),
       _task('too-far', due: at(now.add(const Duration(days: 15)))),
     ], now);
@@ -39,8 +39,10 @@ void main() {
   test('earliest 150 alarms win, with deterministic tie order', () {
     final list = [
       for (var i = 160; i >= 0; i--)
-        _task('task${i.toString().padLeft(3, '0')}',
-            due: at(now.add(const Duration(minutes: 1)))),
+        _task(
+          'task${i.toString().padLeft(3, '0')}',
+          due: at(now.add(const Duration(minutes: 1))),
+        ),
     ];
     final reminders = planTaskDueReminders(list, now);
     expect(reminders.length, maxTaskDueReminders);
@@ -50,7 +52,7 @@ void main() {
 
   test('payload survives encode/decode, with no unrelated kinds accepted', () {
     final reminder = planTaskDueReminders([
-      _task('one', due: at(now.add(const Duration(minutes: 5))))
+      _task('one', due: at(now.add(const Duration(minutes: 5)))),
     ], now).single;
     final decoded = TaskDueReminder.decode(reminder.encode())!;
     expect(decoded.taskId, reminder.taskId);
@@ -64,11 +66,14 @@ void main() {
 
   test('IDs are stable per task and due moment, distinct from habit IDs', () {
     final later = now.add(const Duration(minutes: 3));
-    expect(taskDueReminderId('one', later),
-        taskDueReminderId('one', later.toLocal()));
-    expect(taskDueReminderId('one', later),
-        isNot(taskDueReminderId('one', later.add(const Duration(minutes: 1)))));
-    expect(taskDueReminderId('one', later),
-        isNot(reminderId('one', 100)));
+    expect(
+      taskDueReminderId('one', later),
+      taskDueReminderId('one', later.toLocal()),
+    );
+    expect(
+      taskDueReminderId('one', later),
+      isNot(taskDueReminderId('one', later.add(const Duration(minutes: 1)))),
+    );
+    expect(taskDueReminderId('one', later), isNot(reminderId('one', 100)));
   });
 }
