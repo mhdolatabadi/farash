@@ -153,6 +153,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _ => null,
   };
 
+  /// Task reminder consent is opt-in, device-only and stays separate from
+  /// the habit notification permission. No task contents are persisted here.
+  late final CalendarSettingsStore _notificationStore =
+      widget.settingsStore ?? SecureCalendarSettingsStore();
+  bool _taskDueNotificationsOn = false;
+  int _taskDueSyncGeneration = 0;
+
   /// The label whose tasks are open, if any.
   String? _labelId;
 
@@ -170,11 +177,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (widget.tasksApi case final ApiClient api) {
       api.completedTask.addListener(_completedTime);
       api.progressChanges.addListener(_refreshTracker);
+      api.progressChanges.addListener(_taskDataChanged);
     }
+    widget.projects.addListener(_openTaskDueReminder);
     widget.projects.load();
     _labels?.load();
     _filters?.load();
     _startReminders();
+    if (widget.habitReminders is LocalHabitReminders) {
+      unawaited(_loadTaskDuePreference());
+    }
     _applyStartView();
     widget.startView?.addListener(_applyStartView);
     _refreshCount();
@@ -186,7 +198,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (widget.tasksApi case final ApiClient api) {
       api.completedTask.removeListener(_completedTime);
       api.progressChanges.removeListener(_refreshTracker);
+      api.progressChanges.removeListener(_taskDataChanged);
     }
+    widget.projects.removeListener(_openTaskDueReminder);
     _tracker?.removeListener(_trackerChanged);
     _tracker?.dispose();
     _focus.removeListener(_focusChanged);
@@ -194,7 +208,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     widget.habitReminders?.opened.removeListener(_openReminder);
     if (widget.habitReminders case final LocalHabitReminders local) {
       local.onDone = null;
+      local.openedTaskProject.removeListener(_openTaskDueReminder);
     }
+    ++_taskDueSyncGeneration;
     _habits?.dispose();
     _focus.dispose();
     widget.startView?.removeListener(_applyStartView);
@@ -640,9 +656,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     reminders.opened.addListener(_openReminder);
     if (reminders case final LocalHabitReminders local) {
       local.onDone = habits.markDone;
+      local.openedTaskProject.addListener(_openTaskDueReminder);
       local.start();
     }
-    habits.load().then((_) => _openReminder());
+    habits.load().then((_) {
+      _openReminder();
+      _openTaskDueReminder();
+    });
   }
 
   @override
@@ -650,7 +670,98 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _focus.refresh();
       _habits?.load();
+      _taskDataChanged();
     }
+  }
+
+  Future<void> _loadTaskDuePreference() async {
+    try {
+      final enabled = await _notificationStore.read('task_due_notifications');
+      if (!mounted || _signingOut || enabled != 'on') return;
+      setState(() => _taskDueNotificationsOn = true);
+      await _syncTaskDues();
+    } catch (_) {
+      // Unavailable settings storage means reminders remain opt-in.
+    }
+  }
+
+  void _taskDataChanged() {
+    if (_taskDueNotificationsOn) unawaited(_syncTaskDues());
+  }
+
+  Future<void> _syncTaskDues() async {
+    if (!_taskDueNotificationsOn ||
+        _signingOut ||
+        widget.habitReminders is! LocalHabitReminders) {
+      return;
+    }
+    final generation = ++_taskDueSyncGeneration;
+    final token = widget.token();
+    if (token == null) return;
+    try {
+      final now = DateTime.now();
+      final tasks = await widget.tasksApi.listDueTasks(
+        token,
+        from: now,
+        to: now.add(const Duration(days: 14)),
+      );
+      if (!mounted ||
+          _signingOut ||
+          !_taskDueNotificationsOn ||
+          generation != _taskDueSyncGeneration ||
+          token != widget.token() ||
+          (widget.tasksApi is ApiClient &&
+              (widget.tasksApi as ApiClient).isOffline)) {
+        return;
+      }
+      await (widget.habitReminders as LocalHabitReminders).syncTaskDues(tasks);
+    } catch (_) {
+      // Preserve existing alarms on transport or server failures.
+    }
+  }
+
+  Future<void> _toggleTaskDueNotifications() async {
+    final reminders = widget.habitReminders;
+    if (reminders is! LocalHabitReminders) return;
+    if (_taskDueNotificationsOn) {
+      ++_taskDueSyncGeneration;
+      setState(() => _taskDueNotificationsOn = false);
+      try {
+        await _notificationStore.write('task_due_notifications', 'off');
+      } catch (_) {}
+      await reminders.clearTaskDues();
+      return;
+    }
+    final permitted = await reminders.requestPermission();
+    if (!mounted || _signingOut) return;
+    if (!permitted) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'برای اعلان سررسید، اجازهٔ اعلان‌ها را در تنظیمات دستگاه فعال کنید.',
+          ),
+        ),
+      );
+      return;
+    }
+    setState(() => _taskDueNotificationsOn = true);
+    try {
+      await _notificationStore.write('task_due_notifications', 'on');
+    } catch (_) {}
+    await _syncTaskDues();
+  }
+
+  void _openTaskDueReminder() {
+    final reminders = widget.habitReminders;
+    if (reminders is! LocalHabitReminders || !mounted) return;
+    final projectId = reminders.openedTaskProject.value;
+    if (projectId == null) return;
+    final project = widget.projects.byId(projectId);
+    if (project == null) return;
+    reminders.openedTaskProject.value = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_signingOut) _select(project);
+    });
   }
 
   /// Shows the habit of a reminder the user tapped.
@@ -900,6 +1011,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               onTap: () => _switchSection(index),
             ),
           ),
+      if (widget.habitReminders is LocalHabitReminders)
+        SidebarRow(
+          key: const ValueKey('tool-task-due-notifications'),
+          selected: false,
+          child: ListTile(
+            leading: Icon(
+              _taskDueNotificationsOn
+                  ? Icons.notifications_active_outlined
+                  : Icons.notifications_none_outlined,
+            ),
+            title: const Text('اعلان سررسید کارها'),
+            trailing: _taskDueNotificationsOn
+                ? const Icon(Icons.check_circle_outline)
+                : null,
+            onTap: () => unawaited(_toggleTaskDueNotifications()),
+          ),
+        ),
       if (widget.tasksApi case final SearchApi api)
         SidebarRow(
           key: const ValueKey('tool-matrix'),
