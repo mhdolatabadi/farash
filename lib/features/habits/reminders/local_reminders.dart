@@ -9,6 +9,8 @@ import 'package:farash/features/auth/session_store.dart';
 import 'package:farash/features/habits/habit.dart';
 import 'package:farash/features/habits/reminders/habit_reminders.dart';
 import 'package:farash/features/habits/reminders/reminder_plan.dart';
+import 'package:farash/features/habits/reminders/task_due_reminders.dart';
+import 'package:farash/features/tasks/data/task.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -39,6 +41,17 @@ NotificationDetails _details({required bool canMarkDone}) =>
         ],
       ),
     );
+
+NotificationDetails _taskDetails() => const NotificationDetails(
+  android: AndroidNotificationDetails(
+    'task_due_reminders',
+    'یادآوری سررسید کارها',
+    channelDescription: 'اعلان در ساعت سررسید کارهای زمان‌دار.',
+    importance: Importance.high,
+    priority: Priority.high,
+    category: AndroidNotificationCategory.reminder,
+  ),
+);
 
 Future<void> _useDeviceTimeZone() async {
   tzdata.initializeTimeZones();
@@ -124,6 +137,10 @@ class LocalHabitReminders extends HabitReminders {
 
   final FlutterLocalNotificationsPlugin _plugin;
   late final Future<void> _ready = _init();
+  Future<void> _taskWrites = Future<void>.value();
+
+  /// Project to open when the user taps a task-due notification.
+  final openedTaskProject = ValueNotifier<String?>(null);
 
   /// Records a day checked from a notification while the app runs, so the
   /// list updates at once; without it the request goes out on its own.
@@ -148,6 +165,11 @@ class LocalHabitReminders extends HabitReminders {
   }
 
   void _respond(NotificationResponse response) {
+    final task = TaskDueReminder.decode(response.payload);
+    if (task != null) {
+      openedTaskProject.value = task.projectId;
+      return;
+    }
     final payload = ReminderPayload.decode(response.payload);
     if (payload == null) return;
     switch (response.actionId) {
@@ -172,6 +194,72 @@ class LocalHabitReminders extends HabitReminders {
   Future<bool> requestPermission() async {
     await _ready;
     return await _android?.requestNotificationsPermission() ?? false;
+  }
+
+  /// Reconciles only task notifications; habit notifications are untouched.
+  /// Failed server reads must never call this with an empty list: they do
+  /// not prove that existing alarms should be removed.
+  Future<void> syncTaskDues(Iterable<Task> tasks) {
+    final snapshot = tasks.toList();
+    _taskWrites = _taskWrites
+        .catchError((Object _) {})
+        .then((_) => _applyTaskDues(snapshot));
+    return _taskWrites;
+  }
+
+  Future<void> _applyTaskDues(List<Task> tasks) async {
+    await _ready;
+    final plan = planTaskDueReminders(tasks, now());
+    final desired = {for (final item in plan) item.id: item};
+    final current = <int>{};
+    for (final request in await _plugin.pendingNotificationRequests()) {
+      final previous = TaskDueReminder.decode(request.payload);
+      if (previous == null) continue;
+      if (desired[request.id]?.encode() == request.payload) {
+        current.add(request.id);
+      } else {
+        await _plugin.cancel(id: request.id);
+      }
+    }
+    for (final shown in await _plugin.getActiveNotifications()) {
+      final previous = TaskDueReminder.decode(shown.payload);
+      if (previous != null &&
+          shown.id != null &&
+          desired[shown.id]?.encode() != shown.payload) {
+        await _plugin.cancel(id: shown.id!);
+      }
+    }
+    if (plan.every((reminder) => current.contains(reminder.id))) return;
+    final mode = await _android?.canScheduleExactNotifications() == true
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+    for (final item in plan) {
+      if (current.contains(item.id)) continue;
+      await _plugin.zonedSchedule(
+        id: item.id,
+        scheduledDate: tz.TZDateTime.from(item.at, tz.local),
+        notificationDetails: _taskDetails(),
+        androidScheduleMode: mode,
+        title: item.title,
+        body: 'زمان انجام این کار رسیده است.',
+        payload: item.encode(),
+      );
+    }
+  }
+
+  Future<void> clearTaskDues() => syncTaskDues(const <Task>[]);
+
+  @override
+  Future<void> clear() async {
+    await super.clear();
+    await clearTaskDues();
+    openedTaskProject.value = null;
+  }
+
+  @override
+  void dispose() {
+    openedTaskProject.dispose();
+    super.dispose();
   }
 
   static bool _answered(Map<String, Habit> habits, ReminderPayload payload) {
