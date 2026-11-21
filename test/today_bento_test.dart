@@ -130,9 +130,7 @@ void main() {
     expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
   });
 
-  testWidgets('390px Android Today keeps tasks above the fold', (
-    tester,
-  ) async {
+  testWidgets('390px Android Today keeps tasks above the fold', (tester) async {
     await pump(
       tester,
       size: const Size(390, 844),
