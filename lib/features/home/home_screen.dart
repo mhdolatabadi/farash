@@ -179,6 +179,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       api.progressChanges.addListener(_refreshTracker);
       api.progressChanges.addListener(_taskDataChanged);
     }
+    widget.projects.addListener(_openTaskDueReminder);
     widget.projects.load();
     _labels?.load();
     _filters?.load();
@@ -199,6 +200,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       api.progressChanges.removeListener(_refreshTracker);
       api.progressChanges.removeListener(_taskDataChanged);
     }
+    widget.projects.removeListener(_openTaskDueReminder);
     _tracker?.removeListener(_trackerChanged);
     _tracker?.dispose();
     _focus.removeListener(_focusChanged);
