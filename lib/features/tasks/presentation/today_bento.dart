@@ -68,7 +68,10 @@ class TodayBento extends StatelessWidget {
     // Large text stacks the tiles; otherwise the date takes the height of
     // the two tiles beside it.
     final stacked = scale >= 1.5;
-    final narrow = !stacked && MediaQuery.sizeOf(context).width < 380;
+    // All phone widths use the compact date row. The taller bento
+    // composition is reserved for tablets and desktop, where it does
+    // not push the task list below the first viewport.
+    final narrow = !stacked && MediaQuery.sizeOf(context).width < 600;
     final date = _DateTile(
       today: today,
       tall: !stacked && !narrow,
