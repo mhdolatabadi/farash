@@ -2,7 +2,10 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
+	"regexp"
 	"strings"
 	"time"
 
@@ -15,7 +18,30 @@ var (
 	ErrTaskProject     = errors.New("task project not found")
 	ErrInvalidDueRange = errors.New("invalid due range")
 	ErrTaskOrder       = errors.New("invalid task order")
+	ErrTaskRequestConflict = errors.New("task create request conflict")
 )
+
+var taskCreateKey = regexp.MustCompile(`^[A-Za-z0-9_-]{16,128}package store
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/json"
+	"errors"
+	"regexp"
+	"strings"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+)
+
+var (
+	ErrTaskNotFound    = errors.New("task not found")
+	ErrInvalidTask     = errors.New("invalid task")
+	ErrTaskProject     = errors.New("task project not found")
+	ErrInvalidDueRange = errors.New("invalid due range")
+)
+
 
 type Task struct {
 	ID          string     `json:"id"`
@@ -43,6 +69,9 @@ type Task struct {
 }
 
 type TaskInput struct {
+	// RequestKey lets a client replay the same create after a lost response.
+	// Omit it for ordinary online creates; it must not change across retries.
+	RequestKey string `json:"request_key,omitempty"`
 	ProjectID string `json:"project_id"`
 	SectionID string `json:"section_id"`
 	// ParentID makes the task a subtask; it then lives in the parent's
@@ -168,6 +197,9 @@ func (s *Store) ListDueTasks(ctx context.Context, owner, from, to string) ([]Tas
 }
 
 func (s *Store) CreateTask(ctx context.Context, owner string, input TaskInput) (Task, error) {
+	if input.RequestKey != "" && !taskCreateKey.MatchString(input.RequestKey) {
+		return Task{}, ErrInvalidTask
+	}
 	input.Title = strings.TrimSpace(input.Title)
 	if input.Priority == 0 {
 		input.Priority = 4
@@ -190,6 +222,13 @@ func (s *Store) CreateTask(ctx context.Context, owner string, input TaskInput) (
 		return Task{}, ErrInvalidDuration
 	}
 	dueDate, dueAt, dueZone := dueColumns(due)
+	// The request hash is calculated before resolving a parent/section into
+	// project IDs, so a retry remains the same request after hierarchy edits.
+	payload, err := json.Marshal(input)
+	if err != nil {
+		return Task{}, err
+	}
+	fingerprint := sha256.Sum256(payload)
 	if input.ProjectID == "" && input.SectionID == "" && input.ParentID == "" {
 		inbox, err := s.EnsureInboxProject(ctx, owner)
 		if err != nil {
@@ -198,7 +237,25 @@ func (s *Store) CreateTask(ctx context.Context, owner string, input TaskInput) (
 		input.ProjectID = inbox.ID
 	}
 	var task Task
-	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+	err = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		if input.RequestKey != "" {
+			// Per-account row lock makes concurrent replays deterministic.
+			// The request record and the task are committed atomically.
+			if _, err := tx.Exec(ctx, `SELECT id FROM users WHERE id=$1 FOR UPDATE`, owner); err != nil {
+				return err
+			}
+			var previousHash, response []byte
+			err := tx.QueryRow(ctx, `SELECT payload_hash, response FROM task_create_requests WHERE owner_id=$1 AND request_key=$2`, owner, input.RequestKey).Scan(&previousHash, &response)
+			if err == nil {
+				if string(previousHash) != string(fingerprint[:]) {
+					return ErrTaskRequestConflict
+				}
+				return json.Unmarshal(response, &task)
+			}
+			if !errors.Is(err, pgx.ErrNoRows) {
+				return err
+			}
+		}
 		var section, parent *string
 		switch {
 		case input.ParentID != "":
@@ -240,14 +297,27 @@ func (s *Store) CreateTask(ctx context.Context, owner string, input TaskInput) (
 		if errors.Is(err, ErrTaskNotFound) {
 			return ErrTaskProject
 		}
-		if err != nil || len(input.LabelIDs) == 0 {
+		if err != nil {
 			return err
 		}
-		if err := setTaskLabels(ctx, tx, owner, task.ID, input.LabelIDs); err != nil {
+		if len(input.LabelIDs) > 0 {
+			if err := setTaskLabels(ctx, tx, owner, task.ID, input.LabelIDs); err != nil {
+				return err
+			}
+			task, err = scanTask(tx.QueryRow(ctx, `SELECT `+taskColumns+` FROM tasks WHERE owner_id=$1 AND id=$2`, owner, task.ID))
+			if err != nil {
+				return err
+			}
+		}
+		if input.RequestKey != "" {
+			response, err := json.Marshal(task)
+			if err != nil {
+				return err
+			}
+			_, err = tx.Exec(ctx, `INSERT INTO task_create_requests(owner_id,request_key,payload_hash,response) VALUES($1,$2,$3,$4)`, owner, input.RequestKey, fingerprint[:], response)
 			return err
 		}
-		task, err = scanTask(tx.QueryRow(ctx, `SELECT `+taskColumns+` FROM tasks WHERE owner_id=$1 AND id=$2`, owner, task.ID))
-		return err
+		return nil
 	})
 	if err != nil {
 		return Task{}, err
