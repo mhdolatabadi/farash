@@ -2,11 +2,11 @@ package httpapi
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -33,10 +33,10 @@ type refreshSessionStore interface {
 
 type authHandler struct {
 	refreshStore refreshSessionStore
-	store      userStore
-	secret     []byte
-	tokenTTL   time.Duration
-	rateLimits *rateLimiter
+	store        userStore
+	secret       []byte
+	tokenTTL     time.Duration
+	rateLimits   *rateLimiter
 }
 
 type authRequest struct {
@@ -50,9 +50,9 @@ type userResponse struct {
 }
 
 type authResponse struct {
-	RefreshToken string `json:"refresh_token,omitempty"`
-	Token string       `json:"token"`
-	User  userResponse `json:"user"`
+	RefreshToken string       `json:"refresh_token,omitempty"`
+	Token        string       `json:"token"`
+	User         userResponse `json:"user"`
 }
 
 func newAuthHandler(store userStore, secret []byte, tokenTTL time.Duration) *authHandler {
@@ -145,7 +145,9 @@ func (h *authHandler) refresh(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotImplemented, "refresh_unavailable")
 		return
 	}
-	var request struct { RefreshToken string `json:"refresh_token"` }
+	var request struct {
+		RefreshToken string `json:"refresh_token"`
+	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&request); err != nil || request.RefreshToken == "" {
 		writeError(w, http.StatusBadRequest, "invalid_request")
 		return
@@ -178,7 +180,9 @@ func (h *authHandler) revoke(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotImplemented, "refresh_unavailable")
 		return
 	}
-	var request struct { RefreshToken string `json:"refresh_token"` }
+	var request struct {
+		RefreshToken string `json:"refresh_token"`
+	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&request); err != nil || request.RefreshToken == "" {
 		writeError(w, http.StatusBadRequest, "invalid_request")
 		return
