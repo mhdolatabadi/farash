@@ -196,6 +196,23 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('600px Today stacks tiles at 2x text scale', (tester) async {
+    await pump(
+      tester,
+      size: const Size(600, 850),
+      textScale: 2,
+      dark: true,
+      doneToday: () async => 1,
+    );
+    final bento = find.byType(TodayBento);
+    expect(
+      find.descendant(of: bento, matching: find.byType(IntrinsicHeight)),
+      findsNothing,
+    );
+    expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('320px Today uses a compact date row above actions', (
     tester,
   ) async {
