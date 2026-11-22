@@ -125,10 +125,13 @@ class _FarashAppState extends State<FarashApp> {
     }
     try {
       await api.activateOfflineSession(token);
-      final user = await api.me(token);
+      final renewed = await api.renewSession(token);
+      if (!mounted || generation != _sessionEpoch) return;
+      await api.rememberAuthenticatedIdentity(renewed);
+      await _sessionStore.writeToken(renewed.token);
       if (!mounted || generation != _sessionEpoch) return;
       setState(() {
-        _session = AuthSession(token: token, user: user);
+        _session = renewed;
         _state = _SessionState.ready;
       });
     } on ApiException catch (error) {
