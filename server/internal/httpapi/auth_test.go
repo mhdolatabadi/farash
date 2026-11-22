@@ -178,13 +178,16 @@ func TestVerifyExpiredToken(t *testing.T) {
 type fakeRefreshSessions struct {
 	tokens map[string]string
 }
+
 func (f *fakeRefreshSessions) CreateRefreshSession(_ context.Context, userID, digest string, _ time.Time) error {
 	f.tokens[digest] = userID
 	return nil
 }
 func (f *fakeRefreshSessions) RotateRefreshSession(_ context.Context, old, next string, _ time.Time) (string, error) {
 	userID, ok := f.tokens[old]
-	if !ok { return "", store.ErrRefreshInvalid }
+	if !ok {
+		return "", store.ErrRefreshInvalid
+	}
 	delete(f.tokens, old)
 	f.tokens[next] = userID
 	return userID, nil
@@ -196,26 +199,38 @@ func (f *fakeRefreshSessions) RevokeRefreshSession(_ context.Context, digest str
 
 func TestRefreshRotationRejectsReplayAndRevokes(t *testing.T) {
 	users := newFakeUsers()
-	users.byID["u1"] = store.User{ID:"u1", Email:"test@example.com"}
+	users.byID["u1"] = store.User{ID: "u1", Email: "test@example.com"}
 	refresh := &fakeRefreshSessions{tokens: make(map[string]string)}
-	handler := NewHandler(Config{Store:users, AuthSecret:[]byte("test-secret"), AuthTokenTTL:time.Hour})
 	// Exercise the same handler with a session store attached.
 	auth := newAuthHandler(users, []byte("test-secret"), time.Hour)
 	auth.refreshStore = refresh
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/v1/auth/refresh", auth.refresh)
 	mux.HandleFunc("POST /api/v1/auth/revoke", auth.revoke)
-	_ = handler
-	if err := refresh.CreateRefreshSession(context.Background(), "u1", refreshDigest("original"), time.Now().Add(time.Hour)); err != nil { t.Fatal(err) }
+	if err := refresh.CreateRefreshSession(context.Background(), "u1", refreshDigest("original"), time.Now().Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
 	first := postJSON(mux, "/api/v1/auth/refresh", `{"refresh_token":"original"}`, "")
-	if first.Code != http.StatusOK { t.Fatalf("refresh status = %d: %s", first.Code, first.Body.String()) }
+	if first.Code != http.StatusOK {
+		t.Fatalf("refresh status = %d: %s", first.Code, first.Body.String())
+	}
 	var rotated authResponse
-	if err := json.Unmarshal(first.Body.Bytes(), &rotated); err != nil { t.Fatal(err) }
-	if rotated.RefreshToken == "" || rotated.RefreshToken == "original" { t.Fatal("token not rotated") }
+	if err := json.Unmarshal(first.Body.Bytes(), &rotated); err != nil {
+		t.Fatal(err)
+	}
+	if rotated.RefreshToken == "" || rotated.RefreshToken == "original" {
+		t.Fatal("token not rotated")
+	}
 	replay := postJSON(mux, "/api/v1/auth/refresh", `{"refresh_token":"original"}`, "")
-	if replay.Code != http.StatusUnauthorized { t.Fatalf("replay accepted: %d", replay.Code) }
+	if replay.Code != http.StatusUnauthorized {
+		t.Fatalf("replay accepted: %d", replay.Code)
+	}
 	revoke := postJSON(mux, "/api/v1/auth/revoke", `{"refresh_token":"`+rotated.RefreshToken+`"}`, "")
-	if revoke.Code != http.StatusNoContent { t.Fatalf("revoke = %d", revoke.Code) }
+	if revoke.Code != http.StatusNoContent {
+		t.Fatalf("revoke = %d", revoke.Code)
+	}
 	after := postJSON(mux, "/api/v1/auth/refresh", `{"refresh_token":"`+rotated.RefreshToken+`"}`, "")
-	if after.Code != http.StatusUnauthorized { t.Fatalf("revoked token accepted: %d", after.Code) }
+	if after.Code != http.StatusUnauthorized {
+		t.Fatalf("revoked token accepted: %d", after.Code)
+	}
 }
