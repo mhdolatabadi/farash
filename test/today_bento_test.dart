@@ -102,6 +102,31 @@ void main() {
     expect(find.text('۱ باز'), findsOneWidget);
   });
 
+  testWidgets(
+    'Today progress exposes an RTL-friendly Persian screen-reader label',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pump(tester, doneToday: () async => 3);
+      expect(
+        find.bySemanticsLabel('۳ کار از ۴ کار امروز انجام شد'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+  );
+
+  testWidgets('offline count exposes only known open tasks to screen readers', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await pump(tester, doneToday: () async => throw StateError('offline'));
+    expect(find.bySemanticsLabel('۱ کار باز برای امروز'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('انجام شد')), findsNothing);
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
+
   testWidgets('the focus tile opens Focus', (tester) async {
     var opened = 0;
     await pump(tester, onOpenFocus: () => opened++);
