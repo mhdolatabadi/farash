@@ -38,7 +38,7 @@ def capture(name):
 
 def png_dimensions(data):
     """Read the PNG IHDR, rejecting a truncated or unexpected capture."""
-    if (len(data) < 24 or data[:8] != b'\\x89PNG\\r\\n\\x1a\\n'
+    if (len(data) < 24 or data[:8] != b'\x89PNG\r\n\x1a\n'
             or data[12:16] != b'IHDR'):
         raise ValueError('Android screenshot is not a valid PNG header')
     return struct.unpack('>II', data[16:24])
