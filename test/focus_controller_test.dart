@@ -118,4 +118,23 @@ void main() {
     expect(timer.remaining, const Duration(minutes: 7));
     expect(timer.minutes, 15);
   });
+  test('restored future deadline is bounded to selected session length', () {
+    var now = DateTime(2026, 11, 22, 10);
+    final timer = FocusController(now: () => now);
+    addTearDown(timer.dispose);
+    timer.restoreState(
+      mode: 5,
+      remaining: const Duration(minutes: 5),
+      deadline: now.add(const Duration(hours: 2)),
+    );
+    expect(timer.running, isTrue);
+    expect(timer.remaining, const Duration(minutes: 5));
+    expect(timer.deadline, now.add(const Duration(minutes: 5)));
+    now = now.add(const Duration(minutes: 5));
+    timer.refresh();
+    expect(timer.remaining, Duration.zero);
+    expect(timer.finished, isTrue);
+    expect(timer.running, isFalse);
+  });
+
 }
