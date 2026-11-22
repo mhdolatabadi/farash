@@ -38,14 +38,17 @@ void main() {
     expect(store.values.keys.every((key) => !key.contains('@')), isTrue);
   });
 
-  test('legacy device-wide consent is not inherited by a new account', () async {
-    final store = MemoryCalendarSettingsStore();
-    await store.write('task_due_notifications', 'on');
-    final choice = TaskDueNotificationPreference(
-      account: 'new@example.com',
-      server: 'https://one.example',
-      store: store,
-    );
-    expect(await choice.read(), isFalse);
-  });
+  test(
+    'legacy device-wide consent is not inherited by a new account',
+    () async {
+      final store = MemoryCalendarSettingsStore();
+      await store.write('task_due_notifications', 'on');
+      final choice = TaskDueNotificationPreference(
+        account: 'new@example.com',
+        server: 'https://one.example',
+        store: store,
+      );
+      expect(await choice.read(), isFalse);
+    },
+  );
 }

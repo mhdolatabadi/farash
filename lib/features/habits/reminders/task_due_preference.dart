@@ -19,5 +19,6 @@ class TaskDueNotificationPreference {
 
   Future<bool> read() async => await _store.read(_key) == 'on';
 
-  Future<void> write(bool enabled) => _store.write(_key, enabled ? 'on' : 'off');
+  Future<void> write(bool enabled) =>
+      _store.write(_key, enabled ? 'on' : 'off');
 }
