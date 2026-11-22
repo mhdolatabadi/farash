@@ -52,7 +52,7 @@ Another user's project answers `404 project_not_found`.
 
 Passwords must be 8–72 characters and are stored only as bcrypt hashes.
 `AUTH_JWT_SECRET` (required) signs access tokens and `AUTH_TOKEN_TTL_HOURS`
-(default `24`) sets how long a sign-in lasts.
+(default `720`, or 30 days) sets how long an access token lasts. The Android app renews a still-valid token when it opens; tokens already expired require a new login.
 
 ## Run the Flutter app
 
