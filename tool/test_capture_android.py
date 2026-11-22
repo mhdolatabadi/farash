@@ -83,9 +83,9 @@ class CaptureNavigationTest(unittest.TestCase):
         png = (b'\x89PNG\r\n\x1a\n'
                + struct.pack('>I', 13) + b'IHDR'
                + struct.pack('>II', 320, 740))
-        with tempfile.TemporaryDirectory() as directory, \\
-                patch.object(capture, 'OUT', pathlib.Path(directory)), \\
-                patch.object(capture, 'adb') as adb, \\
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(capture, 'OUT', pathlib.Path(directory)), \
+                patch.object(capture, 'adb') as adb, \
                 patch.object(capture.time, 'sleep'):
             with patch.object(capture, 'capture', side_effect=lambda name:
                     (capture.OUT / f'{name}.png').write_bytes(png)):
@@ -98,10 +98,10 @@ class CaptureNavigationTest(unittest.TestCase):
                          ('shell', 'wm', 'density', 'reset'))
 
     def test_narrow_capture_failure_still_restores_display(self):
-        with tempfile.TemporaryDirectory() as directory, \\
-                patch.object(capture, 'OUT', pathlib.Path(directory)), \\
-                patch.object(capture, 'adb') as adb, \\
-                patch.object(capture.time, 'sleep'), \\
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(capture, 'OUT', pathlib.Path(directory)), \
+                patch.object(capture, 'adb') as adb, \
+                patch.object(capture.time, 'sleep'), \
                 patch.object(capture, 'capture', side_effect=RuntimeError('adb failed')):
             with self.assertRaisesRegex(RuntimeError, 'adb failed'):
                 capture.capture_narrow('today-320')
