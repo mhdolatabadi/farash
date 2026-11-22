@@ -34,8 +34,13 @@ func NewHandler(config Config) http.Handler {
 	}
 	if config.Store != nil && len(config.AuthSecret) > 0 {
 		auth := newAuthHandler(config.Store, config.AuthSecret, config.AuthTokenTTL)
+		if refresh, ok := config.Store.(refreshSessionStore); ok {
+			auth.refreshStore = refresh
+		}
 		mux.HandleFunc("POST /api/v1/auth/register", auth.register)
 		mux.HandleFunc("POST /api/v1/auth/login", auth.login)
+		mux.HandleFunc("POST /api/v1/auth/refresh", auth.refresh)
+		mux.HandleFunc("POST /api/v1/auth/revoke", auth.revoke)
 		mux.HandleFunc("GET /api/v1/me", auth.me)
 		calendarRoutes(mux, auth, config.Calendar)
 		if data, ok := config.Store.(searchStore); ok {
