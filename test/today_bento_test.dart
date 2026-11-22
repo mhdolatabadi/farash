@@ -238,6 +238,31 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('375px Today can scroll to the last of twelve tasks', (
+    tester,
+  ) async {
+    for (var i = 2; i <= 12; i++) {
+      api.seed(
+        'inbox',
+        'کار شماره $i',
+        dates: TaskDates(due: TaskDue.onDay(today)),
+      );
+    }
+    await pump(tester, size: const Size(375, 850), textScale: 2, dark: true);
+    await tester.scrollUntilVisible(
+      find.text('کار شماره 12'),
+      250,
+      scrollable: find
+          .descendant(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(find.text('کار شماره 12'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('320px Today uses a compact date row above actions', (
     tester,
   ) async {
