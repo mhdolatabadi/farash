@@ -724,6 +724,23 @@ class ApiClient
     return AuthSession.fromJson(decoded as Map<String, dynamic>);
   }
 
+  Future<AuthSession> refreshSession(String refreshToken) async {
+    final result = await _send(
+      'POST',
+      '/api/v1/auth/refresh',
+      body: {'refresh_token': refreshToken},
+    );
+    return AuthSession.fromJson(result as Map<String, dynamic>);
+  }
+
+  Future<void> revokeSession(String refreshToken) async {
+    await _send(
+      'POST',
+      '/api/v1/auth/revoke',
+      body: {'refresh_token': refreshToken},
+    );
+  }
+
   @override
   Future<AuthUser> me(String token) async {
     final decoded = await _send('GET', '/api/v1/me', token: token);
