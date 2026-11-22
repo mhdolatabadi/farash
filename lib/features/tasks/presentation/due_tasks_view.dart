@@ -134,7 +134,16 @@ class _DueTasksViewState extends State<DueTasksView> {
 
   Future<void> _load() async {
     final token = widget.token();
-    if (token == null) return;
+    if (token == null) {
+      if (!mounted) return;
+      setState(() {
+        _tasks = const [];
+        _doneToday = null;
+        _loading = false;
+        _error = const ApiException('برای دیدن کارها دوباره وارد شوید.');
+      });
+      return;
+    }
     setState(() {
       _loading = true;
       _error = null;
