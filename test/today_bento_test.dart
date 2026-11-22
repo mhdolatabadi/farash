@@ -248,12 +248,7 @@ void main() {
         dates: TaskDates(due: TaskDue.onDay(today)),
       );
     }
-    await pump(
-      tester,
-      size: const Size(375, 850),
-      textScale: 2,
-      dark: true,
-    );
+    await pump(tester, size: const Size(375, 850), textScale: 2, dark: true);
     await tester.scrollUntilVisible(
       find.text('کار شماره 12'),
       250,
