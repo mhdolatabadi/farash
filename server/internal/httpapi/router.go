@@ -30,7 +30,7 @@ func NewHandler(config Config) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/v1/health", health(config.Ping))
 	if config.AuthTokenTTL == 0 {
-		config.AuthTokenTTL = 24 * time.Hour
+		config.AuthTokenTTL = 30 * 24 * time.Hour
 	}
 	if config.Store != nil && len(config.AuthSecret) > 0 {
 		auth := newAuthHandler(config.Store, config.AuthSecret, config.AuthTokenTTL)
