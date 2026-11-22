@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"bytes"
+	"encoding/base64"
 	"context"
 	"encoding/json"
 	"errors"
@@ -172,5 +173,43 @@ func TestVerifyExpiredToken(t *testing.T) {
 	}
 	if _, err := verifyToken(token, []byte("secret")); !errors.Is(err, errors.New("expired token")) && err == nil {
 		t.Fatal("expired token verified")
+	}
+}
+
+func TestVerifyTokenRejectsUnsupportedProtectedHeaders(t *testing.T) {
+	secret := []byte("test-secret")
+	claims := tokenClaims{Subject: "u1", Expires: time.Now().Add(time.Hour).Unix()}
+	payload, err := json.Marshal(claims)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name   string
+		header string
+		valid  bool
+	}{
+		{name: "supported", header: `{"alg":"HS256","typ":"JWT"}`, valid: true},
+		{name: "wrong algorithm", header: `{"alg":"none","typ":"JWT"}`},
+		{name: "wrong type", header: `{"alg":"HS256","typ":"other"}`},
+		{name: "missing type", header: `{"alg":"HS256"}`},
+		{name: "extra field", header: `{"alg":"HS256","typ":"JWT","kid":"untrusted"}`},
+		{name: "invalid JSON", header: `not-json`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			unsigned := base64.RawURLEncoding.EncodeToString([]byte(tc.header)) +
+				"." + base64.RawURLEncoding.EncodeToString(payload)
+			token := unsigned + "." + sign(unsigned, secret)
+			_, err := verifyToken(token, secret)
+			if (err == nil) != tc.valid {
+				t.Fatalf("valid=%v, verification error=%v", tc.valid, err)
+			}
+		})
+	}
+}
+
+func TestVerifyTokenRejectsOversizedBearer(t *testing.T) {
+	_, err := verifyToken(strings.Repeat("x", 4097), []byte("test-secret"))
+	if err == nil {
+		t.Fatal("oversized bearer token accepted")
 	}
 }
