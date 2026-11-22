@@ -102,6 +102,35 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+
+  testWidgets('Today without a session shows an error, not endless loading', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 760);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            body: DueTasksView(
+              view: DueView.today,
+              api: api,
+              token: () => null,
+              projects: () => const [_inbox],
+              onOpenProject: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.textContaining('برای دیدن کارها'), findsOneWidget);
+    expect(find.text('تلاش دوباره'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('agenda keeps distinct days across the autumn clock change', (
     tester,
   ) async {
