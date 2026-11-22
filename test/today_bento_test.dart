@@ -252,10 +252,12 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('کار شماره 12'),
       250,
-      scrollable: find.descendant(
-        of: find.byType(CustomScrollView),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find
+          .descendant(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     expect(find.text('کار شماره 12'), findsOneWidget);
     expect(tester.takeException(), isNull);
