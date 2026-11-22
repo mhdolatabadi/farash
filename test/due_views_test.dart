@@ -399,7 +399,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Now'), findsNothing);
     expect(api.byTitle('Now').isCompleted, isTrue);
-    expect(find.text('برای امروز کاری نمانده؛ از کادر پایین کار تازه‌ای اضافه کنید.'), findsOneWidget);
+    expect(
+      find.text(
+        'برای امروز کاری نمانده؛ از کادر پایین کار تازه‌ای اضافه کنید.',
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.text('برگرداندن'));
     await tester.pumpAndSettle();
     expect(find.text('Now'), findsOneWidget);
