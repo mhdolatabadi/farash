@@ -30,7 +30,7 @@ func TestConcurrentTaskCreateRetriesAreOneTask(t *testing.T) {
 			defer wg.Done()
 			results[i], failures[i] = s.CreateTask(ctx, owner.ID, TaskInput{
 				RequestKey: "parallel-task-create-001",
-				ProjectID: inbox.ID,
+				ProjectID:  inbox.ID,
 				Title: "One task after retries",
 			})
 		}(i)
@@ -56,8 +56,8 @@ func TestConcurrentTaskCreateRetriesAreOneTask(t *testing.T) {
 	// then succeed without accidentally claiming a prior successful write.
 	_, err = s.CreateTask(ctx, owner.ID, TaskInput{
 		RequestKey: "retry-after-failed-create",
-		ProjectID: "missing-project",
-		Title: "Invalid target",
+		ProjectID:  "missing-project",
+		Title:      "Invalid target",
 	})
 	if err == nil {
 		t.Fatal("missing project accepted")
@@ -67,7 +67,7 @@ func TestConcurrentTaskCreateRetriesAreOneTask(t *testing.T) {
 	}
 	if _, err := s.CreateTask(ctx, owner.ID, TaskInput{
 		RequestKey: "retry-after-failed-create",
-		ProjectID: inbox.ID,
+		ProjectID:  inbox.ID,
 		Title: "Invalid target",
 	}); err != nil {
 		t.Fatal("repaired retry failed", err)
