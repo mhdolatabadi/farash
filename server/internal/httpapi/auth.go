@@ -109,6 +109,16 @@ func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
 	h.writeAuth(w, http.StatusOK, user)
 }
 
+// renew rotates a still-valid access JWT without requiring the password again.
+// Expired or invalid tokens cannot be renewed.
+func (h *authHandler) renew(w http.ResponseWriter, r *http.Request) {
+	user, ok := h.authenticate(w, r)
+	if !ok {
+		return
+	}
+	h.writeAuth(w, http.StatusOK, user)
+}
+
 func (h *authHandler) me(w http.ResponseWriter, r *http.Request) {
 	user, ok := h.authenticate(w, r)
 	if !ok {
