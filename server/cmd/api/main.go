@@ -105,7 +105,7 @@ func run() error {
 func authTokenTTL() time.Duration {
 	hours, err := strconv.Atoi(os.Getenv("AUTH_TOKEN_TTL_HOURS"))
 	if err != nil || hours <= 0 {
-		return 24 * time.Hour
+		return 30 * 24 * time.Hour
 	}
 	return time.Duration(hours) * time.Hour
 }
