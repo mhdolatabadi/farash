@@ -87,7 +87,12 @@ class FocusController extends ChangeNotifier {
     final deadline = _deadline;
     if (deadline == null) return;
     final left = deadline.difference(_now());
-    _remaining = left.isNegative ? Duration.zero : left;
+    final total = Duration(minutes: minutes);
+    _remaining = left.isNegative
+        ? Duration.zero
+        : left > total
+        ? total
+        : left;
     if (_remaining == Duration.zero) {
       _deadline = null;
       _ticker?.cancel();
