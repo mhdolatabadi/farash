@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -146,10 +147,20 @@ func (h *authHandler) authenticate(w http.ResponseWriter, r *http.Request) (stor
 	return user, true
 }
 
+const maxAuthRequestBytes = 4096
+
 func decodeAuthRequest(w http.ResponseWriter, r *http.Request) (authRequest, bool) {
 	defer r.Body.Close()
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxAuthRequestBytes))
 	var request authRequest
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_json")
+		return authRequest{}, false
+	}
+	// Exactly one JSON value is allowed. Decode again so trailing whitespace
+	// succeeds, but a second object or malformed suffix is rejected.
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
 		writeError(w, http.StatusBadRequest, "invalid_json")
 		return authRequest{}, false
 	}
