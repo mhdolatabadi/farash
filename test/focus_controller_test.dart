@@ -118,5 +118,4 @@ void main() {
     expect(timer.remaining, const Duration(minutes: 7));
     expect(timer.minutes, 15);
   });
-
 }
