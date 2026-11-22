@@ -724,6 +724,12 @@ class ApiClient
     return AuthSession.fromJson(decoded as Map<String, dynamic>);
   }
 
+  /// Renew an existing valid session before its access token expires.
+  Future<AuthSession> renewSession(String token) async {
+    final decoded = await _send('POST', '/api/v1/auth/renew', token: token);
+    return AuthSession.fromJson(decoded as Map<String, dynamic>);
+  }
+
   @override
   Future<AuthUser> me(String token) async {
     final decoded = await _send('GET', '/api/v1/me', token: token);
