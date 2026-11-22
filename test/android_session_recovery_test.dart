@@ -9,7 +9,9 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
-  testWidgets('startup 401 retains stored token and allows retry', (tester) async {
+  testWidgets('startup 401 retains stored token and allows retry', (
+    tester,
+  ) async {
     final store = MemorySessionStore('saved-token');
     var meCalls = 0;
     final api = ApiClient(
@@ -25,19 +27,23 @@ void main() {
             );
           }
           return http.Response(
-            jsonEncode({'user': {'id': 'u1', 'email': 'test@example.com'}}),
+            jsonEncode({
+              'user': {'id': 'u1', 'email': 'test@example.com'},
+            }),
             200,
             headers: {'content-type': 'application/json'},
           );
         }
-        return http.Response('{}', 200, headers: {'content-type': 'application/json'});
+        return http.Response(
+          '{}',
+          200,
+          headers: {'content-type': 'application/json'},
+        );
       }),
     );
-    await tester.pumpWidget(FarashApp(
-      apiClient: api,
-      sessionStore: store,
-      healthCheck: () async {},
-    ));
+    await tester.pumpWidget(
+      FarashApp(apiClient: api, sessionStore: store, healthCheck: () async {}),
+    );
     await tester.pumpAndSettle();
     expect(find.text('بازیابی ورود قبلی ممکن نشد'), findsOneWidget);
     expect(await store.readToken(), 'saved-token');
