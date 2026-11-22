@@ -2,6 +2,8 @@ package httpapi
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -23,7 +25,14 @@ type userStore interface {
 	UserByID(context.Context, string) (store.User, error)
 }
 
+type refreshSessionStore interface {
+	CreateRefreshSession(context.Context, string, string, time.Time) error
+	RotateRefreshSession(context.Context, string, string, time.Time) (string, error)
+	RevokeRefreshSession(context.Context, string) error
+}
+
 type authHandler struct {
+	refreshStore refreshSessionStore
 	store      userStore
 	secret     []byte
 	tokenTTL   time.Duration
@@ -41,6 +50,7 @@ type userResponse struct {
 }
 
 type authResponse struct {
+	RefreshToken string `json:"refresh_token,omitempty"`
 	Token string       `json:"token"`
 	User  userResponse `json:"user"`
 }
@@ -81,7 +91,7 @@ func (h *authHandler) register(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "user_create_failed")
 		return
 	}
-	h.writeAuth(w, http.StatusCreated, user)
+	h.writeAuth(w, r.Context(), http.StatusCreated, user)
 }
 
 func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +116,7 @@ func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "invalid_credentials")
 		return
 	}
-	h.writeAuth(w, http.StatusOK, user)
+	h.writeAuth(w, r.Context(), http.StatusOK, user)
 }
 
 func (h *authHandler) me(w http.ResponseWriter, r *http.Request) {
@@ -117,13 +127,89 @@ func (h *authHandler) me(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]userResponse{"user": publicUser(user)})
 }
 
-func (h *authHandler) writeAuth(w http.ResponseWriter, status int, user store.User) {
+func refreshDigest(token string) string {
+	digest := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(digest[:])
+}
+
+func newRefreshToken() (string, error) {
+	var raw [32]byte
+	if _, err := rand.Read(raw[:]); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(raw[:]), nil
+}
+
+func (h *authHandler) refresh(w http.ResponseWriter, r *http.Request) {
+	if h.refreshStore == nil {
+		writeError(w, http.StatusNotImplemented, "refresh_unavailable")
+		return
+	}
+	var request struct { RefreshToken string `json:"refresh_token"` }
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&request); err != nil || request.RefreshToken == "" {
+		writeError(w, http.StatusBadRequest, "invalid_request")
+		return
+	}
+	next, err := newRefreshToken()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "token_generation_failed")
+		return
+	}
+	userID, err := h.refreshStore.RotateRefreshSession(r.Context(), refreshDigest(request.RefreshToken), refreshDigest(next), time.Now().Add(90*24*time.Hour))
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "invalid_refresh_token")
+		return
+	}
+	user, err := h.store.UserByID(r.Context(), userID)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "invalid_refresh_token")
+		return
+	}
 	token, err := h.signToken(user)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "token_sign_failed")
 		return
 	}
-	writeJSON(w, status, authResponse{Token: token, User: publicUser(user)})
+	writeJSON(w, http.StatusOK, authResponse{Token: token, RefreshToken: next, User: publicUser(user)})
+}
+
+func (h *authHandler) revoke(w http.ResponseWriter, r *http.Request) {
+	if h.refreshStore == nil {
+		writeError(w, http.StatusNotImplemented, "refresh_unavailable")
+		return
+	}
+	var request struct { RefreshToken string `json:"refresh_token"` }
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&request); err != nil || request.RefreshToken == "" {
+		writeError(w, http.StatusBadRequest, "invalid_request")
+		return
+	}
+	if err := h.refreshStore.RevokeRefreshSession(r.Context(), refreshDigest(request.RefreshToken)); err != nil {
+		writeError(w, http.StatusInternalServerError, "revoke_failed")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *authHandler) writeAuth(w http.ResponseWriter, ctx context.Context, status int, user store.User) {
+	token, err := h.signToken(user)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "token_sign_failed")
+		return
+	}
+	response := authResponse{Token: token, User: publicUser(user)}
+	if h.refreshStore != nil {
+		refresh, err := newRefreshToken()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "token_generation_failed")
+			return
+		}
+		if err := h.refreshStore.CreateRefreshSession(ctx, user.ID, refreshDigest(refresh), time.Now().Add(90*24*time.Hour)); err != nil {
+			writeError(w, http.StatusInternalServerError, "session_create_failed")
+			return
+		}
+		response.RefreshToken = refresh
+	}
+	writeJSON(w, status, response)
 }
 
 func (h *authHandler) authenticate(w http.ResponseWriter, r *http.Request) (store.User, bool) {
