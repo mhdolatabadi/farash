@@ -82,4 +82,41 @@ void main() {
     expect(timer.remaining, const Duration(minutes: 25));
     expect(timer.progress, 0);
   });
+  test('restored running session catches up after process restart', () {
+    var now = DateTime(2026, 11, 22, 10);
+    final timer = FocusController(now: () => now);
+    addTearDown(timer.dispose);
+    timer.restoreState(
+      mode: 25,
+      remaining: const Duration(minutes: 20),
+      deadline: now.add(const Duration(minutes: 12)),
+      title: 'مطالعه',
+    );
+    expect(timer.running, isTrue);
+    expect(timer.remaining, const Duration(minutes: 12));
+    expect(timer.taskTitle, 'مطالعه');
+    now = now.add(const Duration(minutes: 13));
+    timer.refresh();
+    expect(timer.running, isFalse);
+    expect(timer.finished, isTrue);
+    expect(timer.remaining, Duration.zero);
+  });
+
+  test('restored paused session does not advance while app is closed', () {
+    var now = DateTime(2026, 11, 22, 10);
+    final timer = FocusController(now: () => now);
+    addTearDown(timer.dispose);
+    timer.restoreState(
+      mode: 15,
+      remaining: const Duration(minutes: 7),
+      title: 'استراحت',
+    );
+    now = now.add(const Duration(hours: 3));
+    timer.refresh();
+    expect(timer.running, isFalse);
+    expect(timer.finished, isFalse);
+    expect(timer.remaining, const Duration(minutes: 7));
+    expect(timer.minutes, 15);
+  });
+
 }
