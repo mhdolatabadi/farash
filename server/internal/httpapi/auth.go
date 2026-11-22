@@ -201,6 +201,10 @@ func signClaims(claims tokenClaims, secret []byte) (string, error) {
 }
 
 func verifyToken(token string, secret []byte) (tokenClaims, error) {
+	// Bound untrusted bearer input before HMAC verification or JSON decoding.
+	if len(token) > 4096 {
+		return tokenClaims{}, errors.New("token too large")
+	}
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
 		return tokenClaims{}, errors.New("invalid token shape")
@@ -208,6 +212,15 @@ func verifyToken(token string, secret []byte) (tokenClaims, error) {
 	unsigned := parts[0] + "." + parts[1]
 	if !hmac.Equal([]byte(parts[2]), []byte(sign(unsigned, secret))) {
 		return tokenClaims{}, errors.New("invalid signature")
+	}
+	headerBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return tokenClaims{}, errors.New("invalid token header")
+	}
+	var header map[string]string
+	if err := json.Unmarshal(headerBytes, &header); err != nil ||
+		len(header) != 2 || header["alg"] != "HS256" || header["typ"] != "JWT" {
+		return tokenClaims{}, errors.New("unsupported token header")
 	}
 	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
 	if err != nil {
