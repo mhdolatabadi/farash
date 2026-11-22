@@ -13,35 +13,15 @@ import (
 )
 
 var (
-	ErrTaskNotFound    = errors.New("task not found")
-	ErrInvalidTask     = errors.New("invalid task")
-	ErrTaskProject     = errors.New("task project not found")
-	ErrInvalidDueRange = errors.New("invalid due range")
-	ErrTaskOrder       = errors.New("invalid task order")
+	ErrTaskNotFound        = errors.New("task not found")
+	ErrInvalidTask         = errors.New("invalid task")
+	ErrTaskProject         = errors.New("task project not found")
+	ErrInvalidDueRange     = errors.New("invalid due range")
+	ErrTaskOrder           = errors.New("invalid task order")
 	ErrTaskRequestConflict = errors.New("task create request conflict")
 )
 
-var taskCreateKey = regexp.MustCompile(`^[A-Za-z0-9_-]{16,128}package store
-
-import (
-	"context"
-	"crypto/sha256"
-	"encoding/json"
-	"errors"
-	"regexp"
-	"strings"
-	"time"
-
-	"github.com/jackc/pgx/v5"
-)
-
-var (
-	ErrTaskNotFound    = errors.New("task not found")
-	ErrInvalidTask     = errors.New("invalid task")
-	ErrTaskProject     = errors.New("task project not found")
-	ErrInvalidDueRange = errors.New("invalid due range")
-)
-
+var taskCreateKey = regexp.MustCompile("^[A-Za-z0-9_-]{16,128}$")
 
 type Task struct {
 	ID          string     `json:"id"`
