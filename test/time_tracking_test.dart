@@ -227,6 +227,48 @@ void main() {
       await tester.pumpAndSettle();
     },
   );
+  testWidgets('task editor time summary reveals actions on demand', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final api = TrackingFixture();
+    final tracker = TimeTracker(api: api, token: () => 'token');
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: FarashTheme.dark(),
+        home: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            body: TaskTimePanel(
+              tracker: tracker,
+              task: const Task(
+                id: 'task',
+                projectId: 'inbox',
+                title: 'مطالعه',
+              ),
+              compact: true,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('زمان این کار'), findsOneWidget);
+    expect(find.text('افزودن دستی'), findsNothing);
+    await tester.tap(find.text('زمان این کار'));
+    await tester.pumpAndSettle();
+    expect(find.text('افزودن دستی'), findsOneWidget);
+    await tester.tap(find.text('زمان این کار'));
+    await tester.pumpAndSettle();
+    expect(find.text('افزودن دستی'), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    tracker.dispose();
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('times view ticks live after a timer starts', (tester) async {
     final api = TrackingFixture()..reportTasks = true;
     final tracker = TimeTracker(api: api, token: () => 'token');
