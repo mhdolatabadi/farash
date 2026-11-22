@@ -31,7 +31,7 @@ func TestConcurrentTaskCreateRetriesAreOneTask(t *testing.T) {
 			results[i], failures[i] = s.CreateTask(ctx, owner.ID, TaskInput{
 				RequestKey: "parallel-task-create-001",
 				ProjectID:  inbox.ID,
-				Title: "One task after retries",
+				Title:      "One task after retries",
 			})
 		}(i)
 	}
@@ -68,7 +68,7 @@ func TestConcurrentTaskCreateRetriesAreOneTask(t *testing.T) {
 	if _, err := s.CreateTask(ctx, owner.ID, TaskInput{
 		RequestKey: "retry-after-failed-create",
 		ProjectID:  inbox.ID,
-		Title: "Invalid target",
+		Title:      "Invalid target",
 	}); err != nil {
 		t.Fatal("repaired retry failed", err)
 	}
