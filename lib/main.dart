@@ -28,6 +28,7 @@ class FarashApp extends StatefulWidget {
     this.healthCheck,
     this.apiClient,
     this.sessionStore,
+    this.refreshCredentialStore,
     this.projectsApi,
     this.tasksApi,
     this.sectionsApi,
@@ -43,6 +44,7 @@ class FarashApp extends StatefulWidget {
   final Future<void> Function()? healthCheck;
   final ApiClient? apiClient;
   final SessionStore? sessionStore;
+  final RefreshCredentialStore? refreshCredentialStore;
   final ProjectsApi? projectsApi;
   final TasksApi? tasksApi;
   final SectionsApi? sectionsApi;
@@ -73,6 +75,11 @@ class _FarashAppState extends State<FarashApp> {
             ));
   late final SessionStore _sessionStore =
       widget.sessionStore ?? SecureSessionStore();
+  late final RefreshCredentialStore _refreshStore =
+      widget.refreshCredentialStore ??
+      (widget.sessionStore == null
+          ? SecureRefreshCredentialStore()
+          : MemoryRefreshCredentialStore());
   late final ProjectsApi? _projectsApi = widget.projectsApi ?? _apiClient;
   late final ProjectsController? _projects = _projectsApi == null
       ? null
@@ -118,31 +125,41 @@ class _FarashAppState extends State<FarashApp> {
     final api = _apiClient;
     setState(() => _state = _SessionState.restoring);
     final token = await _sessionStore.readToken();
+    final refresh = await _refreshStore.readRefreshToken();
     if (!mounted || generation != _sessionEpoch) return;
-    if (api == null || token == null) {
-      if (mounted) setState(() => _state = _SessionState.ready);
+    if (api == null || (token == null && refresh == null)) {
+      setState(() => _state = _SessionState.ready);
       return;
     }
     try {
-      await api.activateOfflineSession(token);
-      final user = await api.me(token);
-      if (!mounted || generation != _sessionEpoch) return;
-      setState(() {
-        _session = AuthSession(token: token, user: user);
-        _state = _SessionState.ready;
-      });
-    } on ApiException catch (error) {
-      if (!mounted || generation != _sessionEpoch) return;
-      if (error.isUnauthorized) {
-        await _sessionStore.clear();
-        await _reminders?.clear();
+      if (refresh != null) {
+        // Refresh first so even an expired access token can recover.
+        final renewed = await api.refreshSession(refresh);
+        if (!mounted || generation != _sessionEpoch) return;
+        await _refreshStore.writeRefreshToken(renewed.refreshToken!);
+        await _sessionStore.writeToken(renewed.token);
+        if (!mounted || generation != _sessionEpoch) return;
+        await api.rememberAuthenticatedIdentity(renewed);
+        if (!mounted || generation != _sessionEpoch) return;
+        setState(() {
+          _session = renewed;
+          _state = _SessionState.ready;
+        });
+      } else {
+        // Existing installations migrate on their next login.
+        await api.activateOfflineSession(token!);
+        final user = await api.me(token);
+        if (!mounted || generation != _sessionEpoch) return;
+        setState(() {
+          _session = AuthSession(token: token, user: user);
+          _state = _SessionState.ready;
+        });
       }
-      if (!mounted) return;
-      setState(() {
-        _state = error.isUnauthorized
-            ? _SessionState.ready
-            : _SessionState.restoreFailed;
-      });
+    } on ApiException {
+      if (!mounted || generation != _sessionEpoch) return;
+      // Failed verification must never erase a recoverable credential.
+      // Keep the account locked until a successful retry or explicit logout.
+      setState(() => _state = _SessionState.restoreFailed);
     }
   }
 
@@ -150,6 +167,9 @@ class _FarashAppState extends State<FarashApp> {
     ++_sessionEpoch;
     await _apiClient?.rememberAuthenticatedIdentity(session);
     await _sessionStore.writeToken(session.token);
+    if (session.refreshToken != null) {
+      await _refreshStore.writeRefreshToken(session.refreshToken!);
+    }
     if (mounted) setState(() => _session = session);
   }
 
@@ -158,7 +178,17 @@ class _FarashAppState extends State<FarashApp> {
     await _apiClient?.clearOfflineSession();
     // Never show one account's data to the next one.
     _projects?.clear();
+    final refresh = await _refreshStore.readRefreshToken();
+    // Local revocation takes priority over a failed network request.
+    await _refreshStore.clearRefreshToken();
     await _sessionStore.clear();
+    if (refresh != null) {
+      try {
+        await _apiClient?.revokeSession(refresh);
+      } on ApiException {
+        // The server will still expire an unreachable refresh session.
+      }
+    }
     await _reminders?.clear();
     if (mounted) setState(() => _session = null);
   }
