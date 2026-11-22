@@ -180,24 +180,36 @@ func TestRenewValidSessionAndRejectExpired(t *testing.T) {
 	users.byID["u1"] = store.User{ID: "u1", Email: "test@example.com"}
 	handler := NewHandler(Config{Store: users, AuthSecret: []byte("test-secret"), AuthTokenTTL: time.Hour})
 	valid, err := signClaims(tokenClaims{Subject: "u1", Email: "test@example.com", Expires: time.Now().Add(5 * time.Minute).Unix()}, []byte("test-secret"))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/renew", nil)
 	req.Header.Set("Authorization", "Bearer "+valid)
 	handler.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK { t.Fatalf("renew = %d %s", rec.Code, rec.Body.String()) }
+	if rec.Code != http.StatusOK {
+		t.Fatalf("renew = %d %s", rec.Code, rec.Body.String())
+	}
 	var session authResponse
-	if err := json.NewDecoder(rec.Body).Decode(&session); err != nil { t.Fatal(err) }
-	if session.User.ID != "u1" || session.Token == valid { t.Fatal("renew did not issue a fresh token") }
+	if err := json.NewDecoder(rec.Body).Decode(&session); err != nil {
+		t.Fatal(err)
+	}
+	if session.User.ID != "u1" || session.Token == valid {
+		t.Fatal("renew did not issue a fresh token")
+	}
 	claims, err := verifyToken(session.Token, []byte("test-secret"))
 	if err != nil || claims.Subject != "u1" || claims.Expires <= time.Now().Add(30*time.Minute).Unix() {
 		t.Fatalf("invalid renewed token: %+v %v", claims, err)
 	}
 	expired, err := signClaims(tokenClaims{Subject: "u1", Expires: time.Now().Add(-time.Minute).Unix()}, []byte("test-secret"))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPost, "/api/v1/auth/renew", nil)
 	req.Header.Set("Authorization", "Bearer "+expired)
 	handler.ServeHTTP(rec, req)
-	if rec.Code != http.StatusUnauthorized { t.Fatalf("expired token renewed: %d", rec.Code) }
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expired token renewed: %d", rec.Code)
+	}
 }
