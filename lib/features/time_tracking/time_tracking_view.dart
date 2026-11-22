@@ -721,49 +721,47 @@ class _TaskTimePanelState extends State<TaskTimePanel> {
             onTap: () => setState(() => expanded = !expanded),
           )
         else
-          Text(
-            'زمان این کار',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('زمان این کار', style: Theme.of(context).textTheme.titleMedium),
         if (!widget.compact || expanded) ...[
-        if (error != null) TextButton(onPressed: load, child: Text(error!)),
-        if (report != null)
-          Text(
-            '${widget.task.durationMinutes == null ? '' : 'برآورد ${persianDigits(widget.task.durationMinutes!)}د · '}واقعی ${trackedTime(Duration(seconds: report!.seconds) + (live == null ? Duration.zero : live.elapsed(widget.tracker.now) - live.elapsed(report!.now)))}',
-          ),
-        Wrap(
-          spacing: 8,
-          children: [
-            TextButton.icon(
-              onPressed: widget.tracker.busy
-                  ? null
-                  : () => startTracking(context, widget.tracker, widget.task),
-              icon: const Icon(Icons.play_circle_outline),
-              label: const Text('ثبت زمان'),
+          if (error != null) TextButton(onPressed: load, child: Text(error!)),
+          if (report != null)
+            Text(
+              '${widget.task.durationMinutes == null ? '' : 'برآورد ${persianDigits(widget.task.durationMinutes!)}د · '}واقعی ${trackedTime(Duration(seconds: report!.seconds) + (live == null ? Duration.zero : live.elapsed(widget.tracker.now) - live.elapsed(report!.now)))}',
             ),
-            TextButton(
-              onPressed: () => manualTime(context, widget.tracker, widget.task),
-              child: const Text('افزودن دستی'),
-            ),
-            if (widget.tracker.focusTask != null)
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  widget.tracker.focusTask!(widget.task);
-                },
-                child: const Text('تمرکز روی این کار'),
+          Wrap(
+            spacing: 8,
+            children: [
+              TextButton.icon(
+                onPressed: widget.tracker.busy
+                    ? null
+                    : () => startTracking(context, widget.tracker, widget.task),
+                icon: const Icon(Icons.play_circle_outline),
+                label: const Text('ثبت زمان'),
               ),
-          ],
-        ),
-        for (final e in report?.entries.take(3) ?? <TimeEntry>[])
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              '${formatDate(e.started.toLocal(), CalendarScope.of(context), alwaysYear: true)} · ${trackedTime(e.elapsed(e.id == live?.id ? widget.tracker.now : report!.now))}',
-            ),
-            onTap: () =>
-                manualTime(context, widget.tracker, widget.task, editing: e),
+              TextButton(
+                onPressed: () =>
+                    manualTime(context, widget.tracker, widget.task),
+                child: const Text('افزودن دستی'),
+              ),
+              if (widget.tracker.focusTask != null)
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    widget.tracker.focusTask!(widget.task);
+                  },
+                  child: const Text('تمرکز روی این کار'),
+                ),
+            ],
           ),
+          for (final e in report?.entries.take(3) ?? <TimeEntry>[])
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                '${formatDate(e.started.toLocal(), CalendarScope.of(context), alwaysYear: true)} · ${trackedTime(e.elapsed(e.id == live?.id ? widget.tracker.now : report!.now))}',
+              ),
+              onTap: () =>
+                  manualTime(context, widget.tracker, widget.task, editing: e),
+            ),
         ],
       ],
     ),

@@ -243,11 +243,7 @@ void main() {
           child: Scaffold(
             body: TaskTimePanel(
               tracker: tracker,
-              task: const Task(
-                id: 'task',
-                projectId: 'inbox',
-                title: 'مطالعه',
-              ),
+              task: const Task(id: 'task', projectId: 'inbox', title: 'مطالعه'),
               compact: true,
             ),
           ),
