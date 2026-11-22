@@ -131,7 +131,7 @@ class _FarashAppState extends State<FarashApp> {
         _session = AuthSession(token: token, user: user);
         _state = _SessionState.ready;
       });
-    } on ApiException catch (error) {
+    } on ApiException {
       if (!mounted || generation != _sessionEpoch) return;
       // A single 401 during startup is not an explicit sign-out. Keep the
       // encrypted token for retry (for example after backend recovery), but
