@@ -477,7 +477,10 @@ class _DueTasksViewState extends State<DueTasksView> {
             ? null
             : formatDate(today, settings, today: today, withWeekday: true),
       ),
-      if (now.isEmpty) const _Quiet('برای امروز کاری نمانده.') else _card(now),
+      if (now.isEmpty)
+        const _Quiet('برای امروز کاری نمانده؛ از کادر پایین کار تازه‌ای اضافه کنید.')
+      else
+        _card(now),
     ];
   }
 
