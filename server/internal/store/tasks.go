@@ -52,8 +52,8 @@ type TaskInput struct {
 	// RequestKey lets a client replay the same create after a lost response.
 	// Omit it for ordinary online creates; it must not change across retries.
 	RequestKey string `json:"request_key,omitempty"`
-	ProjectID string `json:"project_id"`
-	SectionID string `json:"section_id"`
+	ProjectID  string `json:"project_id"`
+	SectionID  string `json:"section_id"`
 	// ParentID makes the task a subtask; it then lives in the parent's
 	// project and section.
 	ParentID        string    `json:"parent_id"`
