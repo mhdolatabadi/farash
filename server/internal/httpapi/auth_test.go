@@ -174,3 +174,42 @@ func TestVerifyExpiredToken(t *testing.T) {
 		t.Fatal("expired token verified")
 	}
 }
+
+func TestAuthRequestRejectsOversizeAndTrailingJSON(t *testing.T) {
+	const valid = `{"email":"test@example.com","password":"long-enough"}`
+	tests := []struct {
+		name string
+		body string
+		want int
+	}{
+		{name: "valid request", body: valid, want: http.StatusCreated},
+		{name: "trailing whitespace", body: valid + "  \n\t", want: http.StatusCreated},
+		{name: "second JSON object", body: valid + `{}`, want: http.StatusBadRequest},
+		{name: "trailing invalid characters", body: valid + " trailing", want: http.StatusBadRequest},
+		{name: "oversized body", body: valid + strings.Repeat(" ", maxAuthRequestBytes), want: http.StatusBadRequest},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Fresh handler avoids account and rate-limit state leaking between cases.
+			handler := NewHandler(Config{Store: newFakeUsers(), AuthSecret: []byte("test-secret")})
+			response := postJSON(handler, "/api/v1/auth/register", tc.body, "")
+			if response.Code != tc.want {
+				t.Fatalf("status = %d, want %d: %s", response.Code, tc.want, response.Body.String())
+			}
+			if tc.want == http.StatusBadRequest && !strings.Contains(response.Body.String(), "invalid_json") {
+				t.Fatalf("expected invalid_json, got %s", response.Body.String())
+			}
+		})
+	}
+}
+
+func TestLoginRejectsOversizedAndTrailingJSON(t *testing.T) {
+	const valid = `{"email":"missing@example.com","password":"long-enough"}`
+	for _, body := range []string{valid + `{}`, valid + strings.Repeat(" ", maxAuthRequestBytes)} {
+		handler := NewHandler(Config{Store: newFakeUsers(), AuthSecret: []byte("test-secret")})
+		response := postJSON(handler, "/api/v1/auth/login", body, "")
+		if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), "invalid_json") {
+			t.Fatalf("login accepted malformed input: %d %s", response.Code, response.Body.String())
+		}
+	}
+}
