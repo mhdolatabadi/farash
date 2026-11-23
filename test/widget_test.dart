@@ -120,13 +120,14 @@ void main() {
     expect(find.byType(DueTasksView), findsOneWidget);
   });
 
-  testWidgets('a rejected saved token is dropped', (tester) async {
+  testWidgets('a rejected saved token stays locked for retry', (tester) async {
     final sessions = MemorySessionStore('expired-token');
     await tester.pumpWidget(app(sessions: sessions));
     await tester.pumpAndSettle();
 
-    expect(find.text('ورود به فراش'), findsOneWidget);
-    expect(await sessions.readToken(), isNull);
+    expect(find.text('بازیابی ورود قبلی ممکن نشد'), findsOneWidget);
+    expect(find.byType(DueTasksView), findsNothing);
+    expect(await sessions.readToken(), 'expired-token');
   });
 
   testWidgets('a network failure keeps the saved token for a retry', (

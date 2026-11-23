@@ -131,18 +131,12 @@ class _FarashAppState extends State<FarashApp> {
         _session = AuthSession(token: token, user: user);
         _state = _SessionState.ready;
       });
-    } on ApiException catch (error) {
+    } on ApiException {
       if (!mounted || generation != _sessionEpoch) return;
-      if (error.isUnauthorized) {
-        await _sessionStore.clear();
-        await _reminders?.clear();
-      }
-      if (!mounted) return;
-      setState(() {
-        _state = error.isUnauthorized
-            ? _SessionState.ready
-            : _SessionState.restoreFailed;
-      });
+      // A single 401 during startup is not an explicit sign-out. Keep the
+      // encrypted token for retry (for example after backend recovery), but
+      // do not enter the signed-in shell until identity is verified.
+      setState(() => _state = _SessionState.restoreFailed);
     }
   }
 
