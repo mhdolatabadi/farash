@@ -1,4 +1,5 @@
 import 'package:farash/core/calendar/calendar_scope.dart';
+import 'package:farash/features/calendar/task_month_view.dart';
 import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/tasks/data/task.dart';
@@ -20,6 +21,7 @@ class TaskCalendarView extends StatefulWidget {
 
 class _TaskCalendarViewState extends State<TaskCalendarView> {
   late DateTime _selected = dayOf((widget.now ?? DateTime.now)());
+  bool _showMonth = false;
   List<Task> _tasks = const [];
   bool _loading = true;
   Object? _error;
@@ -93,127 +95,141 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
           task,
     ];
     return Scaffold(
-      appBar: AppBar(title: const Text('تقویم')),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Row(
-                  children: [
-                    IconButton(
-                      tooltip: 'هفتهٔ قبل',
-                      onPressed: () => _shiftWeek(-1),
-                      icon: const Icon(Icons.chevron_right),
-                    ),
-                    Expanded(
-                      child: Text(
-                        '${formatDate(days.first, settings)} تا ${formatDate(days.last, settings)}',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.titleMedium,
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'هفتهٔ بعد',
-                      onPressed: () => _shiftWeek(1),
-                      icon: const Icon(Icons.chevron_left),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
+      appBar: AppBar(
+        title: const Text('تقویم'),
+        actions: [
+          TextButton(
+            onPressed: () => setState(() => _showMonth = !_showMonth),
+            child: Text(_showMonth ? 'هفته' : 'ماه'),
+          ),
+        ],
+      ),
+      body: _showMonth
+          ? TaskMonthView(loadTasks: widget.loadTasks, now: widget.now)
+          : SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 800),
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
                     children: [
-                      for (final day in days)
-                        SizedBox(
-                          width: 54,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 2),
-                            child: Semantics(
-                              label: formatDate(
-                                day,
-                                settings,
-                                withWeekday: true,
-                              ),
-                              child: OutlinedButton(
-                                style: OutlinedButton.styleFrom(
-                                  minimumSize: const Size(48, 64),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8,
-                                  ),
-                                  backgroundColor:
-                                      daysBetween(day, _selected) == 0
-                                      ? theme.colorScheme.primaryContainer
-                                      : null,
-                                ),
-                                onPressed: () =>
-                                    setState(() => _selected = day),
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Column(
-                                    children: [
-                                      Text(weekdayInitials[day.weekday - 1]),
-                                      Text(
-                                        persianDigits(
-                                          settings.isJalali
-                                              ? formatDate(
-                                                  day,
-                                                  settings,
-                                                ).split(' ').first
-                                              : '${day.day}',
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                      Row(
+                        children: [
+                          IconButton(
+                            tooltip: 'هفتهٔ قبل',
+                            onPressed: () => _shiftWeek(-1),
+                            icon: const Icon(Icons.chevron_right),
+                          ),
+                          Expanded(
+                            child: Text(
+                              '${formatDate(days.first, settings)} تا ${formatDate(days.last, settings)}',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.titleMedium,
                             ),
                           ),
+                          IconButton(
+                            tooltip: 'هفتهٔ بعد',
+                            onPressed: () => _shiftWeek(1),
+                            icon: const Icon(Icons.chevron_left),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            for (final day in days)
+                              SizedBox(
+                                width: 54,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 2,
+                                  ),
+                                  child: Semantics(
+                                    label: formatDate(
+                                      day,
+                                      settings,
+                                      withWeekday: true,
+                                    ),
+                                    child: OutlinedButton(
+                                      style: OutlinedButton.styleFrom(
+                                        minimumSize: const Size(48, 64),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 8,
+                                        ),
+                                        backgroundColor:
+                                            daysBetween(day, _selected) == 0
+                                            ? theme.colorScheme.primaryContainer
+                                            : null,
+                                      ),
+                                      onPressed: () =>
+                                          setState(() => _selected = day),
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Column(
+                                          children: [
+                                            Text(
+                                              weekdayInitials[day.weekday - 1],
+                                            ),
+                                            Text(
+                                              persianDigits(
+                                                settings.isJalali
+                                                    ? formatDate(
+                                                        day,
+                                                        settings,
+                                                      ).split(' ').first
+                                                    : '${day.day}',
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        formatDate(_selected, settings, withWeekday: true),
+                        style: theme.textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 12),
+                      if (_loading)
+                        const Center(child: CircularProgressIndicator())
+                      else if (_error != null)
+                        Column(
+                          children: [
+                            const Text('دریافت کارهای تقویم ممکن نشد.'),
+                            TextButton(
+                              onPressed: _load,
+                              child: const Text('تلاش دوباره'),
+                            ),
+                          ],
+                        )
+                      else if (selectedTasks.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Text('برای این روز کاری زمان‌بندی نشده است.'),
+                        )
+                      else
+                        for (final task in selectedTasks)
+                          ListTile(
+                            key: ValueKey('calendar-task-${task.id}'),
+                            title: Text(task.title),
+                            leading: const Icon(Icons.radio_button_unchecked),
+                            subtitle: task.due!.isTimed
+                                ? const Text('کار زمان‌دار')
+                                : null,
+                          ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  formatDate(_selected, settings, withWeekday: true),
-                  style: theme.textTheme.titleLarge,
-                ),
-                const SizedBox(height: 12),
-                if (_loading)
-                  const Center(child: CircularProgressIndicator())
-                else if (_error != null)
-                  Column(
-                    children: [
-                      const Text('دریافت کارهای تقویم ممکن نشد.'),
-                      TextButton(
-                        onPressed: _load,
-                        child: const Text('تلاش دوباره'),
-                      ),
-                    ],
-                  )
-                else if (selectedTasks.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Text('برای این روز کاری زمان‌بندی نشده است.'),
-                  )
-                else
-                  for (final task in selectedTasks)
-                    ListTile(
-                      key: ValueKey('calendar-task-${task.id}'),
-                      title: Text(task.title),
-                      leading: const Icon(Icons.radio_button_unchecked),
-                      subtitle: task.due!.isTimed
-                          ? const Text('کار زمان‌دار')
-                          : null,
-                    ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }
