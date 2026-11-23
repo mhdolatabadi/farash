@@ -4,18 +4,12 @@ import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:flutter/material.dart';
 
-typedef CalendarTaskLoader = Future<List<Task>> Function(
-  DateTime from,
-  DateTime to,
-);
+typedef CalendarTaskLoader =
+    Future<List<Task>> Function(DateTime from, DateTime to);
 
 /// A native Farash calendar. External providers are optional overlays.
 class TaskCalendarView extends StatefulWidget {
-  const TaskCalendarView({
-    super.key,
-    required this.loadTasks,
-    this.now,
-  });
+  const TaskCalendarView({super.key, required this.loadTasks, this.now});
 
   final CalendarTaskLoader loadTasks;
   final DateTime Function()? now;
@@ -95,8 +89,7 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
     ];
     final selectedTasks = [
       for (final task in _tasks)
-        if (task.due != null &&
-            daysBetween(task.due!.day, _selected) == 0)
+        if (task.due != null && daysBetween(task.due!.day, _selected) == 0)
           task,
     ];
     return Scaffold(
