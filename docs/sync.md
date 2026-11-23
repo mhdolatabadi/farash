@@ -82,3 +82,21 @@ Tests cover bounded paging, owner binding/isolation, edits, completion/soft
 delete, hard-delete tombstones, account deletion, uncommitted writes, concurrent
 commits, rollback and sanitized API failures. CI supplies PostgreSQL execution;
 the editing session has no local runtime, so no local execution is claimed.
+
+## Task create replay protection (incremental foundation for #172)
+
+`POST /api/v1/tasks` accepts an optional `request_key` of 16–128 ASCII URL-safe characters.
+A client MUST persist the same key **and exact create payload** across offline command retries.
+Within one account the first successful create and its response are stored atomically;
+repeating the key/payload returns the same task ID without inserting a duplicate,
+even after soft deletion. Reusing a key with different data returns HTTP 409
+`task_request_conflict`. Invalid keys return HTTP 400 `invalid_task`.
+Different owners can use the same request key; no request payload, token or owner
+ID is returned to other accounts. The request record is retained until account
+deletion to prevent resurrection by an old device. Replayed responses are
+snapshots of the original create, not a claim that the task still exists: clients
+must reconcile their sync feed before showing it as current.
+
+This only makes **task creation** replay-safe. Offline UI edits/completion,
+per-field conflicts, durable account-isolated queues and schema coverage remain
+unimplemented (#21/#172). Older clients that omit `request_key` behave as before.

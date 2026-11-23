@@ -10,6 +10,7 @@ import 'package:farash/features/habits/habits_view.dart';
 import 'package:farash/features/habits/habit_detail.dart';
 import 'package:farash/features/habits/reminders/habit_reminders.dart';
 import 'package:farash/features/habits/reminders/local_reminders.dart';
+import 'package:farash/features/habits/reminders/task_due_preference.dart';
 import 'package:farash/core/calendar/calendar_settings.dart';
 import 'package:farash/features/matrix/matrix.dart';
 import 'package:farash/features/matrix/matrix_view.dart';
@@ -158,6 +159,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// the habit notification permission. No task contents are persisted here.
   late final CalendarSettingsStore _notificationStore =
       widget.settingsStore ?? SecureCalendarSettingsStore();
+  late final TaskDueNotificationPreference _taskDuePreference =
+      TaskDueNotificationPreference(
+        account: widget.email,
+        server: AppConfiguration.apiBaseUri?.origin ?? 'local',
+        store: _notificationStore,
+      );
   bool _taskDueNotificationsOn = false;
   int _taskDueSyncGeneration = 0;
 
@@ -677,8 +684,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _loadTaskDuePreference() async {
     try {
-      final enabled = await _notificationStore.read('task_due_notifications');
-      if (!mounted || _signingOut || enabled != 'on') return;
+      final enabled = await _taskDuePreference.read();
+      if (!mounted || _signingOut || !enabled) return;
       setState(() => _taskDueNotificationsOn = true);
       await _syncTaskDues();
     } catch (_) {
@@ -728,7 +735,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ++_taskDueSyncGeneration;
       setState(() => _taskDueNotificationsOn = false);
       try {
-        await _notificationStore.write('task_due_notifications', 'off');
+        await _taskDuePreference.write(false);
       } catch (_) {}
       await reminders.clearTaskDues();
       return;
@@ -747,7 +754,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
     setState(() => _taskDueNotificationsOn = true);
     try {
-      await _notificationStore.write('task_due_notifications', 'on');
+      await _taskDuePreference.write(true);
     } catch (_) {}
     await _syncTaskDues();
   }

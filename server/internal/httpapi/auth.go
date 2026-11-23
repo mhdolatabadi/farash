@@ -97,6 +97,13 @@ func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, code)
 		return
 	}
+	// A caller can forge X-Forwarded-For; additionally limit by the
+	// normalized account identifier so rotating headers cannot brute-force
+	// one account. This avoids treating all Caddy users as one IP bucket.
+	if !h.rateLimits.allow("login-account:" + request.Email) {
+		writeError(w, http.StatusTooManyRequests, "rate_limited")
+		return
+	}
 	user, err := h.store.UserByEmail(r.Context(), request.Email)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "invalid_credentials")
