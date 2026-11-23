@@ -112,7 +112,7 @@ def scroll_to(label, *, upward=True):
     raise RuntimeError(f'Calendar review could not reveal: {label}')
 
 
-def main():
+def capture_review():
     adb('install', '-r', 'build/app/outputs/flutter-apk/app-debug.apk')
     adb('shell', 'am', 'start', '-n', 'ir.mhdolatabadi.farash/.MainActivity')
     time.sleep(8)
@@ -287,6 +287,20 @@ def main():
     capture('recurrence-editor-phone-light')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')
     capture('recurrence-editor-large-text')
+
+def restore_emulator_settings():
+    """Restore every system setting touched by the capture workflow."""
+    adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')
+    adb('shell', 'wm', 'size', 'reset')
+    adb('shell', 'wm', 'density', 'reset')
+    adb('shell', 'cmd', 'uimode', 'night', 'no')
+
+
+def main():
+    try:
+        capture_review()
+    finally:
+        restore_emulator_settings()
 
 
 if __name__ == '__main__':
