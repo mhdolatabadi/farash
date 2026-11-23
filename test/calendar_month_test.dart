@@ -53,7 +53,9 @@ void main() {
     expect(month.gridStart.weekday, DateTime.monday);
     expect(month.gridEnd.weekday, DateTime.sunday);
     expect(month.days.length % 7, 0);
-    expect(shiftCalendarMonth(DateTime(2026, 12, 31), 1, settings),
-        DateTime(2027, 1, 1));
+    expect(
+      shiftCalendarMonth(DateTime(2026, 12, 31), 1, settings),
+      DateTime(2027, 1, 1),
+    );
   });
 }
