@@ -366,6 +366,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                           TaskTimePanel(
                             tracker: widget.tracker!,
                             task: widget.task,
+                            compact: true,
                           ),
                         _PropertyRow(
                           icon: Icons.flag_outlined,
