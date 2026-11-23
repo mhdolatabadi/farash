@@ -152,7 +152,7 @@ class _DueTasksViewState extends State<DueTasksView> {
           _tasks = const [];
           _doneToday = null;
           _loading = false;
-          _error = null;
+          _error = const ApiException('برای دیدن کارها دوباره وارد شوید.');
         });
       }
       return;
