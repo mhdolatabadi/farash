@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:farash/app/app_configuration.dart';
 import 'package:farash/features/focus/focus_session_storage.dart';
+import 'package:farash/features/calendar/task_calendar_view.dart';
 import 'package:farash/features/calendar_connections/calendar_connections.dart';
 import 'package:farash/features/calendar_connections/calendar_connections_view.dart';
 import 'package:farash/features/habits/habits_controller.dart';
@@ -1000,6 +1001,40 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     ),
     // On a phone these are already in the bottom bar.
     tools: [
+      SidebarRow(
+        key: const ValueKey('tool-native-calendar'),
+        selected: false,
+        child: ListTile(
+          leading: const Icon(Icons.calendar_month_outlined),
+          title: const Text('تقویم'),
+          onTap: () {
+            if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+              Navigator.pop(context);
+            }
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => TaskCalendarView(
+                  loadTasks: (from, to) async {
+                    final token = widget.token();
+                    if (token == null) {
+                      throw StateError('Session unavailable');
+                    }
+                    final tasks = await widget.tasksApi.listDueTasks(
+                      token,
+                      from: from,
+                      to: to,
+                    );
+                    if (widget.token() != token) {
+                      throw StateError('Session changed');
+                    }
+                    return tasks;
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      ),
       if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint)
         for (final (index, icon, title) in [
           (2, Icons.timelapse_outlined, 'تمرکز'),
