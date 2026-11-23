@@ -45,6 +45,17 @@ class _DelayedTaskContext extends FakeTasksApi {
   }
 }
 
+class _DelayedAccountDueApi extends FakeTasksApi {
+  final pending = <String, Completer<List<Task>>>{};
+
+  @override
+  Future<List<Task>> listDueTasks(
+    String token, {
+    DateTime? from,
+    required DateTime to,
+  }) => (pending[token] ??= Completer<List<Task>>()).future;
+}
+
 class _RecurringTodayApi extends FakeTasksApi implements TimeApi {
   bool failRule = true;
   final paths = <String>[];
@@ -101,6 +112,50 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('Today never renders stale tasks after account switches', (
+    tester,
+  ) async {
+    final delayed = _DelayedAccountDueApi();
+    final first = delayed.seed('work', 'Private account A', dates: on(0));
+    final second = delayed.seed('work', 'Private account B', dates: on(0));
+    var token = 'account-a';
+
+    Widget app() => MaterialApp(
+      home: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          body: DueTasksView(
+            view: DueView.today,
+            api: delayed,
+            token: () => token,
+            projects: () => const [_work],
+            onOpenProject: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(app());
+    await tester.pump();
+    expect(delayed.pending.containsKey('account-a'), isTrue);
+
+    token = 'account-b';
+    await tester.pumpWidget(app());
+    await tester.pump();
+    expect(delayed.pending.containsKey('account-b'), isTrue);
+
+    delayed.pending['account-b']!.complete([second]);
+    await tester.pumpAndSettle();
+    expect(find.text('Private account B'), findsOneWidget);
+    expect(find.text('Private account A'), findsNothing);
+
+    delayed.pending['account-a']!.complete([first]);
+    await tester.pumpAndSettle();
+    expect(find.text('Private account B'), findsOneWidget);
+    expect(find.text('Private account A'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('agenda keeps distinct days across the autumn clock change', (
     tester,
