@@ -62,6 +62,53 @@ void main() {
     expect(find.text('بستن'), findsOneWidget);
   });
 
+  testWidgets('overnight blocks announce their own visible time segments', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      app(
+        (from, to) async => [
+          Task(
+            id: 'overnight',
+            projectId: 'inbox',
+            title: 'کار شبانه',
+            due: TaskDue.at(DateTime(2026, 11, 22, 23, 30), 'UTC'),
+            durationMinutes: 120,
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('week-timed-overnight-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('week-timed-overnight-2')),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.label == 'کار شبانه، ۲۳:۳۰–۲۴:۰۰',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.label == 'کار شبانه، ۰۰:۰۰–۰۱:۳۰',
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('switching to month keeps the calendar as a native Farash view', (
     tester,
   ) async {
