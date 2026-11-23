@@ -84,6 +84,12 @@ func (h *authHandler) register(w http.ResponseWriter, r *http.Request) {
 	h.writeAuth(w, http.StatusCreated, user)
 }
 
+// This is a valid cost-10 bcrypt hash for a non-secret dummy password.
+// Unknown accounts must perform the same expensive password verification as
+// existing accounts, so the login endpoint does not reveal account existence
+// through an immediate return before bcrypt.
+const unknownAccountPasswordHash = "$2y$10$ckQiCYkQFKjgyJvYLs9ixeRV8pn6gTwTF.U9VeOSnIP.eIVTZNBiC"
+
 func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
 	if !h.rateLimits.allow(clientKey(r, "login")) {
 		writeError(w, http.StatusTooManyRequests, "rate_limited")
@@ -98,11 +104,16 @@ func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user, err := h.store.UserByEmail(r.Context(), request.Email)
-	if err != nil {
-		writeError(w, http.StatusUnauthorized, "invalid_credentials")
+	if err != nil && !errors.Is(err, store.ErrUserNotFound) {
+		writeError(w, http.StatusInternalServerError, "user_lookup_failed")
 		return
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password)); err != nil {
+	passwordHash := unknownAccountPasswordHash
+	if err == nil {
+		passwordHash = user.PasswordHash
+	}
+	passwordErr := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(request.Password))
+	if err != nil || passwordErr != nil {
 		writeError(w, http.StatusUnauthorized, "invalid_credentials")
 		return
 	}
