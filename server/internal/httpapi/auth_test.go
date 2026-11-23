@@ -174,3 +174,44 @@ func TestVerifyExpiredToken(t *testing.T) {
 		t.Fatal("expired token verified")
 	}
 }
+
+type failingLookupUsers struct {
+	*fakeUsers
+}
+
+func (f *failingLookupUsers) UserByEmail(_ context.Context, _ string) (store.User, error) {
+	return store.User{}, errors.New("database unavailable")
+}
+
+func TestLoginUnknownAccountVerifiesDummyHash(t *testing.T) {
+	// This must remain a valid bcrypt hash, otherwise an unknown account
+	// would again skip the expensive password verification.
+	if err := bcrypt.CompareHashAndPassword(
+		[]byte(unknownAccountPasswordHash),
+		[]byte("farash-invalid-account-dummy"),
+	); err != nil {
+		t.Fatalf("dummy bcrypt hash invalid: %v", err)
+	}
+
+	handler := NewHandler(Config{Store: newFakeUsers(), AuthSecret: []byte("test-secret")})
+	for _, password := range []string{"long-enough", "farash-invalid-account-dummy"} {
+		body, err := json.Marshal(authRequest{Email: "missing@example.com", Password: password})
+		if err != nil {
+			t.Fatal(err)
+		}
+		rec := postJSON(handler, "/api/v1/auth/login", string(body), "")
+		if rec.Code != http.StatusUnauthorized || !strings.Contains(rec.Body.String(), "invalid_credentials") {
+			t.Fatalf("unknown account with password %q = %d %s", password, rec.Code, rec.Body.String())
+		}
+	}
+}
+
+func TestLoginDatabaseFailureIsNotInvalidCredentials(t *testing.T) {
+	users := &failingLookupUsers{fakeUsers: newFakeUsers()}
+	handler := NewHandler(Config{Store: users, AuthSecret: []byte("test-secret")})
+	rec := postJSON(handler, "/api/v1/auth/login",
+		`{"email":"user@example.com","password":"long-enough"}`, "")
+	if rec.Code != http.StatusInternalServerError || !strings.Contains(rec.Body.String(), "user_lookup_failed") {
+		t.Fatalf("database failure = %d %s", rec.Code, rec.Body.String())
+	}
+}
