@@ -173,7 +173,10 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).at(0), 'a@example.com');
     // 37 Persian letters are 37 Dart code units but 74 UTF-8 bytes.
-    await tester.enterText(find.byType(TextFormField).at(1), List.filled(37, 'ش').join());
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      List.filled(37, 'ش').join(),
+    );
     await tester.tap(find.widgetWithText(FilledButton, 'ورود'));
     await tester.pumpAndSettle();
 
@@ -188,7 +191,10 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField).at(0), 'a@example.com');
-    await tester.enterText(find.byType(TextFormField).at(1), List.filled(4, 'ش').join());
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      List.filled(4, 'ش').join(),
+    );
     await tester.tap(find.widgetWithText(FilledButton, 'ورود'));
     await tester.pumpAndSettle();
 
@@ -196,6 +202,4 @@ void main() {
     // The fake server rejects the credentials, not client-side validation.
     expect(find.text('ورود به فراش'), findsOneWidget);
   });
-
-
 }
