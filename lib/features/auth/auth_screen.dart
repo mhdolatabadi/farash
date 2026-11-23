@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:farash/app/surfaces.dart';
 import 'package:farash/core/api/api_client.dart';
@@ -149,8 +151,9 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                             validator: (value) {
                               final password = value ?? '';
-                              if (password.length < 8 || password.length > 72) {
-                                return 'رمز عبور باید بین ۸ تا ۷۲ کاراکتر باشد.';
+                              final bytes = utf8.encode(password).length;
+                              if (bytes < 8 || bytes > 72) {
+                                return 'رمز عبور باید بین ۸ تا ۷۲ بایت باشد.';
                               }
                               return null;
                             },

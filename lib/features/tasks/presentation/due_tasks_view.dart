@@ -105,6 +105,8 @@ class _DueTasksViewState extends State<DueTasksView> {
   bool _openingTask = false;
   int? _doneToday;
   Object? _error;
+  int _loadGeneration = 0;
+  String? _activeToken;
   String? _captureError;
   final _dayKeys = <String, GlobalKey>{};
   late final _captureSession = QuickCaptureSession(
@@ -132,12 +134,38 @@ class _DueTasksViewState extends State<DueTasksView> {
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant DueTasksView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.token() != _activeToken) {
+      _load();
+    }
+  }
+
   Future<void> _load() async {
+    final generation = ++_loadGeneration;
     final token = widget.token();
-    if (token == null) return;
+    if (token == null) {
+      _activeToken = null;
+      if (mounted) {
+        setState(() {
+          _tasks = const [];
+          _doneToday = null;
+          _loading = false;
+          _error = null;
+        });
+      }
+      return;
+    }
+    final accountChanged = _activeToken != token;
+    _activeToken = token;
     setState(() {
       _loading = true;
       _error = null;
+      if (accountChanged) {
+        _tasks = const [];
+        _doneToday = null;
+      }
     });
     try {
       final today = _today;
@@ -165,14 +193,22 @@ class _DueTasksViewState extends State<DueTasksView> {
               ),
             };
       if (label != null) labels?.load();
-      if (_bento) _loadDone();
-      if (!mounted) return;
+      if (!mounted ||
+          generation != _loadGeneration ||
+          widget.token() != token) {
+        return;
+      }
+      if (_bento) _loadDone(generation, token);
       setState(() {
         _tasks = tasks;
         _loading = false;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted ||
+          generation != _loadGeneration ||
+          widget.token() != token) {
+        return;
+      }
       setState(() {
         _error = error;
         _loading = false;
@@ -184,14 +220,18 @@ class _DueTasksViewState extends State<DueTasksView> {
   bool get _bento => widget.view == DueView.today && widget.label == null;
 
   /// The progress is a nicety: a failed count only hides it.
-  Future<void> _loadDone() async {
+  Future<void> _loadDone(int generation, String token) async {
     final load = widget.doneToday;
     if (load == null) return;
     try {
       final done = await load();
-      if (mounted) setState(() => _doneToday = done);
+      if (mounted && generation == _loadGeneration && widget.token() == token) {
+        setState(() => _doneToday = done);
+      }
     } catch (_) {
-      if (mounted) setState(() => _doneToday = null);
+      if (mounted && generation == _loadGeneration && widget.token() == token) {
+        setState(() => _doneToday = null);
+      }
     }
   }
 
@@ -222,7 +262,9 @@ class _DueTasksViewState extends State<DueTasksView> {
     await widget.api.closeTask(token, task.id);
     if (!mounted) return;
     setState(() => _tasks = [..._tasks]..removeWhere((t) => t.id == task.id));
-    if (_bento) _loadDone();
+    if (_bento && widget.token() != null) {
+      _loadDone(_loadGeneration, widget.token()!);
+    }
     _snack(
       '«${task.title}» انجام شد.',
       undo: () => _run((token) async {

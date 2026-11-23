@@ -221,7 +221,10 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                               ? timer.taskTitle ?? 'بدون کار مشخص'
                               : 'استراحت',
                           textAlign: TextAlign.center,
-                          maxLines: 2,
+                          maxLines:
+                              MediaQuery.textScalerOf(context).scale(1) >= 1.5
+                              ? 4
+                              : 2,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleMedium,
                         ),

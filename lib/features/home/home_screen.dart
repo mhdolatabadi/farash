@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:farash/app/app_configuration.dart';
 import 'package:farash/features/focus/focus_session_storage.dart';
+import 'package:farash/features/calendar/task_calendar_view.dart';
 import 'package:farash/features/calendar_connections/calendar_connections.dart';
 import 'package:farash/features/calendar_connections/calendar_connections_view.dart';
 import 'package:farash/features/habits/habits_controller.dart';
@@ -9,6 +10,7 @@ import 'package:farash/features/habits/habits_view.dart';
 import 'package:farash/features/habits/habit_detail.dart';
 import 'package:farash/features/habits/reminders/habit_reminders.dart';
 import 'package:farash/features/habits/reminders/local_reminders.dart';
+import 'package:farash/features/habits/reminders/task_due_preference.dart';
 import 'package:farash/core/calendar/calendar_settings.dart';
 import 'package:farash/features/matrix/matrix.dart';
 import 'package:farash/features/matrix/matrix_view.dart';
@@ -157,6 +159,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// the habit notification permission. No task contents are persisted here.
   late final CalendarSettingsStore _notificationStore =
       widget.settingsStore ?? SecureCalendarSettingsStore();
+  late final TaskDueNotificationPreference _taskDuePreference =
+      TaskDueNotificationPreference(
+        account: widget.email,
+        server: AppConfiguration.apiBaseUri?.origin ?? 'local',
+        store: _notificationStore,
+      );
   bool _taskDueNotificationsOn = false;
   int _taskDueSyncGeneration = 0;
 
@@ -676,8 +684,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _loadTaskDuePreference() async {
     try {
-      final enabled = await _notificationStore.read('task_due_notifications');
-      if (!mounted || _signingOut || enabled != 'on') return;
+      final enabled = await _taskDuePreference.read();
+      if (!mounted || _signingOut || !enabled) return;
       setState(() => _taskDueNotificationsOn = true);
       await _syncTaskDues();
     } catch (_) {
@@ -727,7 +735,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ++_taskDueSyncGeneration;
       setState(() => _taskDueNotificationsOn = false);
       try {
-        await _notificationStore.write('task_due_notifications', 'off');
+        await _taskDuePreference.write(false);
       } catch (_) {}
       await reminders.clearTaskDues();
       return;
@@ -746,7 +754,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
     setState(() => _taskDueNotificationsOn = true);
     try {
-      await _notificationStore.write('task_due_notifications', 'on');
+      await _taskDuePreference.write(true);
     } catch (_) {}
     await _syncTaskDues();
   }
@@ -1000,6 +1008,40 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     ),
     // On a phone these are already in the bottom bar.
     tools: [
+      SidebarRow(
+        key: const ValueKey('tool-native-calendar'),
+        selected: false,
+        child: ListTile(
+          leading: const Icon(Icons.calendar_month_outlined),
+          title: const Text('تقویم'),
+          onTap: () {
+            if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+              Navigator.pop(context);
+            }
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => TaskCalendarView(
+                  loadTasks: (from, to) async {
+                    final token = widget.token();
+                    if (token == null) {
+                      throw StateError('Session unavailable');
+                    }
+                    final tasks = await widget.tasksApi.listDueTasks(
+                      token,
+                      from: from,
+                      to: to,
+                    );
+                    if (widget.token() != token) {
+                      throw StateError('Session changed');
+                    }
+                    return tasks;
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      ),
       if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint)
         for (final (index, icon, title) in [
           (2, Icons.timelapse_outlined, 'تمرکز'),
