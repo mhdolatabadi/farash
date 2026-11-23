@@ -78,13 +78,13 @@ func TestCORSIgnoresOtherOrigins(t *testing.T) {
 func TestPrivateAPIResponsesAreNeverHTTPSharedCached(t *testing.T) {
 	handler := NewHandler(Config{
 		AllowedOrigin: "https://todo.example.com",
-		Store: newFakeUsers(),
-		AuthSecret: []byte("test-secret"),
+		Store:         newFakeUsers(),
+		AuthSecret:    []byte("test-secret"),
 	})
 	cases := []struct {
 		name, method, path string
-		origin, preflight string
-		wantStatus int
+		origin, preflight  string
+		wantStatus         int
 	}{
 		{"health success", http.MethodGet, "/api/v1/health", "", "", http.StatusOK},
 		{"unauthorized private account", http.MethodGet, "/api/v1/me", "", "", http.StatusUnauthorized},
