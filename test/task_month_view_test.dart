@@ -20,14 +20,18 @@ void main() {
       );
 
   testWidgets('month displays tasks and navigates months', (tester) async {
-    await tester.pumpWidget(app((from, to) async => [
-      Task(
-        id: 'task1',
-        projectId: 'inbox',
-        title: 'مطالعه',
-        due: TaskDue.onDay(DateTime(2026, 11, 23)),
+    await tester.pumpWidget(
+      app(
+        (from, to) async => [
+          Task(
+            id: 'task1',
+            projectId: 'inbox',
+            title: 'مطالعه',
+            due: TaskDue.onDay(DateTime(2026, 11, 23)),
+          ),
+        ],
       ),
-    ]));
+    );
     await tester.pumpAndSettle();
     expect(find.text('مطالعه'), findsOneWidget);
     await tester.tap(find.byTooltip('ماه بعد'));
@@ -40,10 +44,12 @@ void main() {
 
   testWidgets('month shows retry after loading error', (tester) async {
     var calls = 0;
-    await tester.pumpWidget(app((from, to) async {
-      if (++calls == 1) throw StateError('offline');
-      return [];
-    }));
+    await tester.pumpWidget(
+      app((from, to) async {
+        if (++calls == 1) throw StateError('offline');
+        return [];
+      }),
+    );
     await tester.pumpAndSettle();
     expect(find.text('دریافت کارهای تقویم ممکن نشد.'), findsOneWidget);
     await tester.tap(find.text('تلاش دوباره'));
