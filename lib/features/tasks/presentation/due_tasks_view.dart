@@ -193,7 +193,9 @@ class _DueTasksViewState extends State<DueTasksView> {
               ),
             };
       if (label != null) labels?.load();
-      if (!mounted || generation != _loadGeneration || widget.token() != token) {
+      if (!mounted ||
+          generation != _loadGeneration ||
+          widget.token() != token) {
         return;
       }
       if (_bento) _loadDone(generation, token);
@@ -202,7 +204,9 @@ class _DueTasksViewState extends State<DueTasksView> {
         _loading = false;
       });
     } catch (error) {
-      if (!mounted || generation != _loadGeneration || widget.token() != token) {
+      if (!mounted ||
+          generation != _loadGeneration ||
+          widget.token() != token) {
         return;
       }
       setState(() {
