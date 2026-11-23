@@ -165,4 +165,41 @@ void main() {
     final context = tester.element(find.text('ورود به فراش'));
     expect(Directionality.of(context), TextDirection.rtl);
   });
+  testWidgets('rejects Persian passwords exceeding 72 UTF-8 bytes', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'a@example.com');
+    // 37 Persian letters are 37 Dart code units but 74 UTF-8 bytes.
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      List.filled(37, 'ش').join(),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'ورود'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('رمز عبور باید بین ۸ تا ۷۲ بایت باشد.'), findsOneWidget);
+    expect(find.text('ورود به فراش'), findsOneWidget);
+  });
+
+  testWidgets('accepts a valid eight-byte Persian password locally', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'a@example.com');
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      List.filled(4, 'ش').join(),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'ورود'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('رمز عبور باید بین ۸ تا ۷۲ بایت باشد.'), findsNothing);
+    // The fake server rejects the credentials, not client-side validation.
+    expect(find.text('ورود به فراش'), findsOneWidget);
+  });
 }
