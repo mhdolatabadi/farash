@@ -102,7 +102,6 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-
   testWidgets('Today without a session shows an error, not endless loading', (
     tester,
   ) async {
