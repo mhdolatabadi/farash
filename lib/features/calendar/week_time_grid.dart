@@ -318,11 +318,15 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
         (block.endMinute - block.startMinute) / 60 * _hourHeight - 2,
       ),
     );
-    final due = block.task.due!.localTime!;
-    final end = due.add(Duration(minutes: block.task.durationMinutes ?? 30));
+    // Each overnight segment belongs to its own calendar day. The original
+    // task due time is still available in the task details sheet.
+    String clock(int minute) => persianDigits(
+      '${(minute ~/ 60).toString().padLeft(2, '0')}:${(minute % 60).toString().padLeft(2, '0')}',
+    );
+    final startTime = clock(block.startMinute);
     final displayTime = block.task.durationMinutes == null
-        ? formatTime(due)
-        : '${formatTime(due)}–${formatTime(end)}';
+        ? startTime
+        : '${startTime}–${clock(block.endMinute)}';
     final color = block.task.isCompleted
         ? scheme.surfaceContainerHighest
         : block.task.priority == TaskPriority.p1
@@ -338,7 +342,7 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
       width: laneWidth - gap,
       height: height,
       child: Semantics(
-        label: '${block.task.title}، ${formatTime(due)}',
+        label: '${block.task.title}، $displayTime',
         button: true,
         child: Material(
           color: color,
