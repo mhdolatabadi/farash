@@ -21,7 +21,7 @@ class TaskCalendarView extends StatefulWidget {
 
 class _TaskCalendarViewState extends State<TaskCalendarView> {
   late DateTime _selected = dayOf((widget.now ?? DateTime.now)());
-  bool _showMonth = true;
+  bool _showMonth = false;
   List<Task> _tasks = const [];
   bool _loading = true;
   Object? _error;
