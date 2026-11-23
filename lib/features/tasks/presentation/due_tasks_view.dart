@@ -106,6 +106,7 @@ class _DueTasksViewState extends State<DueTasksView> {
   int? _doneToday;
   Object? _error;
   int _loadGeneration = 0;
+  String? _activeToken;
   String? _captureError;
   final _dayKeys = <String, GlobalKey>{};
   late final _captureSession = QuickCaptureSession(
@@ -133,10 +134,19 @@ class _DueTasksViewState extends State<DueTasksView> {
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant DueTasksView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.token() != _activeToken) {
+      _load();
+    }
+  }
+
   Future<void> _load() async {
     final generation = ++_loadGeneration;
     final token = widget.token();
     if (token == null) {
+      _activeToken = null;
       if (mounted) {
         setState(() {
           _tasks = const [];
@@ -147,9 +157,15 @@ class _DueTasksViewState extends State<DueTasksView> {
       }
       return;
     }
+    final accountChanged = _activeToken != token;
+    _activeToken = token;
     setState(() {
       _loading = true;
       _error = null;
+      if (accountChanged) {
+        _tasks = const [];
+        _doneToday = null;
+      }
     });
     try {
       final today = _today;
