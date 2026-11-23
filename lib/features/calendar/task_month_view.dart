@@ -8,11 +8,7 @@ import 'package:flutter/material.dart';
 
 /// A provider-independent, owner-scoped task month view.
 class TaskMonthView extends StatefulWidget {
-  const TaskMonthView({
-    super.key,
-    required this.loadTasks,
-    this.now,
-  });
+  const TaskMonthView({super.key, required this.loadTasks, this.now});
 
   final Future<List<Task>> Function(DateTime from, DateTime to) loadTasks;
   final DateTime Function()? now;
@@ -89,8 +85,7 @@ class _TaskMonthViewState extends State<TaskMonthView> {
     }
     final selectedTasks = [
       for (final task in _tasks)
-        if (task.due != null &&
-            daysBetween(task.due!.day, _selected) == 0)
+        if (task.due != null && daysBetween(task.due!.day, _selected) == 0)
           task,
     ];
     final currentMonth = settings.isJalali
@@ -145,10 +140,7 @@ class _TaskMonthViewState extends State<TaskMonthView> {
             for (final label in weekdayHeaders)
               Expanded(
                 child: Center(
-                  child: Text(
-                    label,
-                    style: theme.textTheme.labelMedium,
-                  ),
+                  child: Text(label, style: theme.textTheme.labelMedium),
                 ),
               ),
           ],
@@ -172,14 +164,12 @@ class _TaskMonthViewState extends State<TaskMonthView> {
                       return Padding(
                         padding: const EdgeInsets.all(2),
                         child: Semantics(
-                          label: formatDate(
-                            day,
-                            settings,
-                            withWeekday: true,
-                          ),
+                          label: formatDate(day, settings, withWeekday: true),
                           button: true,
                           child: InkWell(
-                            key: ValueKey('month-day-${day.year}-${day.month}-${day.day}'),
+                            key: ValueKey(
+                              'month-day-${day.year}-${day.month}-${day.day}',
+                            ),
                             borderRadius: BorderRadius.circular(12),
                             onTap: () => setState(() => _selected = day),
                             child: Container(
