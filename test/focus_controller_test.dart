@@ -136,5 +136,4 @@ void main() {
     expect(timer.finished, isTrue);
     expect(timer.running, isFalse);
   });
-
 }
