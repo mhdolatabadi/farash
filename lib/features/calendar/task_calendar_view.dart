@@ -138,36 +138,48 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
                         SizedBox(
                           width: 54,
                           child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: Semantics(
-                            label: formatDate(day, settings, withWeekday: true),
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                minimumSize: const Size(48, 64),
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                backgroundColor:
-                                    daysBetween(day, _selected) == 0
-                                    ? theme.colorScheme.primaryContainer
-                                    : null,
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                            child: Semantics(
+                              label: formatDate(
+                                day,
+                                settings,
+                                withWeekday: true,
                               ),
-                              onPressed: () => setState(() => _selected = day),
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Column(
-                                  children: [
-                                    Text(weekdayInitials[day.weekday - 1]),
-                                    Text(persianDigits(
-                                      settings.isJalali
-                                          ? formatDate(day, settings).split(' ').first
-                                          : '${day.day}',
-                                    )),
-                                  ],
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size(48, 64),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                  backgroundColor:
+                                      daysBetween(day, _selected) == 0
+                                      ? theme.colorScheme.primaryContainer
+                                      : null,
+                                ),
+                                onPressed: () =>
+                                    setState(() => _selected = day),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Column(
+                                    children: [
+                                      Text(weekdayInitials[day.weekday - 1]),
+                                      Text(
+                                        persianDigits(
+                                          settings.isJalali
+                                              ? formatDate(
+                                                  day,
+                                                  settings,
+                                                ).split(' ').first
+                                              : '${day.day}',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                          ),
                     ],
                   ),
                 ),
