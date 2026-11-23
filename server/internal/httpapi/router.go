@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	cal "github.com/mhdolatabadi/farash/server/internal/calendar"
@@ -34,13 +35,8 @@ func NewHandler(config Config) http.Handler {
 	}
 	if config.Store != nil && len(config.AuthSecret) > 0 {
 		auth := newAuthHandler(config.Store, config.AuthSecret, config.AuthTokenTTL)
-		if refresh, ok := config.Store.(refreshSessionStore); ok {
-			auth.refreshStore = refresh
-		}
 		mux.HandleFunc("POST /api/v1/auth/register", auth.register)
 		mux.HandleFunc("POST /api/v1/auth/login", auth.login)
-		mux.HandleFunc("POST /api/v1/auth/refresh", auth.refresh)
-		mux.HandleFunc("POST /api/v1/auth/revoke", auth.revoke)
 		mux.HandleFunc("GET /api/v1/me", auth.me)
 		calendarRoutes(mux, auth, config.Calendar)
 		if data, ok := config.Store.(searchStore); ok {
@@ -135,6 +131,11 @@ func projectStoreFor(config Config) projectsStore {
 
 func cors(allowedOrigin string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Private task, sync and authentication responses must never be cached
+		// by browsers or intermediaries. Offline data lives in the app-owned cache.
+		if r.URL.Path == "/api/v1" || strings.HasPrefix(r.URL.Path, "/api/v1/") {
+			w.Header().Set("Cache-Control", "no-store")
+		}
 		w.Header().Add("Vary", "Origin")
 		if allowedOrigin == "" || r.Header.Get("Origin") != allowedOrigin {
 			next.ServeHTTP(w, r)

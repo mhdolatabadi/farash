@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -175,62 +176,24 @@ func TestVerifyExpiredToken(t *testing.T) {
 	}
 }
 
-type fakeRefreshSessions struct {
-	tokens map[string]string
-}
+func TestLoginRateLimitCannotBeBypassedBySpoofingForwardedIP(t *testing.T) {
+	auth := newAuthHandler(newFakeUsers(), []byte("test-secret"), time.Hour)
+	auth.rateLimits = newRateLimiter(2, time.Minute)
+	handler := http.HandlerFunc(auth.login)
 
-func (f *fakeRefreshSessions) CreateRefreshSession(_ context.Context, userID, digest string, _ time.Time) error {
-	f.tokens[digest] = userID
-	return nil
-}
-func (f *fakeRefreshSessions) RotateRefreshSession(_ context.Context, old, next string, _ time.Time) (string, error) {
-	userID, ok := f.tokens[old]
-	if !ok {
-		return "", store.ErrRefreshInvalid
-	}
-	delete(f.tokens, old)
-	f.tokens[next] = userID
-	return userID, nil
-}
-func (f *fakeRefreshSessions) RevokeRefreshSession(_ context.Context, digest string) error {
-	delete(f.tokens, digest)
-	return nil
-}
-
-func TestRefreshRotationRejectsReplayAndRevokes(t *testing.T) {
-	users := newFakeUsers()
-	users.byID["u1"] = store.User{ID: "u1", Email: "test@example.com"}
-	refresh := &fakeRefreshSessions{tokens: make(map[string]string)}
-	// Exercise the same handler with a session store attached.
-	auth := newAuthHandler(users, []byte("test-secret"), time.Hour)
-	auth.refreshStore = refresh
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/v1/auth/refresh", auth.refresh)
-	mux.HandleFunc("POST /api/v1/auth/revoke", auth.revoke)
-	if err := refresh.CreateRefreshSession(context.Background(), "u1", refreshDigest("original"), time.Now().Add(time.Hour)); err != nil {
-		t.Fatal(err)
-	}
-	first := postJSON(mux, "/api/v1/auth/refresh", `{"refresh_token":"original"}`, "")
-	if first.Code != http.StatusOK {
-		t.Fatalf("refresh status = %d: %s", first.Code, first.Body.String())
-	}
-	var rotated authResponse
-	if err := json.Unmarshal(first.Body.Bytes(), &rotated); err != nil {
-		t.Fatal(err)
-	}
-	if rotated.RefreshToken == "" || rotated.RefreshToken == "original" {
-		t.Fatal("token not rotated")
-	}
-	replay := postJSON(mux, "/api/v1/auth/refresh", `{"refresh_token":"original"}`, "")
-	if replay.Code != http.StatusUnauthorized {
-		t.Fatalf("replay accepted: %d", replay.Code)
-	}
-	revoke := postJSON(mux, "/api/v1/auth/revoke", `{"refresh_token":"`+rotated.RefreshToken+`"}`, "")
-	if revoke.Code != http.StatusNoContent {
-		t.Fatalf("revoke = %d", revoke.Code)
-	}
-	after := postJSON(mux, "/api/v1/auth/refresh", `{"refresh_token":"`+rotated.RefreshToken+`"}`, "")
-	if after.Code != http.StatusUnauthorized {
-		t.Fatalf("revoked token accepted: %d", after.Code)
+	for attempt := 0; attempt < 3; attempt++ {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login",
+			strings.NewReader(`{"email":"Victim@Example.com","password":"wrong-password"}`))
+		req.Header.Set("X-Forwarded-For", fmt.Sprintf("198.51.100.%d", attempt+1))
+		req.RemoteAddr = fmt.Sprintf("192.0.2.%d:12345", attempt+1)
+		handler.ServeHTTP(rec, req)
+		want := http.StatusUnauthorized
+		if attempt == 2 {
+			want = http.StatusTooManyRequests
+		}
+		if rec.Code != want {
+			t.Fatalf("attempt %d: got %d, want %d", attempt+1, rec.Code, want)
+		}
 	}
 }

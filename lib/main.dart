@@ -118,7 +118,7 @@ class _FarashAppState extends State<FarashApp> {
     super.dispose();
   }
 
-  /// Restores the saved sign-in. A rejected token is dropped; a network
+  /// Restores the saved sign-in without erasing recoverable credentials; a network
   /// failure keeps it so the user can retry without signing in again.
   Future<void> _restoreSession() async {
     final generation = ++_sessionEpoch;

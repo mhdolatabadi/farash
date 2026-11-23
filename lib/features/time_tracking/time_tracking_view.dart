@@ -118,12 +118,13 @@ class TimeTrackingView extends StatelessWidget {
             .map((p) => tasksApi.listTasks(token, p.id)),
       );
       if (!context.mounted) return;
-      final rootContext = context;
       final tasks = lists
           .expand((e) => e)
           .where((t) => !t.isCompleted)
           .toList();
-      await showModalBottomSheet<void>(
+      // Return the selected task first; opening a dialog during the sheet's
+      // pop can make its route disappear before it is ever visible.
+      final selected = await showModalBottomSheet<Task>(
         context: context,
         useSafeArea: true,
         isScrollControlled: true,
@@ -154,20 +155,7 @@ class TimeTrackingView extends StatelessWidget {
                   itemBuilder: (context, index) => ListTile(
                     title: Text(tasks[index].title),
                     leading: const Icon(Icons.play_circle_outline),
-                    onTap: () {
-                      Navigator.pop(context);
-                      if (manualStart != null) {
-                        manualTime(
-                          rootContext,
-                          tracker,
-                          tasks[index],
-                          initialStart: manualStart,
-                          initialEnd: manualEnd,
-                        );
-                      } else {
-                        startTracking(rootContext, tracker, tasks[index]);
-                      }
-                    },
+                    onTap: () => Navigator.pop(context, tasks[index]),
                   ),
                 ),
               ),
@@ -175,6 +163,18 @@ class TimeTrackingView extends StatelessWidget {
           ),
         ),
       );
+      if (!context.mounted || selected == null) return;
+      if (manualStart != null) {
+        await manualTime(
+          context,
+          tracker,
+          selected,
+          initialStart: manualStart,
+          initialEnd: manualEnd,
+        );
+      } else {
+        await startTracking(context, tracker, selected);
+      }
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

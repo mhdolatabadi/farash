@@ -2,6 +2,7 @@
 import pathlib
 import re
 import subprocess
+import struct
 import time
 import xml.etree.ElementTree as ET
 
@@ -32,6 +33,33 @@ def capture(name):
     time.sleep(2)
     clear_launcher_anr()
     (OUT / f'{name}.png').write_bytes(adb('exec-out', 'screencap', '-p'))
+
+
+
+def png_dimensions(data):
+    """Read the PNG IHDR, rejecting a truncated or unexpected capture."""
+    if (len(data) < 24 or data[:8] != b'\x89PNG\r\n\x1a\n'
+            or data[12:16] != b'IHDR'):
+        raise ValueError('Android screenshot is not a valid PNG header')
+    return struct.unpack('>II', data[16:24])
+
+
+def capture_narrow(name):
+    """Gate a real 320px emulator capture, restoring OS display settings."""
+    adb('shell', 'wm', 'size', '320x740')
+    adb('shell', 'wm', 'density', '160')
+    try:
+        time.sleep(3)
+        capture(name)
+        image = (OUT / f'{name}.png').read_bytes()
+        dimensions = png_dimensions(image)
+        if dimensions != (320, 740):
+            raise RuntimeError(
+                f'{name} was captured at {dimensions}, expected (320, 740)')
+    finally:
+        adb('shell', 'wm', 'size', 'reset')
+        adb('shell', 'wm', 'density', 'reset')
+        time.sleep(2)
 
 
 def clear_launcher_anr(xml=None):
@@ -112,13 +140,15 @@ def scroll_to(label, *, upward=True):
     raise RuntimeError(f'Calendar review could not reveal: {label}')
 
 
-def main():
+def capture_review():
     adb('install', '-r', 'build/app/outputs/flutter-apk/app-debug.apk')
     adb('shell', 'am', 'start', '-n', 'ir.mhdolatabadi.farash/.MainActivity')
     time.sleep(8)
     capture('weaving-light')
+    capture_narrow('today-320-light')
     adb('shell', 'cmd', 'uimode', 'night', 'yes')
     capture('weaving-dark')
+    capture_narrow('today-320-dark')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '1.3')
     capture('today-font-1_3-dark')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')
@@ -157,9 +187,8 @@ def main():
     time.sleep(2)
     tap('توقف ثبت زمان')
     capture('tracker-stopped')
-    tap('افزودن بازهٔ دستی')
-    time.sleep(2)
-    tap('مطالعهٔ فصل اول کتاب')
+    tap('افزودن بازهٔ دستی', wait_for='انتخاب کار برای ثبت زمان')
+    tap('مطالعهٔ فصل اول کتاب', wait_for='ثبت زمانِ تقریبی')
     capture('time-manual-dark')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')
     capture('time-manual-large-text')
@@ -287,6 +316,20 @@ def main():
     capture('recurrence-editor-phone-light')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')
     capture('recurrence-editor-large-text')
+
+def restore_emulator_settings():
+    """Restore every system setting touched by the capture workflow."""
+    adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')
+    adb('shell', 'wm', 'size', 'reset')
+    adb('shell', 'wm', 'density', 'reset')
+    adb('shell', 'cmd', 'uimode', 'night', 'no')
+
+
+def main():
+    try:
+        capture_review()
+    finally:
+        restore_emulator_settings()
 
 
 if __name__ == '__main__':

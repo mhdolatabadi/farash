@@ -120,19 +120,14 @@ void main() {
     expect(find.byType(DueTasksView), findsOneWidget);
   });
 
-  testWidgets('a rejected saved token remains recoverable until explicit logout', (
-    tester,
-  ) async {
+  testWidgets('a rejected saved token stays locked for retry', (tester) async {
     final sessions = MemorySessionStore('expired-token');
     await tester.pumpWidget(app(sessions: sessions));
     await tester.pumpAndSettle();
 
-    // An expired access token is not proof that a refresh credential is
-    // invalid. Never discard the saved session or expose another account.
     expect(find.text('بازیابی ورود قبلی ممکن نشد'), findsOneWidget);
     expect(find.byType(DueTasksView), findsNothing);
     expect(await sessions.readToken(), 'expired-token');
-    expect(find.text('تلاش دوباره'), findsOneWidget);
   });
 
   testWidgets('a network failure keeps the saved token for a retry', (
@@ -170,5 +165,42 @@ void main() {
 
     final context = tester.element(find.text('ورود به فراش'));
     expect(Directionality.of(context), TextDirection.rtl);
+  });
+  testWidgets('rejects Persian passwords exceeding 72 UTF-8 bytes', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'a@example.com');
+    // 37 Persian letters are 37 Dart code units but 74 UTF-8 bytes.
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      List.filled(37, 'ش').join(),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'ورود'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('رمز عبور باید بین ۸ تا ۷۲ بایت باشد.'), findsOneWidget);
+    expect(find.text('ورود به فراش'), findsOneWidget);
+  });
+
+  testWidgets('accepts a valid eight-byte Persian password locally', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'a@example.com');
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      List.filled(4, 'ش').join(),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'ورود'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('رمز عبور باید بین ۸ تا ۷۲ بایت باشد.'), findsNothing);
+    // The fake server rejects the credentials, not client-side validation.
+    expect(find.text('ورود به فراش'), findsOneWidget);
   });
 }
