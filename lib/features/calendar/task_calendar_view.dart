@@ -1,14 +1,17 @@
+import 'package:farash/core/calendar/calendar_month.dart';
 import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/features/calendar/task_month_view.dart';
 import 'package:farash/core/calendar/date_labels.dart';
+import 'package:farash/core/calendar/jalali.dart';
 import 'package:farash/core/text/persian_digits.dart';
+import 'package:farash/features/calendar/task_month_view.dart';
+import 'package:farash/features/calendar/week_time_grid.dart';
 import 'package:farash/features/tasks/data/task.dart';
 import 'package:flutter/material.dart';
 
 typedef CalendarTaskLoader =
     Future<List<Task>> Function(DateTime from, DateTime to);
 
-/// A native Farash calendar. External providers are optional overlays.
+/// Farash's own task calendar. Calendar providers can be separate overlays.
 class TaskCalendarView extends StatefulWidget {
   const TaskCalendarView({super.key, required this.loadTasks, this.now});
 
@@ -31,6 +34,22 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_generation == 0) _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant TaskCalendarView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.loadTasks != widget.loadTasks) {
+      // Parent may have switched accounts. Clear private data before paint
+      // and reject results from the previous account's pending request.
+      ++_generation;
+      _tasks = const [];
+      _loading = true;
+      _error = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _load();
+      });
+    }
   }
 
   @override
@@ -69,30 +88,66 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
     }
   }
 
-  void _shiftWeek(int offset) {
-    setState(() {
-      _selected = DateTime(
-        _selected.year,
-        _selected.month,
-        _selected.day + offset * 7,
-      );
-    });
-    _load();
+  void _selectDay(DateTime day) {
+    final previousWeek = _start;
+    setState(() => _selected = dayOf(day));
+    if (daysBetween(previousWeek, _start) != 0) _load();
+  }
+
+  void _shiftWeek(int offset) => _selectDay(
+    DateTime(_selected.year, _selected.month, _selected.day + offset * 7),
+  );
+
+  void _openTask(Task task) {
+    final due = task.due;
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(task.title, style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              if (due != null)
+                Text(
+                  due.isTimed
+                      ? '${formatDate(due.day, CalendarScope.of(context))} · ${formatTime(due.localTime!)}'
+                      : '${formatDate(due.day, CalendarScope.of(context))} · تمام‌روز',
+                ),
+              if (task.durationMinutes != null)
+                Text('مدت: ${formatDuration(task.durationMinutes!)}')
+              else if (due?.isTimed == true)
+                const Text('مدت تعیین نشده؛ روی تقویم ۳۰ دقیقه نمایش داده می‌شود.'),
+              if (task.description.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(task.description),
+              ],
+              const SizedBox(height: 12),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('بستن'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final settings = CalendarScope.of(context);
     final theme = Theme.of(context);
-    final start = _start;
     final days = [
       for (var i = 0; i < 7; i++)
-        DateTime(start.year, start.month, start.day + i),
-    ];
-    final selectedTasks = [
-      for (final task in _tasks)
-        if (task.due != null && daysBetween(task.due!.day, _selected) == 0)
-          task,
+        DateTime(_start.year, _start.month, _start.day + i),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -107,129 +162,201 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
       body: _showMonth
           ? TaskMonthView(loadTasks: widget.loadTasks, now: widget.now)
           : SafeArea(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 800),
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            tooltip: 'هفتهٔ قبل',
-                            onPressed: () => _shiftWeek(-1),
-                            icon: const Icon(Icons.chevron_right),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          tooltip: 'هفتهٔ قبل',
+                          onPressed: () => _shiftWeek(-1),
+                          icon: const Icon(Icons.chevron_right),
+                        ),
+                        Expanded(
+                          child: Text(
+                            '${formatDate(days.first, settings)} تا ${formatDate(days.last, settings)}',
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium,
                           ),
-                          Expanded(
-                            child: Text(
-                              '${formatDate(days.first, settings)} تا ${formatDate(days.last, settings)}',
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.titleMedium,
-                            ),
+                        ),
+                        IconButton(
+                          tooltip: 'هفتهٔ بعد',
+                          onPressed: () => _shiftWeek(1),
+                          icon: const Icon(Icons.chevron_left),
+                        ),
+                        TextButton(
+                          onPressed: () => _selectDay(
+                            dayOf((widget.now ?? DateTime.now)()),
                           ),
-                          IconButton(
-                            tooltip: 'هفتهٔ بعد',
-                            onPressed: () => _shiftWeek(1),
-                            icon: const Icon(Icons.chevron_left),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
+                          child: const Text('امروز'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => Row(
                           children: [
-                            for (final day in days)
+                            Expanded(
+                              child: _loading
+                                  ? const Center(
+                                      child: CircularProgressIndicator(),
+                                    )
+                                  : _error != null
+                                  ? Center(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text(
+                                            'دریافت کارهای تقویم ممکن نشد.',
+                                          ),
+                                          TextButton(
+                                            onPressed: _load,
+                                            child: const Text('تلاش دوباره'),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : WeekTimeGrid(
+                                      start: _start,
+                                      tasks: _tasks,
+                                      selected: _selected,
+                                      now: (widget.now ?? DateTime.now)(),
+                                      onSelectDay: _selectDay,
+                                      onOpenTask: _openTask,
+                                    ),
+                            ),
+                            if (constraints.maxWidth >= 1140) ...[
+                              const SizedBox(width: 14),
                               SizedBox(
-                                width: 54,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 2,
-                                  ),
-                                  child: Semantics(
-                                    label: formatDate(
-                                      day,
-                                      settings,
-                                      withWeekday: true,
-                                    ),
-                                    child: OutlinedButton(
-                                      style: OutlinedButton.styleFrom(
-                                        minimumSize: const Size(48, 64),
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 8,
-                                        ),
-                                        backgroundColor:
-                                            daysBetween(day, _selected) == 0
-                                            ? theme.colorScheme.primaryContainer
-                                            : null,
-                                      ),
-                                      onPressed: () =>
-                                          setState(() => _selected = day),
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        child: Column(
-                                          children: [
-                                            Text(
-                                              weekdayInitials[day.weekday - 1],
-                                            ),
-                                            Text(
-                                              persianDigits(
-                                                settings.isJalali
-                                                    ? formatDate(
-                                                        day,
-                                                        settings,
-                                                      ).split(' ').first
-                                                    : '${day.day}',
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                                width: 230,
+                                child: _MiniMonth(
+                                  selected: _selected,
+                                  onSelectDay: _selectDay,
+                                  tasks: _tasks,
                                 ),
                               ),
+                            ],
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      Text(
-                        formatDate(_selected, settings, withWeekday: true),
-                        style: theme.textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 12),
-                      if (_loading)
-                        const Center(child: CircularProgressIndicator())
-                      else if (_error != null)
-                        Column(
-                          children: [
-                            const Text('دریافت کارهای تقویم ممکن نشد.'),
-                            TextButton(
-                              onPressed: _load,
-                              child: const Text('تلاش دوباره'),
-                            ),
-                          ],
-                        )
-                      else if (selectedTasks.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 24),
-                          child: Text('برای این روز کاری زمان‌بندی نشده است.'),
-                        )
-                      else
-                        for (final task in selectedTasks)
-                          ListTile(
-                            key: ValueKey('calendar-task-${task.id}'),
-                            title: Text(task.title),
-                            leading: const Icon(Icons.radio_button_unchecked),
-                            subtitle: task.due!.isTimed
-                                ? const Text('کار زمان‌دار')
-                                : null,
-                          ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
+    );
+  }
+}
+
+/// A compact sidebar month picker on wide screens, like the reference.
+class _MiniMonth extends StatelessWidget {
+  const _MiniMonth({
+    required this.selected,
+    required this.onSelectDay,
+    required this.tasks,
+  });
+
+  final DateTime selected;
+  final ValueChanged<DateTime> onSelectDay;
+  final List<Task> tasks;
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = CalendarScope.of(context);
+    final month = monthContaining(selected, settings);
+    final current = settings.isJalali
+        ? JalaliDate.fromGregorian(selected)
+        : null;
+    final title = settings.isJalali
+        ? '${jalaliMonths[current!.month - 1]} ${persianDigits('${current.year}')}'
+        : '${gregorianMonths[selected.month - 1]} ${persianDigits('${selected.year}')}';
+    final now = DateTime.now();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+        ),
+        Row(
+          children: [
+            for (var i = 0; i < 7; i++)
+              Expanded(
+                child: Center(
+                  child: Text(
+                    weekdayInitials[(settings.weekStart - 1 + i) % 7],
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 7,
+            crossAxisSpacing: 1,
+            mainAxisSpacing: 3,
+          ),
+          itemCount: month.days.length,
+          itemBuilder: (context, index) {
+            final day = month.days[index];
+            final inMonth =
+                !day.isBefore(month.firstDay) && !day.isAfter(month.lastDay);
+            final active = daysBetween(selected, day) == 0;
+            final isToday = daysBetween(now, day) == 0;
+            final number = settings.isJalali
+                ? JalaliDate.fromGregorian(day).day
+                : day.day;
+            return Tooltip(
+              message: formatDate(day, settings, withWeekday: true),
+              child: InkWell(
+                key: ValueKey('mini-month-${dateKey(day)}'),
+                borderRadius: BorderRadius.circular(24),
+                onTap: () => onSelectDay(day),
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: active
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : null,
+                    border: isToday
+                        ? Border.all(
+                            color: Theme.of(context).colorScheme.primary,
+                          )
+                        : null,
+                  ),
+                  child: Center(
+                    child: Text(
+                      persianDigits('$'+'number'),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: inMonth
+                            ? null
+                            : Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 18),
+        Text(
+          'کارهای این هفته: ${persianDigits('${tasks.length}')}',
+          style: Theme.of(context).textTheme.labelMedium,
+        ),
+      ],
     );
   }
 }
