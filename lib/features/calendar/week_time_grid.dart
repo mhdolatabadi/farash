@@ -326,7 +326,7 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
     final startTime = clock(block.startMinute);
     final displayTime = block.task.durationMinutes == null
         ? startTime
-        : '${startTime}–${clock(block.endMinute)}';
+        : '$startTime–${clock(block.endMinute)}';
     final color = block.task.isCompleted
         ? scheme.surfaceContainerHighest
         : block.task.priority == TaskPriority.p1
