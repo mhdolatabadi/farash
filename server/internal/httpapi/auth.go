@@ -229,6 +229,10 @@ func sign(unsigned string, secret []byte) string {
 	return base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
 }
 
+// Bound the number of distinct active clients tracked by one API instance.
+// Saturation rejects new keys rather than evicting a client that is throttled.
+const maxRateLimitBuckets = 10000
+
 type rateLimiter struct {
 	mu      sync.Mutex
 	limit   int
@@ -254,16 +258,29 @@ func (r *rateLimiter) allow(key string) bool {
 	defer r.mu.Unlock()
 
 	now := time.Now()
-	bucket := r.buckets[key]
-	if bucket.Reset.IsZero() || now.After(bucket.Reset) {
-		r.buckets[key] = rateBucket{Reset: now.Add(r.window), Count: 1}
+	bucket, exists := r.buckets[key]
+	if exists && now.Before(bucket.Reset) {
+		if bucket.Count >= r.limit {
+			return false
+		}
+		bucket.Count++
+		r.buckets[key] = bucket
 		return true
 	}
-	if bucket.Count >= r.limit {
-		return false
+
+	// Reclaim expired entries only when at capacity, avoiding an O(n)
+	// scan on the common request path.
+	if !exists && len(r.buckets) >= maxRateLimitBuckets {
+		for candidate, previous := range r.buckets {
+			if !now.Before(previous.Reset) {
+				delete(r.buckets, candidate)
+			}
+		}
+		if len(r.buckets) >= maxRateLimitBuckets {
+			return false
+		}
 	}
-	bucket.Count++
-	r.buckets[key] = bucket
+	r.buckets[key] = rateBucket{Reset: now.Add(r.window), Count: 1}
 	return true
 }
 
