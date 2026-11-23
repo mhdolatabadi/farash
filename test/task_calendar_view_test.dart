@@ -168,6 +168,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('تمام‌روز'), findsOneWidget);
     expect(find.text('امروز'), findsOneWidget);
+    final daySelector = find.byKey(const ValueKey('week-day-2026-11-23'));
+    expect(daySelector, findsOneWidget);
+    expect(tester.getSize(daySelector).height, greaterThanOrEqualTo(48));
     expect(tester.takeException(), isNull);
   });
 }
