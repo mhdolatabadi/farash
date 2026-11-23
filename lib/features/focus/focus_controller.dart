@@ -65,7 +65,9 @@ class FocusController extends ChangeNotifier {
         _remaining = Duration(
           milliseconds: left.inMilliseconds.clamp(0, total),
         );
-        _deadline = deadline;
+        // A restored deadline may be far in the future after a device clock
+        // rollback. Bound both the displayed time and the active deadline.
+        _deadline = _now().add(_remaining);
         finished = false;
         _ticker = Timer.periodic(const Duration(seconds: 1), (_) => refresh());
       }
