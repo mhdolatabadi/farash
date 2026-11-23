@@ -13,23 +13,26 @@ void main() {
     durationMinutes: duration,
   );
 
-  test('timed events keep proportional time and are assigned overlap lanes', () {
-    final blocks = layoutWeekEvents([
-      timed('first', 23, 12, 0, 90),
-      timed('second', 23, 12, 30, 60),
-      timed('third', 23, 14, 0, 30),
-    ], week);
-    final first = blocks.singleWhere((e) => e.task.id == 'first');
-    final second = blocks.singleWhere((e) => e.task.id == 'second');
-    final third = blocks.singleWhere((e) => e.task.id == 'third');
-    expect(first.dayIndex, 2);
-    expect(first.startMinute, 720);
-    expect(first.endMinute, 810);
-    expect(first.columns, 2);
-    expect(second.columns, 2);
-    expect(second.column, isNot(first.column));
-    expect(third.columns, 1);
-  });
+  test(
+    'timed events keep proportional time and are assigned overlap lanes',
+    () {
+      final blocks = layoutWeekEvents([
+        timed('first', 23, 12, 0, 90),
+        timed('second', 23, 12, 30, 60),
+        timed('third', 23, 14, 0, 30),
+      ], week);
+      final first = blocks.singleWhere((e) => e.task.id == 'first');
+      final second = blocks.singleWhere((e) => e.task.id == 'second');
+      final third = blocks.singleWhere((e) => e.task.id == 'third');
+      expect(first.dayIndex, 2);
+      expect(first.startMinute, 720);
+      expect(first.endMinute, 810);
+      expect(first.columns, 2);
+      expect(second.columns, 2);
+      expect(second.column, isNot(first.column));
+      expect(third.columns, 1);
+    },
+  );
 
   test('a task crossing midnight appears on both adjacent dates', () {
     final task = timed('overnight', 22, 23, 30, 120);

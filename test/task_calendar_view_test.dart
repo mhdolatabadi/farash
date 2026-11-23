@@ -53,10 +53,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('week-all-day-a')), findsOneWidget);
     expect(find.byKey(const ValueKey('week-all-day-b')), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('week-timed-meeting-2')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('week-timed-meeting-2')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('week-day-2026-11-24')));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);

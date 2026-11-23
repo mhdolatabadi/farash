@@ -50,18 +50,11 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
     builder: (context, constraints) {
       final scheme = Theme.of(context).colorScheme;
       final settings = CalendarScope.of(context);
-      final width = math.max(
-        constraints.maxWidth,
-        _gutter + _minDayWidth * 7,
-      );
+      final width = math.max(constraints.maxWidth, _gutter + _minDayWidth * 7);
       final dayWidth = (width - _gutter) / 7;
       final days = [
         for (var i = 0; i < 7; i++)
-          DateTime(
-            widget.start.year,
-            widget.start.month,
-            widget.start.day + i,
-          ),
+          DateTime(widget.start.year, widget.start.month, widget.start.day + i),
       ];
       final allDay = [
         for (var day = 0; day < 7; day++)
@@ -81,9 +74,8 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
           ? 42.0
           : 74.0;
       final todayIndex = daysBetween(widget.start, widget.now);
-      final timeY = (widget.now.hour * 60 + widget.now.minute) /
-          60 *
-          _hourHeight;
+      final timeY =
+          (widget.now.hour * 60 + widget.now.minute) / 60 * _hourHeight;
 
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -102,17 +94,11 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                         width: dayWidth,
                         child: Center(
                           child: Semantics(
-                            label: formatDate(
-                              day,
-                              settings,
-                              withWeekday: true,
-                            ),
+                            label: formatDate(day, settings, withWeekday: true),
                             selected: daysBetween(widget.selected, day) == 0,
                             button: true,
                             child: InkWell(
-                              key: ValueKey(
-                                'week-day-${dateKey(day)}',
-                              ),
+                              key: ValueKey('week-day-${dateKey(day)}'),
                               borderRadius: BorderRadius.circular(14),
                               onTap: () => widget.onSelectDay(day),
                               child: Container(
@@ -133,21 +119,22 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                       weekdayNames[day.weekday - 1],
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelSmall,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.labelSmall,
                                     ),
                                     Text(
                                       persianDigits(
                                         settings.isJalali
-                                            ? formatDate(day, settings)
-                                                .split(' ')
-                                                .first
+                                            ? formatDate(
+                                                day,
+                                                settings,
+                                              ).split(' ').first
                                             : '${day.day}',
                                       ),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium,
                                     ),
                                   ],
                                 ),
@@ -200,9 +187,7 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                     color: scheme.secondaryContainer,
                                     borderRadius: BorderRadius.circular(5),
                                     child: InkWell(
-                                      key: ValueKey(
-                                        'week-all-day-${task.id}',
-                                      ),
+                                      key: ValueKey('week-all-day-${task.id}'),
                                       onTap: () => widget.onOpenTask(task),
                                       child: Padding(
                                         padding: const EdgeInsets.symmetric(
@@ -283,10 +268,7 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                             right: _gutter + todayIndex * dayWidth,
                             width: dayWidth,
                             child: IgnorePointer(
-                              child: Container(
-                                height: 2,
-                                color: scheme.error,
-                              ),
+                              child: Container(height: 2, color: scheme.error),
                             ),
                           ),
                       ],
@@ -301,17 +283,16 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
     },
   );
 
-  Widget _event(
-    WeekEventPlacement block,
-    double dayWidth,
-    ColorScheme scheme,
-  ) {
+  Widget _event(WeekEventPlacement block, double dayWidth, ColorScheme scheme) {
     const gap = 3.0;
     final laneWidth = (dayWidth - gap * 2) / block.columns;
     final top = block.startMinute / 60 * _hourHeight;
     final height = math.min(
       24 * _hourHeight - top,
-      math.max(24.0, (block.endMinute - block.startMinute) / 60 * _hourHeight - 2),
+      math.max(
+        24.0,
+        (block.endMinute - block.startMinute) / 60 * _hourHeight - 2,
+      ),
     );
     final due = block.task.due!.localTime!;
     final end = due.add(Duration(minutes: block.task.durationMinutes ?? 30));
@@ -328,7 +309,8 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
         : scheme.onPrimaryContainer;
     return Positioned(
       top: top,
-      right: _gutter + block.dayIndex * dayWidth + block.column * laneWidth + gap,
+      right:
+          _gutter + block.dayIndex * dayWidth + block.column * laneWidth + gap,
       width: laneWidth - gap,
       height: height,
       child: Semantics(

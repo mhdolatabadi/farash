@@ -121,7 +121,9 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
               if (task.durationMinutes != null)
                 Text('مدت: ${formatDuration(task.durationMinutes!)}')
               else if (due?.isTimed == true)
-                const Text('مدت تعیین نشده؛ روی تقویم ۳۰ دقیقه نمایش داده می‌شود.'),
+                const Text(
+                  'مدت تعیین نشده؛ روی تقویم ۳۰ دقیقه نمایش داده می‌شود.',
+                ),
               if (task.description.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(task.description),
@@ -188,9 +190,8 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
                           icon: const Icon(Icons.chevron_left),
                         ),
                         TextButton(
-                          onPressed: () => _selectDay(
-                            dayOf((widget.now ?? DateTime.now)()),
-                          ),
+                          onPressed: () =>
+                              _selectDay(dayOf((widget.now ?? DateTime.now)())),
                           child: const Text('امروز'),
                         ),
                       ],
@@ -280,10 +281,7 @@ class _MiniMonth extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
+          child: Text(title, style: Theme.of(context).textTheme.titleSmall),
         ),
         Row(
           children: [
