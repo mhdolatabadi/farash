@@ -130,11 +130,14 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    for (final day in days)
-                      Expanded(
-                        child: Padding(
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (final day in days)
+                        SizedBox(
+                          width: 54,
+                          child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 2),
                           child: Semantics(
                             label: formatDate(day, settings, withWeekday: true),
@@ -164,8 +167,9 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
                             ),
                           ),
                         ),
-                      ),
-                  ],
+                          ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
                 Text(
