@@ -31,6 +31,14 @@ class _TaskMonthViewState extends State<TaskMonthView> {
   }
 
   @override
+  void didUpdateWidget(covariant TaskMonthView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A new loader may represent another signed-in owner. Never retain the
+    // previous owner's task data or accept their pending response.
+    if (oldWidget.loadTasks != widget.loadTasks) _load();
+  }
+
+  @override
   void dispose() {
     _generation++;
     super.dispose();
