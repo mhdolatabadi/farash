@@ -41,7 +41,7 @@ CalendarMonth monthContaining(DateTime day, CalendarSettings settings) {
   final gridEnd = DateTime(
     next.year,
     next.month,
-    next.day + (settings.weekStart - next.weekday + 6) % 7 - 1,
+    next.day + (settings.weekStart - next.weekday + 7) % 7 - 1,
   );
   return CalendarMonth(
     firstDay: first,
