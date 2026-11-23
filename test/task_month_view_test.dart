@@ -44,41 +44,42 @@ void main() {
     expect(find.text('مطالعه'), findsOneWidget);
   });
 
-  testWidgets('changing account loader clears tasks and ignores stale results', (
-    tester,
-  ) async {
-    final oldResponse = Completer<List<Task>>();
-    final newResponse = Completer<List<Task>>();
-    Future<List<Task>> oldLoader(DateTime from, DateTime to) =>
-        oldResponse.future;
-    Future<List<Task>> newLoader(DateTime from, DateTime to) =>
-        newResponse.future;
+  testWidgets(
+    'changing account loader clears tasks and ignores stale results',
+    (tester) async {
+      final oldResponse = Completer<List<Task>>();
+      final newResponse = Completer<List<Task>>();
+      Future<List<Task>> oldLoader(DateTime from, DateTime to) =>
+          oldResponse.future;
+      Future<List<Task>> newLoader(DateTime from, DateTime to) =>
+          newResponse.future;
 
-    await tester.pumpWidget(app(oldLoader));
-    await tester.pumpWidget(app(newLoader));
-    newResponse.complete([
-      Task(
-        id: 'new-owner',
-        projectId: 'inbox',
-        title: 'کار حساب جدید',
-        due: TaskDue.onDay(DateTime(2026, 11, 23)),
-      ),
-    ]);
-    await tester.pumpAndSettle();
-    expect(find.text('کار حساب جدید'), findsOneWidget);
+      await tester.pumpWidget(app(oldLoader));
+      await tester.pumpWidget(app(newLoader));
+      newResponse.complete([
+        Task(
+          id: 'new-owner',
+          projectId: 'inbox',
+          title: 'کار حساب جدید',
+          due: TaskDue.onDay(DateTime(2026, 11, 23)),
+        ),
+      ]);
+      await tester.pumpAndSettle();
+      expect(find.text('کار حساب جدید'), findsOneWidget);
 
-    oldResponse.complete([
-      Task(
-        id: 'old-owner',
-        projectId: 'inbox',
-        title: 'کار خصوصی حساب قبلی',
-        due: TaskDue.onDay(DateTime(2026, 11, 23)),
-      ),
-    ]);
-    await tester.pumpAndSettle();
-    expect(find.text('کار خصوصی حساب قبلی'), findsNothing);
-    expect(find.text('کار حساب جدید'), findsOneWidget);
-  });
+      oldResponse.complete([
+        Task(
+          id: 'old-owner',
+          projectId: 'inbox',
+          title: 'کار خصوصی حساب قبلی',
+          due: TaskDue.onDay(DateTime(2026, 11, 23)),
+        ),
+      ]);
+      await tester.pumpAndSettle();
+      expect(find.text('کار خصوصی حساب قبلی'), findsNothing);
+      expect(find.text('کار حساب جدید'), findsOneWidget);
+    },
+  );
 
   testWidgets('month shows retry after loading error', (tester) async {
     var calls = 0;
