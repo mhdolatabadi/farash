@@ -1,4 +1,5 @@
 import 'package:farash/core/calendar/calendar_scope.dart';
+import 'package:farash/features/calendar/task_month_view.dart';
 import 'package:farash/core/calendar/date_labels.dart';
 import 'package:farash/core/text/persian_digits.dart';
 import 'package:farash/features/tasks/data/task.dart';
@@ -20,6 +21,7 @@ class TaskCalendarView extends StatefulWidget {
 
 class _TaskCalendarViewState extends State<TaskCalendarView> {
   late DateTime _selected = dayOf((widget.now ?? DateTime.now)());
+  bool _showMonth = true;
   List<Task> _tasks = const [];
   bool _loading = true;
   Object? _error;
@@ -93,8 +95,18 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
           task,
     ];
     return Scaffold(
-      appBar: AppBar(title: const Text('تقویم')),
-      body: SafeArea(
+      appBar: AppBar(
+        title: const Text('تقویم'),
+        actions: [
+          TextButton(
+            onPressed: () => setState(() => _showMonth = !_showMonth),
+            child: Text(_showMonth ? 'هفته' : 'ماه'),
+          ),
+        ],
+      ),
+      body: _showMonth
+          ? TaskMonthView(loadTasks: widget.loadTasks, now: widget.now)
+          : SafeArea(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 800),
