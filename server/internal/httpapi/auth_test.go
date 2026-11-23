@@ -3,11 +3,13 @@ package httpapi
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -173,6 +175,181 @@ func TestVerifyExpiredToken(t *testing.T) {
 	}
 	if _, err := verifyToken(token, []byte("secret")); !errors.Is(err, errors.New("expired token")) && err == nil {
 		t.Fatal("expired token verified")
+	}
+}
+
+type failingLookupUsers struct {
+	*fakeUsers
+}
+
+func (f *failingLookupUsers) UserByEmail(_ context.Context, _ string) (store.User, error) {
+	return store.User{}, errors.New("database unavailable")
+}
+
+func TestLoginUnknownAccountVerifiesDummyHash(t *testing.T) {
+	// This must remain a valid bcrypt hash, otherwise an unknown account
+	// would again skip the expensive password verification.
+	if err := bcrypt.CompareHashAndPassword(
+		[]byte(unknownAccountPasswordHash),
+		[]byte("farash-invalid-account-dummy"),
+	); err != nil {
+		t.Fatalf("dummy bcrypt hash invalid: %v", err)
+	}
+
+	handler := NewHandler(Config{Store: newFakeUsers(), AuthSecret: []byte("test-secret")})
+	for _, password := range []string{"long-enough", "farash-invalid-account-dummy"} {
+		body, err := json.Marshal(authRequest{Email: "missing@example.com", Password: password})
+		if err != nil {
+			t.Fatal(err)
+		}
+		rec := postJSON(handler, "/api/v1/auth/login", string(body), "")
+		if rec.Code != http.StatusUnauthorized || !strings.Contains(rec.Body.String(), "invalid_credentials") {
+			t.Fatalf("unknown account with password %q = %d %s", password, rec.Code, rec.Body.String())
+		}
+	}
+}
+
+func TestLoginDatabaseFailureIsNotInvalidCredentials(t *testing.T) {
+	users := &failingLookupUsers{fakeUsers: newFakeUsers()}
+	handler := NewHandler(Config{Store: users, AuthSecret: []byte("test-secret")})
+	rec := postJSON(handler, "/api/v1/auth/login",
+		`{"email":"user@example.com","password":"long-enough"}`, "")
+	if rec.Code != http.StatusInternalServerError || !strings.Contains(rec.Body.String(), "user_lookup_failed") {
+		t.Fatalf("database failure = %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestRateLimiterBoundsUniqueKeysWithoutEvictingActiveClients(t *testing.T) {
+	limiter := newRateLimiter(1, time.Hour)
+	for i := 0; i < maxRateLimitBuckets; i++ {
+		if !limiter.allow(strconv.Itoa(i)) {
+			t.Fatalf("rejected key %d before capacity", i)
+		}
+	}
+	if limiter.allow("overflow") {
+		t.Fatal("new key bypassed capacity limit")
+	}
+	if len(limiter.buckets) != maxRateLimitBuckets {
+		t.Fatalf("unexpected bucket count: %d", len(limiter.buckets))
+	}
+	if limiter.allow("0") {
+		t.Fatal("existing throttled client was evicted at capacity")
+	}
+}
+
+func TestRateLimiterReclaimsExpiredBucketsAtCapacity(t *testing.T) {
+	limiter := newRateLimiter(1, time.Hour)
+	for i := 0; i < maxRateLimitBuckets; i++ {
+		limiter.buckets[strconv.Itoa(i)] = rateBucket{
+			Reset: time.Now().Add(-time.Second),
+			Count: 1,
+		}
+	}
+	if !limiter.allow("recovered") {
+		t.Fatal("expired buckets prevented a new client")
+	}
+	if len(limiter.buckets) != 1 {
+		t.Fatalf("expired buckets not reclaimed: %d", len(limiter.buckets))
+	}
+	if limiter.allow("recovered") {
+		t.Fatal("new client bypassed its own limit")
+	}
+}
+
+func TestRateLimiterExpiredExistingKeyCanRetryAtCapacity(t *testing.T) {
+	limiter := newRateLimiter(1, time.Hour)
+	limiter.buckets["recovered"] = rateBucket{
+		Reset: time.Now().Add(-time.Second),
+		Count: 1,
+	}
+	for i := 1; i < maxRateLimitBuckets; i++ {
+		limiter.buckets[strconv.Itoa(i)] = rateBucket{
+			Reset: time.Now().Add(time.Hour),
+			Count: 1,
+		}
+	}
+	if !limiter.allow("recovered") {
+		t.Fatal("expired existing client could not retry")
+	}
+	if len(limiter.buckets) != maxRateLimitBuckets {
+		t.Fatalf("unexpected bucket count: %d", len(limiter.buckets))
+	}
+}
+
+func TestVerifyTokenRejectsUnsupportedProtectedHeaders(t *testing.T) {
+	secret := []byte("test-secret")
+	claims := tokenClaims{Subject: "u1", Expires: time.Now().Add(time.Hour).Unix()}
+	payload, err := json.Marshal(claims)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name   string
+		header string
+		valid  bool
+	}{
+		{name: "supported", header: `{"alg":"HS256","typ":"JWT"}`, valid: true},
+		{name: "wrong algorithm", header: `{"alg":"none","typ":"JWT"}`},
+		{name: "wrong type", header: `{"alg":"HS256","typ":"other"}`},
+		{name: "missing type", header: `{"alg":"HS256"}`},
+		{name: "extra field", header: `{"alg":"HS256","typ":"JWT","kid":"untrusted"}`},
+		{name: "invalid JSON", header: `not-json`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			unsigned := base64.RawURLEncoding.EncodeToString([]byte(tc.header)) +
+				"." + base64.RawURLEncoding.EncodeToString(payload)
+			token := unsigned + "." + sign(unsigned, secret)
+			_, err := verifyToken(token, secret)
+			if (err == nil) != tc.valid {
+				t.Fatalf("valid=%v, verification error=%v", tc.valid, err)
+			}
+		})
+	}
+}
+
+func TestVerifyTokenRejectsOversizedBearer(t *testing.T) {
+	_, err := verifyToken(strings.Repeat("x", 4097), []byte("test-secret"))
+	if err == nil {
+		t.Fatal("oversized bearer token accepted")
+	}
+}
+
+func TestAuthRequestRejectsOversizeAndTrailingJSON(t *testing.T) {
+	const valid = `{"email":"test@example.com","password":"long-enough"}`
+	tests := []struct {
+		name string
+		body string
+		want int
+	}{
+		{name: "valid request", body: valid, want: http.StatusCreated},
+		{name: "trailing whitespace", body: valid + "  \n\t", want: http.StatusCreated},
+		{name: "second JSON object", body: valid + `{}`, want: http.StatusBadRequest},
+		{name: "trailing invalid characters", body: valid + " trailing", want: http.StatusBadRequest},
+		{name: "oversized body", body: valid + strings.Repeat(" ", maxAuthRequestBytes), want: http.StatusBadRequest},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Fresh handler avoids account and rate-limit state leaking between cases.
+			handler := NewHandler(Config{Store: newFakeUsers(), AuthSecret: []byte("test-secret")})
+			response := postJSON(handler, "/api/v1/auth/register", tc.body, "")
+			if response.Code != tc.want {
+				t.Fatalf("status = %d, want %d: %s", response.Code, tc.want, response.Body.String())
+			}
+			if tc.want == http.StatusBadRequest && !strings.Contains(response.Body.String(), "invalid_json") {
+				t.Fatalf("expected invalid_json, got %s", response.Body.String())
+			}
+		})
+	}
+}
+
+func TestLoginRejectsOversizedAndTrailingJSON(t *testing.T) {
+	const valid = `{"email":"missing@example.com","password":"long-enough"}`
+	for _, body := range []string{valid + `{}`, valid + strings.Repeat(" ", maxAuthRequestBytes)} {
+		handler := NewHandler(Config{Store: newFakeUsers(), AuthSecret: []byte("test-secret")})
+		response := postJSON(handler, "/api/v1/auth/login", body, "")
+		if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), "invalid_json") {
+			t.Fatalf("login accepted malformed input: %d %s", response.Code, response.Body.String())
+		}
 	}
 }
 
