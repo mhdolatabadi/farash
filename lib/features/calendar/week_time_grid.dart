@@ -38,10 +38,22 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
   late final ScrollController _vertical = ScrollController(
     initialScrollOffset: 8 * _hourHeight,
   );
+  final ScrollController _horizontal = ScrollController();
+  bool _scrollToSelectedDay = true;
+
+  @override
+  void didUpdateWidget(covariant WeekTimeGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.start != widget.start ||
+        oldWidget.selected != widget.selected) {
+      _scrollToSelectedDay = true;
+    }
+  }
 
   @override
   void dispose() {
     _vertical.dispose();
+    _horizontal.dispose();
     super.dispose();
   }
 
@@ -52,6 +64,17 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
       final settings = CalendarScope.of(context);
       final width = math.max(constraints.maxWidth, _gutter + _minDayWidth * 7);
       final dayWidth = (width - _gutter) / 7;
+      if (_scrollToSelectedDay) {
+        _scrollToSelectedDay = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !_horizontal.hasClients) return;
+          final day = daysBetween(widget.start, widget.selected).clamp(0, 6);
+          final target = math.max(0, day - 1) * dayWidth;
+          _horizontal.jumpTo(
+            target.clamp(0.0, _horizontal.position.maxScrollExtent).toDouble(),
+          );
+        });
+      }
       final days = [
         for (var i = 0; i < 7; i++)
           DateTime(widget.start.year, widget.start.month, widget.start.day + i),
@@ -78,6 +101,7 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
           (widget.now.hour * 60 + widget.now.minute) / 60 * _hourHeight;
 
       return SingleChildScrollView(
+        controller: _horizontal,
         scrollDirection: Axis.horizontal,
         child: SizedBox(
           width: width,
