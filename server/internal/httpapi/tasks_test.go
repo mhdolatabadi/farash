@@ -67,6 +67,43 @@ func TestTasksLifecycle(t *testing.T) {
 	}
 }
 
+func TestTaskCreateIdempotencyAndOwnerIsolation(t *testing.T) {
+	api := newDBAPI(t)
+	alice := api.register("task-retry-alice@example.com")
+	bob := api.register("task-retry-bob@example.com")
+	body := map[string]any{"title": "Offline capture", "request_key": "task-capture-req-001"}
+	var first, replay, other oneTask
+	if code := api.do("POST", "/api/v1/tasks", alice, body, &first); code != 201 {
+		t.Fatal("initial", code)
+	}
+	if code := api.do("POST", "/api/v1/tasks", alice, body, &replay); code != 201 || replay.Task.ID != first.Task.ID {
+		t.Fatal("retry duplicated task", code, first, replay)
+	}
+	if code := api.do("POST", "/api/v1/tasks", alice, map[string]any{"title": "Different", "request_key": "task-capture-req-001"}, nil); code != 409 {
+		t.Fatal("changed payload accepted", code)
+	}
+	if code := api.do("POST", "/api/v1/tasks", bob, body, &other); code != 201 || other.Task.ID == first.Task.ID {
+		t.Fatal("cross-account request leaked", code)
+	}
+	for _, key := range []string{"short", strings.Repeat("x", 129), "bad key with spaces"} {
+		if code := api.do("POST", "/api/v1/tasks", alice, map[string]any{"title": "X", "request_key": key}, nil); code != 400 {
+			t.Fatal("invalid key accepted", key, code)
+		}
+	}
+	// Even if the user deleted the task after a lost response, replaying
+	// its operation must not create a second task.
+	if code := api.do("DELETE", "/api/v1/tasks/"+first.Task.ID, alice, nil, nil); code != 204 {
+		t.Fatal("delete", code)
+	}
+	if code := api.do("POST", "/api/v1/tasks", alice, body, &replay); code != 201 || replay.Task.ID != first.Task.ID {
+		t.Fatal("deleted create was repeated", code, replay)
+	}
+	var list taskList
+	if code := api.do("GET", "/api/v1/tasks?projectId="+first.Task.ProjectID, alice, nil, &list); code != 200 || len(list.Tasks) != 0 {
+		t.Fatal("retry resurrected deleted task", code, list)
+	}
+}
+
 func TestTasksValidationAndOwnership(t *testing.T) {
 	api := newDBAPI(t)
 	alice := api.register("alice@example.com")

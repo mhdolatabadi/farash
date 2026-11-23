@@ -227,6 +227,59 @@ void main() {
       await tester.pumpAndSettle();
     },
   );
+  testWidgets('manual time editor opens after the task picker closes', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final api = TrackingFixture()..seed('inbox', 'مطالعهٔ کتاب');
+    final tracker = TimeTracker(api: api, token: () => 'token');
+    final projects = ProjectsController(
+      api: FakeProjectsApi(),
+      token: () => 'token',
+    );
+    await projects.load();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: FarashTheme.dark(),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: const TextScaler.linear(1.3)),
+          child: child!,
+        ),
+        home: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            body: TimeTrackingView(
+              tracker: tracker,
+              tasksApi: api,
+              projects: projects,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('افزودن بازهٔ دستی'));
+    await tester.tap(find.text('افزودن بازهٔ دستی'));
+    await tester.pumpAndSettle();
+    expect(find.text('انتخاب کار برای ثبت زمان'), findsOneWidget);
+    await tester.tap(find.text('مطالعهٔ کتاب'));
+    await tester.pumpAndSettle();
+    expect(find.text('ثبت زمانِ تقریبی'), findsOneWidget);
+    expect(find.text('انصراف'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('انصراف'));
+    await tester.pumpAndSettle();
+    expect(find.text('ثبت زمانِ تقریبی'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    tracker.dispose();
+    projects.dispose();
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('times view ticks live after a timer starts', (tester) async {
     final api = TrackingFixture()..reportTasks = true;
     final tracker = TimeTracker(api: api, token: () => 'token');
