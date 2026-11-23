@@ -76,5 +76,25 @@ class CaptureNavigationTest(unittest.TestCase):
         tap.assert_not_called()
 
 
+    def test_main_restores_emulator_after_success(self):
+        with patch.object(capture, 'capture_review') as review, \
+                patch.object(capture, 'adb') as adb:
+            capture.main()
+        review.assert_called_once_with()
+        self.assertEqual(adb.call_args_list, [
+            unittest.mock.call('shell', 'settings', 'put', 'system', 'font_scale', '1.0'),
+            unittest.mock.call('shell', 'wm', 'size', 'reset'),
+            unittest.mock.call('shell', 'wm', 'density', 'reset'),
+            unittest.mock.call('shell', 'cmd', 'uimode', 'night', 'no'),
+        ])
+
+    def test_main_restores_emulator_and_propagates_capture_failure(self):
+        with patch.object(capture, 'capture_review', side_effect=RuntimeError('navigation failed')), \
+                patch.object(capture, 'adb') as adb:
+            with self.assertRaisesRegex(RuntimeError, 'navigation failed'):
+                capture.main()
+        self.assertEqual(adb.call_count, 4)
+
+
 if __name__ == '__main__':
     unittest.main()
