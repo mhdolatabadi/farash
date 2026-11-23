@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"strconv"
 	"testing"
 	"time"
 
@@ -172,5 +173,62 @@ func TestVerifyExpiredToken(t *testing.T) {
 	}
 	if _, err := verifyToken(token, []byte("secret")); !errors.Is(err, errors.New("expired token")) && err == nil {
 		t.Fatal("expired token verified")
+	}
+}
+
+func TestRateLimiterBoundsUniqueKeysWithoutEvictingActiveClients(t *testing.T) {
+	limiter := newRateLimiter(1, time.Hour)
+	for i := 0; i < maxRateLimitBuckets; i++ {
+		if !limiter.allow(strconv.Itoa(i)) {
+			t.Fatalf("rejected key %d before capacity", i)
+		}
+	}
+	if limiter.allow("overflow") {
+		t.Fatal("new key bypassed capacity limit")
+	}
+	if len(limiter.buckets) != maxRateLimitBuckets {
+		t.Fatalf("unexpected bucket count: %d", len(limiter.buckets))
+	}
+	if limiter.allow("0") {
+		t.Fatal("existing throttled client was evicted at capacity")
+	}
+}
+
+func TestRateLimiterReclaimsExpiredBucketsAtCapacity(t *testing.T) {
+	limiter := newRateLimiter(1, time.Hour)
+	for i := 0; i < maxRateLimitBuckets; i++ {
+		limiter.buckets[strconv.Itoa(i)] = rateBucket{
+			Reset: time.Now().Add(-time.Second),
+			Count: 1,
+		}
+	}
+	if !limiter.allow("recovered") {
+		t.Fatal("expired buckets prevented a new client")
+	}
+	if len(limiter.buckets) != 1 {
+		t.Fatalf("expired buckets not reclaimed: %d", len(limiter.buckets))
+	}
+	if limiter.allow("recovered") {
+		t.Fatal("new client bypassed its own limit")
+	}
+}
+
+func TestRateLimiterExpiredExistingKeyCanRetryAtCapacity(t *testing.T) {
+	limiter := newRateLimiter(1, time.Hour)
+	limiter.buckets["recovered"] = rateBucket{
+		Reset: time.Now().Add(-time.Second),
+		Count: 1,
+	}
+	for i := 1; i < maxRateLimitBuckets; i++ {
+		limiter.buckets[strconv.Itoa(i)] = rateBucket{
+			Reset: time.Now().Add(time.Hour),
+			Count: 1,
+		}
+	}
+	if !limiter.allow("recovered") {
+		t.Fatal("expired existing client could not retry")
+	}
+	if len(limiter.buckets) != maxRateLimitBuckets {
+		t.Fatalf("unexpected bucket count: %d", len(limiter.buckets))
 	}
 }
