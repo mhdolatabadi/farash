@@ -229,7 +229,7 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
                                       onOpenTask: _openTask,
                                     ),
                             ),
-                            if (constraints.maxWidth >= 1140) ...[
+                            if (constraints.maxWidth >= 1320) ...[
                               const SizedBox(width: 14),
                               SizedBox(
                                 width: 230,
@@ -337,7 +337,7 @@ class _MiniMonth extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      persianDigits('$'+'number'),
+                      persianDigits('$number'),
                       style: TextStyle(
                         fontSize: 11,
                         color: inMonth
