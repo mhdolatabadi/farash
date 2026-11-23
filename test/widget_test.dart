@@ -120,13 +120,19 @@ void main() {
     expect(find.byType(DueTasksView), findsOneWidget);
   });
 
-  testWidgets('a rejected saved token is dropped', (tester) async {
+  testWidgets('a rejected saved token remains recoverable until explicit logout', (
+    tester,
+  ) async {
     final sessions = MemorySessionStore('expired-token');
     await tester.pumpWidget(app(sessions: sessions));
     await tester.pumpAndSettle();
 
-    expect(find.text('ورود به فراش'), findsOneWidget);
-    expect(await sessions.readToken(), isNull);
+    // An expired access token is not proof that a refresh credential is
+    // invalid. Never discard the saved session or expose another account.
+    expect(find.text('بازیابی ورود قبلی ممکن نشد'), findsOneWidget);
+    expect(find.byType(DueTasksView), findsNothing);
+    expect(await sessions.readToken(), 'expired-token');
+    expect(find.text('تلاش دوباره'), findsOneWidget);
   });
 
   testWidgets('a network failure keeps the saved token for a retry', (
