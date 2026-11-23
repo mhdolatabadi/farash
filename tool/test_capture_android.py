@@ -2,6 +2,7 @@
 import importlib.util
 import pathlib
 import subprocess
+import struct
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -67,6 +68,47 @@ class CaptureNavigationTest(unittest.TestCase):
                 patch.object(capture.time, 'sleep'):
             capture.tap('مکث', wait_for='شروع تمرکز')
         adb.assert_called_once_with('shell', 'input', 'tap', '50', '50')
+
+    def test_png_dimensions_reads_real_header_and_rejects_invalid_data(self):
+        png = (b'\x89PNG\r\n\x1a\n'
+               + struct.pack('>I', 13) + b'IHDR'
+               + struct.pack('>II', 320, 740))
+        self.assertEqual(capture.png_dimensions(png), (320, 740))
+        with self.assertRaises(ValueError):
+            capture.png_dimensions(b'not a PNG')
+        with self.assertRaises(ValueError):
+            capture.png_dimensions(png[:16])
+
+    def test_narrow_capture_checks_size_and_always_resets_display(self):
+        png = (b'\x89PNG\r\n\x1a\n'
+               + struct.pack('>I', 13) + b'IHDR'
+               + struct.pack('>II', 320, 740))
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(capture, 'OUT', pathlib.Path(directory)), \
+                patch.object(capture, 'adb') as adb, \
+                patch.object(capture.time, 'sleep'):
+            with patch.object(capture, 'capture', side_effect=lambda name:
+                    (capture.OUT / f'{name}.png').write_bytes(png)):
+                capture.capture_narrow('today-320')
+        self.assertEqual(adb.call_args_list[0].args,
+                         ('shell', 'wm', 'size', '320x740'))
+        self.assertEqual(adb.call_args_list[-2].args,
+                         ('shell', 'wm', 'size', 'reset'))
+        self.assertEqual(adb.call_args_list[-1].args,
+                         ('shell', 'wm', 'density', 'reset'))
+
+    def test_narrow_capture_failure_still_restores_display(self):
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(capture, 'OUT', pathlib.Path(directory)), \
+                patch.object(capture, 'adb') as adb, \
+                patch.object(capture.time, 'sleep'), \
+                patch.object(capture, 'capture', side_effect=RuntimeError('adb failed')):
+            with self.assertRaisesRegex(RuntimeError, 'adb failed'):
+                capture.capture_narrow('today-320')
+        self.assertEqual(adb.call_args_list[-2].args,
+                         ('shell', 'wm', 'size', 'reset'))
+        self.assertEqual(adb.call_args_list[-1].args,
+                         ('shell', 'wm', 'density', 'reset'))
 
     def test_existing_drawer_needs_no_hidden_menu_tap(self):
         with patch.object(capture, 'window_xml', return_value=tree(
