@@ -20,20 +20,22 @@ void main() {
 
   testWidgets('selecting a day shows only its due tasks', (tester) async {
     await tester.pumpWidget(
-      app((from, to) async => [
-        Task(
-          id: 'a',
-          projectId: 'inbox',
-          title: 'کار دوشنبه',
-          due: TaskDue.onDay(DateTime(2026, 11, 23)),
-        ),
-        Task(
-          id: 'b',
-          projectId: 'inbox',
-          title: 'کار سه‌شنبه',
-          due: TaskDue.onDay(DateTime(2026, 11, 24)),
-        ),
-      ]),
+      app(
+        (from, to) async => [
+          Task(
+            id: 'a',
+            projectId: 'inbox',
+            title: 'کار دوشنبه',
+            due: TaskDue.onDay(DateTime(2026, 11, 23)),
+          ),
+          Task(
+            id: 'b',
+            projectId: 'inbox',
+            title: 'کار سه‌شنبه',
+            due: TaskDue.onDay(DateTime(2026, 11, 24)),
+          ),
+        ],
+      ),
     );
     await tester.pumpAndSettle();
     expect(find.text('کار دوشنبه'), findsOneWidget);
@@ -44,22 +46,25 @@ void main() {
     expect(find.text('کار دوشنبه'), findsNothing);
   });
 
-  testWidgets('a stale previous-week response never replaces new week',
-      (tester) async {
+  testWidgets('a stale previous-week response never replaces new week', (
+    tester,
+  ) async {
     final first = Completer<List<Task>>();
     var calls = 0;
-    await tester.pumpWidget(app((from, to) {
-      calls++;
-      if (calls == 1) return first.future;
-      return Future.value([
-        Task(
-          id: 'new',
-          projectId: 'inbox',
-          title: 'کار هفته جدید',
-          due: TaskDue.onDay(DateTime(2026, 11, 30)),
-        ),
-      ]);
-    }));
+    await tester.pumpWidget(
+      app((from, to) {
+        calls++;
+        if (calls == 1) return first.future;
+        return Future.value([
+          Task(
+            id: 'new',
+            projectId: 'inbox',
+            title: 'کار هفته جدید',
+            due: TaskDue.onDay(DateTime(2026, 11, 30)),
+          ),
+        ]);
+      }),
+    );
     await tester.pump();
     await tester.tap(find.byTooltip('هفتهٔ بعد'));
     await tester.pumpAndSettle();
