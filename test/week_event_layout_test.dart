@@ -1,5 +1,5 @@
-import 'package:farash/features/calendar/week_event_layout.dart';
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/features/calendar/week_event_layout.dart';
+import 'package:menval/features/tasks/data/task.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
