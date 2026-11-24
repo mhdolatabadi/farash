@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/auth/session_store.dart';
-import 'package:farash/main.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/auth/session_store.dart';
+import 'package:menval/main.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -41,7 +41,7 @@ void main() {
       }),
     );
     await tester.pumpWidget(
-      FarashApp(apiClient: api, sessionStore: store, healthCheck: () async {}),
+      MenvalApp(apiClient: api, sessionStore: store, healthCheck: () async {}),
     );
     await tester.pumpAndSettle();
     expect(find.text('بازیابی ورود قبلی ممکن نشد'), findsOneWidget);

@@ -3,17 +3,17 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/calendar/time_zone.dart';
-import 'package:farash/app/app_theme.dart';
-import 'package:farash/features/time_tracking/time_tracking.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/core/calendar/date_labels.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/tasks/data/task.dart';
-import 'package:farash/features/tasks/presentation/due_tasks_view.dart';
-import 'package:farash/features/tasks/presentation/task_detail_sheet.dart';
-import 'package:farash/features/tasks/presentation/task_tile.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/core/calendar/time_zone.dart';
+import 'package:menval/app/app_theme.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/core/calendar/date_labels.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/tasks/data/task.dart';
+import 'package:menval/features/tasks/presentation/due_tasks_view.dart';
+import 'package:menval/features/tasks/presentation/task_detail_sheet.dart';
+import 'package:menval/features/tasks/presentation/task_tile.dart';
 
 import 'support/fake_tasks_api.dart';
 import 'support/fake_sections_api.dart';
@@ -355,7 +355,7 @@ void main() {
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
         MaterialApp(
-          theme: FarashTheme.dark(),
+          theme: MenvalTheme.dark(),
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(
               context,
