@@ -268,7 +268,9 @@ def capture_review():
     adb('shell', 'wm', 'density', 'reset')
     time.sleep(3)
     open_drawer()
-    tap('حساب و تنظیمات')
+    # Wait for the account route before selecting its calendar entry. A drawer
+    # tap can return while Flutter is still animating the route transition.
+    tap('حساب و تنظیمات', wait_for='اتصال تقویم‌ها')
     tap('اتصال تقویم‌ها', wait_for='حساب Google متصل است.')
     adb('shell', 'cmd', 'uimode', 'night', 'no')
     capture('calendar-phone-light')
