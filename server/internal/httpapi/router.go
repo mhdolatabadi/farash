@@ -90,6 +90,7 @@ func NewHandler(config Config) http.Handler {
 			tasks := &tasksHandler{auth: auth, data: taskData}
 			mux.HandleFunc("GET /api/v1/tasks", tasks.handle)
 			mux.HandleFunc("POST /api/v1/tasks", tasks.handle)
+			mux.HandleFunc("POST /api/v1/sync/tasks", syncTaskCreateHandler(auth, taskData))
 			mux.HandleFunc("PATCH /api/v1/tasks/{id}", tasks.handle)
 			mux.HandleFunc("DELETE /api/v1/tasks/{id}", tasks.handle)
 			mux.HandleFunc("POST /api/v1/tasks/reorder", tasks.handle)
