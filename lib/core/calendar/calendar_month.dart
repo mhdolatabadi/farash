@@ -1,6 +1,6 @@
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/core/calendar/date_labels.dart';
-import 'package:farash/core/calendar/jalali.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/core/calendar/date_labels.dart';
+import 'package:menval/core/calendar/jalali.dart';
 
 /// Inclusive calendar-month bounds, independent of external providers.
 class CalendarMonth {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:farash/core/settings/theme_preferences.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/core/calendar/date_labels.dart';
+import 'package:menval/core/settings/theme_preferences.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/core/calendar/date_labels.dart';
 
 /// Picks the calendar and the first day of the week for this device.
 Future<void> showCalendarSettings(
