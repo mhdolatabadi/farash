@@ -24,3 +24,19 @@ func TestSyncCursorRejectsOversizedInput(t *testing.T) {
 		}
 	}
 }
+
+func TestSyncCursorRejectsForeignOwnerAndNoncanonicalRevision(t *testing.T) {
+	owner := "550e8400-e29b-41d4-a716-446655440000"
+	other := "550e8400-e29b-41d4-a716-446655440001"
+	for _, cursor := range []string{
+		syncCursor(other, 1),
+		syncCursor(owner, 1) + ".extra",
+		strings.Replace(syncCursor(owner, 1), ".1", ".01", 1),
+		strings.Replace(syncCursor(owner, 1), ".1", ".-1", 1),
+		strings.Replace(syncCursor(owner, 1), ".1", ".9223372036854775808", 1),
+	} {
+		if _, err := parseSyncCursor(owner, cursor); !errors.Is(err, ErrInvalidSync) {
+			t.Fatalf("expected invalid cursor %q, got %v", cursor, err)
+		}
+	}
+}
