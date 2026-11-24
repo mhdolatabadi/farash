@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/soft.dart';
-import 'package:farash/app/spacing.dart';
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/calendar/date_labels.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/features/focus/focus_controller.dart';
-import 'package:farash/features/habits/habit.dart';
-import 'package:farash/features/habits/habits_controller.dart';
+import 'package:menval/app/soft.dart';
+import 'package:menval/app/spacing.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/core/calendar/date_labels.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/features/focus/focus_controller.dart';
+import 'package:menval/features/habits/habit.dart';
+import 'package:menval/features/habits/habits_controller.dart';
 
 /// The tiles above «امروز»: the date, the day's tasks, the focus timer and
 /// today's habits. A tile whose data is missing is left out, never filled

@@ -1,23 +1,23 @@
-import 'package:farash/features/recurrence/recurrence_panel.dart';
-import 'package:farash/features/recurrence/task_recurrence.dart';
-import 'package:farash/features/time_tracking/time_tracking.dart';
-import 'package:farash/features/time_tracking/time_tracking_view.dart';
+import 'package:menval/features/recurrence/recurrence_panel.dart';
+import 'package:menval/features/recurrence/task_recurrence.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
+import 'package:menval/features/time_tracking/time_tracking_view.dart';
 import 'package:flutter/material.dart';
-import 'package:farash/app/soft.dart';
-import 'package:farash/app/spacing.dart';
-import 'package:farash/app/surfaces.dart';
-import 'package:farash/features/labels/application/labels_controller.dart';
-import 'package:farash/features/labels/presentation/label_widgets.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/tasks/application/tasks_controller.dart';
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/features/tasks/data/checklist.dart';
-import 'package:farash/features/tasks/data/task.dart';
-import 'package:farash/features/tasks/presentation/priority_color.dart';
-import 'package:farash/features/tasks/presentation/due_picker.dart';
-import 'package:farash/features/tasks/presentation/task_messages.dart';
-import 'package:farash/features/tasks/presentation/task_tile.dart';
+import 'package:menval/app/soft.dart';
+import 'package:menval/app/spacing.dart';
+import 'package:menval/app/surfaces.dart';
+import 'package:menval/features/labels/application/labels_controller.dart';
+import 'package:menval/features/labels/presentation/label_widgets.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/tasks/application/tasks_controller.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/features/tasks/data/checklist.dart';
+import 'package:menval/features/tasks/data/task.dart';
+import 'package:menval/features/tasks/presentation/priority_color.dart';
+import 'package:menval/features/tasks/presentation/due_picker.dart';
+import 'package:menval/features/tasks/presentation/task_messages.dart';
+import 'package:menval/features/tasks/presentation/task_tile.dart';
 
 /// What the detail sheet asks the list to do after it closes.
 enum TaskSheetResult { saved, deleted }
