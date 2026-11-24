@@ -1,4 +1,4 @@
-import 'package:farash/core/calendar/jalali.dart';
+import 'package:menval/core/calendar/jalali.dart';
 
 /// Only the bounded quick-add grammar; the server validates the full rule.
 class QuickRecurrence {

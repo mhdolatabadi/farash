@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/features/tasks/data/task.dart';
 
 abstract interface class SearchApi {
   Future<Map<String, dynamic>> searchRequest(

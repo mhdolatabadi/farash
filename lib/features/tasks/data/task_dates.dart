@@ -1,4 +1,4 @@
-import 'package:farash/core/calendar/date_labels.dart';
+import 'package:menval/core/calendar/date_labels.dart';
 
 /// When a task is due, as the API returns it: a whole day, or a moment in
 /// the time zone it was planned in.

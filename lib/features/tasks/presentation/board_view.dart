@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/soft.dart';
-import 'package:farash/app/spacing.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/core/widgets/hover_reveal.dart';
-import 'package:farash/features/labels/application/labels_controller.dart';
-import 'package:farash/features/tasks/application/tasks_controller.dart';
-import 'package:farash/features/tasks/data/task.dart';
-import 'package:farash/features/tasks/presentation/section_dialogs.dart';
-import 'package:farash/features/tasks/presentation/task_tile.dart';
+import 'package:menval/app/soft.dart';
+import 'package:menval/app/spacing.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/core/widgets/hover_reveal.dart';
+import 'package:menval/features/labels/application/labels_controller.dart';
+import 'package:menval/features/tasks/application/tasks_controller.dart';
+import 'package:menval/features/tasks/data/task.dart';
+import 'package:menval/features/tasks/presentation/section_dialogs.dart';
+import 'package:menval/features/tasks/presentation/task_tile.dart';
 
 /// How a project shows its tasks.
 enum ProjectLayout { list, board }
