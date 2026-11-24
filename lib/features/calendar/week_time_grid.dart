@@ -95,7 +95,9 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
           ? 36.0
           : maxAllDay == 1
           ? 42.0
-          : maxAllDay > 2 ? 104.0 : 74.0;
+          : maxAllDay > 2
+          ? 104.0
+          : 74.0;
       final todayIndex = daysBetween(widget.start, widget.now);
       final timeY =
           (widget.now.hour * 60 + widget.now.minute) / 60 * _hourHeight;
@@ -238,7 +240,9 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                 SizedBox(
                                   height: 48,
                                   child: TextButton(
-                                    key: ValueKey('week-all-day-more-${dateKey(days[day])}'),
+                                    key: ValueKey(
+                                      'week-all-day-more-${dateKey(days[day])}',
+                                    ),
                                     onPressed: () {
                                       widget.onSelectDay(days[day]);
                                       showModalBottomSheet<void>(
