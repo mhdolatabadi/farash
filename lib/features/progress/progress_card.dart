@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/soft.dart';
-import 'package:farash/app/spacing.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/core/calendar/time_zone.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/features/progress/progress.dart';
-import 'package:farash/features/progress/week_report.dart';
-import 'package:farash/features/progress/weekly_challenge.dart';
+import 'package:menval/app/soft.dart';
+import 'package:menval/app/spacing.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/core/calendar/time_zone.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/features/progress/progress.dart';
+import 'package:menval/features/progress/week_report.dart';
+import 'package:menval/features/progress/weekly_challenge.dart';
 
 /// A quiet summary pinned under the navigation: the level, and this
 /// week's days against the goal as a thin bar. Details open on request.

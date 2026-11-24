@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/soft.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/features/progress/progress.dart';
+import 'package:menval/app/soft.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/features/progress/progress.dart';
 
 /// The summary compares equal local weekdays/time, never a partial week
 /// against all seven days of the previous week.
