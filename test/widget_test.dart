@@ -41,11 +41,13 @@ void main() {
   Widget app({
     Future<void> Function()? healthCheck,
     SessionStore? sessions,
+    RefreshCredentialStore? refreshCredentials,
     ApiClient? api,
   }) => MenvalApp(
     healthCheck: healthCheck ?? () async {},
     apiClient: api ?? fakeServer(),
     sessionStore: sessions ?? MemorySessionStore(),
+    refreshCredentialStore: refreshCredentials,
     projectsApi: FakeProjectsApi(),
     tasksApi: FakeTasksApi(),
     sectionsApi: FakeSectionsApi(),
@@ -142,6 +144,107 @@ void main() {
     expect(find.text('بازیابی ورود قبلی ممکن نشد'), findsOneWidget);
     expect(await sessions.readToken(), 'good-token');
   });
+
+  testWidgets(
+    'a rotated refresh rejected by the server recovers with valid access',
+    (tester) async {
+      final saved = MemorySessionStore('good-token');
+      final refresh = MemoryRefreshCredentialStore('already-rotated');
+      var refreshAttempts = 0;
+      final api = ApiClient(
+        Uri.parse('https://todo.example.com'),
+        client: MockClient((request) async {
+          if (request.url.path == '/api/v1/auth/refresh') {
+            refreshAttempts++;
+            return http.Response('{"error":"invalid_refresh_token"}', 401);
+          }
+          if (request.url.path == '/api/v1/me') {
+            expect(request.headers['Authorization'], 'Bearer good-token');
+            return http.Response(
+              jsonEncode({
+                'user': {'id': 'u1', 'email': 'a@example.com'},
+              }),
+              200,
+            );
+          }
+          return http.Response('{"error":"not_found"}', 404);
+        }),
+      );
+      await tester.pumpWidget(
+        app(sessions: saved, refreshCredentials: refresh, api: api),
+      );
+      await tester.pumpAndSettle();
+
+      expect(refreshAttempts, 1);
+      expect(find.byType(DueTasksView), findsOneWidget);
+      expect(await saved.readToken(), 'good-token');
+      expect(await refresh.readRefreshToken(), isNull);
+    },
+  );
+
+  testWidgets(
+    'a temporary refresh outage keeps the credential when access works',
+    (tester) async {
+      final saved = MemorySessionStore('good-token');
+      final refresh = MemoryRefreshCredentialStore('still-valid-refresh');
+      final api = ApiClient(
+        Uri.parse('https://todo.example.com'),
+        client: MockClient((request) async {
+          if (request.url.path == '/api/v1/auth/refresh') {
+            throw http.ClientException('temporary outage');
+          }
+          if (request.url.path == '/api/v1/me') {
+            return http.Response(
+              jsonEncode({
+                'user': {'id': 'u1', 'email': 'a@example.com'},
+              }),
+              200,
+            );
+          }
+          return http.Response('{"error":"not_found"}', 404);
+        }),
+      );
+      await tester.pumpWidget(
+        app(sessions: saved, refreshCredentials: refresh, api: api),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(DueTasksView), findsOneWidget);
+      expect(await refresh.readRefreshToken(), 'still-valid-refresh');
+    },
+  );
+
+  testWidgets(
+    'invalid access and refresh show a safe explicit re-login path',
+    (tester) async {
+      final saved = MemorySessionStore('expired-token');
+      final refresh = MemoryRefreshCredentialStore('invalid-refresh');
+      final api = ApiClient(
+        Uri.parse('https://todo.example.com'),
+        client: MockClient((request) async {
+          if (request.url.path == '/api/v1/auth/refresh') {
+            return http.Response('{"error":"invalid_refresh_token"}', 401);
+          }
+          if (request.url.path == '/api/v1/me') {
+            return http.Response('{"error":"invalid_token"}', 401);
+          }
+          return http.Response('{"error":"not_found"}', 404);
+        }),
+      );
+      await tester.pumpWidget(
+        app(sessions: saved, refreshCredentials: refresh, api: api),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('بازیابی ورود قبلی ممکن نشد'), findsOneWidget);
+      expect(find.text('ورود دوباره به حساب'), findsOneWidget);
+
+      await tester.tap(find.text('ورود دوباره به حساب'));
+      await tester.pumpAndSettle();
+      expect(find.text('ورود به منوال'), findsOneWidget);
+      expect(await saved.readToken(), 'expired-token');
+      expect(await refresh.readRefreshToken(), 'invalid-refresh');
+      expect(find.byType(DueTasksView), findsNothing);
+    },
+  );
 
   testWidgets('signing out forgets the token', (tester) async {
     final sessions = MemorySessionStore('good-token');
