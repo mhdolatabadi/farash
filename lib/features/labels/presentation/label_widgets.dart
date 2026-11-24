@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/labels/application/labels_controller.dart';
-import 'package:farash/features/labels/data/label.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/tasks/presentation/task_messages.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/labels/application/labels_controller.dart';
+import 'package:menval/features/labels/data/label.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/tasks/presentation/task_messages.dart';
 
 /// "@name" in the label's color, as task rows show it.
 class LabelTag extends StatelessWidget {

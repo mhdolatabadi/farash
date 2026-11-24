@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/features/tasks/data/task.dart';
 
 /// Opt-in, at-due-time reminders for timed open tasks. Date-only tasks are
 /// intentionally excluded: they have no wall-clock moment to notify about.

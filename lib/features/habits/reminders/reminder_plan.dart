@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:farash/features/habits/habit.dart';
+import 'package:menval/features/habits/habit.dart';
 
 /// One notification to show for a habit on one day.
 class PlannedReminder {

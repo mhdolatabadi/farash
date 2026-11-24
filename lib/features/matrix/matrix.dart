@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
 
 /// One of the four Eisenhower quadrants. [important] and [urgent] say where
 /// it sits, so a task dropped on it can be moved to match.
