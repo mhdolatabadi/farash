@@ -111,6 +111,9 @@ func TestSyncAPIPaginationHasNoGapsOrDuplicates(t *testing.T) {
 	if len(expected) != 0 {
 		t.Fatalf("missing tasks across pages: %v", expected)
 	}
+	if pages < 3 {
+		t.Fatalf("expected multiple pagination boundaries, got %d pages", pages)
+	}
 	var idle store.SyncPage
 	if code := api.do("POST", "/api/v1/sync", alice, map[string]any{"cursor": cursor, "limit": 2}, &idle); code != 200 || len(idle.Changes) != 0 || idle.HasMore {
 		t.Fatalf("idle sync after final page: %d %+v", code, idle)
