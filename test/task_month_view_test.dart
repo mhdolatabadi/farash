@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/features/calendar/task_month_view.dart';
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/features/calendar/task_month_view.dart';
+import 'package:menval/features/tasks/data/task.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

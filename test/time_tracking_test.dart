@@ -5,17 +5,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/app/app_theme.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/core/calendar/time_zone.dart';
-import 'package:farash/core/settings/start_view.dart';
-import 'package:farash/features/home/home_screen.dart';
-import 'package:farash/features/focus/focus_view.dart';
-import 'package:farash/features/tasks/presentation/due_tasks_view.dart';
-import 'package:farash/features/projects/application/projects_controller.dart';
-import 'package:farash/features/tasks/data/task.dart';
-import 'package:farash/features/time_tracking/time_tracking.dart';
-import 'package:farash/features/time_tracking/time_tracking_view.dart';
+import 'package:menval/app/app_theme.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/core/calendar/time_zone.dart';
+import 'package:menval/core/settings/start_view.dart';
+import 'package:menval/features/home/home_screen.dart';
+import 'package:menval/features/focus/focus_view.dart';
+import 'package:menval/features/tasks/presentation/due_tasks_view.dart';
+import 'package:menval/features/projects/application/projects_controller.dart';
+import 'package:menval/features/tasks/data/task.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
+import 'package:menval/features/time_tracking/time_tracking_view.dart';
 import 'support/fake_projects_api.dart';
 import 'support/fake_tasks_api.dart';
 
@@ -107,7 +107,7 @@ void main() {
     );
     await tester.pumpWidget(
       MaterialApp(
-        theme: FarashTheme.light(),
+        theme: MenvalTheme.light(),
         home: HomeScreen(
           email: 'fixture@example.com',
           onLogout: () {},
@@ -183,7 +183,7 @@ void main() {
       );
       await tester.pumpWidget(
         MaterialApp(
-          theme: FarashTheme.dark(),
+          theme: MenvalTheme.dark(),
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(
               context,
@@ -242,7 +242,7 @@ void main() {
     await projects.load();
     await tester.pumpWidget(
       MaterialApp(
-        theme: FarashTheme.dark(),
+        theme: MenvalTheme.dark(),
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(
             context,
@@ -290,7 +290,7 @@ void main() {
     final tracker = TimeTracker(api: api, token: () => 'token');
     await tester.pumpWidget(
       MaterialApp(
-        theme: FarashTheme.dark(),
+        theme: MenvalTheme.dark(),
         home: Directionality(
           textDirection: TextDirection.rtl,
           child: Scaffold(

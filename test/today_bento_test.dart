@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/app/app_theme.dart';
-import 'package:farash/app/soft.dart';
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/core/calendar/date_labels.dart';
-import 'package:farash/features/focus/focus_controller.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/tasks/data/task.dart';
-import 'package:farash/features/tasks/presentation/due_tasks_view.dart';
-import 'package:farash/features/tasks/presentation/today_bento.dart';
+import 'package:menval/app/app_theme.dart';
+import 'package:menval/app/soft.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/core/calendar/date_labels.dart';
+import 'package:menval/features/focus/focus_controller.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/tasks/data/task.dart';
+import 'package:menval/features/tasks/presentation/due_tasks_view.dart';
+import 'package:menval/features/tasks/presentation/today_bento.dart';
 
 import 'support/fake_tasks_api.dart';
 
@@ -50,7 +50,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       MaterialApp(
-        theme: dark ? FarashTheme.dark() : FarashTheme.light(),
+        theme: dark ? MenvalTheme.dark() : MenvalTheme.light(),
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(
             context,

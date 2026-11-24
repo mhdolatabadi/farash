@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/app/app_theme.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/core/calendar/calendar_settings_dialog.dart';
-import 'package:farash/core/settings/theme_preferences.dart';
+import 'package:menval/app/app_theme.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/core/calendar/calendar_settings_dialog.dart';
+import 'package:menval/core/settings/theme_preferences.dart';
 
 void main() {
   setUpAll(() async {
@@ -80,8 +80,8 @@ void main() {
           listenable: preferences,
           builder: (context, _) => MaterialApp(
             themeMode: preferences.mode,
-            theme: FarashTheme.light(),
-            darkTheme: FarashTheme.dark(),
+            theme: MenvalTheme.light(),
+            darkTheme: MenvalTheme.dark(),
             builder: (context, child) => ThemePreferencesScope(
               preferences: preferences,
               child: MediaQuery(
