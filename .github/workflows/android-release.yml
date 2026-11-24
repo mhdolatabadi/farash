@@ -94,12 +94,12 @@ jobs:
           VERSION_CODE: ${{ steps.version.outputs.code }}
         run: |
           mkdir -p release
-          cp build/app/outputs/flutter-apk/app-release.apk "release/farash-$VERSION_NAME-$VERSION_CODE.apk"
-          cp build/app/outputs/bundle/release/app-release.aab "release/farash-$VERSION_NAME-$VERSION_CODE.aab"
+          cp build/app/outputs/flutter-apk/app-release.apk "release/menval-$VERSION_NAME-$VERSION_CODE.apk"
+          cp build/app/outputs/bundle/release/app-release.aab "release/menval-$VERSION_NAME-$VERSION_CODE.aab"
           (cd release && sha256sum ./*.apk ./*.aab > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: farash-release-${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}
+          name: menval-release-${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}
           path: release/
           if-no-files-found: error
           retention-days: 90
@@ -116,8 +116,8 @@ jobs:
             echo 'Release already exists; assets are never overwritten. Use a new version tag.' >&2
             exit 1
           fi
-          cat > "$RUNNER_TEMP/farash-release-notes.md" <<EOF
-          Signed Farash Android release $VERSION_NAME (build $VERSION_CODE).
+          cat > "$RUNNER_TEMP/menval-release-notes.md" <<EOF
+          Signed Menval Android release $VERSION_NAME (build $VERSION_CODE).
 
           - APK: install directly on Android; verify it against SHA256SUMS.
           - AAB: store submission bundle; not a directly installable APK.
@@ -126,7 +126,7 @@ jobs:
 
           Android may request permission to install from this source. Store submission and device upgrade validation are separate rollout steps.
           EOF
-          gh release create "$RELEASE_TAG" release/*.apk release/*.aab release/SHA256SUMS --verify-tag --draft --title "Farash $VERSION_NAME" --notes-file "$RUNNER_TEMP/farash-release-notes.md"
+          gh release create "$RELEASE_TAG" release/*.apk release/*.aab release/SHA256SUMS --verify-tag --draft --title "Menval $VERSION_NAME" --notes-file "$RUNNER_TEMP/menval-release-notes.md"
           gh release edit "$RELEASE_TAG" --draft=false
       - name: Publish main build as a pre-release
         if: github.event_name == 'workflow_run'
@@ -138,15 +138,15 @@ jobs:
         run: |
           # Each build code is unique, so every merge to main gets its own downloadable release.
           tag="build-$VERSION_NAME-$VERSION_CODE"
-          cat > "$RUNNER_TEMP/farash-release-notes.md" <<EOF
-          Automatic signed Farash Android build $VERSION_NAME (build $VERSION_CODE) from main.
+          cat > "$RUNNER_TEMP/menval-release-notes.md" <<EOF
+          Automatic signed Menval Android build $VERSION_NAME (build $VERSION_CODE) from main.
 
           - APK: install directly on Android; verify it against SHA256SUMS.
           - AAB: store submission bundle; not a directly installable APK.
           - Source: $SOURCE_SHA
           - Build and checks: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
           EOF
-          gh release create "$tag" release/*.apk release/*.aab release/SHA256SUMS --target "$SOURCE_SHA" --prerelease --title "Farash $VERSION_NAME (build $VERSION_CODE)" --notes-file "$RUNNER_TEMP/farash-release-notes.md"
+          gh release create "$tag" release/*.apk release/*.aab release/SHA256SUMS --target "$SOURCE_SHA" --prerelease --title "Menval $VERSION_NAME (build $VERSION_CODE)" --notes-file "$RUNNER_TEMP/menval-release-notes.md"
       - name: Remove signing material
         if: always()
         run: rm -f android/key.properties "$RUNNER_TEMP/farash-release.jks" "$RUNNER_TEMP/release-cert.der" "$RUNNER_TEMP/aab-cert.der" "$RUNNER_TEMP/aab-cert.pem"

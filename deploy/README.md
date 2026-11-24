@@ -1,14 +1,14 @@
-# Deploy Farash
+# Deploy Menval
 
-Farash runs on one Ubuntu server with Docker Compose: the Go API, PostgreSQL,
+Menval runs on one Ubuntu server with Docker Compose: the Go API, PostgreSQL,
 and the Flutter web app. The server's existing front nginx owns ports 80/443
-and reaches Farash over the external `proxynet` Docker network. Farash does
+and reaches Menval over the external `proxynet` Docker network. Menval does
 not run a second edge proxy.
 
 ## Production launch
 
 1. Point `FARASH_DOMAIN` at the server. The shared front nginx already owns
-   host ports `80` and `443`; Farash must not publish either port.
+   host ports `80` and `443`; Menval must not publish either port.
 2. Clone the repository on the server, for example under `/home/apps/farash`.
 3. On the server, create `deploy/.env` from `deploy/.env.example` and fill in
    the real domain, PostgreSQL password and JWT secret. Keep
@@ -88,7 +88,7 @@ Never commit deployment secrets or `.env`.
 ## Shared front proxy contract
 
 Production currently uses a Dockerized nginx front proxy on the external
-`proxynet` network. Its Farash HTTPS block resolves upstream names at request
+`proxynet` network. Its Menval HTTPS block resolves upstream names at request
 time so nginx stays healthy while the app is being restarted. The reviewed route
 body lives in `deploy/front-proxy.nginx.conf`:
 
@@ -96,10 +96,10 @@ body lives in `deploy/front-proxy.nginx.conf`:
 - everything else → `farash-web:80`.
 
 The proxy configuration and certificate lifecycle are owned by the shared proxy
-stack, not by Farash Compose. Validate nginx before reloading it and never stop
-the shared proxy as part of a Farash deploy. The public deploy health check
+stack, not by Menval Compose. Validate nginx before reloading it and never stop
+the shared proxy as part of a Menval deploy. The public deploy health check
 (`/api/v1/health`) verifies the complete path through TLS, nginx, Docker DNS and
-the Farash API.
+the Menval API.
 
 ## Database backups and rollback
 
