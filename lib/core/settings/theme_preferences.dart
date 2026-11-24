@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
 
 /// Device appearance; unrelated to account data and safe to retain on logout.
 class ThemePreferences extends ChangeNotifier {

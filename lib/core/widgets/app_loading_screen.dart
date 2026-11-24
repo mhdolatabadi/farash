@@ -15,7 +15,7 @@ class AppLoadingScreen extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.all(Radius.circular(16)),
               child: Image(
-                image: AssetImage('assets/icon/farash.png'),
+                image: AssetImage('assets/icon/menval.png'),
                 width: 72,
                 height: 72,
               ),
