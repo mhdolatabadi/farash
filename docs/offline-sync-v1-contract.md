@@ -1,6 +1,6 @@
-# Offline sync v1 — proposed contract (not implemented)
+# Offline sync v1 — target contract and partial implementation status
 
-Tracks #172 and #21. This document is a design gate, **not** a claim that offline writes work. No client should enqueue production mutations until the API and persistence tests described here pass.
+Tracks #172, #21 and #239. **This is the target contract, not a description of a complete implemented API.** The existing incremental server implementation includes an owner-scoped change feed and an idempotent task-create path (`POST /api/v1/sync/tasks`), but does not implement the entire batch protocol below. The Android/Web durable mutation outbox, offline edit/delete, revision-conflict handling and end-to-end reconciliation are not yet complete. Do not enable offline mutation controls based on this document alone.
 
 ## Ownership and transport
 
@@ -9,7 +9,7 @@ Tracks #172 and #21. This document is a design gate, **not** a claim that offlin
 - HTTPS only; no credentials, task bodies, or cursor contents in logs.
 - All timestamps are UTC instants. The Flutter calendar renders them in the selected timezone/Jalali presentation without changing stored instants.
 
-## Proposed API
+## Target batch API (not implemented as specified)
 
 `POST /api/v1/sync` with `cursor` (opaque, nullable), `limit` (bounded, server-capped), and `operations` (bounded array). Each operation contains a UUID `operation_id`, entity type, stable entity ID, verb, expected entity revision, and validated payload. The response contains per-operation accepted/conflict/rejected results, an ordered page of owner-scoped changes including tombstones, and `next_cursor` plus `has_more`.
 
@@ -27,7 +27,7 @@ The cursor is bound to the authenticated owner, versioned, and authenticated aga
 
 ## Client ordering (future #21)
 
-Keep the outbox encrypted or in platform-protected account-local storage; never delete pending commands merely because a request times out. Persist commands before optimistic UI success. On reconnect, replay with the same operation IDs, apply server outcomes and pages transactionally, then advance the local cursor. Switching account or signing out must isolate/wipe the former account's local private cache and outbox according to explicit sign-out semantics. Expired access tokens should renew through the existing refresh-token flow; a network outage must not log out the user.
+Keep the outbox encrypted or in platform-protected account-local storage; never delete pending commands merely because a request times out. Persist commands before optimistic UI success. On reconnect, replay with the same operation IDs, apply server outcomes and pages transactionally, then advance the local cursor. Switching account or signing out must isolate/wipe the former account's local private cache and outbox according to explicit sign-out semantics. Expired access tokens require a separately verified renewal mechanism (tracked by #195); do not assume a refresh-token flow exists. A network outage must not discard the saved session or pending commands.
 
 ## Required regression matrix
 
@@ -43,6 +43,13 @@ Keep the outbox encrypted or in platform-protected account-local storage; never 
 | Interrupted transaction | No orphan idempotency record or feed event |
 | Offline outbox during token refresh | Commands survive and retry |
 | DST transition / Jalali display | UTC data unchanged, correct local rendering |
+
+## Current implementation boundaries
+
+- **Implemented incrementally:** server-side owner-scoped pull/change-feed and idempotent task creation via `POST /api/v1/sync/tasks`, with PostgreSQL regression coverage for replay, owner isolation, concurrent requests and pagination. These are separate endpoints; they are **not** the target batch `POST /api/v1/sync` contract.
+- **Not complete:** durable client outbox, edit/delete mutation commands, revision-based conflict resolution, full cursor-expiry recovery and account-switch reconciliation. The complete offline-first experience remains blocked on #21/#239.
+- **Session renewal:** #195 tracks Android session renewal; do not claim the target refresh-token mechanism exists without verifying its implementation and CI.
+- **Validation:** any new endpoint, contract change or client behavior must have tests for ownership, replay, failures and recovery; successful historical CI runs do not validate future commits.
 
 ## Rollout gates
 
