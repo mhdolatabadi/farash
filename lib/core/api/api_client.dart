@@ -1,21 +1,21 @@
-import 'package:farash/features/calendar_connections/calendar_connections.dart';
-import 'package:farash/features/habits/habits_controller.dart';
-import 'package:farash/core/offline/offline_read_cache.dart';
-import 'package:farash/features/search/search.dart';
-import 'package:farash/features/portability/export_api.dart';
-import 'package:farash/features/scrum/scrum.dart';
-import 'package:farash/features/time_tracking/time_tracking.dart';
+import 'package:menval/features/calendar_connections/calendar_connections.dart';
+import 'package:menval/features/habits/habits_controller.dart';
+import 'package:menval/core/offline/offline_read_cache.dart';
+import 'package:menval/features/search/search.dart';
+import 'package:menval/features/portability/export_api.dart';
+import 'package:menval/features/scrum/scrum.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
 
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:farash/features/progress/progress.dart';
+import 'package:menval/features/progress/progress.dart';
 
 import 'package:http/http.dart' as http;
-import 'package:farash/features/auth/data/auth_models.dart';
-import 'package:farash/features/labels/data/label.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/features/auth/data/auth_models.dart';
+import 'package:menval/features/labels/data/label.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/tasks/data/task.dart';
 
 class ApiException implements Exception {
   const ApiException(this.message, {this.statusCode, this.code});
@@ -204,7 +204,7 @@ abstract interface class SectionsApi {
   );
 }
 
-/// Talks to the Farash API. Feature interfaces are implemented here so that
+/// Talks to the Menval API. Feature interfaces are implemented here so that
 /// one HTTP client serves the whole app.
 class ApiClient
     implements

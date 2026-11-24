@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:farash/core/widgets/app_loading_screen.dart';
+import 'package:menval/core/widgets/app_loading_screen.dart';
 
 /// Shows [child] once the API answers its health check, with a retry screen
 /// while it does not.
@@ -63,7 +63,7 @@ class _ConfigurationRequiredScreen extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Text(
-            'برای اجرای فراش، آدرس سرور را با '
+            'برای اجرای منوال، آدرس سرور را با '
             '--dart-define=API_BASE_URL=https://todo.example.com تنظیم کنید.',
             textAlign: TextAlign.center,
           ),
