@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
 
 /// A wall-clock snapshot, not an authoritative work-time entry or reward.
 class FocusSessionData {
