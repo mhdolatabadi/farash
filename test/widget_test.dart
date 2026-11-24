@@ -178,9 +178,46 @@ void main() {
       expect(refreshAttempts, 1);
       expect(find.byType(DueTasksView), findsOneWidget);
       expect(await saved.readToken(), 'good-token');
-      expect(await refresh.readRefreshToken(), isNull);
+      // A stale refresh must not erase a concurrently rotated credential.
+      expect(await refresh.readRefreshToken(), 'already-rotated');
     },
   );
+
+  testWidgets('another browser tab rotation keeps its newest credentials', (
+    tester,
+  ) async {
+    final saved = MemorySessionStore('old-access');
+    final refresh = MemoryRefreshCredentialStore('old-refresh');
+    final api = ApiClient(
+      Uri.parse('https://todo.example.com'),
+      client: MockClient((request) async {
+        if (request.url.path == '/api/v1/auth/refresh') {
+          // Simulate another tab finishing a successful refresh first.
+          await saved.writeToken('new-access');
+          await refresh.writeRefreshToken('new-refresh');
+          return http.Response('{"error":"invalid_refresh_token"}', 401);
+        }
+        if (request.url.path == '/api/v1/me') {
+          expect(request.headers['Authorization'], 'Bearer new-access');
+          return http.Response(
+            jsonEncode({
+              'user': {'id': 'u1', 'email': 'a@example.com'},
+            }),
+            200,
+          );
+        }
+        return http.Response('{"error":"not_found"}', 404);
+      }),
+    );
+    await tester.pumpWidget(
+      app(sessions: saved, refreshCredentials: refresh, api: api),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DueTasksView), findsOneWidget);
+    expect(await saved.readToken(), 'new-access');
+    expect(await refresh.readRefreshToken(), 'new-refresh');
+  });
 
   testWidgets(
     'a temporary refresh outage keeps the credential when access works',

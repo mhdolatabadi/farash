@@ -136,24 +136,24 @@ class _MenvalAppState extends State<MenvalApp> {
       }
 
       AuthSession session;
-      var rejectedRefresh = false;
       if (refresh != null) {
         try {
           // Refresh first so an expired access token can recover.
           session = await api.refreshSession(refresh);
-        } on ApiException catch (error) {
-          if (token == null) rethrow;
-          rejectedRefresh =
-              error.isUnauthorized && error.code == 'invalid_refresh_token';
-          // This is safe only when the server verifies the old access token,
-          // or the existing account-scoped offline cache contains its identity.
-          // A 401 from /me must not fall back to another account's data.
-          await api.activateOfflineSession(token);
-          final user = await api.me(token);
-          session = AuthSession(token: token, user: user);
-          // The rejected refresh token must not block every subsequent boot.
-          // It will be replaced by a successful explicit login when needed.
-          // Only clear it after verified access-token recovery below.
+        } on ApiException {
+          // A second browser tab may already have rotated both credentials
+          // in shared secure storage. Re-read the access token after the
+          // failure rather than retrying a stale token from this widget.
+          final latestAccess = await _sessionStore.readToken();
+          final fallbackAccess = latestAccess ?? token;
+          if (fallbackAccess == null) rethrow;
+          // The server must verify this access token, or the existing
+          // account-scoped offline cache must have its saved identity.
+          await api.activateOfflineSession(fallbackAccess);
+          final user = await api.me(fallbackAccess);
+          session = AuthSession(token: fallbackAccess, user: user);
+          // Do not clear the refresh store: another tab may have written
+          // the newly rotated credential while this request was in flight.
         }
       } else {
         await api.activateOfflineSession(token!);
@@ -165,10 +165,6 @@ class _MenvalAppState extends State<MenvalApp> {
       if (session.refreshToken != null) {
         await _refreshStore.writeRefreshToken(session.refreshToken!);
         await _sessionStore.writeToken(session.token);
-      } else if (rejectedRefresh) {
-        // /me independently verified the original access token. Clear only
-        // the definitively rejected refresh; keep it after network failures.
-        await _refreshStore.clearRefreshToken();
       }
       if (!mounted || generation != _sessionEpoch) return;
       await api.rememberAuthenticatedIdentity(session);
