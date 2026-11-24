@@ -14,7 +14,7 @@ const targets = [
   ['web/icons/Icon-192.png', 192],
   ['web/icons/Icon-512.png', 512],
   ['web/favicon.png', 32],
-  ['assets/icon/farash.png', 288],
+  ['assets/icon/menval.png', 288],
 ];
 
 (async () => {
