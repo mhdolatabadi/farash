@@ -1,5 +1,5 @@
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/time_tracking/time_tracking.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
 
 /// Structured server schedule. Dates remain civil ISO keys; selectors are
 /// interpreted by the server in the explicitly stored IANA time zone.

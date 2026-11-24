@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/calendar/date_labels.dart';
-import 'package:farash/features/tasks/data/task.dart';
-import 'package:farash/features/tasks/presentation/due_picker.dart';
-import 'package:farash/features/time_tracking/time_tracking.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/core/calendar/date_labels.dart';
+import 'package:menval/features/tasks/data/task.dart';
+import 'package:menval/features/tasks/presentation/due_picker.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
 import 'scrum.dart';
 
 String _day(DateTime d) =>

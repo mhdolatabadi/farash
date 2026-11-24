@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:farash/features/projects/application/projects_controller.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/projects/presentation/project_messages.dart';
-import 'package:farash/features/projects/presentation/project_sidebar.dart';
+import 'package:menval/features/projects/application/projects_controller.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/projects/presentation/project_messages.dart';
+import 'package:menval/features/projects/presentation/project_sidebar.dart';
 
 /// Archived projects, with restore and delete.
 class ArchivedProjectsScreen extends StatelessWidget {
