@@ -334,10 +334,7 @@ class _MenvalAppState extends State<MenvalApp> {
 }
 
 class _RestoreFailedScreen extends StatelessWidget {
-  const _RestoreFailedScreen({
-    required this.onRetry,
-    required this.onLogin,
-  });
+  const _RestoreFailedScreen({required this.onRetry, required this.onLogin});
 
   final VoidCallback onRetry;
   final VoidCallback onLogin;
