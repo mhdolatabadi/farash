@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/features/progress/weekly_challenge.dart';
+import 'package:menval/features/progress/weekly_challenge.dart';
 
 void main() {
   testWidgets(

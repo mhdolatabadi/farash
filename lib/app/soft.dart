@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/palette.dart';
+import 'package:menval/app/palette.dart';
 
 /// The soft surfaces of the main destinations: tiles that rise off the
 /// ground and wells sunk into it. Each also carries a hairline, so an edge
@@ -9,10 +9,10 @@ abstract final class Soft {
 
   /// The ground the main destinations are painted on.
   static Color ground(BuildContext context) =>
-      FarashPaletteColors.of(context).softGround;
+      MenvalPaletteColors.of(context).softGround;
 
   static List<BoxShadow> raised(BuildContext context, {double depth = 5}) {
-    final p = FarashPaletteColors.of(context);
+    final p = MenvalPaletteColors.of(context);
     return [
       BoxShadow(
         color: p.softShade,
@@ -30,7 +30,7 @@ abstract final class Soft {
   /// A well's flat form, for slivers that cannot carry [SoftWell]'s inner
   /// shadows: a touch darker than the ground, with the hairline.
   static BoxDecoration wellDecoration(BuildContext context) {
-    final p = FarashPaletteColors.of(context);
+    final p = MenvalPaletteColors.of(context);
     return BoxDecoration(
       color: Color.lerp(p.softGround, p.softShade, 0.22),
       borderRadius: BorderRadius.circular(tileRadius),
@@ -110,7 +110,7 @@ class SoftWell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final p = FarashPaletteColors.of(context);
+    final p = MenvalPaletteColors.of(context);
     return CustomPaint(
       foregroundPainter: _InsetShadow(
         light: p.softLight,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/spacing.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/search/search.dart';
+import 'package:menval/app/spacing.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/search/search.dart';
 
 /// The color a saved filter is drawn in, from its `#rrggbb`.
 Color filterSwatch(String hex) => Color(

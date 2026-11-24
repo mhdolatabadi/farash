@@ -1,4 +1,4 @@
-# Farash coding agents: roles, authorization and WIP
+# Menval coding agents: roles, authorization and WIP
 
 This repository has four scoped Copilot cloud agent profiles under `.github/agents/`: `farash-ux`, `farash-offline`, `farash-android` and `farash-qa`. These Markdown files are **instructions**, not running processes or proof of agent authorization. Agents begin coding only after repository access is enabled and an authorized user starts a session/assigns a task to one. GitHub rejected Copilot issue assignment during the 2026-11-21 setup with HTTP 422/403, so do not claim autonomous execution until that is resolved.
 

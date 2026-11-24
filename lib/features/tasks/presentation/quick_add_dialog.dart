@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/features/tasks/application/quick_capture.dart';
-import 'package:farash/features/tasks/data/quick_parse.dart';
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/features/tasks/application/quick_capture.dart';
+import 'package:menval/features/tasks/data/quick_parse.dart';
+import 'package:menval/features/tasks/data/task.dart';
 
 class QuickAddDialog extends StatefulWidget {
   const QuickAddDialog({

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/tasks/presentation/project_tasks_view.dart';
-import 'package:farash/features/tasks/presentation/task_tile.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/tasks/presentation/project_tasks_view.dart';
+import 'package:menval/features/tasks/presentation/task_tile.dart';
 
 import 'support/fake_sections_api.dart';
 import 'support/fake_tasks_api.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/tasks/data/task.dart';
 
 /// The tasks of one project. Changes show at once and roll back when the API
 /// refuses them.

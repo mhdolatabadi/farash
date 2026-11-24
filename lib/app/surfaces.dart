@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/soft.dart';
+import 'package:menval/app/soft.dart';
 
 /// The app's mark: a check in a rounded square of the primary color.
-class FarashMark extends StatelessWidget {
-  const FarashMark({super.key, this.size = 28});
+class MenvalMark extends StatelessWidget {
+  const MenvalMark({super.key, this.size = 28});
   final double size;
   @override
   Widget build(BuildContext context) {

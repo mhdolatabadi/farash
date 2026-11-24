@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:farash/app/surfaces.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/auth/data/auth_models.dart';
+import 'package:menval/app/surfaces.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/auth/data/auth_models.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({
@@ -67,7 +67,7 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final title = _registerMode ? 'ساخت حساب فراش' : 'ورود به فراش';
+    final title = _registerMode ? 'ساخت حساب منوال' : 'ورود به منوال';
 
     return Scaffold(
       body: SafeArea(
@@ -86,7 +86,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Center(child: FarashMark(size: 48)),
+                          const Center(child: MenvalMark(size: 48)),
                           const SizedBox(height: 16),
                           Text(
                             title,

@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 /// Every color the app's look depends on, for one brightness. Swapping a
 /// palette restyles the whole app without touching widgets.
 @immutable
-class FarashColors {
-  const FarashColors({
+class MenvalColors {
+  const MenvalColors({
     required this.primary,
     required this.onPrimary,
     required this.primaryContainer,
@@ -66,24 +66,24 @@ class FarashColors {
 }
 
 @immutable
-class FarashPalette {
-  const FarashPalette({
+class MenvalPalette {
+  const MenvalPalette({
     required this.name,
     required this.light,
     required this.dark,
   });
 
   final String name;
-  final FarashColors light;
-  final FarashColors dark;
+  final MenvalColors light;
+  final MenvalColors dark;
 
-  FarashColors of(Brightness brightness) =>
+  MenvalColors of(Brightness brightness) =>
       brightness == Brightness.dark ? dark : light;
 
   /// White and teal by day; near-black and lime by night.
-  static const calm = FarashPalette(
+  static const calm = MenvalPalette(
     name: 'calm',
-    light: FarashColors(
+    light: MenvalColors(
       primary: Color(0xFF0E7490),
       onPrimary: Colors.white,
       primaryContainer: Color(0xFFD9EEF2),
@@ -110,7 +110,7 @@ class FarashPalette {
       softLight: Color(0xFFFFFFFF),
       softShade: Color(0xFFC9D0D7),
     ),
-    dark: FarashColors(
+    dark: MenvalColors(
       primary: Color(0xFFC8F25A),
       onPrimary: Color(0xFF0F1115),
       primaryContainer: Color(0xFF2E3A14),
@@ -141,20 +141,20 @@ class FarashPalette {
 }
 
 /// Hands the palette's extra colors, such as priorities, to widgets.
-class FarashPaletteColors extends ThemeExtension<FarashPaletteColors> {
-  const FarashPaletteColors(this.colors);
+class MenvalPaletteColors extends ThemeExtension<MenvalPaletteColors> {
+  const MenvalPaletteColors(this.colors);
 
-  final FarashColors colors;
+  final MenvalColors colors;
 
-  static FarashColors of(BuildContext context) =>
-      Theme.of(context).extension<FarashPaletteColors>()?.colors ??
-      FarashPalette.calm.of(Theme.of(context).brightness);
-
-  @override
-  FarashPaletteColors copyWith({FarashColors? colors}) =>
-      FarashPaletteColors(colors ?? this.colors);
+  static MenvalColors of(BuildContext context) =>
+      Theme.of(context).extension<MenvalPaletteColors>()?.colors ??
+      MenvalPalette.calm.of(Theme.of(context).brightness);
 
   @override
-  FarashPaletteColors lerp(FarashPaletteColors? other, double t) =>
+  MenvalPaletteColors copyWith({MenvalColors? colors}) =>
+      MenvalPaletteColors(colors ?? this.colors);
+
+  @override
+  MenvalPaletteColors lerp(MenvalPaletteColors? other, double t) =>
       t < 0.5 || other == null ? this : other;
 }

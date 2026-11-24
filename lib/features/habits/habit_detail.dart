@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/spacing.dart';
-import 'package:farash/app/soft.dart';
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/features/habits/habit.dart';
-import 'package:farash/features/habits/habit_charts.dart';
-import 'package:farash/features/habits/habit_editor.dart';
-import 'package:farash/features/habits/habit_stats.dart';
-import 'package:farash/features/habits/habits_controller.dart';
-import 'package:farash/features/habits/habits_view.dart';
+import 'package:menval/app/spacing.dart';
+import 'package:menval/app/soft.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/features/habits/habit.dart';
+import 'package:menval/features/habits/habit_charts.dart';
+import 'package:menval/features/habits/habit_editor.dart';
+import 'package:menval/features/habits/habit_stats.dart';
+import 'package:menval/features/habits/habits_controller.dart';
+import 'package:menval/features/habits/habits_view.dart';
 
 enum _Action { archive, delete }
 

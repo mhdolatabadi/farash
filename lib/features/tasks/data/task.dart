@@ -1,6 +1,6 @@
-import 'package:farash/features/tasks/data/task_dates.dart';
+import 'package:menval/features/tasks/data/task_dates.dart';
 
-export 'package:farash/features/tasks/data/task_dates.dart';
+export 'package:menval/features/tasks/data/task_dates.dart';
 
 /// A task, as the API returns it.
 class Task {

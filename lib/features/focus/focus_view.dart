@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/soft.dart';
-import 'package:farash/app/spacing.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/features/focus/focus_controller.dart';
+import 'package:menval/app/soft.dart';
+import 'package:menval/app/spacing.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/features/focus/focus_controller.dart';
 
 class FocusView extends StatefulWidget {
   const FocusView({

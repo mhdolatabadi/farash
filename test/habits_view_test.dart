@@ -6,17 +6,17 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/app/app_theme.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/habits/habit.dart';
-import 'package:farash/features/habits/habit_detail.dart';
-import 'package:farash/features/habits/habit_editor.dart';
-import 'package:farash/features/habits/habits_controller.dart';
-import 'package:farash/features/habits/habits_view.dart';
+import 'package:menval/app/app_theme.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/habits/habit.dart';
+import 'package:menval/features/habits/habit_detail.dart';
+import 'package:menval/features/habits/habit_editor.dart';
+import 'package:menval/features/habits/habits_controller.dart';
+import 'package:menval/features/habits/habits_view.dart';
 
-import 'package:farash/features/home/home_screen.dart';
-import 'package:farash/features/projects/application/projects_controller.dart';
-import 'package:farash/features/projects/data/project.dart';
+import 'package:menval/features/home/home_screen.dart';
+import 'package:menval/features/projects/application/projects_controller.dart';
+import 'package:menval/features/projects/data/project.dart';
 
 import 'support/fake_habits_api.dart';
 import 'support/fake_projects_api.dart';
@@ -101,7 +101,7 @@ Future<HabitsController> pump(
         locale: const Locale('fa'),
         supportedLocales: const [Locale('fa')],
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
-        theme: theme ?? FarashTheme.light(),
+        theme: theme ?? MenvalTheme.light(),
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.linear(textScale),
@@ -187,7 +187,7 @@ void main() {
         locale: const Locale('fa'),
         supportedLocales: const [Locale('fa')],
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
-        theme: FarashTheme.light(),
+        theme: MenvalTheme.light(),
         home: HomeScreen(
           email: 'demo@example.com',
           projects: projects,
@@ -300,7 +300,7 @@ void main() {
         tester,
         api,
         size: layout.$2,
-        theme: layout.$3 ? FarashTheme.dark() : FarashTheme.light(),
+        theme: layout.$3 ? MenvalTheme.dark() : MenvalTheme.light(),
         textScale: layout.$4,
         captureKey: captureKey,
       );

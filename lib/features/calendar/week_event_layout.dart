@@ -1,5 +1,5 @@
-import 'package:farash/core/calendar/date_labels.dart';
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/core/calendar/date_labels.dart';
+import 'package:menval/features/tasks/data/task.dart';
 
 /// A positioned portion of a timed task in one calendar day.
 class WeekEventPlacement {

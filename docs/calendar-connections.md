@@ -12,11 +12,11 @@ Use provider-neutral connection/calendar/event identifiers internally; never exp
 
 Use a server-brokered Google web-server authorization-code flow for both clients. The API owns the confidential OAuth client and token exchange. Web opens Google's consent page; Android opens the system browser and returns through a verified HTTPS App Link. Do not embed a web view, provider secret or refresh token in Flutter. This is not the desktop loopback flow.
 
-Request only `calendar.calendarlist.readonly` and `calendar.events.readonly` (full URI prefix `https://www.googleapis.com/auth/`). Explain that Google grants access at account scope, while Farash fetches only calendars the user selects. Request offline access for background refresh; do not repeatedly force consent to obtain a refresh token. Missing refresh credentials produce a recoverable reconnect state, not a falsely connected background-sync state. Do not overwrite an existing refresh token when a successful refresh omits one. [OAuth] [Scopes]
+Request only `calendar.calendarlist.readonly` and `calendar.events.readonly` (full URI prefix `https://www.googleapis.com/auth/`). Explain that Google grants access at account scope, while Menval fetches only calendars the user selects. Request offline access for background refresh; do not repeatedly force consent to obtain a refresh token. Missing refresh credentials produce a recoverable reconnect state, not a falsely connected background-sync state. Do not overwrite an existing refresh token when a successful refresh omits one. [OAuth] [Scopes]
 
-Farash requirements:
+Menval requirements:
 
-- Start is authenticated and rate-limited. Generate 256-bit random, single-use state; persist its hash, owner, expiry (10 minutes), selected client and a fixed return destination. Bind it to a browser correlation cookie (`Secure`, `HttpOnly`, `SameSite=Lax`) on the broker origin. Android first opens a one-use broker start ticket so this cookie can be set without sending the Farash bearer token in a URL.
+- Start is authenticated and rate-limited. Generate 256-bit random, single-use state; persist its hash, owner, expiry (10 minutes), selected client and a fixed return destination. Bind it to a browser correlation cookie (`Secure`, `HttpOnly`, `SameSite=Lax`) on the broker origin. Android first opens a one-use broker start ticket so this cookie can be set without sending the Menval bearer token in a URL.
 - Use S256 PKCE when supported by the selected provider/client flow; keep the verifier server-side and erase it after exchange. The Google web-client PKCE capability must be proved by a sandbox callback test before release; state/cookie validation is mandatory regardless. Never substitute a desktop OAuth client for Android.
 - Callback checks state, correlation, expiry and provider before atomically consuming the attempt. Reject replay, denied consent, missing required scopes and unknown owner. Never take owner IDs or arbitrary return URLs from callback input.
 - Success redirects to a fixed Web route or verified Android App Link carrying an opaque, short-lived completion identifier only. The authenticated app fetches status; no tokens, provider code or calendar data pass through the handoff. Browser cancellation/process death can resume status from the account connection screen.
@@ -27,7 +27,7 @@ Proposed configuration is disabled by default: `CALENDAR_GOOGLE_ENABLED`, client
 
 ## Proposed API and storage
 
-All routes except the provider callback require Farash authentication. Every connection/calendar/event query is owner-scoped; missing and foreign identifiers return 404. Responses use opaque Farash IDs. Tokens and provider sync cursors never enter client responses or account JSON exports.
+All routes except the provider callback require Menval authentication. Every connection/calendar/event query is owner-scoped; missing and foreign identifiers return 404. Responses use opaque Menval IDs. Tokens and provider sync cursors never enter client responses or account JSON exports.
 
 | Route | Proposed behavior |
 | --- | --- |
@@ -43,18 +43,18 @@ All routes except the provider callback require Farash authentication. Every con
 
 Proposed additive tables (migration number reserved only at implementation): owner-scoped `calendar_connections` (provider, encrypted credentials, generation, status); `connected_calendars` (provider ID, selection, time zone, sync cursor); `calendar_event_resources` (master/exception, provider event ID and etag); `calendar_event_windows` (completed bounded instances); short-lived authorization attempts and refresh jobs. Uniqueness is per connection + calendar + provider event ID. Do not deduplicate separate calendars/accounts by `iCalUID` or event title.
 
-Disconnect takes effect locally even if the provider is unreachable: fence first, then erase local data. Remote revocation may be reported unsuccessful, with a Google account-permissions link; do not retain credentials indefinitely to retry. A late callback/worker must not resurrect a deleted connection. Deselection removes cached events for that calendar and cancels its work. Account deletion cascades local provider data. Other Farash users never inherit access merely because the Google calendar is shared.
+Disconnect takes effect locally even if the provider is unreachable: fence first, then erase local data. Remote revocation may be reported unsuccessful, with a Google account-permissions link; do not retain credentials indefinitely to retry. A late callback/worker must not resurrect a deleted connection. Deselection removes cached events for that calendar and cancels its work. Account deletion cascades local provider data. Other Menval users never inherit access merely because the Google calendar is shared.
 
 ## Event and refresh semantics
 
-Provider dates and instants remain canonical. Jalali and Persian-digit conversion is display-only. All-day start/end stay date-only with exclusive end; never convert them through UTC midnight. Timed blocks preserve offsets and IANA zones; rendering follows the user's selected display zone. Recurring instances retain their original-start identity even when moved. Cancelled exceptions suppress only that instance; cancelled masters invalidate all their rendered windows. Permission-restricted/missing titles display a generic busy label; fetch no attendees, conferencing, attachments or descriptions in this first overlay. Provider recurrence is not recalculated with Farash's task recurrence engine. [Events] [Recurring]
+Provider dates and instants remain canonical. Jalali and Persian-digit conversion is display-only. All-day start/end stay date-only with exclusive end; never convert them through UTC midnight. Timed blocks preserve offsets and IANA zones; rendering follows the user's selected display zone. Recurring instances retain their original-start identity even when moved. Cancelled exceptions suppress only that instance; cancelled masters invalidate all their rendered windows. Permission-restricted/missing titles display a generic busy label; fetch no attendees, conferencing, attachments or descriptions in this first overlay. Provider recurrence is not recalculated with Menval's task recurrence engine. [Events] [Recurring]
 
 Use two separate caches:
 
 1. **Change detection:** per-calendar unexpanded masters/exceptions with `singleEvents=false`, deletion handling and consistent parameters. Consume all pages and publish the next sync token only after the complete transaction/checkpoint; an empty page does not imply completion. Google forbids time-window filters with a sync token. On token expiry (410), invalidate that calendar's event store/cursor and rebuild; do not clear unrelated task data. [Sync] [List]
 2. **Rendered windows:** fetch provider-expanded `singleEvents=true` results for a bounded view range, independent of the change cursor. Initial window is today minus 30 through plus 60 days; each requested range is at most 93 days. A complete fresh window replaces its prior generation atomically. Change detection invalidates affected windows; changing a master invalidates all retained windows for that calendar. Do not expand infinite recurring masters locally. [List]
 
-Farash bounds: at most 5 connections/account, 20 selected calendars/connection, 500 results/page, 20 provider pages/job, 100,000 stored resource rows/connection and 10,000 instances/window. Jobs checkpoint safely and yield after 30 seconds. A cap produces an explicit incomplete/limit state; no new sync cursor or partial complete-window flag. Retain at most 8 windows/calendar for 7 days. Poll active selected calendars no more often than every 5 minutes; manual refresh is coalesced and limited to once/minute/connection. These are initial product limits, not Google quota claims.
+Menval bounds: at most 5 connections/account, 20 selected calendars/connection, 500 results/page, 20 provider pages/job, 100,000 stored resource rows/connection and 10,000 instances/window. Jobs checkpoint safely and yield after 30 seconds. A cap produces an explicit incomplete/limit state; no new sync cursor or partial complete-window flag. Retain at most 8 windows/calendar for 7 days. Poll active selected calendars no more often than every 5 minutes; manual refresh is coalesced and limited to once/minute/connection. These are initial product limits, not Google quota claims.
 
 One refresh lease per calendar/generation prevents overlapping jobs. Retry transient errors and quota/rate-limit reasons with bounded exponential backoff and jitter, respecting retry hints. Do not retry permanent validation errors blindly. Attempt one credential refresh after invalid access credentials; revoked/invalid refresh authorization becomes `reconnect_required`, stops jobs and hides event details. Provider permission loss removes that calendar's cached data. Old completed data during network failure is explicitly marked stale, never presented as newly refreshed. [Errors]
 
@@ -72,7 +72,7 @@ Before enabling production: real provider consent and revocation smoke test, no-
 
 ## Official references
 
-Checked 2026-10-23. Provider facts above link to these sources; limits, routes and storage are Farash design decisions.
+Checked 2026-10-23. Provider facts above link to these sources; limits, routes and storage are Menval design decisions.
 
 [OAuth]: https://developers.google.com/identity/protocols/oauth2/web-server
 [Scopes]: https://developers.google.com/workspace/calendar/api/auth

@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/soft.dart';
-import 'package:farash/app/spacing.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/core/widgets/hover_reveal.dart';
-import 'package:farash/features/labels/application/labels_controller.dart';
-import 'package:farash/features/labels/data/label.dart';
-import 'package:farash/features/labels/presentation/label_widgets.dart';
-import 'package:farash/features/search/filter_editor.dart';
-import 'package:farash/features/search/search.dart';
-import 'package:farash/features/projects/application/projects_controller.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/projects/presentation/project_editor.dart';
-import 'package:farash/features/projects/presentation/project_messages.dart';
-import 'package:farash/features/tasks/presentation/due_tasks_view.dart';
+import 'package:menval/app/soft.dart';
+import 'package:menval/app/spacing.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/core/widgets/hover_reveal.dart';
+import 'package:menval/features/labels/application/labels_controller.dart';
+import 'package:menval/features/labels/data/label.dart';
+import 'package:menval/features/labels/presentation/label_widgets.dart';
+import 'package:menval/features/search/filter_editor.dart';
+import 'package:menval/features/search/search.dart';
+import 'package:menval/features/projects/application/projects_controller.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/projects/presentation/project_editor.dart';
+import 'package:menval/features/projects/presentation/project_messages.dart';
+import 'package:menval/features/tasks/presentation/due_tasks_view.dart';
 
 /// The navigation list: Inbox, the views across projects, favourites,
 /// the project tree and labels, with the progress and the account pinned

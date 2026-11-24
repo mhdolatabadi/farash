@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/calendar/date_labels.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/core/calendar/date_labels.dart';
 
 import 'calendar_browser.dart';
 import 'calendar_connections.dart';
@@ -89,7 +89,7 @@ class _CalendarConnectionsViewState extends State<CalendarConnectionsView>
       builder: (context) => AlertDialog(
         title: const Text('قطع اتصال Google؟'),
         content: const Text(
-          'رویدادها از Google حذف نمی‌شوند. نمایش آن‌ها در فراش متوقف می‌شود.',
+          'رویدادها از Google حذف نمی‌شوند. نمایش آن‌ها در منوال متوقف می‌شود.',
         ),
         actions: [
           TextButton(
@@ -235,7 +235,7 @@ class _CalendarConnectionsViewState extends State<CalendarConnectionsView>
                       (connection == null || connection.needsReconnect)) ...[
                     const SizedBox(height: 20),
                     const Text(
-                      'در پایان تأیید مرورگر، یک کد موقت نمایش داده می‌شود. آن را فقط در همین حساب فراش وارد کنید. کد پس از ۱۰ دقیقه منقضی می‌شود.',
+                      'در پایان تأیید مرورگر، یک کد موقت نمایش داده می‌شود. آن را فقط در همین حساب منوال وارد کنید. کد پس از ۱۰ دقیقه منقضی می‌شود.',
                     ),
                     const SizedBox(height: 12),
                     TextField(

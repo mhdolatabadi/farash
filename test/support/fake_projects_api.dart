@@ -1,5 +1,5 @@
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/projects/data/project.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/projects/data/project.dart';
 
 /// Projects in memory, behaving like the API: the list includes archived
 /// projects, the Inbox is protected and deleting a parent moves its

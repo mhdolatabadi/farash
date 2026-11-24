@@ -1,6 +1,6 @@
-import 'package:farash/features/habits/reminders/reminder_plan.dart';
-import 'package:farash/features/habits/reminders/task_due_reminders.dart';
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/features/habits/reminders/reminder_plan.dart';
+import 'package:menval/features/habits/reminders/task_due_reminders.dart';
+import 'package:menval/features/tasks/data/task.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Task _task(

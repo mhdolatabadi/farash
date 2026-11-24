@@ -2,18 +2,18 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:farash/app/soft.dart';
-import 'package:farash/app/spacing.dart';
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/core/calendar/date_labels.dart';
-import 'package:farash/core/calendar/jalali.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/features/habits/habit.dart';
-import 'package:farash/features/habits/habit_detail.dart';
-import 'package:farash/features/habits/habit_editor.dart';
-import 'package:farash/features/habits/habit_stats.dart';
-import 'package:farash/features/habits/habits_controller.dart';
+import 'package:menval/app/soft.dart';
+import 'package:menval/app/spacing.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/core/calendar/date_labels.dart';
+import 'package:menval/core/calendar/jalali.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/features/habits/habit.dart';
+import 'package:menval/features/habits/habit_detail.dart';
+import 'package:menval/features/habits/habit_editor.dart';
+import 'package:menval/features/habits/habit_stats.dart';
+import 'package:menval/features/habits/habits_controller.dart';
 
 /// Width of one day column; also its touch target.
 const habitCellWidth = 48.0;

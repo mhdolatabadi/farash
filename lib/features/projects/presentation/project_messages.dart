@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:farash/core/api/api_client.dart';
+import 'package:menval/core/api/api_client.dart';
 
 /// Explains a failed project action in Persian.
 String projectErrorMessage(Object error) {

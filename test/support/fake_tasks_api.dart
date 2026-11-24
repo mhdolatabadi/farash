@@ -1,5 +1,5 @@
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/tasks/data/task.dart';
 
 /// Tasks in memory, behaving like the API: soft delete with restore,
 /// completed tasks hidden unless asked for, order by sort_order, and

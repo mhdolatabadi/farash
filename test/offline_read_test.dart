@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/core/offline/offline_read_cache.dart';
-import 'package:farash/core/offline/offline_shell.dart';
-import 'package:farash/core/settings/start_view.dart';
-import 'package:farash/core/settings/theme_preferences.dart';
-import 'package:farash/features/auth/data/auth_models.dart';
-import 'package:farash/features/auth/session_store.dart';
-import 'package:farash/main.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/core/offline/offline_read_cache.dart';
+import 'package:menval/core/offline/offline_shell.dart';
+import 'package:menval/core/settings/start_view.dart';
+import 'package:menval/core/settings/theme_preferences.dart';
+import 'package:menval/features/auth/data/auth_models.dart';
+import 'package:menval/features/auth/session_store.dart';
+import 'package:menval/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -353,7 +353,7 @@ void main() {
       );
     }
     await tester.pumpWidget(
-      FarashApp(
+      MenvalApp(
         apiClient: api,
         sessionStore: MemorySessionStore('t'),
         calendarSettings: CalendarSettings(),

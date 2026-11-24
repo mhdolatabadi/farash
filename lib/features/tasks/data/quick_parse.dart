@@ -1,4 +1,4 @@
-import 'package:farash/core/calendar/jalali.dart';
+import 'package:menval/core/calendar/jalali.dart';
 import 'quick_recurrence.dart';
 export 'quick_recurrence.dart';
 

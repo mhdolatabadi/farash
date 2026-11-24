@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/tasks/data/task.dart';
 
 void main() {
   test('health check calls /api/v1/health under the base path', () async {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/motion.dart';
-import 'package:farash/features/projects/application/projects_controller.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/projects/presentation/project_messages.dart';
+import 'package:menval/app/motion.dart';
+import 'package:menval/features/projects/application/projects_controller.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/projects/presentation/project_messages.dart';
 
 /// Opens the editor for a new project (optionally under [parent]) or for
 /// [project]. Returns the created project, if any.

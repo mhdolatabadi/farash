@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:farash/app/app_theme.dart';
-import 'package:farash/core/calendar/time_zone.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/tasks/application/quick_capture.dart';
-import 'package:farash/features/tasks/presentation/quick_add_dialog.dart';
-import 'package:farash/features/time_tracking/time_tracking.dart';
+import 'package:menval/app/app_theme.dart';
+import 'package:menval/core/calendar/time_zone.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/tasks/application/quick_capture.dart';
+import 'package:menval/features/tasks/presentation/quick_add_dialog.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -71,7 +71,7 @@ void main() {
             locale: const Locale('fa'),
             supportedLocales: const [Locale('fa')],
             localizationsDelegates: GlobalMaterialLocalizations.delegates,
-            theme: dark ? FarashTheme.dark() : FarashTheme.light(),
+            theme: dark ? MenvalTheme.dark() : MenvalTheme.light(),
             builder: (context, child) => MediaQuery(
               data: MediaQuery.of(context).copyWith(
                 textScaler: TextScaler.linear(2),

@@ -24,7 +24,7 @@ source ./compose-command.sh
 farash_compose pull api web
 farash_compose up -d --no-deps --wait postgres
 bash ./backup.sh
-# This also removes the obsolete Farash Caddy container from deployments that
+# This also removes the obsolete Menval Caddy container from deployments that
 # predate the shared-proxy integration. It never touches the external proxy.
 farash_compose up -d --no-build --remove-orphans
 docker image prune -f

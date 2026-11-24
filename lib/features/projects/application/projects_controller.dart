@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/projects/data/project.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/projects/data/project.dart';
 
 /// A project with its depth in the tree, for the sidebar.
 class ProjectNode {

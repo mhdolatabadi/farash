@@ -1,6 +1,6 @@
 # Architecture
 
-Farash is a self-hosted to-do and planning app with the same shape as
+Menval is a self-hosted to-do and planning app with the same shape as
 [Nafir](https://github.com/mhdolatabadi/nafir).
 
 ## Components

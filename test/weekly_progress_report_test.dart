@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/features/progress/progress.dart';
-import 'package:farash/features/progress/week_report.dart';
+import 'package:menval/features/progress/progress.dart';
+import 'package:menval/features/progress/week_report.dart';
 
 ProgressWeekReport report(int count, int previous) =>
     ProgressWeekReport.fromJson({

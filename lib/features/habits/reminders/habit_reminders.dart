@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:farash/features/habits/habit.dart';
-import 'package:farash/features/habits/reminders/reminder_plan.dart';
-import 'package:farash/features/habits/reminders/local_reminders.dart';
-import 'package:farash/features/habits/reminders/browser_reminders_stub.dart'
-    if (dart.library.js_interop) 'package:farash/features/habits/reminders/browser_reminders.dart';
+import 'package:menval/features/habits/habit.dart';
+import 'package:menval/features/habits/reminders/reminder_plan.dart';
+import 'package:menval/features/habits/reminders/local_reminders.dart';
+import 'package:menval/features/habits/reminders/browser_reminders_stub.dart'
+    if (dart.library.js_interop) 'package:menval/features/habits/reminders/browser_reminders.dart';
 
 /// Shows each habit's reminders on this device. The habits come from the
 /// server; the notifications, and their text, never leave the device.

@@ -1,16 +1,16 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:farash/core/calendar/time_zone.dart';
-import 'package:farash/features/recurrence/recurrence_panel.dart';
-import 'package:farash/features/recurrence/task_recurrence.dart';
-import 'package:farash/features/tasks/data/task.dart';
-import 'package:farash/features/time_tracking/time_tracking.dart';
+import 'package:menval/core/calendar/time_zone.dart';
+import 'package:menval/features/recurrence/recurrence_panel.dart';
+import 'package:menval/features/recurrence/task_recurrence.dart';
+import 'package:menval/features/tasks/data/task.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:farash/app/app_theme.dart';
+import 'package:menval/app/app_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class RecurrenceFixture implements TimeApi {
@@ -87,7 +87,7 @@ void main() {
         RepaintBoundary(
           key: captureKey,
           child: MaterialApp(
-            theme: FarashTheme.light(),
+            theme: MenvalTheme.light(),
             locale: const Locale('fa'),
             supportedLocales: const [Locale('fa')],
             localizationsDelegates: GlobalMaterialLocalizations.delegates,

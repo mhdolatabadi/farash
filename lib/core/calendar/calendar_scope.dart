@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
 
 /// Hands the calendar settings down the tree and rebuilds what reads them.
 class CalendarScope extends InheritedNotifier<CalendarSettings> {

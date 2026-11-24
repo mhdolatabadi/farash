@@ -1,12 +1,12 @@
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/core/calendar/time_zone.dart';
-import 'package:farash/features/labels/application/labels_controller.dart';
-import 'package:farash/features/labels/data/label.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/recurrence/task_recurrence.dart';
-import 'package:farash/features/tasks/data/quick_parse.dart';
-import 'package:farash/features/tasks/data/task.dart';
-import 'package:farash/features/time_tracking/time_tracking.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/core/calendar/time_zone.dart';
+import 'package:menval/features/labels/application/labels_controller.dart';
+import 'package:menval/features/labels/data/label.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/recurrence/task_recurrence.dart';
+import 'package:menval/features/tasks/data/quick_parse.dart';
+import 'package:menval/features/tasks/data/task.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
 
 /// One capture intent. A confirmed task survives a failed recurrence write;
 /// retry completes only its rule, never creates another confirmed task.

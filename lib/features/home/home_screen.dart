@@ -1,56 +1,56 @@
 import 'dart:async';
 
-import 'package:farash/app/app_configuration.dart';
-import 'package:farash/features/focus/focus_session_storage.dart';
-import 'package:farash/features/calendar/task_calendar_view.dart';
-import 'package:farash/features/calendar_connections/calendar_connections.dart';
-import 'package:farash/features/calendar_connections/calendar_connections_view.dart';
-import 'package:farash/features/habits/habits_controller.dart';
-import 'package:farash/features/habits/habits_view.dart';
-import 'package:farash/features/habits/habit_detail.dart';
-import 'package:farash/features/habits/reminders/habit_reminders.dart';
-import 'package:farash/features/habits/reminders/local_reminders.dart';
-import 'package:farash/features/habits/reminders/task_due_preference.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/features/matrix/matrix.dart';
-import 'package:farash/features/matrix/matrix_view.dart';
-import 'package:farash/features/search/filter_editor.dart';
-import 'package:farash/features/search/search.dart';
-import 'package:farash/features/search/search_view.dart';
-import 'package:farash/features/portability/export_api.dart';
-import 'package:farash/features/portability/export_dialog.dart';
-import 'package:farash/features/scrum/scrum.dart';
-import 'package:farash/features/scrum/scrum_view.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/features/time_tracking/time_tracking.dart';
-import 'package:farash/features/time_tracking/time_tracking_view.dart';
-import 'package:farash/features/tasks/data/task.dart';
-import 'package:farash/app/soft.dart';
-import 'package:farash/app/spacing.dart';
-import 'package:farash/core/widgets/hover_reveal.dart';
-import 'package:farash/app/surfaces.dart';
-import 'package:farash/features/focus/focus_controller.dart';
-import 'package:farash/features/focus/focus_view.dart';
+import 'package:menval/app/app_configuration.dart';
+import 'package:menval/features/focus/focus_session_storage.dart';
+import 'package:menval/features/calendar/task_calendar_view.dart';
+import 'package:menval/features/calendar_connections/calendar_connections.dart';
+import 'package:menval/features/calendar_connections/calendar_connections_view.dart';
+import 'package:menval/features/habits/habits_controller.dart';
+import 'package:menval/features/habits/habits_view.dart';
+import 'package:menval/features/habits/habit_detail.dart';
+import 'package:menval/features/habits/reminders/habit_reminders.dart';
+import 'package:menval/features/habits/reminders/local_reminders.dart';
+import 'package:menval/features/habits/reminders/task_due_preference.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/features/matrix/matrix.dart';
+import 'package:menval/features/matrix/matrix_view.dart';
+import 'package:menval/features/search/filter_editor.dart';
+import 'package:menval/features/search/search.dart';
+import 'package:menval/features/search/search_view.dart';
+import 'package:menval/features/portability/export_api.dart';
+import 'package:menval/features/portability/export_dialog.dart';
+import 'package:menval/features/scrum/scrum.dart';
+import 'package:menval/features/scrum/scrum_view.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
+import 'package:menval/features/time_tracking/time_tracking_view.dart';
+import 'package:menval/features/tasks/data/task.dart';
+import 'package:menval/app/soft.dart';
+import 'package:menval/app/spacing.dart';
+import 'package:menval/core/widgets/hover_reveal.dart';
+import 'package:menval/app/surfaces.dart';
+import 'package:menval/features/focus/focus_controller.dart';
+import 'package:menval/features/focus/focus_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:farash/features/tasks/application/quick_capture.dart';
-import 'package:farash/features/tasks/presentation/quick_add_dialog.dart';
-import 'package:farash/features/progress/progress.dart';
-import 'package:farash/features/progress/progress_card.dart';
-import 'package:farash/core/calendar/time_zone.dart';
-import 'package:farash/app/motion.dart';
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/calendar/calendar_settings_dialog.dart';
-import 'package:farash/core/settings/start_view.dart';
-import 'package:farash/features/labels/application/labels_controller.dart';
-import 'package:farash/features/labels/data/label.dart';
-import 'package:farash/features/projects/application/projects_controller.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/projects/presentation/archived_projects_screen.dart';
-import 'package:farash/features/projects/presentation/project_sidebar.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/tasks/presentation/due_tasks_view.dart';
-import 'package:farash/features/tasks/presentation/project_tasks_view.dart';
+import 'package:menval/features/tasks/application/quick_capture.dart';
+import 'package:menval/features/tasks/presentation/quick_add_dialog.dart';
+import 'package:menval/features/progress/progress.dart';
+import 'package:menval/features/progress/progress_card.dart';
+import 'package:menval/core/calendar/time_zone.dart';
+import 'package:menval/app/motion.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/core/calendar/calendar_settings_dialog.dart';
+import 'package:menval/core/settings/start_view.dart';
+import 'package:menval/features/labels/application/labels_controller.dart';
+import 'package:menval/features/labels/data/label.dart';
+import 'package:menval/features/projects/application/projects_controller.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/projects/presentation/archived_projects_screen.dart';
+import 'package:menval/features/projects/presentation/project_sidebar.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/tasks/presentation/due_tasks_view.dart';
+import 'package:menval/features/tasks/presentation/project_tasks_view.dart';
 
 /// Wide layouts keep the project list on screen; phones use a drawer.
 const sidebarBreakpoint = 840.0;
@@ -1245,7 +1245,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       )
                     : null,
                 appBar: selected == null && view == null && label == null
-                    ? AppBar(title: const Text('فراش'))
+                    ? AppBar(title: const Text('منوال'))
                     : null,
                 drawer: Drawer(
                   backgroundColor: Soft.ground(context),
@@ -1420,10 +1420,10 @@ class _Brand extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const FarashMark(size: 22),
+          const MenvalMark(size: 22),
           const SizedBox(width: Space.sm),
           Text(
-            'فراش',
+            'منوال',
             style: Theme.of(
               context,
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),

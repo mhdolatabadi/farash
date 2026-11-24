@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/palette.dart';
+import 'package:menval/app/palette.dart';
 
-abstract final class FarashTheme {
+abstract final class MenvalTheme {
   /// The palette the app ships with.
-  static const palette = FarashPalette.calm;
+  static const palette = MenvalPalette.calm;
 
   static const _fieldRadius = 12.0;
   static const _tileRadius = 22.0;
 
-  static ThemeData light([FarashPalette palette = FarashTheme.palette]) =>
+  static ThemeData light([MenvalPalette palette = MenvalTheme.palette]) =>
       _build(Brightness.light, palette);
 
-  static ThemeData dark([FarashPalette palette = FarashTheme.palette]) =>
+  static ThemeData dark([MenvalPalette palette = MenvalTheme.palette]) =>
       _build(Brightness.dark, palette);
 
-  static ThemeData _build(Brightness brightness, FarashPalette palette) {
+  static ThemeData _build(Brightness brightness, MenvalPalette palette) {
     final p = palette.of(brightness);
     // Material 3 roles, set explicitly so one accent carries the app and
     // every surface stays neutral.
@@ -66,7 +66,7 @@ abstract final class FarashTheme {
     const stadium = StadiumBorder();
 
     return base.copyWith(
-      extensions: [FarashPaletteColors(p)],
+      extensions: [MenvalPaletteColors(p)],
       scaffoldBackgroundColor: colors.surface,
       navigationBarTheme: NavigationBarThemeData(
         height: 80,

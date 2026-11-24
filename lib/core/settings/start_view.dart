@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
 
 /// Which list opens when the app starts on this device: today (`today`),
 /// the Inbox (`inbox`) or another view across projects, by its name.

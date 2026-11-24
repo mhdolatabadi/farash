@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/app/app_theme.dart';
-import 'package:farash/features/habits/habit.dart';
-import 'package:farash/features/habits/habit_editor.dart';
-import 'package:farash/features/habits/habits_controller.dart';
-import 'package:farash/features/habits/reminders/habit_reminders.dart';
-import 'package:farash/features/habits/reminders/reminder_plan.dart';
+import 'package:menval/app/app_theme.dart';
+import 'package:menval/features/habits/habit.dart';
+import 'package:menval/features/habits/habit_editor.dart';
+import 'package:menval/features/habits/habits_controller.dart';
+import 'package:menval/features/habits/reminders/habit_reminders.dart';
+import 'package:menval/features/habits/reminders/reminder_plan.dart';
 
 import 'support/fake_habits_api.dart';
 
@@ -259,7 +259,7 @@ void main() {
         locale: const Locale('fa'),
         supportedLocales: const [Locale('fa')],
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
-        theme: FarashTheme.light(),
+        theme: MenvalTheme.light(),
         home: HabitEditor(controller: controller, habit: controller.byId('h1')),
       ),
     );
@@ -307,7 +307,7 @@ void main() {
     addTearDown(reminders.dispose);
     await tester.pumpWidget(
       MaterialApp(
-        theme: FarashTheme.light(),
+        theme: MenvalTheme.light(),
         home: HabitEditor(controller: controller),
       ),
     );

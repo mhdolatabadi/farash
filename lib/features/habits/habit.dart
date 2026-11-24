@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:farash/core/calendar/date_labels.dart';
-import 'package:farash/core/text/persian_digits.dart';
+import 'package:menval/core/calendar/date_labels.dart';
+import 'package:menval/core/text/persian_digits.dart';
 
 enum HabitKind { boolean, numeric }
 

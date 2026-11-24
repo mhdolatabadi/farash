@@ -1,16 +1,16 @@
-import 'package:farash/features/time_tracking/time_tracking.dart';
-import 'package:farash/features/time_tracking/time_tracking_view.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
+import 'package:menval/features/time_tracking/time_tracking_view.dart';
 import 'package:flutter/material.dart';
-import 'package:farash/app/motion.dart';
-import 'package:farash/app/spacing.dart';
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/calendar/date_labels.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/features/labels/data/label.dart';
-import 'package:farash/features/labels/presentation/label_widgets.dart';
-import 'package:farash/features/tasks/data/checklist.dart';
-import 'package:farash/features/tasks/data/task.dart';
-import 'package:farash/features/tasks/presentation/priority_color.dart';
+import 'package:menval/app/motion.dart';
+import 'package:menval/app/spacing.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/core/calendar/date_labels.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/features/labels/data/label.dart';
+import 'package:menval/features/labels/presentation/label_widgets.dart';
+import 'package:menval/features/tasks/data/checklist.dart';
+import 'package:menval/features/tasks/data/task.dart';
+import 'package:menval/features/tasks/presentation/priority_color.dart';
 
 /// Indent per subtask level. Five levels stay usable at 320 px.
 const subtaskIndent = 20.0;

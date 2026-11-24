@@ -15,10 +15,10 @@ calendar connection API; merge it with the server implementation before rollout.
   is always available. Web users return to the original tab. Neither return nor
   polling activates credentials. The consenting browser displays a one-use code
   only in the response body, with a ten-minute expiry. The user pastes it into
-  **کد تأیید اتصال** and explicitly submits **ثبت اتصال** using the current Farash
+  **کد تأیید اتصال** and explicitly submits **ثبت اتصال** using the current Menval
   account. The server must match the original owner before consuming the code.
   This prevents a shared authorization ticket from linking a victim's Google
-  account to the ticket creator's Farash account. Code input is memory-only,
+  account to the ticket creator's Menval account. Code input is memory-only,
   obscured, and cleared before submission, on errors/session changes and disposal.
 - Select at most 20 calendars and save the versioned selection. The seven-day
   event list is read-only, with previous/next windows. It never creates tasks or

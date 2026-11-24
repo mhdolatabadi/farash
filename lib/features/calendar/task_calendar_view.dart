@@ -1,17 +1,17 @@
-import 'package:farash/core/calendar/calendar_month.dart';
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/calendar/date_labels.dart';
-import 'package:farash/core/calendar/jalali.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/features/calendar/task_month_view.dart';
-import 'package:farash/features/calendar/week_time_grid.dart';
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/core/calendar/calendar_month.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/core/calendar/date_labels.dart';
+import 'package:menval/core/calendar/jalali.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/features/calendar/task_month_view.dart';
+import 'package:menval/features/calendar/week_time_grid.dart';
+import 'package:menval/features/tasks/data/task.dart';
 import 'package:flutter/material.dart';
 
 typedef CalendarTaskLoader =
     Future<List<Task>> Function(DateTime from, DateTime to);
 
-/// Farash's own task calendar. Calendar providers can be separate overlays.
+/// Menval's own task calendar. Calendar providers can be separate overlays.
 class TaskCalendarView extends StatefulWidget {
   const TaskCalendarView({super.key, required this.loadTasks, this.now});
 

@@ -2,15 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:farash/app/app_configuration.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/core/calendar/time_zone.dart';
-import 'package:farash/features/auth/session_store.dart';
-import 'package:farash/features/habits/habit.dart';
-import 'package:farash/features/habits/reminders/habit_reminders.dart';
-import 'package:farash/features/habits/reminders/reminder_plan.dart';
-import 'package:farash/features/habits/reminders/task_due_reminders.dart';
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/app/app_configuration.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/core/calendar/time_zone.dart';
+import 'package:menval/features/auth/session_store.dart';
+import 'package:menval/features/habits/habit.dart';
+import 'package:menval/features/habits/reminders/habit_reminders.dart';
+import 'package:menval/features/habits/reminders/reminder_plan.dart';
+import 'package:menval/features/habits/reminders/task_due_reminders.dart';
+import 'package:menval/features/tasks/data/task.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/app/app_theme.dart';
-import 'package:farash/app/palette.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/tasks/data/task.dart';
-import 'package:farash/features/tasks/presentation/project_tasks_view.dart';
-import 'package:farash/features/tasks/presentation/task_tile.dart';
+import 'package:menval/app/app_theme.dart';
+import 'package:menval/app/palette.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/tasks/data/task.dart';
+import 'package:menval/features/tasks/presentation/project_tasks_view.dart';
+import 'package:menval/features/tasks/presentation/task_tile.dart';
 
 import 'support/fake_tasks_api.dart';
 
@@ -23,8 +23,8 @@ void main() {
     for (final brightness in Brightness.values) {
       test('text keeps 4.5:1 contrast ($brightness)', () {
         final theme = brightness == Brightness.dark
-            ? FarashTheme.dark()
-            : FarashTheme.light();
+            ? MenvalTheme.dark()
+            : MenvalTheme.light();
         final c = theme.colorScheme;
         for (final (name, fg) in [
           ('onSurface', c.onSurface),
@@ -44,23 +44,23 @@ void main() {
     }
 
     test('the theme reads the calm palette', () {
-      final theme = FarashTheme.light();
+      final theme = MenvalTheme.light();
       expect(theme.colorScheme.primary, const Color(0xFF0E7490));
       expect(theme.colorScheme.surface, const Color(0xFFE9EDF1));
-      expect(FarashTheme.dark().colorScheme.primary, const Color(0xFFC8F25A));
-      expect(FarashTheme.dark().colorScheme.surface, const Color(0xFF16191E));
-      expect(theme.colorScheme.error, FarashPalette.calm.light.overdue);
+      expect(MenvalTheme.dark().colorScheme.primary, const Color(0xFFC8F25A));
+      expect(MenvalTheme.dark().colorScheme.surface, const Color(0xFF16191E));
+      expect(theme.colorScheme.error, MenvalPalette.calm.light.overdue);
       expect(
-        theme.extension<FarashPaletteColors>()!.colors,
-        FarashPalette.calm.light,
+        theme.extension<MenvalPaletteColors>()!.colors,
+        MenvalPalette.calm.light,
       );
     });
 
     for (final brightness in Brightness.values) {
       test('text reads on sheets and selection ($brightness)', () {
         final theme = brightness == Brightness.dark
-            ? FarashTheme.dark()
-            : FarashTheme.light();
+            ? MenvalTheme.dark()
+            : MenvalTheme.light();
         final c = theme.colorScheme;
         for (final sheet in [c.surfaceContainerLow, c.surfaceContainer]) {
           expect(_contrast(c.onSurface, sheet), greaterThanOrEqualTo(4.5));
@@ -74,7 +74,7 @@ void main() {
           greaterThanOrEqualTo(4.5),
         );
         // Priority marks are not text; 3:1 keeps them visible.
-        for (final mark in FarashPalette.calm.of(brightness).priorities) {
+        for (final mark in MenvalPalette.calm.of(brightness).priorities) {
           expect(_contrast(mark, c.surface), greaterThanOrEqualTo(3));
         }
       });
@@ -85,8 +85,8 @@ void main() {
         tester,
       ) async {
         final theme = brightness == Brightness.dark
-            ? FarashTheme.dark()
-            : FarashTheme.light();
+            ? MenvalTheme.dark()
+            : MenvalTheme.light();
         final task = FakeTasksApi().seed(
           'p1',
           'کار فردا',

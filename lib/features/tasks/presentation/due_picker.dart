@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/core/calendar/date_labels.dart';
-import 'package:farash/core/calendar/jalali.dart';
-import 'package:farash/core/calendar/time_zone.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/core/calendar/date_labels.dart';
+import 'package:menval/core/calendar/jalali.dart';
+import 'package:menval/core/calendar/time_zone.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/features/tasks/data/task.dart';
 
 /// Durations offered for a timed due, in minutes.
 const durationChoices = [15, 30, 45, 60, 90, 120, 180, 240];

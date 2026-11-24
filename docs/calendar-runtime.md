@@ -34,7 +34,7 @@ it, redact query strings for the broker start and callback routes.
 
 ## API
 
-All JSON routes require the Farash bearer token and return `Cache-Control: no-store`.
+All JSON routes require the Menval bearer token and return `Cache-Control: no-store`.
 Only the browser ticket entry and Google callback are public.
 
 | Route | Response / behavior |
@@ -56,14 +56,14 @@ contain title, date/dateTime/timeZone start/end, status, calendar_id and read_on
 No descriptions, attendees, attachments, conferencing or private links are fetched.
 All-day end dates remain exclusive; no UTC-midnight conversion is performed.
 Google expands recurring instances for the requested window; cancelled entries are
-excluded. Farash does not reinterpret provider recurrence with task rules.
+excluded. Menval does not reinterpret provider recurrence with task rules.
 
 ## Bounds and failure behavior
 
 One Google connection/account in this slice. Authorization attempts expire after
 10 minutes, are capped at three pending attempts/account and consume ticket/state
 atomically. The browser ticket establishes the correlation cookie without putting a
-Farash bearer token in a URL. Concurrent callbacks/disconnects are fenced by an owner
+Menval bearer token in a URL. Concurrent callbacks/disconnects are fenced by an owner
 epoch; a consumed but late successful callback cannot recreate a disconnected account.
 
 Selection is capped at 20 calendars. Calendar discovery caps at 500 calendars/20

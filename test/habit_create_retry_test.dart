@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/features/habits/habit.dart';
-import 'package:farash/features/habits/habits_controller.dart';
+import 'package:menval/features/habits/habit.dart';
+import 'package:menval/features/habits/habits_controller.dart';
 
 import 'support/fake_habits_api.dart';
 

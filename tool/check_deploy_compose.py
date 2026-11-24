@@ -30,7 +30,7 @@ with tempfile.TemporaryDirectory(prefix="farash exported release ") as temporary
         assert previous["services"][service] == current["services"][service], service
 
     assert current["name"] == "farash"
-    assert "caddy" not in current["services"], "Farash must use the shared front proxy"
+    assert "caddy" not in current["services"], "Menval must use the shared front proxy"
 
     proxy = current["networks"]["proxy"]
     assert proxy["external"] is True

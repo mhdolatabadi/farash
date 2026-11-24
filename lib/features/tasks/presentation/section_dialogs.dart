@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:farash/app/spacing.dart';
-import 'package:farash/app/motion.dart';
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/app/spacing.dart';
+import 'package:menval/app/motion.dart';
+import 'package:menval/features/tasks/data/task.dart';
 
 enum SectionAction { rename, moveUp, moveDown, delete }
 

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/labels/data/label.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/labels/data/label.dart';
 
 /// The signed-in account's labels.
 class LabelsController extends ChangeNotifier {

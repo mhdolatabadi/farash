@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/features/tasks/data/checklist.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/features/tasks/data/checklist.dart';
 
 void main() {
   const description =

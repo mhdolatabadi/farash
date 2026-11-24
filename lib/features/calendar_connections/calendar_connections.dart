@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:farash/core/api/api_client.dart';
+import 'package:menval/core/api/api_client.dart';
 
 abstract interface class CalendarConnectionsApi {
   Future<Map<String, dynamic>> calendarRequest(
@@ -300,7 +300,7 @@ class CalendarConnectionsController extends ChangeNotifier {
     authorization = null;
     notice = data['revoked'] == true
         ? 'اتصال قطع شد و دسترسی Google لغو شد.'
-        : 'اتصال در فراش قطع شد. برای اطمینان، دسترسی فراش را از حساب Google نیز لغو کنید.';
+        : 'اتصال در منوال قطع شد. برای اطمینان، دسترسی منوال را از حساب Google نیز لغو کنید.';
   });
 
   @override

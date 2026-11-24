@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-10-22T00:00:00Z",
-  "title": "Design System: Farash Calm",
+  "title": "Design System: Menval Calm",
   "extensions": {
     "motion": [
       {"name": "standard", "value": "280ms", "purpose": "Shell and row transitions; zero with reduced motion."},

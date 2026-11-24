@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/auth/session_store.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/auth/session_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';

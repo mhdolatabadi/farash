@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/features/habits/reminders/task_due_preference.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/features/habits/reminders/task_due_preference.dart';
 
 void main() {
   test('task due consent is isolated by account and server', () async {
