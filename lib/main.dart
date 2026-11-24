@@ -1,29 +1,29 @@
-import 'package:farash/core/offline/offline_read_cache.dart';
-import 'package:farash/core/offline/offline_shell.dart';
+import 'package:menval/core/offline/offline_read_cache.dart';
+import 'package:menval/core/offline/offline_shell.dart';
 import 'package:flutter/material.dart';
-import 'package:farash/core/settings/start_view.dart';
-import 'package:farash/core/settings/theme_preferences.dart';
+import 'package:menval/core/settings/start_view.dart';
+import 'package:menval/core/settings/theme_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/app/app_configuration.dart';
-import 'package:farash/app/app_theme.dart';
-import 'package:farash/app/backend_gate.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/core/widgets/app_loading_screen.dart';
-import 'package:farash/features/auth/auth_screen.dart';
-import 'package:farash/features/auth/data/auth_models.dart';
-import 'package:farash/features/auth/session_store.dart';
-import 'package:farash/features/habits/reminders/habit_reminders.dart';
-import 'package:farash/features/home/home_screen.dart';
-import 'package:farash/features/projects/application/projects_controller.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/app/app_configuration.dart';
+import 'package:menval/app/app_theme.dart';
+import 'package:menval/app/backend_gate.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/core/widgets/app_loading_screen.dart';
+import 'package:menval/features/auth/auth_screen.dart';
+import 'package:menval/features/auth/data/auth_models.dart';
+import 'package:menval/features/auth/session_store.dart';
+import 'package:menval/features/habits/reminders/habit_reminders.dart';
+import 'package:menval/features/home/home_screen.dart';
+import 'package:menval/features/projects/application/projects_controller.dart';
 
 void main() {
-  runApp(const FarashApp());
+  runApp(const MenvalApp());
 }
 
-class FarashApp extends StatefulWidget {
-  const FarashApp({
+class MenvalApp extends StatefulWidget {
+  const MenvalApp({
     super.key,
     this.healthCheck,
     this.apiClient,
@@ -59,12 +59,12 @@ class FarashApp extends StatefulWidget {
   final HabitReminders? habitReminders;
 
   @override
-  State<FarashApp> createState() => _FarashAppState();
+  State<MenvalApp> createState() => _MenvalAppState();
 }
 
 enum _SessionState { restoring, restoreFailed, ready }
 
-class _FarashAppState extends State<FarashApp> {
+class _MenvalAppState extends State<MenvalApp> {
   late final ApiClient? _apiClient =
       widget.apiClient ??
       (AppConfiguration.apiBaseUri == null
@@ -275,7 +275,7 @@ class _FarashAppState extends State<FarashApp> {
 
   Widget _buildApp() {
     return MaterialApp(
-      title: 'Farash',
+      title: 'Menval',
       builder: (context, child) => ThemePreferencesScope(
         preferences: _appearance,
         child: CalendarScope(settings: _calendar, child: child!),
@@ -287,8 +287,8 @@ class _FarashAppState extends State<FarashApp> {
       supportedLocales: const [Locale('fa')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       themeMode: _appearance.mode,
-      theme: FarashTheme.light(),
-      darkTheme: FarashTheme.dark(),
+      theme: MenvalTheme.light(),
+      darkTheme: MenvalTheme.dark(),
       home: BackendGate(
         healthCheck: widget.healthCheck != null || _apiClient != null
             ? _checkBackend

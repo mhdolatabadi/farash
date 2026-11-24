@@ -1,13 +1,14 @@
 # AGENTS.md
 
-This file defines the standing rules for every contributor and coding agent working on Farash.
+This file defines the standing rules for every contributor and coding agent working on Menval.
 
 ## Product Identity And Scope
 
-- The product name is **Farash** (فراش). Do not introduce other names in code, copy, package names, artifacts, infrastructure, or documentation.
-- Farash is a self-hosted, cross-platform to-do and planning app inspired by Todoist and TickTick.
+- The product name is **Menval** (منوال). Do not introduce other names in code, copy, package names, artifacts, infrastructure, or documentation.
+- Menval is a self-hosted, cross-platform to-do and planning app inspired by Todoist and TickTick.
 - The supported first clients are **Web/PWA and Android**. Do not add, restore, build, test, or maintain iOS-specific code or workflows unless the owner explicitly changes this rule.
-- The Android application ID is `ir.mhdolatabadi.farash`.
+- The Android application ID is `ir.mhdolatabadi.farash` (legacy compatibility identifier; preserve installed app upgrades).
+- Product-facing text and identity must say **Menval** (منوال). Do not rename existing storage keys, Google OAuth routes, deployment environment variables, database identifiers, GitHub/GHCR names or Android app IDs without a separate migration.
 - Keep Web and Android behavior consistent where platform capabilities allow it.
 - User-facing copy is Persian-first and the primary layout direction is RTL. English support comes through settings.
 
@@ -22,7 +23,7 @@ This file defines the standing rules for every contributor and coding agent work
 
 ## UI And UX
 
-- Farash should feel calm, fast, and serious enough for daily planning. Avoid noisy dashboards and marketing-style screens inside the app.
+- Menval should feel calm, fast, and serious enough for daily planning. Avoid noisy dashboards and marketing-style screens inside the app.
 - Mobile layouts need generous breathing room, safe-area awareness, and touch targets of at least 48 logical pixels.
 - Floating controls, bottom sheets, snackbars, notification prompts, browser chrome, and system insets must never cover the last task or a primary action.
 - Persian, Arabic, and Latin task text must wrap or truncate gracefully without overflow.

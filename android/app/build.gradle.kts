@@ -14,6 +14,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
+    // Existing app ID and namespace are kept to preserve installed users during the rebrand.
     namespace = "ir.mhdolatabadi.farash"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion

@@ -1,6 +1,6 @@
-# Farash
+# Menval
 
-فراش — a self-hosted, cross-platform to-do and planning app in the spirit of
+منوال — a self-hosted, cross-platform to-do and planning app in the spirit of
 Todoist and TickTick: projects, sections, subtasks, due dates in the Jalali
 calendar, recurring tasks, labels, filters, reminders, board and calendar
 views, an Eisenhower matrix, Pomodoro and habits. The roadmap lives in

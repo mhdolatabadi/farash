@@ -1,4 +1,4 @@
-# Farash
+# Menval
 <!-- impeccable:product-schema 1 -->
 
 ## Platform
@@ -14,10 +14,13 @@ sections, priorities, completion, undo and project navigation. Roadmap features
 must not appear as working controls before implementation.
 
 ## Brand Commitments
-فراش / Farash, Persian RTL, bundled Vazirmatn. The owner rejected every themed
+منوال / Menval, Persian RTL, bundled Vazirmatn. The owner rejected every themed
 look (glass, dew, garden, weaving rug) and chose a plain Material 3 app: white
 and teal by day, near-black and lime by night, flat lists, no illustration or
 metaphor. Habits follow Loop Habit Tracker's UI closely. See DESIGN.md.
+
+## Migration boundary
+The Android application ID, persisted storage keys and deployment identifiers retain the legacy `farash` spelling for compatibility. See `docs/rebrand-menval.md`.
 
 ## Product Principles
 Fast one-field capture; private by default; reversible completion/deletion;

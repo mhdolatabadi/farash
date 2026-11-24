@@ -2,12 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/features/tasks/presentation/due_tasks_view.dart';
+import 'package:menval/features/tasks/presentation/due_tasks_view.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/auth/session_store.dart';
-import 'package:farash/main.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/auth/session_store.dart';
+import 'package:menval/main.dart';
 
 import 'support/fake_projects_api.dart';
 import 'support/fake_sections_api.dart';
@@ -42,7 +42,7 @@ void main() {
     Future<void> Function()? healthCheck,
     SessionStore? sessions,
     ApiClient? api,
-  }) => FarashApp(
+  }) => MenvalApp(
     healthCheck: healthCheck ?? () async {},
     apiClient: api ?? fakeServer(),
     sessionStore: sessions ?? MemorySessionStore(),
@@ -55,7 +55,7 @@ void main() {
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
 
-    expect(find.text('ورود به فراش'), findsOneWidget);
+    expect(find.text('ورود به منوال'), findsOneWidget);
   });
 
   testWidgets('the password can be shown and hidden', (tester) async {
@@ -96,7 +96,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(calls, 2);
-    expect(find.text('ورود به فراش'), findsOneWidget);
+    expect(find.text('ورود به منوال'), findsOneWidget);
   });
 
   testWidgets('signing in saves the token and opens today', (tester) async {
@@ -155,7 +155,7 @@ void main() {
     await tester.tap(find.text('خروج'));
     await tester.pumpAndSettle();
 
-    expect(find.text('ورود به فراش'), findsOneWidget);
+    expect(find.text('ورود به منوال'), findsOneWidget);
     expect(await sessions.readToken(), isNull);
   });
 
@@ -163,7 +163,7 @@ void main() {
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
 
-    final context = tester.element(find.text('ورود به فراش'));
+    final context = tester.element(find.text('ورود به منوال'));
     expect(Directionality.of(context), TextDirection.rtl);
   });
   testWidgets('rejects Persian passwords exceeding 72 UTF-8 bytes', (
@@ -182,7 +182,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('رمز عبور باید بین ۸ تا ۷۲ بایت باشد.'), findsOneWidget);
-    expect(find.text('ورود به فراش'), findsOneWidget);
+    expect(find.text('ورود به منوال'), findsOneWidget);
   });
 
   testWidgets('accepts a valid eight-byte Persian password locally', (
@@ -201,6 +201,6 @@ void main() {
 
     expect(find.text('رمز عبور باید بین ۸ تا ۷۲ بایت باشد.'), findsNothing);
     // The fake server rejects the credentials, not client-side validation.
-    expect(find.text('ورود به فراش'), findsOneWidget);
+    expect(find.text('ورود به منوال'), findsOneWidget);
   });
 }
