@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/features/home/home_screen.dart';
-import 'package:farash/features/projects/application/projects_controller.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/search/filter_editor.dart';
-import 'package:farash/features/search/search.dart';
-import 'package:farash/features/search/search_view.dart';
-import 'package:farash/features/tasks/data/task.dart';
+import 'package:menval/features/home/home_screen.dart';
+import 'package:menval/features/projects/application/projects_controller.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/search/filter_editor.dart';
+import 'package:menval/features/search/search.dart';
+import 'package:menval/features/search/search_view.dart';
+import 'package:menval/features/tasks/data/task.dart';
 
 import 'support/fake_projects_api.dart';
 import 'support/fake_tasks_api.dart';

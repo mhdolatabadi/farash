@@ -1,5 +1,5 @@
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/habits/habits_controller.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/habits/habits_controller.dart';
 
 /// Habits in memory, answering like `/api/v1/habits`.
 class FakeHabitsApi implements HabitsApi {

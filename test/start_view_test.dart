@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/core/calendar/calendar_scope.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/core/calendar/date_labels.dart';
-import 'package:farash/core/settings/start_view.dart';
-import 'package:farash/features/home/home_screen.dart';
-import 'package:farash/features/projects/application/projects_controller.dart';
-import 'package:farash/features/tasks/data/task.dart';
-import 'package:farash/features/tasks/presentation/due_tasks_view.dart';
+import 'package:menval/core/calendar/calendar_scope.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/core/calendar/date_labels.dart';
+import 'package:menval/core/settings/start_view.dart';
+import 'package:menval/features/home/home_screen.dart';
+import 'package:menval/features/projects/application/projects_controller.dart';
+import 'package:menval/features/tasks/data/task.dart';
+import 'package:menval/features/tasks/presentation/due_tasks_view.dart';
 
 import 'support/fake_projects_api.dart';
 import 'support/fake_tasks_api.dart';
