@@ -6,13 +6,13 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/app/app_theme.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/search/search.dart';
-import 'package:farash/features/search/search_view.dart';
-import 'package:farash/features/tasks/presentation/task_detail_sheet.dart';
-import 'package:farash/features/labels/application/labels_controller.dart';
+import 'package:menval/app/app_theme.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/search/search.dart';
+import 'package:menval/features/search/search_view.dart';
+import 'package:menval/features/tasks/presentation/task_detail_sheet.dart';
+import 'package:menval/features/labels/application/labels_controller.dart';
 
 import 'support/fake_tasks_api.dart';
 import 'support/fake_sections_api.dart';
@@ -98,7 +98,7 @@ void main() {
             locale: const Locale('fa'),
             supportedLocales: const [Locale('fa')],
             localizationsDelegates: GlobalMaterialLocalizations.delegates,
-            theme: variant.$3 ? FarashTheme.dark() : FarashTheme.light(),
+            theme: variant.$3 ? MenvalTheme.dark() : MenvalTheme.light(),
             builder: (context, child) => MediaQuery(
               data: MediaQuery.of(context).copyWith(
                 textScaler: TextScaler.linear(variant.$4),

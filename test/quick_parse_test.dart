@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/core/calendar/jalali.dart';
-import 'package:farash/features/tasks/data/quick_parse.dart';
+import 'package:menval/core/calendar/jalali.dart';
+import 'package:menval/features/tasks/data/quick_parse.dart';
 
 void main() {
   // A Wednesday afternoon.

@@ -5,10 +5,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/app/app_theme.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/scrum/scrum.dart';
-import 'package:farash/features/scrum/scrum_view.dart';
+import 'package:menval/app/app_theme.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/scrum/scrum.dart';
+import 'package:menval/features/scrum/scrum_view.dart';
 import 'support/fake_scrum_api.dart';
 
 const personal = Project(id: 'personal', name: 'پروژهٔ شخصی', color: '#98503D');
@@ -43,7 +43,7 @@ void main() {
             locale: const Locale('fa'),
             supportedLocales: const [Locale('fa')],
             localizationsDelegates: GlobalMaterialLocalizations.delegates,
-            theme: variant.$3 ? FarashTheme.dark() : FarashTheme.light(),
+            theme: variant.$3 ? MenvalTheme.dark() : MenvalTheme.light(),
             builder: (context, child) => MediaQuery(
               data: MediaQuery.of(context).copyWith(
                 textScaler: TextScaler.linear(variant.$4),

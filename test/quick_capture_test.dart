@@ -1,14 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/core/calendar/time_zone.dart';
-import 'package:farash/features/labels/application/labels_controller.dart';
-import 'package:farash/features/labels/data/label.dart';
-import 'package:farash/features/tasks/data/task.dart';
-import 'package:farash/features/projects/data/project.dart';
-import 'package:farash/features/tasks/application/quick_capture.dart';
-import 'package:farash/features/tasks/data/quick_parse.dart';
-import 'package:farash/features/time_tracking/time_tracking.dart';
+import 'package:menval/core/calendar/time_zone.dart';
+import 'package:menval/features/labels/application/labels_controller.dart';
+import 'package:menval/features/labels/data/label.dart';
+import 'package:menval/features/tasks/data/task.dart';
+import 'package:menval/features/projects/data/project.dart';
+import 'package:menval/features/tasks/application/quick_capture.dart';
+import 'package:menval/features/tasks/data/quick_parse.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
 import 'support/fake_tasks_api.dart';
 import 'support/fake_sections_api.dart';
 import 'support/fake_labels_api.dart';
