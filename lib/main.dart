@@ -118,49 +118,78 @@ class _MenvalAppState extends State<MenvalApp> {
     super.dispose();
   }
 
-  /// Restores the saved sign-in without erasing recoverable credentials; a network
-  /// failure keeps it so the user can retry without signing in again.
+  /// Restore an existing account without throwing away credentials after a
+  /// transient network error or a stale single-use refresh token. An old
+  /// access token may still be valid after a competing browser tab rotates
+  /// the refresh credential.
   Future<void> _restoreSession() async {
     final generation = ++_sessionEpoch;
     final api = _apiClient;
     setState(() => _state = _SessionState.restoring);
-    final token = await _sessionStore.readToken();
-    final refresh = await _refreshStore.readRefreshToken();
-    if (!mounted || generation != _sessionEpoch) return;
-    if (api == null || (token == null && refresh == null)) {
-      setState(() => _state = _SessionState.ready);
-      return;
-    }
     try {
+      final token = await _sessionStore.readToken();
+      final refresh = await _refreshStore.readRefreshToken();
+      if (!mounted || generation != _sessionEpoch) return;
+      if (api == null || (token == null && refresh == null)) {
+        setState(() => _state = _SessionState.ready);
+        return;
+      }
+
+      AuthSession session;
       if (refresh != null) {
-        // Refresh first so even an expired access token can recover.
-        final renewed = await api.refreshSession(refresh);
-        if (!mounted || generation != _sessionEpoch) return;
-        await _refreshStore.writeRefreshToken(renewed.refreshToken!);
-        await _sessionStore.writeToken(renewed.token);
-        if (!mounted || generation != _sessionEpoch) return;
-        await api.rememberAuthenticatedIdentity(renewed);
-        if (!mounted || generation != _sessionEpoch) return;
-        setState(() {
-          _session = renewed;
-          _state = _SessionState.ready;
-        });
+        try {
+          // Refresh first so an expired access token can recover.
+          session = await api.refreshSession(refresh);
+        } on ApiException {
+          // A second browser tab may already have rotated both credentials
+          // in shared secure storage. Re-read the access token after the
+          // failure rather than retrying a stale token from this widget.
+          final latestAccess = await _sessionStore.readToken();
+          final fallbackAccess = latestAccess ?? token;
+          if (fallbackAccess == null) rethrow;
+          // The server must verify this access token, or the existing
+          // account-scoped offline cache must have its saved identity.
+          await api.activateOfflineSession(fallbackAccess);
+          final user = await api.me(fallbackAccess);
+          session = AuthSession(token: fallbackAccess, user: user);
+          // Do not clear the refresh store: another tab may have written
+          // the newly rotated credential while this request was in flight.
+        }
       } else {
-        // Existing installations migrate on their next login.
         await api.activateOfflineSession(token!);
         final user = await api.me(token);
-        if (!mounted || generation != _sessionEpoch) return;
-        setState(() {
-          _session = AuthSession(token: token, user: user);
-          _state = _SessionState.ready;
-        });
+        session = AuthSession(token: token, user: user);
       }
+      if (!mounted || generation != _sessionEpoch) return;
+
+      if (session.refreshToken != null) {
+        await _refreshStore.writeRefreshToken(session.refreshToken!);
+        await _sessionStore.writeToken(session.token);
+      }
+      if (!mounted || generation != _sessionEpoch) return;
+      await api.rememberAuthenticatedIdentity(session);
+      if (!mounted || generation != _sessionEpoch) return;
+      setState(() {
+        _session = session;
+        _state = _SessionState.ready;
+      });
     } on ApiException {
       if (!mounted || generation != _sessionEpoch) return;
-      // Failed verification must never erase a recoverable credential.
-      // Keep the account locked until a successful retry or explicit logout.
+      setState(() => _state = _SessionState.restoreFailed);
+    } on Exception {
+      if (!mounted || generation != _sessionEpoch) return;
       setState(() => _state = _SessionState.restoreFailed);
     }
+  }
+
+  void _showLoginInsteadOfRetry() {
+    ++_sessionEpoch;
+    // Never erase saved credentials or offline data on this action. Logging
+    // in successfully will overwrite the stale tokens with a valid session.
+    setState(() {
+      _session = null;
+      _state = _SessionState.ready;
+    });
   }
 
   Future<void> _setSession(AuthSession session) async {
@@ -245,6 +274,7 @@ class _MenvalAppState extends State<MenvalApp> {
       _SessionState.restoring => const AppLoadingScreen(),
       _SessionState.restoreFailed => _RestoreFailedScreen(
         onRetry: _restoreSession,
+        onLogin: _showLoginInsteadOfRetry,
       ),
       _SessionState.ready when session == null => AuthScreen(
         apiClient: api,
@@ -300,9 +330,10 @@ class _MenvalAppState extends State<MenvalApp> {
 }
 
 class _RestoreFailedScreen extends StatelessWidget {
-  const _RestoreFailedScreen({required this.onRetry});
+  const _RestoreFailedScreen({required this.onRetry, required this.onLogin});
 
   final VoidCallback onRetry;
+  final VoidCallback onLogin;
 
   @override
   Widget build(BuildContext context) {
@@ -314,11 +345,22 @@ class _RestoreFailedScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text('بازیابی ورود قبلی ممکن نشد'),
+              const SizedBox(height: 12),
+              const Text(
+                'ممکن است نشست قبلی منقضی شده یا ارتباط با سرور قطع شده باشد. '
+                'می‌توانید دوباره تلاش کنید یا بدون پاک‌کردن اطلاعات مرورگر وارد حساب خود شوید.',
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
                 label: const Text('تلاش دوباره'),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: onLogin,
+                child: const Text('ورود دوباره به حساب'),
               ),
             ],
           ),
