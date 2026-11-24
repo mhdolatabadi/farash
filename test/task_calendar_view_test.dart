@@ -82,9 +82,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    final overflow = find.byKey(
-      const ValueKey('week-all-day-more-2026-11-23'),
-    );
+    final overflow = find.byKey(const ValueKey('week-all-day-more-2026-11-23'));
     expect(overflow, findsOneWidget);
     expect(tester.getSize(overflow).height, greaterThanOrEqualTo(48));
     await tester.tap(overflow);
