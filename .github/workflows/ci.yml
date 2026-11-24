@@ -190,7 +190,22 @@ jobs:
       - name: Test native capture navigation
         run: python3 -m unittest discover -s tool -p test_capture_android.py
       - name: Build offline UI review fixture
-        run: flutter build apk --debug --target tool/scrum_preview.dart
+        shell: bash
+        run: |
+          # Maven Central / Gradle Plugin Portal occasionally rate-limit hosted
+          # runners with HTTP 429. Retry only that transient failure, with a
+          # bounded backoff; never mask compiler or configuration failures.
+          for attempt in 1 2 3; do
+            if flutter build apk --debug --target tool/scrum_preview.dart > "$RUNNER_TEMP/android-review-build.log" 2>&1; then
+              cat "$RUNNER_TEMP/android-review-build.log"
+              exit 0
+            fi
+            cat "$RUNNER_TEMP/android-review-build.log"
+            if ! grep -Eq 'Received status code 429|HTTP (response code )?429|Too Many Requests' "$RUNNER_TEMP/android-review-build.log" || [[ "$attempt" == 3 ]]; then
+              exit 1
+            fi
+            sleep $((attempt * 30))
+          done
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
