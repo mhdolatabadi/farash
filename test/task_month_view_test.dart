@@ -8,10 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  Widget app(Future<List<Task>> Function(DateTime, DateTime) loader) =>
+  Widget app(
+    Future<List<Task>> Function(DateTime, DateTime) loader, {
+    CalendarSettings? settings,
+  }) =>
       MaterialApp(
         home: CalendarScope(
-          settings: CalendarSettings(),
+          settings: settings ?? CalendarSettings(),
           child: Scaffold(
             body: TaskMonthView(
               loadTasks: loader,
@@ -80,6 +83,38 @@ void main() {
       expect(find.text('کار حساب جدید'), findsOneWidget);
     },
   );
+
+  testWidgets('changing week start reloads month bounds and ignores old data', (
+    tester,
+  ) async {
+    final settings = CalendarSettings();
+    final first = Completer<List<Task>>();
+    final ranges = <DateTime>[];
+    var calls = 0;
+    Future<List<Task>> loader(DateTime from, DateTime to) {
+      ranges.add(from);
+      if (++calls == 1) return first.future;
+      return Future.value([]);
+    }
+
+    await tester.pumpWidget(app(loader, settings: settings));
+    expect(calls, 1);
+    await settings.setWeekStart(DateTime.monday);
+    await tester.pumpAndSettle();
+    expect(calls, 2);
+    expect(ranges[0], isNot(ranges[1]));
+
+    first.complete([
+      Task(
+        id: 'stale',
+        projectId: 'inbox',
+        title: 'کار قدیمی',
+        due: TaskDue.onDay(DateTime(2026, 11, 23)),
+      ),
+    ]);
+    await tester.pumpAndSettle();
+    expect(find.text('کار قدیمی'), findsNothing);
+  });
 
   testWidgets('month shows retry after loading error', (tester) async {
     var calls = 0;
