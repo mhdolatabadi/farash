@@ -1,13 +1,13 @@
-# Retina execution contract for Farash
+# Retina execution contract for Menval
 
-This document adapts the Retina ecosystem's **agent orchestration standards** to Farash. Retina is the overall multi-layer agent ecosystem, not a single task runner. This is an execution contract, **not evidence that agents are running**.
+This document adapts the Retina ecosystem's **agent orchestration standards** to Menval. Retina is the overall multi-layer agent ecosystem, not a single task runner. This is an execution contract, **not evidence that agents are running**.
 
 ## Runtime and authority
 
 - **Execution:** ChatGPT performs repository analysis, scoped edits, PR creation and CI diagnosis through connected tools. No OpenCode or OpenRouter dependency is required. Tool access is not evidence of autonomous background workers or parallel ChatGPT agents.
 - **Control plane:** GitHub issues, branches, PRs and Actions provide durable checkpoints. Record work item, execution lane, issue, branch, head SHA, attempts, check results, artifact references, approvals and terminal state. Do not claim an independent orchestrator exists until one is implemented. Never infer completion from a narrative.
 - **Token observability only (v1):** record usage by Retina / orchestrator / issue / agent / stage / model only where provider telemetry is actually available. ChatGPT token usage may not be exposed by connected tools; mark unavailable, never invent measurements or optimize models automatically.
-- **GitHub:** Farash's existing issue/PR/Actions delivery system. Do not claim Jira or Gerrit integration exists here. If the deployment provides Jira and Gerrit, map work items to Jira and use the two-stage Gerrit review process; otherwise GitHub issues and PR reviews are the explicit fallback.
+- **GitHub:** Menval's existing issue/PR/Actions delivery system. Do not claim Jira or Gerrit integration exists here. If the deployment provides Jira and Gerrit, map work items to Jira and use the two-stage Gerrit review process; otherwise GitHub issues and PR reviews are the explicit fallback.
 - **No unauthorized execution:** do not claim background ChatGPT workers, GitHub Coding Agents or any parallel agents were launched without a real supported invocation and a durable run identifier. Lanes are coordination boundaries, not proof of simultaneous execution.
 
 ## Parallel workstreams
