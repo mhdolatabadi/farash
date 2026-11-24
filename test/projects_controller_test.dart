@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/projects/application/projects_controller.dart';
-import 'package:farash/features/projects/data/project.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/projects/application/projects_controller.dart';
+import 'package:menval/features/projects/data/project.dart';
 
 import 'support/fake_projects_api.dart';
 
