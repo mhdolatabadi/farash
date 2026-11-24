@@ -38,6 +38,10 @@ func parseSyncCursor(owner, cursor string) (int64, error) {
 	if cursor == "" {
 		return 0, nil
 	}
+	// Reject oversized untrusted cursors before splitting or decoding them.
+	if len(cursor) > 128 {
+		return 0, ErrInvalidSync
+	}
 	parts := strings.Split(cursor, ".")
 	if len(parts) != 3 || parts[0] != "v1" || parts[1] != base64.RawURLEncoding.EncodeToString([]byte(owner)) {
 		return 0, ErrInvalidSync

@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/mhdolatabadi/farash/server/internal/store"
@@ -17,7 +18,7 @@ func TestSyncAPIAuthValidationAndPrivacy(t *testing.T) {
 	if code := api.do("POST", "/api/v1/sync", "", map[string]any{}, nil); code != 401 {
 		t.Fatal("auth", code)
 	}
-	for _, body := range []any{map[string]any{"cursor": "wrong"}, map[string]any{"limit": -1}, map[string]any{"limit": 501}, map[string]any{"owner_id": "forged"}, `{} {}`} {
+	for _, body := range []any{map[string]any{"cursor": "wrong"}, map[string]any{"cursor": strings.Repeat("x", 1024*1024)}, map[string]any{"limit": -1}, map[string]any{"limit": 501}, map[string]any{"owner_id": "forged"}, `{} {}`} {
 		if code := api.do("POST", "/api/v1/sync", alice, body, nil); code != 400 {
 			t.Fatal("validation", code, body)
 		}
