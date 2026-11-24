@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:farash/features/habits/habit.dart';
+import 'package:menval/features/habits/habit.dart';
 
 /// What a day shows, following Loop Habit Tracker's entry values.
 enum DayCheck {

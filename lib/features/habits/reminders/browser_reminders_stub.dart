@@ -1,4 +1,4 @@
-import 'package:farash/features/habits/reminders/habit_reminders.dart';
+import 'package:menval/features/habits/reminders/habit_reminders.dart';
 
 /// Stands in for the web scheduler on platforms without `dart:js_interop`.
 abstract class BrowserHabitReminders extends HabitReminders {

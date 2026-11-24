@@ -1,12 +1,12 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:farash/core/calendar/calendar_settings.dart';
-import 'package:farash/core/calendar/date_labels.dart';
-import 'package:farash/core/calendar/jalali.dart';
-import 'package:farash/core/text/persian_digits.dart';
-import 'package:farash/features/habits/habit.dart';
-import 'package:farash/features/habits/habit_stats.dart';
+import 'package:menval/core/calendar/calendar_settings.dart';
+import 'package:menval/core/calendar/date_labels.dart';
+import 'package:menval/core/calendar/jalali.dart';
+import 'package:menval/core/text/persian_digits.dart';
+import 'package:menval/features/habits/habit.dart';
+import 'package:menval/features/habits/habit_stats.dart';
 
 enum Bucket { day, week, month, quarter, year }
 

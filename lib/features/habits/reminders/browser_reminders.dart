@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
-import 'package:farash/features/habits/habit.dart';
-import 'package:farash/features/habits/reminders/habit_reminders.dart';
-import 'package:farash/features/habits/reminders/reminder_plan.dart';
+import 'package:menval/features/habits/habit.dart';
+import 'package:menval/features/habits/reminders/habit_reminders.dart';
+import 'package:menval/features/habits/reminders/reminder_plan.dart';
 import 'package:web/web.dart' as web;
 
 /// Web reminders: browsers cannot schedule a notification, so they show

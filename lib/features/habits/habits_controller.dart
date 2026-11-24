@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:farash/features/habits/habit.dart';
-import 'package:farash/features/habits/habit_stats.dart';
-import 'package:farash/features/habits/reminders/habit_reminders.dart';
+import 'package:menval/features/habits/habit.dart';
+import 'package:menval/features/habits/habit_stats.dart';
+import 'package:menval/features/habits/reminders/habit_reminders.dart';
 
 abstract interface class HabitsApi {
   Future<Map<String, dynamic>> habitRequest(
