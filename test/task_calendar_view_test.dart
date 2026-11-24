@@ -62,6 +62,38 @@ void main() {
     expect(find.text('بستن'), findsOneWidget);
   });
 
+  testWidgets('all-day overflow exposes hidden tasks on narrow RTL screens', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 740);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      app(
+        (from, to) async => [
+          for (var i = 0; i < 3; i++)
+            Task(
+              id: 'all-day-$i',
+              projectId: 'inbox',
+              title: 'کار تمام‌روز $i',
+              due: TaskDue.onDay(DateTime(2026, 11, 23)),
+            ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    final overflow = find.byKey(const ValueKey('week-all-day-more-2026-11-23'));
+    expect(overflow, findsOneWidget);
+    expect(tester.getSize(overflow).height, greaterThanOrEqualTo(48));
+    await tester.tap(overflow);
+    await tester.pumpAndSettle();
+    expect(find.text('کار تمام‌روز 2'), findsOneWidget);
+    await tester.tap(find.text('کار تمام‌روز 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('بستن'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('overnight blocks announce their own visible time segments', (
     tester,
   ) async {
