@@ -126,7 +126,9 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                               borderRadius: BorderRadius.circular(14),
                               onTap: () => widget.onSelectDay(day),
                               child: Container(
-                                constraints: const BoxConstraints(minHeight: 48),
+                                constraints: const BoxConstraints(
+                                  minHeight: 48,
+                                ),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
                                   vertical: 6,
