@@ -1,6 +1,6 @@
-# Surface brief: the Farash app (all screens)
+# Surface brief: the Menval app (all screens)
 
-> Archived: superseded by DESIGN.md ("Farash Calm", #116). Kept for history.
+> Archived: superseded by DESIGN.md ("Menval Calm", #116). Kept for history.
 
 ## Revision for #49: «شبنم», dew on glass (current)
 After the structural pass below, the owner said it still wasn't beautiful
