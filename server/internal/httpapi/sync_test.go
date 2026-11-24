@@ -61,3 +61,58 @@ func TestSyncFailureDoesNotLeakDetails(t *testing.T) {
 		t.Fatal(code, failure)
 	}
 }
+
+func TestSyncAPIPaginationHasNoGapsOrDuplicates(t *testing.T) {
+	api := newDBAPI(t)
+	alice := api.register("sync-pages-a@example.com")
+	bob := api.register("sync-pages-b@example.com")
+	expected := map[string]bool{}
+	for _, title := range []string{"One", "Two", "Three", "Four", "Five"} {
+		task := api.createTask(alice, "", title)
+		expected[task.ID] = true
+	}
+	api.createTask(bob, "", "Not Alice's task")
+	cursor := ""
+	seen := map[string]bool{}
+	pages := 0
+	for {
+		var page store.SyncPage
+		if code := api.do("POST", "/api/v1/sync", alice, map[string]any{"cursor": cursor, "limit": 2}, &page); code != 200 {
+			t.Fatalf("page %d: status %d", pages, code)
+		}
+		pages++
+		if pages > 10 {
+			t.Fatal("pagination did not terminate")
+		}
+		if len(page.Changes) > 2 {
+			t.Fatalf("page exceeded requested limit: %d", len(page.Changes))
+		}
+		for _, change := range page.Changes {
+			key := change.Entity + ":" + change.ID + ":" + change.Revision
+			if seen[key] {
+				t.Fatalf("duplicate change %s", key)
+			}
+			seen[key] = true
+			if change.Entity == "tasks" {
+				if !expected[change.ID] {
+					t.Fatalf("foreign or unexpected task %s", change.ID)
+				}
+				delete(expected, change.ID)
+			}
+		}
+		if page.HasMore && (page.Cursor == cursor || len(page.Changes) == 0) {
+			t.Fatal("non-progressing cursor", page)
+		}
+		cursor = page.Cursor
+		if !page.HasMore {
+			break
+		}
+	}
+	if len(expected) != 0 {
+		t.Fatalf("missing tasks across pages: %v", expected)
+	}
+	var idle store.SyncPage
+	if code := api.do("POST", "/api/v1/sync", alice, map[string]any{"cursor": cursor, "limit": 2}, &idle); code != 200 || len(idle.Changes) != 0 || idle.HasMore {
+		t.Fatalf("idle sync after final page: %d %+v", code, idle)
+	}
+}
