@@ -5,7 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('Menval branding is consistent across installable clients', () {
     final pubspec = File('pubspec.yaml').readAsStringSync();
-    final manifest = File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
+    final manifest = File(
+      'android/app/src/main/AndroidManifest.xml',
+    ).readAsStringSync();
     final web = File('web/index.html').readAsStringSync();
     final pwa = File('web/manifest.json').readAsStringSync();
     final gradle = File('android/app/build.gradle.kts').readAsStringSync();
