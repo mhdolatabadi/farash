@@ -11,18 +11,17 @@ void main() {
   Widget app(
     Future<List<Task>> Function(DateTime, DateTime) loader, {
     CalendarSettings? settings,
-  }) =>
-      MaterialApp(
-        home: CalendarScope(
-          settings: settings ?? CalendarSettings(),
-          child: Scaffold(
-            body: TaskMonthView(
-              loadTasks: loader,
-              now: () => DateTime(2026, 11, 23),
-            ),
-          ),
+  }) => MaterialApp(
+    home: CalendarScope(
+      settings: settings ?? CalendarSettings(),
+      child: Scaffold(
+        body: TaskMonthView(
+          loadTasks: loader,
+          now: () => DateTime(2026, 11, 23),
         ),
-      );
+      ),
+    ),
+  );
 
   testWidgets('month displays tasks and navigates months', (tester) async {
     await tester.pumpWidget(
