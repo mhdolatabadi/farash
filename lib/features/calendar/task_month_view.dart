@@ -23,11 +23,17 @@ class _TaskMonthViewState extends State<TaskMonthView> {
   Object? _error;
   bool _loading = true;
   int _generation = 0;
+  DateTime? _loadedGridStart;
+  DateTime? _loadedGridEnd;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_generation == 0) _load();
+    final month = monthContaining(_selected, CalendarScope.of(context));
+    if (_loadedGridStart != month.gridStart ||
+        _loadedGridEnd != month.gridEnd) {
+      _load();
+    }
   }
 
   @override
@@ -47,6 +53,8 @@ class _TaskMonthViewState extends State<TaskMonthView> {
   Future<void> _load() async {
     final generation = ++_generation;
     final month = monthContaining(_selected, CalendarScope.of(context));
+    _loadedGridStart = month.gridStart;
+    _loadedGridEnd = month.gridEnd;
     setState(() {
       _loading = true;
       _error = null;
