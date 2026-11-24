@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/features/habits/habit.dart';
-import 'package:farash/features/habits/habit_stats.dart';
+import 'package:menval/features/habits/habit.dart';
+import 'package:menval/features/habits/habit_stats.dart';
 
 const today = 20000;
 

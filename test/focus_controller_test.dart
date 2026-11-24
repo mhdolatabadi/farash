@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:farash/features/focus/focus_controller.dart';
+import 'package:menval/features/focus/focus_controller.dart';
 
 void main() {
   test(

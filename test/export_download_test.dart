@@ -5,12 +5,12 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:farash/app/app_theme.dart';
+import 'package:menval/app/app_theme.dart';
 
-import 'package:farash/core/api/api_client.dart';
-import 'package:farash/features/portability/export_api.dart';
-import 'package:farash/features/portability/export_dialog.dart';
-import 'package:farash/features/portability/export_saver.dart';
+import 'package:menval/core/api/api_client.dart';
+import 'package:menval/features/portability/export_api.dart';
+import 'package:menval/features/portability/export_dialog.dart';
+import 'package:menval/features/portability/export_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -112,7 +112,7 @@ void main() {
               locale: const Locale('fa'),
               supportedLocales: const [Locale('fa')],
               localizationsDelegates: GlobalMaterialLocalizations.delegates,
-              theme: variant.$3 ? FarashTheme.dark() : FarashTheme.light(),
+              theme: variant.$3 ? MenvalTheme.dark() : MenvalTheme.light(),
               builder: (context, child) => MediaQuery(
                 data: MediaQuery.of(
                   context,
