@@ -64,7 +64,7 @@ def capture_narrow(name):
 
 def clear_launcher_anr(xml=None):
     # API 35's launcher may ANR during font/density changes on hosted runners.
-    # Only handle this known system launcher dialog; never hide a Farash ANR.
+    # Only handle this known system launcher dialog; never hide a Menval ANR.
     if xml is None:
         xml = window_xml()
     root = ET.fromstring(xml)

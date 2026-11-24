@@ -1,5 +1,5 @@
 ---
-name: Farash Calm
+name: Menval Calm
 description: A calm Material 3 task app on a soft ground; one accent, raised tiles, dense lists in wells, no ornament.
 colors:
   day-primary: '#0E7490'
@@ -42,15 +42,15 @@ rounded: {field: 12, surface: 16, tile: 22, sheet: 28, button: stadium}
 spacing: {xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, gutter: 16, keyline: 56}
 ---
 
-# Design System: Farash Calm
+# Design System: Menval Calm
 
 ## Overview
 
-Farash is an Operate surface: people open it to capture and finish work, so a category-fluent user should trust every screen immediately. Material 3 governs structure, navigation and components; the brand lives only in color, Persian typography and precise spacing. There is no illustration, metaphor, reward art or ornament. The owner chose this after rejecting the glass, garden and weaving looks; the comparison board is at https://claude.ai/artifact/DtsjUw4u7MrgYgF15jpevY (row A for structure and the light theme, row C for the dark colors). In October 2026 the owner added a soft bento layer to the three main destinations, blending three Dribbble directions: bento tiles, soft UI and dense Linear-style rows (issue #146; options at https://claude.ai/artifact/XwCrpTtJBADVWoYgHUvzYv).
+Menval is an Operate surface: people open it to capture and finish work, so a category-fluent user should trust every screen immediately. Material 3 governs structure, navigation and components; the brand lives only in color, Persian typography and precise spacing. There is no illustration, metaphor, reward art or ornament. The owner chose this after rejecting the glass, garden and weaving looks; the comparison board is at https://claude.ai/artifact/DtsjUw4u7MrgYgF15jpevY (row A for structure and the light theme, row C for the dark colors). In October 2026 the owner added a soft bento layer to the three main destinations, blending three Dribbble directions: bento tiles, soft UI and dense Linear-style rows (issue #146; options at https://claude.ai/artifact/XwCrpTtJBADVWoYgHUvzYv).
 
 ## Colors
 
-One accent per theme. By day: white surfaces, ink text, teal `#0E7490` for the primary action, today, the running timer and selection. By night: near-black `#0F1115`, light ink, and lime `#C8F25A` with dark text on it. Tomorrow uses the blue accent; overdue dates and errors use the error role, and nothing else does. Priorities keep the familiar red, orange, blue and grey per theme (`FarashPalette.calm`). Every color reaches widgets through `ColorScheme` roles or `FarashPaletteColors`; widgets never hard-code hex values.
+One accent per theme. By day: white surfaces, ink text, teal `#0E7490` for the primary action, today, the running timer and selection. By night: near-black `#0F1115`, light ink, and lime `#C8F25A` with dark text on it. Tomorrow uses the blue accent; overdue dates and errors use the error role, and nothing else does. Priorities keep the familiar red, orange, blue and grey per theme (`MenvalPalette.calm`). Every color reaches widgets through `ColorScheme` roles or `MenvalPaletteColors`; widgets never hard-code hex values.
 
 ## Typography
 
