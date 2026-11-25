@@ -405,20 +405,24 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                    Text(
-                      habitWeekdays[dayDate(today - i).weekday - 1],
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: i == 0 ? theme.colorScheme.onSurface : muted,
-                        fontWeight: i == 0 ? FontWeight.w700 : FontWeight.w500,
+                      Text(
+                        habitWeekdays[dayDate(today - i).weekday - 1],
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: i == 0 ? theme.colorScheme.onSurface : muted,
+                          fontWeight: i == 0
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
                       ),
-                    ),
-                    Text(
-                      persianDigits(dayOfMonth(today - i, settings)),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: i == 0 ? theme.colorScheme.onSurface : muted,
-                        fontWeight: i == 0 ? FontWeight.w700 : FontWeight.w500,
+                      Text(
+                        persianDigits(dayOfMonth(today - i, settings)),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: i == 0 ? theme.colorScheme.onSurface : muted,
+                          fontWeight: i == 0
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
                       ),
-                    ),
                     ],
                   ),
                 ),
