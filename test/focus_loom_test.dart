@@ -1,4 +1,8 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:menval/app/app_theme.dart';
 import 'package:menval/features/focus/focus_controller.dart';
@@ -12,6 +16,59 @@ void main() {
     expect(const FocusLoom(progress: .1).stages, 1);
     expect(const FocusLoom(progress: .51).stages, 6);
     expect(const FocusLoom(progress: 1).stages, 10);
+  });
+
+  testWidgets('real Flutter render shows empty, half and finished carpets', (
+    tester,
+  ) async {
+    if (Platform.environment['CAPTURE_GLASS_UI'] != '1') return;
+    tester.view.physicalSize = const Size(840, 380);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final key = GlobalKey();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: MenvalTheme.light(),
+        home: RepaintBoundary(
+          key: key,
+          child: Scaffold(
+            body: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  for (final progress in [0.0, 0.5, 1.0])
+                    SizedBox(
+                      width: 248,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FocusLoom(
+                            progress: progress,
+                            patternSeed: 'مطالعهٔ امروز',
+                          ),
+                          Text('${(progress * 10).round()} / ۱۰'),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      final boundary = key.currentContext!.findRenderObject()!
+          as RenderRepaintBoundary;
+      final rendered = await boundary.toImage(pixelRatio: 1);
+      final bytes = await rendered.toByteData(format: ui.ImageByteFormat.png);
+      final file = File('.impeccable/review/focus-weave-stages.png');
+      await file.parent.create(recursive: true);
+      await file.writeAsBytes(bytes!.buffer.asUint8List());
+      rendered.dispose();
+    });
+    expect(tester.takeException(), isNull);
   });
 
   for (final dark in [false, true]) {
