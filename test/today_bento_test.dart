@@ -97,6 +97,19 @@ void main() {
     expect(find.text('شروع تمرکز'), findsNothing);
     expect(find.text('۳ از ۴ انجام‌شده'), findsNothing);
     expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(
+      find.descendant(of: workspace, matching: find.byType(Divider)),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: workspace,
+        matching: find.byWidgetPredicate(
+          (widget) => widget is Material && widget.elevation > 0,
+        ),
+      ),
+      findsWidgets,
+    );
     expect(tester.takeException(), isNull);
   });
 
