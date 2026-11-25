@@ -80,6 +80,66 @@ class MenvalPalette {
   MenvalColors of(Brightness brightness) =>
       brightness == Brightness.dark ? dark : light;
 
+  /// Approved tactile stone/charcoal surfaces: restrained in light mode,
+  /// with only one warm primary action accent in dark mode.
+  static const stone = MenvalPalette(
+    name: 'stone',
+    light: MenvalColors(
+      primary: Color(0xFF383936),
+      onPrimary: Color(0xFFF8F6F3),
+      primaryContainer: Color(0xFFE7E4E0),
+      onPrimaryContainer: Color(0xFF282925),
+      accent: Color(0xFF555650),
+      surface: Color(0xFFF9F7F5),
+      onSurface: Color(0xFF252623),
+      onSurfaceVariant: Color(0xFF777873),
+      containerLowest: Color(0xFFFFFFFF),
+      containerLow: Color(0xFFF5F2EF),
+      container: Color(0xFFF0EDEA),
+      containerHigh: Color(0xFFEAE7E3),
+      containerHighest: Color(0xFFE3DFDB),
+      outline: Color(0xFFA7A49F),
+      outlineVariant: Color(0xFFD9D5D0),
+      overdue: Color(0xFFA3544C),
+      priorities: [
+        Color(0xFFA3544C),
+        Color(0xFF8F7861),
+        Color(0xFF636763),
+        Color(0xFF8B8C87),
+      ],
+      softGround: Color(0xFFF2EFEC),
+      softLight: Color(0xFFFFFFFF),
+      softShade: Color(0xFFD0CBC6),
+    ),
+    dark: MenvalColors(
+      primary: Color(0xFFE8C487),
+      onPrimary: Color(0xFF22242A),
+      primaryContainer: Color(0xFF4A4034),
+      onPrimaryContainer: Color(0xFFF0D39D),
+      accent: Color(0xFFC5A875),
+      surface: Color(0xFF292C34),
+      onSurface: Color(0xFFF0EEE9),
+      onSurfaceVariant: Color(0xFFAAA8A5),
+      containerLowest: Color(0xFF1C1F25),
+      containerLow: Color(0xFF24272E),
+      container: Color(0xFF2C3038),
+      containerHigh: Color(0xFF333740),
+      containerHighest: Color(0xFF3B4049),
+      outline: Color(0xFF686B73),
+      outlineVariant: Color(0xFF42464E),
+      overdue: Color(0xFFE49B8F),
+      priorities: [
+        Color(0xFFE49B8F),
+        Color(0xFFD2B082),
+        Color(0xFFAAAEB4),
+        Color(0xFF747981),
+      ],
+      softGround: Color(0xFF252830),
+      softLight: Color(0xFF363A43),
+      softShade: Color(0xFF14161B),
+    ),
+  );
+
   /// White and teal by day; near-black and lime by night.
   static const calm = MenvalPalette(
     name: 'calm',
