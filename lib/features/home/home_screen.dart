@@ -1274,8 +1274,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           onTap: _openNativeCalendar,
         ),
       ),
-      if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint)
-        for (final (index, icon, title) in [
+      // Secondary tools remain reachable from the compact mobile drawer.
+      for (final (index, icon, title) in [
           (2, Icons.timelapse_outlined, 'تمرکز'),
           if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
           if (_habits != null) (4, Icons.task_alt_rounded, 'عادت‌ها'),
