@@ -208,7 +208,7 @@ class MenvalPaletteColors extends ThemeExtension<MenvalPaletteColors> {
 
   static MenvalColors of(BuildContext context) =>
       Theme.of(context).extension<MenvalPaletteColors>()?.colors ??
-      MenvalPalette.calm.of(Theme.of(context).brightness);
+      MenvalPalette.stone.of(Theme.of(context).brightness);
 
   @override
   MenvalPaletteColors copyWith({MenvalColors? colors}) =>
