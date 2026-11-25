@@ -524,60 +524,60 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     ),
                     PressDepth(
                       child: PopupMenuButton<String>(
-                      key: const ValueKey('compact-navigation'),
-                      tooltip: 'بخش‌ها',
-                      icon: const Icon(Icons.apps_outlined, size: 20),
-                      onSelected: (choice) {
-                        if (choice == 'tasks') {
-                          _switchSection(1);
-                        } else if (choice == 'today') {
-                          _switchSection(0);
-                        } else if (choice == 'calendar') {
-                          _openNativeCalendar();
-                        } else if (choice == 'habits') {
-                          _switchSection(4);
-                        } else if (choice == 'focus') {
-                          _switchSection(2);
-                        } else if (choice == 'more') {
-                          _scaffoldKey.currentState?.openDrawer();
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(
-                          value: 'tasks',
-                          child: Text('کارها'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'calendar',
-                          child: Text('تقویم'),
-                        ),
-                        if (_habits != null)
+                        key: const ValueKey('compact-navigation'),
+                        tooltip: 'بخش‌ها',
+                        icon: const Icon(Icons.apps_outlined, size: 20),
+                        onSelected: (choice) {
+                          if (choice == 'tasks') {
+                            _switchSection(1);
+                          } else if (choice == 'today') {
+                            _switchSection(0);
+                          } else if (choice == 'calendar') {
+                            _openNativeCalendar();
+                          } else if (choice == 'habits') {
+                            _switchSection(4);
+                          } else if (choice == 'focus') {
+                            _switchSection(2);
+                          } else if (choice == 'more') {
+                            _scaffoldKey.currentState?.openDrawer();
+                          }
+                        },
+                        itemBuilder: (_) => [
                           const PopupMenuItem(
-                            value: 'habits',
-                            child: Text('عادت‌ها'),
+                            value: 'tasks',
+                            child: Text('کارها'),
                           ),
-                        const PopupMenuItem(
-                          value: 'today',
-                          child: Text('امروز'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'focus',
-                          child: Text('تمرکز'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'more',
-                          child: Text('بخش‌های بیشتر'),
-                        ),
-                      ],
+                          const PopupMenuItem(
+                            value: 'calendar',
+                            child: Text('تقویم'),
+                          ),
+                          if (_habits != null)
+                            const PopupMenuItem(
+                              value: 'habits',
+                              child: Text('عادت‌ها'),
+                            ),
+                          const PopupMenuItem(
+                            value: 'today',
+                            child: Text('امروز'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'focus',
+                            child: Text('تمرکز'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'more',
+                            child: Text('بخش‌های بیشتر'),
+                          ),
+                        ],
                       ),
                     ),
                     PressDepth(
                       child: IconButton(
-                      key: const ValueKey('quick-add-more'),
-                      tooltip: 'تاریخ و ساعت کار',
-                      onPressed: () =>
-                          _quickAdd(initialText: _inlineTask.text.trim()),
-                      icon: const Icon(Icons.schedule_outlined, size: 20),
+                        key: const ValueKey('quick-add-more'),
+                        tooltip: 'تاریخ و ساعت کار',
+                        onPressed: () =>
+                            _quickAdd(initialText: _inlineTask.text.trim()),
+                        icon: const Icon(Icons.schedule_outlined, size: 20),
                       ),
                     ),
                     Expanded(
@@ -596,10 +596,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     ),
                     PressDepth(
                       child: IconButton.filled(
-                      key: const ValueKey('inline-task-submit'),
-                      tooltip: 'ثبت کار',
-                      onPressed: _submitInline,
-                      icon: const Icon(Icons.keyboard_return_rounded, size: 20),
+                        key: const ValueKey('inline-task-submit'),
+                        tooltip: 'ثبت کار',
+                        onPressed: _submitInline,
+                        icon: const Icon(
+                          Icons.keyboard_return_rounded,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ],
