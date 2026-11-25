@@ -522,7 +522,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ),
                       ),
                     ),
-                    PopupMenuButton<String>(
+                    PressDepth(
+                      child: PopupMenuButton<String>(
                       key: const ValueKey('compact-navigation'),
                       tooltip: 'بخش‌ها',
                       icon: const Icon(Icons.apps_outlined, size: 20),
@@ -568,13 +569,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           child: Text('بخش‌های بیشتر'),
                         ),
                       ],
+                      ),
                     ),
-                    IconButton(
+                    PressDepth(
+                      child: IconButton(
                       key: const ValueKey('quick-add-more'),
                       tooltip: 'تاریخ و ساعت کار',
                       onPressed: () =>
                           _quickAdd(initialText: _inlineTask.text.trim()),
                       icon: const Icon(Icons.schedule_outlined, size: 20),
+                      ),
                     ),
                     Expanded(
                       child: TextField(
@@ -590,11 +594,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ),
                       ),
                     ),
-                    IconButton.filled(
+                    PressDepth(
+                      child: IconButton.filled(
                       key: const ValueKey('inline-task-submit'),
                       tooltip: 'ثبت کار',
                       onPressed: _submitInline,
                       icon: const Icon(Icons.keyboard_return_rounded, size: 20),
+                      ),
                     ),
                   ],
                 ),
