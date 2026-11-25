@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:menval/app/soft.dart';
 import 'package:menval/app/spacing.dart';
+import 'package:menval/app/press_depth.dart';
 import 'package:menval/core/calendar/calendar_scope.dart';
 import 'package:menval/core/calendar/calendar_settings.dart';
 import 'package:menval/core/calendar/date_labels.dart';
@@ -204,15 +205,16 @@ class _HabitsViewState extends State<HabitsView> {
                             controller: _c,
                             divider: i != habits.length - 1,
                           );
+                          final pressed = PressDepth(child: row);
                           return _c.sort == HabitSort.manual
                               ? ReorderableDelayedDragStartListener(
                                   key: ValueKey(habit.id),
                                   index: i,
-                                  child: row,
+                                  child: pressed,
                                 )
                               : KeyedSubtree(
                                   key: ValueKey(habit.id),
-                                  child: row,
+                                  child: pressed,
                                 );
                         },
                       ),
