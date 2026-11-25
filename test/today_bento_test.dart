@@ -127,6 +127,41 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('Ledger Today has one overview instead of raised bento tiles', (
+    tester,
+  ) async {
+    await pump(tester, doneToday: () async => 3);
+    final bento = find.byType(TodayBento);
+    expect(
+      find.descendant(of: bento, matching: find.byType(SoftTile)),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: bento,
+        matching: find.byType(LinearProgressIndicator),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('کارهای امروز'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Ledger never invents a progress bar without server stats', (
+    tester,
+  ) async {
+    await pump(tester);
+    final bento = find.byType(TodayBento);
+    expect(
+      find.descendant(
+        of: bento,
+        matching: find.byType(LinearProgressIndicator),
+      ),
+      findsNothing,
+    );
+    expect(find.text('۱ باز'), findsOneWidget);
+  });
+
   testWidgets('the focus tile opens Focus', (tester) async {
     var opened = 0;
     await pump(tester, onOpenFocus: () => opened++);
@@ -185,13 +220,16 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('600px Today uses the wider tablet composition', (tester) async {
+  testWidgets('600px Today preserves a task-first ledger composition', (
+    tester,
+  ) async {
     await pump(tester, size: const Size(600, 850), doneToday: () async => 1);
     final bento = find.byType(TodayBento);
     expect(
       find.descendant(of: bento, matching: find.byType(IntrinsicHeight)),
-      findsOneWidget,
+      findsNothing,
     );
+    expect(find.text('کارهای امروز'), findsOneWidget);
     expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
