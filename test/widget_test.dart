@@ -348,10 +348,14 @@ void main() {
       await tester.pumpWidget(
         app(sessions: saved, refreshCredentials: refresh, api: api),
       );
-      // The Today view continuously animates; wait for startup work with
-      // bounded frame advances instead of waiting for all frames to settle.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+      // Startup performs several asynchronous storage and API reads. Advance
+      // frames until the authenticated shell appears, without waiting for
+      // the Today screen's continuously scheduled animations to settle.
+      for (var attempt = 0;
+          attempt < 30 && find.byType(DueTasksView).evaluate().isEmpty;
+          attempt++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
       expect(find.byType(DueTasksView), findsOneWidget);
 
       // Simulate an Android app left open until its old access JWT expires.
