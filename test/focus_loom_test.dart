@@ -42,7 +42,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(FocusLoom), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(find.bySemanticsLabel('فرش تمرکز: ۰ از ۱۰ مرحله بافته شد'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('فرش تمرکز: ۰ از ۱۰ مرحله بافته شد'),
+        findsOneWidget,
+      );
       expect(tester.widget<FocusLoom>(find.byType(FocusLoom)).stages, 0);
       final painter = find.descendant(
         of: find.byType(FocusLoom),
