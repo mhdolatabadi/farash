@@ -101,7 +101,7 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
               title: Text(
                 'تمرکز',
                 style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               floating: true,
@@ -167,74 +167,8 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                             );
                           },
                         ),
-                        const SizedBox(height: 32),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final size = constraints.maxWidth.clamp(
-                              200.0,
-                              280.0,
-                            );
-                            // The dial is a well sunk into the ground, with
-                            // the elapsed time running round its rim.
-                            return SizedBox.square(
-                              dimension: size,
-                              child: SoftWell(
-                                circle: true,
-                                padding: const EdgeInsets.all(14),
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    CircularProgressIndicator(
-                                      value: timer.progress,
-                                      strokeWidth: 10,
-                                      strokeCap: StrokeCap.round,
-                                      backgroundColor: colors.outlineVariant,
-                                    ),
-                                    Center(
-                                      child: Semantics(
-                                        label:
-                                            '${persianDigits(seconds ~/ 60)} دقیقه و ${persianDigits(seconds % 60)} ثانیه باقی مانده',
-                                        excludeSemantics: true,
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              child: Text(
-                                                persianDigits(time),
-                                                textDirection:
-                                                    TextDirection.ltr,
-                                                style: theme
-                                                    .textTheme
-                                                    .displayLarge
-                                                    ?.copyWith(
-                                                      fontSize: size * .23,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      fontFeatures: const [
-                                                        FontFeature.tabularFigures(),
-                                                      ],
-                                                    ),
-                                              ),
-                                            ),
-                                            Text(
-                                              'از ${persianDigits(timer.minutes)} دقیقه',
-                                              style: theme.textTheme.bodyMedium
-                                                  ?.copyWith(
-                                                    color:
-                                                        colors.onSurfaceVariant,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                        const SizedBox(height: Space.xl),
+                        _LedgerClock(timer: timer),
                         const SizedBox(height: 20),
                         Text(
                           timer.finished
@@ -326,4 +260,107 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
       );
     },
   );
+}
+
+/// The focus period reads like a page in a daybook instead of an inset dial.
+class _LedgerClock extends StatelessWidget {
+  const _LedgerClock({required this.timer});
+
+  final FocusController timer;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final seconds = (timer.remaining.inMilliseconds / 1000).ceil();
+    final clock = persianDigits(
+      '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}',
+    );
+    final label = timer.minutes == 25 ? 'نوبت تمرکز' : 'زمان استراحت';
+    final state = timer.finished
+        ? 'نوبت تمام شد'
+        : timer.running
+        ? 'در حال اجرا'
+        : 'آمادهٔ شروع';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(
+        Space.xl,
+        Space.xl,
+        Space.xl,
+        Space.lg,
+      ),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Text(
+                state,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: timer.running
+                      ? colors.primary
+                      : colors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Space.xl),
+          Semantics(
+            label:
+                '${persianDigits(seconds ~/ 60)} دقیقه و ${persianDigits(seconds % 60)} ثانیه باقی مانده',
+            excludeSemantics: true,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                clock,
+                textDirection: TextDirection.ltr,
+                style: theme.textTheme.displayLarge?.copyWith(
+                  fontSize: 84,
+                  height: 1.05,
+                  fontWeight: FontWeight.w900,
+                  color: colors.onSurface,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: Space.xl),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: timer.progress,
+              minHeight: 6,
+              color: colors.primary,
+              backgroundColor: colors.outlineVariant,
+            ),
+          ),
+          const SizedBox(height: Space.sm),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              'از ${persianDigits(timer.minutes)} دقیقه',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
