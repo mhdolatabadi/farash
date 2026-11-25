@@ -42,8 +42,7 @@ void main() {
           (widget) =>
               widget is DecoratedBox &&
               widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).border
-                  is BorderDirectional,
+              (widget.decoration as BoxDecoration).border is BorderDirectional,
         ),
       );
       expect(decorated, findsOneWidget);
