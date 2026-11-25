@@ -98,8 +98,10 @@ class _QuickAddDialogState extends State<QuickAddDialog> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final availableHeight = MediaQuery.sizeOf(context).height -
-        MediaQuery.viewInsetsOf(context).bottom - 24;
+    final availableHeight =
+        MediaQuery.sizeOf(context).height -
+        MediaQuery.viewInsetsOf(context).bottom -
+        24;
     final height = availableHeight.clamp(210.0, 445.0).toDouble();
     final parsed = parseQuickTask(
       _text.text,
