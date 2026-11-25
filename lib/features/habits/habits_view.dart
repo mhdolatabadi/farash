@@ -33,6 +33,7 @@ class HabitsView extends StatefulWidget {
 
   final HabitsController controller;
   final VoidCallback? onQuickAdd;
+
   /// The shared shell provides the title, navigation and creation FAB.
   final bool embedded;
 
@@ -109,19 +110,19 @@ class _HabitsViewState extends State<HabitsView> {
               slivers: [
                 if (!widget.embedded)
                   SliverAppBar(
-                  pinned: true,
-                  backgroundColor: Soft.ground(context),
-                  title: const Text('عادت‌ها'),
-                  actions: [
-                    if (widget.onQuickAdd != null)
-                      IconButton(
-                        tooltip: 'افزودن کار',
-                        onPressed: widget.onQuickAdd,
-                        icon: const Icon(Icons.add_task_rounded),
-                      ),
-                    _FilterMenu(controller: _c),
-                  ],
-                ),
+                    pinned: true,
+                    backgroundColor: Soft.ground(context),
+                    title: const Text('عادت‌ها'),
+                    actions: [
+                      if (widget.onQuickAdd != null)
+                        IconButton(
+                          tooltip: 'افزودن کار',
+                          onPressed: widget.onQuickAdd,
+                          icon: const Icon(Icons.add_task_rounded),
+                        ),
+                      _FilterMenu(controller: _c),
+                    ],
+                  ),
                 if (habits.isNotEmpty && !widget.embedded)
                   SliverPadding(
                     padding: EdgeInsets.fromLTRB(
@@ -193,7 +194,9 @@ class _HabitsViewState extends State<HabitsView> {
                     // The rows sit in one well on the soft ground.
                     sliver: DecoratedSliver(
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerLow,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(Soft.tileRadius),
                       ),
                       sliver: SliverReorderableList(
@@ -223,14 +226,18 @@ class _HabitsViewState extends State<HabitsView> {
                           );
                           final pressed = Padding(
                             padding: const EdgeInsetsDirectional.fromSTEB(
-                              Space.sm, Space.xs, Space.sm, Space.xs,
+                              Space.sm,
+                              Space.xs,
+                              Space.sm,
+                              Space.xs,
                             ),
                             child: PressDepth(
                               child: Material(
                                 color: Theme.of(context).colorScheme.surface,
                                 elevation: 2,
-                                shadowColor: Theme.of(context)
-                                    .colorScheme.shadow.withValues(alpha: 0.13),
+                                shadowColor: Theme.of(
+                                  context,
+                                ).colorScheme.shadow.withValues(alpha: 0.13),
                                 borderRadius: BorderRadius.circular(14),
                                 clipBehavior: Clip.antiAlias,
                                 child: row,
@@ -383,10 +390,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
   Widget build(BuildContext context, double shrink, bool overlaps) {
     final muted = theme.colorScheme.onSurfaceVariant;
     return Container(
-      decoration: BoxDecoration(
-        color: ground,
-        border: null,
-      ),
+      decoration: BoxDecoration(color: ground, border: null),
       padding: EdgeInsets.symmetric(horizontal: inset + Space.gutter - 2),
       child: Row(
         children: [
