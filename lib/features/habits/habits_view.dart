@@ -434,7 +434,6 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
                               : FontWeight.w500,
                         ),
                       ),
-                     ),
                     ],
                   ),
                 ),
