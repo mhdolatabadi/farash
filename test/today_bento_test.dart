@@ -173,7 +173,10 @@ void main() {
       find.text('برای امروز کاری نمانده؛ از کادر پایین کار تازه‌ای اضافه کنید.'),
       findsOneWidget,
     );
-    expect(find.textContaining('افزودن کار برای امروز'), findsWidgets);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).decoration?.hintText,
+      'افزودن کار برای امروز…',
+    );
     expect(tester.takeException(), isNull);
   });
 
