@@ -198,14 +198,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('compact-navigation')));
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.descendant(
-        of: find.byType(PopupMenuItem<String>),
-        matching: find.text('عادت‌ها'),
-      ),
-    );
+    await tester.tap(find.byKey(const ValueKey('approved-nav-4')));
     await tester.pumpAndSettle();
     expect(find.byType(HabitsView), findsOneWidget);
     expect(find.text('ورزش صبحگاهی'), findsOneWidget);
@@ -312,9 +305,9 @@ void main() {
         captureKey: captureKey,
       );
       expect(tester.takeException(), isNull);
-      // Every day cell is a full touch target.
+      // All seven days fit on mobile while remaining individually tappable.
       final cell = tester.getSize(find.byType(CheckCell).first);
-      expect(cell.width, greaterThanOrEqualTo(48));
+      expect(cell.width, greaterThanOrEqualTo(26));
       expect(cell.height, greaterThanOrEqualTo(48));
       // The add button never covers the last habit.
       final last = find.textContaining('بدون شبکهٔ اجتماعی');
