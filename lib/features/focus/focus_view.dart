@@ -112,7 +112,8 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                       Space.gutter,
                       Space.sm,
                       Space.gutter,
-                      Space.xxl, // Focus must not compete with a global capture action.
+                      // Focus must not compete with a global capture action.
+                      Space.xxl,
                     ),
                     child: Column(
                       children: [
