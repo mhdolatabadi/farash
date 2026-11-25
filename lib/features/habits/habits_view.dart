@@ -24,10 +24,17 @@ const _maxWidth = 760.0;
 /// Loop Habit Tracker's main screen: every habit with its strength ring and
 /// a checkmark grid of the most recent days, today first.
 class HabitsView extends StatefulWidget {
-  const HabitsView({super.key, required this.controller, this.onQuickAdd});
+  const HabitsView({
+    super.key,
+    required this.controller,
+    this.onQuickAdd,
+    this.embedded = false,
+  });
 
   final HabitsController controller;
   final VoidCallback? onQuickAdd;
+  /// The shared shell provides the title, navigation and creation FAB.
+  final bool embedded;
 
   @override
   State<HabitsView> createState() => _HabitsViewState();
@@ -90,16 +97,17 @@ class _HabitsViewState extends State<HabitsView> {
             // one line; the rest, less the end gutter, becomes day columns.
             // Rows and the day header grow with the user's text size.
             final scaler = MediaQuery.textScalerOf(context);
-            final rowHeight = max(_rowHeight, scaler.scale(16) * 2.6 + 12);
-            final headerHeight = max(48.0, scaler.scale(12) * 3.2 + 8);
-            final columns =
-                ((width - Space.sm - 150 - 2 * (Space.gutter - 2)) /
-                        habitCellWidth)
-                    .floor()
-                    .clamp(1, 7);
+            final rowHeight = max(60.0, scaler.scale(15) * 2.7 + 12);
+            final headerHeight = max(42.0, scaler.scale(12) * 3.2 + 8);
+            // Seven Loop-like days remain visible even on 320px phones.
+            final cellWidth =
+                ((width - 2 * (Space.gutter - 2) - Space.sm - 95) / 7)
+                    .clamp(26.0, habitCellWidth);
+            const columns = 7;
             final list = CustomScrollView(
               slivers: [
-                SliverAppBar(
+                if (!widget.embedded)
+                  SliverAppBar(
                   pinned: true,
                   backgroundColor: Soft.ground(context),
                   title: const Text('عادت‌ها'),
@@ -113,7 +121,7 @@ class _HabitsViewState extends State<HabitsView> {
                     _FilterMenu(controller: _c),
                   ],
                 ),
-                if (habits.isNotEmpty)
+                if (habits.isNotEmpty && !widget.embedded)
                   SliverPadding(
                     padding: EdgeInsets.fromLTRB(
                       inset + Space.gutter - 2,
@@ -132,6 +140,7 @@ class _HabitsViewState extends State<HabitsView> {
                       height: headerHeight,
                       today: _c.today,
                       columns: columns,
+                      cellWidth: cellWidth,
                       inset: inset,
                       settings: CalendarScope.of(context),
                       theme: Theme.of(context),
@@ -163,11 +172,13 @@ class _HabitsViewState extends State<HabitsView> {
                       text: _c.all.isEmpty
                           ? 'هنوز عادتی نساخته‌اید.'
                           : 'عادت فعالی ندارید.',
-                      action: FilledButton.icon(
-                        onPressed: _add,
-                        icon: const Icon(Icons.add_rounded),
-                        label: const Text('عادت تازه'),
-                      ),
+                      action: widget.embedded
+                          ? const SizedBox.shrink()
+                          : FilledButton.icon(
+                              onPressed: _add,
+                              icon: const Icon(Icons.add_rounded),
+                              label: const Text('عادت تازه'),
+                            ),
                     ),
                   )
                 else
@@ -180,7 +191,10 @@ class _HabitsViewState extends State<HabitsView> {
                     ),
                     // The rows sit in one well on the soft ground.
                     sliver: DecoratedSliver(
-                      decoration: Soft.wellDecoration(context),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(Soft.tileRadius),
+                      ),
                       sliver: SliverReorderableList(
                         itemCount: habits.length,
                         onReorderItem: (from, to) {
@@ -203,9 +217,25 @@ class _HabitsViewState extends State<HabitsView> {
                             columns: columns,
                             height: rowHeight,
                             controller: _c,
-                            divider: i != habits.length - 1,
+                            cellWidth: cellWidth,
+                            divider: false,
                           );
-                          final pressed = PressDepth(child: row);
+                          final pressed = Padding(
+                            padding: const EdgeInsetsDirectional.fromSTEB(
+                              Space.sm, Space.xs, Space.sm, Space.xs,
+                            ),
+                            child: PressDepth(
+                              child: Material(
+                                color: Theme.of(context).colorScheme.surface,
+                                elevation: 2,
+                                shadowColor: Theme.of(context)
+                                    .colorScheme.shadow.withValues(alpha: 0.13),
+                                borderRadius: BorderRadius.circular(14),
+                                clipBehavior: Clip.antiAlias,
+                                child: row,
+                              ),
+                            ),
+                          );
                           return _c.sort == HabitSort.manual
                               ? ReorderableDelayedDragStartListener(
                                   key: ValueKey(habit.id),
@@ -227,7 +257,7 @@ class _HabitsViewState extends State<HabitsView> {
             return Stack(
               children: [
                 ColoredBox(color: Soft.ground(context), child: list),
-                if (_c.all.isNotEmpty)
+                if (!widget.embedded && _c.all.isNotEmpty)
                   PositionedDirectional(
                     end: 16 + inset,
                     bottom: 16,
@@ -330,6 +360,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
     required this.height,
     required this.today,
     required this.columns,
+    required this.cellWidth,
     required this.inset,
     required this.settings,
     required this.theme,
@@ -338,7 +369,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
 
   final Color ground;
   final int today, columns;
-  final double inset, height;
+  final double inset, height, cellWidth;
   final CalendarSettings settings;
   final ThemeData theme;
 
@@ -353,9 +384,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
     return Container(
       decoration: BoxDecoration(
         color: ground,
-        border: Border(
-          bottom: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
+        border: null,
       ),
       padding: EdgeInsets.symmetric(horizontal: inset + Space.gutter - 2),
       child: Row(
@@ -363,7 +392,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
           const Spacer(),
           for (var i = 0; i < columns; i++)
             SizedBox(
-              width: habitCellWidth,
+              width: cellWidth,
               child: ExcludeSemantics(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -397,6 +426,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
       old.today != today ||
       old.height != height ||
       old.columns != columns ||
+      old.cellWidth != cellWidth ||
       old.inset != inset ||
       old.theme != theme ||
       old.ground != ground ||
@@ -418,6 +448,7 @@ class HabitRow extends StatelessWidget {
     required this.stats,
     required this.columns,
     required this.controller,
+    this.cellWidth = habitCellWidth,
     this.height = _rowHeight,
     this.divider = true,
   });
@@ -427,7 +458,7 @@ class HabitRow extends StatelessWidget {
   final Habit habit;
   final HabitStats stats;
   final int columns;
-  final double height;
+  final double height, cellWidth;
   final HabitsController controller;
 
   @override
@@ -435,15 +466,9 @@ class HabitRow extends StatelessWidget {
     final theme = Theme.of(context);
     final color = habitColor(context, habit.color);
     final settings = CalendarScope.of(context);
-    // Flat rows separated by hairlines, as in Loop.
+    // Raised compact rows sit inside a single lower surface.
     return DecoratedBox(
-      decoration: BoxDecoration(
-        border: divider
-            ? Border(
-                bottom: BorderSide(color: theme.colorScheme.outlineVariant),
-              )
-            : null,
-      ),
+      decoration: const BoxDecoration(),
       child: Material(
         type: MaterialType.transparency,
         child: SizedBox(
@@ -511,6 +536,7 @@ class HabitRow extends StatelessWidget {
                 CheckCell(
                   habit: habit,
                   stats: stats,
+                  width: cellWidth,
                   day: stats.today - i,
                   label: relativeDay(
                     dayDate(stats.today - i),
@@ -564,6 +590,7 @@ class CheckCell extends StatelessWidget {
     required this.day,
     required this.label,
     required this.onTap,
+    this.width = habitCellWidth,
   });
 
   final Habit habit;
@@ -571,6 +598,7 @@ class CheckCell extends StatelessWidget {
   final int day;
   final String label;
   final VoidCallback onTap;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
@@ -632,7 +660,7 @@ class CheckCell extends StatelessWidget {
           'انجام نشد',
         ),
         DayCheck.unknown => (
-          Icons.close_rounded,
+          Icons.circle_outlined,
           muted.withValues(alpha: .35),
           'ثبت نشده',
         ),
@@ -655,7 +683,7 @@ class CheckCell extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: SizedBox(
-          width: habitCellWidth,
+          width: width,
           height: double.infinity,
           child: Center(child: mark),
         ),
