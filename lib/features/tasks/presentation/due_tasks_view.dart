@@ -656,11 +656,11 @@ class _DueTasksViewState extends State<DueTasksView> {
                   mark: _bento
                       ? const SizedBox.shrink()
                       : label != null
-                          ? Icon(Icons.sell, color: label.swatch)
-                          : Icon(
-                              widget.view.icon,
-                              color: theme.colorScheme.primary,
-                            ),
+                      ? Icon(Icons.sell, color: label.swatch)
+                      : Icon(
+                          widget.view.icon,
+                          color: theme.colorScheme.primary,
+                        ),
                   actions: _bento
                       ? []
                       : [
