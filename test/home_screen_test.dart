@@ -355,11 +355,7 @@ void main() {
     expect(find.byType(QuickAddDialog), findsOneWidget);
     expect(find.byType(BottomSheet), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
-    expect(
-      find.text('تاریخ و ساعت (اختیاری)'),
-      findsOneWidget,
-    );
+    expect(find.text('تاریخ و ساعت (اختیاری)'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
-
 }
