@@ -107,10 +107,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   String? _selectedId;
-  int _section = 1;
+  int _section = 0;
 
   /// Where the app opens, and where Back returns to before leaving.
-  int _startSection = 1;
+  int _startSection = 0;
   final _focus = FocusController();
   late final FocusSessionStorage _focusStorage =
       widget.focusSessionStorage ??
@@ -1441,6 +1441,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       token: widget.token,
                       moveTargets: () => widget.projects.projects,
                       labels: _labels,
+                      showQuickCapture: wide,
                     ),
                   )
                 : ProjectTasksView(
@@ -1452,6 +1453,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     token: widget.token,
                     moveTargets: () => widget.projects.projects,
                     showTitle: true,
+                    showQuickCapture: wide,
                     labels: _labels,
                   );
             // Changing project fades through instead of cutting.
@@ -1540,6 +1542,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   borderRadius: BorderRadius.circular(18),
                   child: FloatingActionButton(
                     key: const ValueKey('menval-create-fab'),
+                    shape: const CircleBorder(),
                     tooltip: _section == 4 ? 'عادت جدید' : 'کار جدید',
                     onPressed: _section == 4 ? _createHabitFromFab : _quickAdd,
                     child: const Icon(Icons.add_rounded),
