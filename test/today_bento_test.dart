@@ -127,6 +127,56 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('Today shows one daily brief without competing raised cards', (
+    tester,
+  ) async {
+    await pump(tester, doneToday: () async => 3);
+    final bento = find.byType(TodayBento);
+    expect(
+      find.descendant(of: bento, matching: find.byType(SoftTile)),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: bento,
+        matching: find.byType(LinearProgressIndicator),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('کارهای امروز'), findsOneWidget);
+    expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('no confirmed progress means no invented progress bar', (
+    tester,
+  ) async {
+    await pump(tester);
+    final bento = find.byType(TodayBento);
+    expect(
+      find.descendant(
+        of: bento,
+        matching: find.byType(LinearProgressIndicator),
+      ),
+      findsNothing,
+    );
+    expect(find.text('۱ باز'), findsOneWidget);
+  });
+
+  testWidgets('zero tasks retains clear empty state and quick capture', (
+    tester,
+  ) async {
+    api = FakeTasksApi();
+    await pump(tester, doneToday: () async => 0);
+    expect(find.text('۰ از ۰'), findsOneWidget);
+    expect(
+      find.text('برای امروز کاری نمانده؛ از کادر پایین کار تازه‌ای اضافه کنید.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('افزودن کار برای امروز'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('the focus tile opens Focus', (tester) async {
     var opened = 0;
     await pump(tester, onOpenFocus: () => opened++);
