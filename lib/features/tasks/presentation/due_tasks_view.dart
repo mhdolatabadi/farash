@@ -626,7 +626,9 @@ class _DueTasksViewState extends State<DueTasksView> {
           ),
         ),
       );
-    } else if (widget.hideHeader && widget.view == DueView.today && label == null) {
+    } else if (widget.hideHeader &&
+        widget.view == DueView.today &&
+        label == null) {
       // The approved task well reaches the navigation area even when only
       // one task is present. It can grow beyond the viewport and scroll.
       body = SliverFillRemaining(
