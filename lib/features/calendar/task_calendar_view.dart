@@ -200,11 +200,13 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
                           onPressed: () => _shiftWeek(1),
                           icon: const Icon(Icons.chevron_left),
                         ),
-                        TextButton(
-                          onPressed: () =>
-                              _selectDay(dayOf((widget.now ?? DateTime.now)())),
-                          child: const Text('امروز'),
-                        ),
+                        if (!widget.embedded)
+                          TextButton(
+                            onPressed: () => _selectDay(
+                              dayOf((widget.now ?? DateTime.now)()),
+                            ),
+                            child: const Text('امروز'),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 6),
