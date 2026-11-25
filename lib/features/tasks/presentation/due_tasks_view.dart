@@ -419,7 +419,7 @@ class _DueTasksViewState extends State<DueTasksView> {
     final tile = TaskTile(
       key: ValueKey(task.id),
       task: task,
-      divider: !last,
+      divider: !_bento && !last,
       dense: true,
       showToday: widget.view != DueView.today || widget.label != null,
       showDue: true,
