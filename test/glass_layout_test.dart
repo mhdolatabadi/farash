@@ -131,7 +131,7 @@ void main() {
         await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
         await tester.pumpAndSettle();
         final capture = tester.getRect(
-          find.byKey(const ValueKey('inline-task-title')), 
+          find.byKey(const ValueKey('inline-task-title')),
         );
         expect(tester.getRect(last).bottom, lessThanOrEqualTo(capture.top));
         await tester.drag(find.byType(Scrollable).first, const Offset(0, 800));
