@@ -10,9 +10,7 @@ void main() {
     final timer = FocusController();
     addTearDown(timer.dispose);
     timer.start();
-    await tester.pumpWidget(
-      MaterialApp(home: FocusView(controller: timer)),
-    );
+    await tester.pumpWidget(MaterialApp(home: FocusView(controller: timer)));
 
     await tester.tap(find.byIcon(Icons.restart_alt));
     await tester.pumpAndSettle();
@@ -28,9 +26,7 @@ void main() {
     final timer = FocusController();
     addTearDown(timer.dispose);
     timer.start();
-    await tester.pumpWidget(
-      MaterialApp(home: FocusView(controller: timer)),
-    );
+    await tester.pumpWidget(MaterialApp(home: FocusView(controller: timer)));
 
     await tester.tap(find.byIcon(Icons.restart_alt));
     await tester.pumpAndSettle();
@@ -47,9 +43,7 @@ void main() {
   ) async {
     final timer = FocusController();
     addTearDown(timer.dispose);
-    await tester.pumpWidget(
-      MaterialApp(home: FocusView(controller: timer)),
-    );
+    await tester.pumpWidget(MaterialApp(home: FocusView(controller: timer)));
 
     await tester.tap(find.byIcon(Icons.restart_alt));
     await tester.pumpAndSettle();
