@@ -318,7 +318,10 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('menval-create-fab')));
     await tester.pumpAndSettle();
     expect(find.byType(QuickAddDialog), findsOneWidget);
-    await tester.enterText(find.byKey(const ValueKey('quick-add-title')), 'کار تازه');
+    await tester.enterText(
+      find.byKey(const ValueKey('quick-add-title')),
+      'کار تازه',
+    );
     await tester.tap(find.text('افزودن کار'));
     await tester.pumpAndSettle();
     expect(find.byType(QuickAddDialog), findsNothing);
@@ -326,9 +329,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('secondary screens share the creation FAB', (
-    tester,
-  ) async {
+  testWidgets('secondary screens share the creation FAB', (tester) async {
     await pumpHome(tester, size: const Size(320, 740));
     await openCompact(tester, 'تمرکز');
     expect(find.byKey(const ValueKey('inline-task-title')), findsNothing);
@@ -336,7 +337,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(QuickAddDialog), findsOneWidget);
     await tester.enterText(
-      find.byKey(const ValueKey('quick-add-title')), 'کار زمان‌دار',
+      find.byKey(const ValueKey('quick-add-title')),
+      'کار زمان‌دار',
     );
     await tester.tap(find.byTooltip('بستن').last);
     await tester.pumpAndSettle();
