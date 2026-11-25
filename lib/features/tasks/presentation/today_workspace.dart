@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:menval/app/spacing.dart';
-import 'package:menval/core/calendar/calendar_scope.dart';
-import 'package:menval/core/calendar/date_labels.dart';
 import 'package:menval/features/focus/focus_controller.dart';
 import 'package:menval/features/habits/habits_controller.dart';
 import 'package:menval/features/tasks/data/task.dart';
@@ -53,8 +51,6 @@ class TodayWorkspace extends StatelessWidget {
         return 0;
       });
     final tasks = [...todayOrdered, ...overdueTasks];
-    final colors = Theme.of(context).colorScheme;
-
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(
         Space.gutter,
@@ -65,25 +61,13 @@ class TodayWorkspace extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            formatDate(
-              today,
-              CalendarScope.of(context),
-              today: today,
-              withWeekday: true,
-            ),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: Space.lg),
           if (tasks.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: Space.xl),
               child: Text(
                 'کاری برای امروز نمانده.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             )
