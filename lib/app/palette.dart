@@ -80,6 +80,65 @@ class MenvalPalette {
   MenvalColors of(Brightness brightness) =>
       brightness == Brightness.dark ? dark : light;
 
+  /// A contemporary Persian daybook: warm paper, ink and cinnabar.
+  static const ledger = MenvalPalette(
+    name: 'ledger',
+    light: MenvalColors(
+      primary: Color(0xFF9F3F2D),
+      onPrimary: Colors.white,
+      primaryContainer: Color(0xFFF5DBD1),
+      onPrimaryContainer: Color(0xFF742A1C),
+      accent: Color(0xFF21645E),
+      surface: Color(0xFFFCFAF6),
+      onSurface: Color(0xFF292722),
+      onSurfaceVariant: Color(0xFF66635D),
+      containerLowest: Color(0xFFFFFFFF),
+      containerLow: Color(0xFFF4F0E9),
+      container: Color(0xFFEEE8DF),
+      containerHigh: Color(0xFFE9E2D8),
+      containerHighest: Color(0xFFE1D8CB),
+      outline: Color(0xFF82796E),
+      outlineVariant: Color(0xFFDDD5C9),
+      overdue: Color(0xFFAC342B),
+      priorities: [
+        Color(0xFFB43F32),
+        Color(0xFFB66B26),
+        Color(0xFF21645E),
+        Color(0xFF77746D),
+      ],
+      softGround: Color(0xFFFCFAF6),
+      softLight: Color(0xFFFFFFFF),
+      softShade: Color(0xFF4C4137),
+    ),
+    dark: MenvalColors(
+      primary: Color(0xFFFFB69B),
+      onPrimary: Color(0xFF43261F),
+      primaryContainer: Color(0xFF56382F),
+      onPrimaryContainer: Color(0xFFFFE2D6),
+      accent: Color(0xFF8DD1C3),
+      surface: Color(0xFF191F1D),
+      onSurface: Color(0xFFF5F0E9),
+      onSurfaceVariant: Color(0xFFB8B5AB),
+      containerLowest: Color(0xFF212824),
+      containerLow: Color(0xFF222925),
+      container: Color(0xFF2A332E),
+      containerHigh: Color(0xFF344038),
+      containerHighest: Color(0xFF3B4740),
+      outline: Color(0xFF9DA89D),
+      outlineVariant: Color(0xFF414A43),
+      overdue: Color(0xFFFF9489),
+      priorities: [
+        Color(0xFFFF9286),
+        Color(0xFFF4BD73),
+        Color(0xFF8DD1C3),
+        Color(0xFFADAEA7),
+      ],
+      softGround: Color(0xFF191F1D),
+      softLight: Color(0xFF414A43),
+      softShade: Color(0xFF090D0B),
+    ),
+  );
+
   /// White and teal by day; near-black and lime by night.
   static const calm = MenvalPalette(
     name: 'calm',
@@ -148,7 +207,7 @@ class MenvalPaletteColors extends ThemeExtension<MenvalPaletteColors> {
 
   static MenvalColors of(BuildContext context) =>
       Theme.of(context).extension<MenvalPaletteColors>()?.colors ??
-      MenvalPalette.calm.of(Theme.of(context).brightness);
+      MenvalPalette.ledger.of(Theme.of(context).brightness);
 
   @override
   MenvalPaletteColors copyWith({MenvalColors? colors}) =>
