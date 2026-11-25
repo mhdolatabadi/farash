@@ -112,9 +112,8 @@ class _DuePickerState extends State<DuePicker> {
 
   // The date and its clock time are edited in this single sheet; opening
   // a second modal for the clock makes the scheduling flow needlessly long.
-  void _enableTime() => setState(
-    () => _time ??= const TimeOfDay(hour: 9, minute: 0),
-  );
+  void _enableTime() =>
+      setState(() => _time ??= const TimeOfDay(hour: 9, minute: 0));
 
   Future<void> _confirm() async {
     final navigator = Navigator.of(context);
@@ -270,10 +269,12 @@ class _DuePickerState extends State<DuePicker> {
                         ],
                         onChanged: (hour) {
                           if (hour == null) return;
-                          setState(() => _time = TimeOfDay(
-                            hour: hour,
-                            minute: _time!.minute,
-                          ));
+                          setState(
+                            () => _time = TimeOfDay(
+                              hour: hour,
+                              minute: _time!.minute,
+                            ),
+                          );
                         },
                       ),
                     ),
@@ -295,10 +296,12 @@ class _DuePickerState extends State<DuePicker> {
                         ],
                         onChanged: (minute) {
                           if (minute == null) return;
-                          setState(() => _time = TimeOfDay(
-                            hour: _time!.hour,
-                            minute: minute,
-                          ));
+                          setState(
+                            () => _time = TimeOfDay(
+                              hour: _time!.hour,
+                              minute: minute,
+                            ),
+                          );
                         },
                       ),
                     ),
