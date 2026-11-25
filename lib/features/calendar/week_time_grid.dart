@@ -155,9 +155,11 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                           ]
                                         : null,
                                   ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
                                       Text(
                                         weekdayNames[day.weekday - 1],
                                         maxLines: 1,
@@ -179,7 +181,8 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                           context,
                                         ).textTheme.titleMedium,
                                       ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -284,8 +287,13 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                         ),
                                       );
                                     },
-                                    child: Text(
-                                      '+${persianDigits('${allDay[day].length - 2}')} کار دیگر',
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        '+${persianDigits('${allDay[day].length - 2}')} کار دیگر',
+                                        maxLines: 1,
+                                        softWrap: false,
+                                      ),
                                     ),
                                   ),
                                 ),
