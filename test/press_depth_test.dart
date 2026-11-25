@@ -31,7 +31,10 @@ void main() {
     final target = find.text('کار جدید');
     final gesture = await tester.startGesture(tester.getCenter(target));
     await tester.pump();
-    expect(tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale, 0.975);
+    expect(
+      tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale,
+      0.975,
+    );
 
     await gesture.up();
     await tester.pump();
@@ -56,7 +59,10 @@ void main() {
     );
     final gesture = await tester.startGesture(const Offset(30, 30));
     await tester.pump();
-    expect(tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale, 0.975);
+    expect(
+      tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale,
+      0.975,
+    );
     await gesture.moveBy(const Offset(0, 28));
     await tester.pump();
     expect(tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale, 1);
