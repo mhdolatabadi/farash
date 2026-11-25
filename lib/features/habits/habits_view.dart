@@ -135,6 +135,8 @@ class _HabitsViewState extends State<HabitsView> {
                       child: _Summary(controller: _c, habits: habits),
                     ),
                   ),
+                if (habits.isNotEmpty && widget.embedded)
+                  const SliverToBoxAdapter(child: SizedBox(height: Space.xl)),
                 if (habits.isNotEmpty)
                   SliverPersistentHeader(
                     pinned: true,
@@ -146,7 +148,9 @@ class _HabitsViewState extends State<HabitsView> {
                       inset: inset,
                       settings: CalendarScope.of(context),
                       theme: Theme.of(context),
-                      ground: Soft.ground(context),
+                      ground: widget.embedded
+                          ? Colors.transparent
+                          : Soft.ground(context),
                     ),
                   ),
                 if (_c.loading && _c.all.isEmpty)
@@ -194,9 +198,7 @@ class _HabitsViewState extends State<HabitsView> {
                     // The rows sit in one well on the soft ground.
                     sliver: DecoratedSliver(
                       decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerLow,
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(Soft.tileRadius),
                       ),
                       sliver: SliverReorderableList(
@@ -238,7 +240,7 @@ class _HabitsViewState extends State<HabitsView> {
                                 shadowColor: Theme.of(
                                   context,
                                 ).colorScheme.shadow.withValues(alpha: 0.13),
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(22),
                                 clipBehavior: Clip.antiAlias,
                                 child: row,
                               ),
@@ -264,7 +266,25 @@ class _HabitsViewState extends State<HabitsView> {
             // last row thanks to the list's bottom padding.
             return Stack(
               children: [
-                ColoredBox(color: Soft.ground(context), child: list),
+                if (widget.embedded)
+                  Positioned.fill(
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        Space.md, Space.lg, Space.md, Space.lg,
+                      ),
+                      child: IgnorePointer(
+                        child: SoftWell(
+                          radius: 36,
+                          child: const SizedBox.expand(),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Positioned.fill(
+                    child: ColoredBox(color: Soft.ground(context)),
+                  ),
+                list,
                 if (!widget.embedded && _c.all.isNotEmpty)
                   PositionedDirectional(
                     end: 16 + inset,
