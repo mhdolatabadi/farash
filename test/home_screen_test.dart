@@ -38,14 +38,17 @@ void main() {
   }
 
   Future<void> openCompact(WidgetTester tester, String label) async {
-    await tester.tap(find.byKey(const ValueKey('compact-navigation')));
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.descendant(
-        of: find.byType(PopupMenuItem<String>),
-        matching: find.text(label),
-      ),
-    );
+    if (label == 'امروز') {
+      await tester.tap(find.byKey(const ValueKey('approved-nav-0')));
+    } else if (label == 'عادت‌ها') {
+      await tester.tap(find.byKey(const ValueKey('approved-nav-4')));
+    } else if (label == 'تقویم') {
+      await tester.tap(find.byKey(const ValueKey('approved-nav-5')));
+    } else {
+      await tester.tap(find.byKey(const ValueKey('menval-wordmark')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, label).last);
+    }
     await tester.pumpAndSettle();
   }
 
@@ -53,7 +56,7 @@ void main() {
     tester,
   ) async {
     await pumpHome(tester, size: const Size(320, 700));
-    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.tap(find.byKey(const ValueKey('menval-wordmark')));
     await tester.pumpAndSettle();
     final tile = find.widgetWithText(ListTile, 'صندوق ورودی');
     final tileContext = tester.element(tile);
@@ -94,7 +97,7 @@ void main() {
   testWidgets('creates a project from the drawer and opens it', (tester) async {
     await pumpHome(tester, size: const Size(400, 800));
 
-    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.tap(find.byKey(const ValueKey('menval-wordmark')));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('پروژهٔ تازه'));
     await tester.pumpAndSettle();
@@ -121,7 +124,7 @@ void main() {
     tester,
   ) async {
     await pumpHome(tester, size: const Size(400, 800));
-    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.tap(find.byKey(const ValueKey('menval-wordmark')));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('پروژهٔ تازه'));
     await tester.pumpAndSettle();
@@ -133,13 +136,15 @@ void main() {
     expect(api.all, hasLength(1));
   });
 
-  testWidgets('medium widths have a compact menu and inline input', (
+  testWidgets('medium widths have the three-tab navigation and one FAB', (
     tester,
   ) async {
     await pumpHome(tester, size: const Size(700, 800));
     expect(find.byType(NavigationRail), findsNothing);
     expect(find.byType(NavigationBar), findsNothing);
-    expect(find.byKey(const ValueKey('inline-task-title')), findsOneWidget);
+    expect(find.byKey(const ValueKey('inline-task-title')), findsNothing);
+    expect(find.byKey(const ValueKey('approved-nav-0')), findsOneWidget);
+    expect(find.byKey(const ValueKey('menval-create-fab')), findsOneWidget);
     await openCompact(tester, 'امروز');
     expect(find.byType(DueTasksView), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -214,7 +219,7 @@ void main() {
     await pumpHome(tester, size: const Size(400, 800));
     final work = await projects.create(name: 'Work', color: '#2563eb');
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.tap(find.byKey(const ValueKey('menval-wordmark')));
     await tester.pumpAndSettle();
 
     await tester.longPress(find.byKey(ValueKey('tree-${work.id}')));
@@ -245,7 +250,7 @@ void main() {
           'پروژه‌ای با نامی بسیار طولانی که در یک خط جا نمی‌شود و باید کوتاه شود',
       color: '#dc2626',
     );
-    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.tap(find.byKey(const ValueKey('menval-wordmark')));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
@@ -306,38 +311,33 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('bottom input captures a task without opening the sheet', (
+  testWidgets('shared FAB opens bottom sheet and creates a task', (
     tester,
   ) async {
     await pumpHome(tester, size: const Size(400, 800));
-    await tester.enterText(
-      find.byKey(const ValueKey('inline-task-title')),
-      'کار تازه',
-    );
-    await tester.tap(find.byKey(const ValueKey('inline-task-submit')));
+    await tester.tap(find.byKey(const ValueKey('menval-create-fab')));
+    await tester.pumpAndSettle();
+    expect(find.byType(QuickAddDialog), findsOneWidget);
+    await tester.enterText(find.byKey(const ValueKey('quick-add-title')), 'کار تازه');
+    await tester.tap(find.text('افزودن کار'));
     await tester.pumpAndSettle();
     expect(find.byType(QuickAddDialog), findsNothing);
-    expect(find.text('کار اضافه شد.'), findsOneWidget);
+    expect(find.textContaining('اضافه شد'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('secondary screens keep the inline capture field', (
+  testWidgets('secondary screens share the creation FAB', (
     tester,
   ) async {
     await pumpHome(tester, size: const Size(320, 740));
     await openCompact(tester, 'تمرکز');
-    expect(find.byKey(const ValueKey('inline-task-title')), findsOneWidget);
-    await tester.enterText(
-      find.byKey(const ValueKey('inline-task-title')),
-      'کار زمان‌دار',
-    );
-    await tester.tap(find.byKey(const ValueKey('quick-add-more')));
+    expect(find.byKey(const ValueKey('inline-task-title')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('menval-create-fab')));
     await tester.pumpAndSettle();
     expect(find.byType(QuickAddDialog), findsOneWidget);
-    final field = tester.widget<TextField>(
-      find.byKey(const ValueKey('quick-add-title')),
+    await tester.enterText(
+      find.byKey(const ValueKey('quick-add-title')), 'کار زمان‌دار',
     );
-    expect(field.controller!.text, 'کار زمان‌دار');
     await tester.tap(find.byTooltip('بستن').last);
     await tester.pumpAndSettle();
     expect(find.byType(QuickAddDialog), findsNothing);
@@ -348,9 +348,9 @@ void main() {
     tester,
   ) async {
     await pumpHome(tester, size: const Size(400, 800));
-    expect(find.byType(FloatingActionButton), findsNothing);
-    expect(find.byType(NavigationBar), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('quick-add-more')));
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(find.byKey(const ValueKey('approved-nav-0')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('menval-create-fab')));
     await tester.pumpAndSettle();
     expect(find.byType(QuickAddDialog), findsOneWidget);
     expect(find.byType(BottomSheet), findsOneWidget);
