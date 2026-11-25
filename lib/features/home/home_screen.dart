@@ -40,6 +40,7 @@ import 'package:menval/features/progress/progress.dart';
 import 'package:menval/features/progress/progress_card.dart';
 import 'package:menval/core/calendar/time_zone.dart';
 import 'package:menval/app/motion.dart';
+import 'package:menval/app/press_depth.dart';
 import 'package:menval/core/calendar/calendar_scope.dart';
 import 'package:menval/core/calendar/calendar_settings_dialog.dart';
 import 'package:menval/core/settings/start_view.dart';
@@ -507,6 +508,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
                 child: Row(
                   children: [
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                        start: Space.xs,
+                        end: Space.sm,
+                      ),
+                      child: Text(
+                        'منوال',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                     PopupMenuButton<String>(
                       key: const ValueKey('compact-navigation'),
                       tooltip: 'بخش‌ها',
