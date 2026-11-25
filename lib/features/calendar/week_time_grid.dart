@@ -141,7 +141,9 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                   ),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(14),
-                                    color: scheme.surface,
+                                    color: daysBetween(widget.selected, day) == 0
+                                        ? scheme.onSurface
+                                        : scheme.surface,
                                     boxShadow:
                                         daysBetween(widget.selected, day) == 0
                                         ? [
@@ -164,9 +166,11 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                           weekdayNames[day.weekday - 1],
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.labelSmall,
+                                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                            color: daysBetween(widget.selected, day) == 0
+                                                ? scheme.surface
+                                                : scheme.onSurface,
+                                          ),
                                         ),
                                         Text(
                                           persianDigits(
@@ -177,9 +181,11 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                                   ).split(' ').first
                                                 : '${day.day}',
                                           ),
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.titleMedium,
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                            color: daysBetween(widget.selected, day) == 0
+                                                ? scheme.surface
+                                                : scheme.onSurface,
+                                          ),
                                         ),
                                       ],
                                     ),
