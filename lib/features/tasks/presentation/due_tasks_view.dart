@@ -65,6 +65,7 @@ class DueTasksView extends StatefulWidget {
     this.onOpenFocus,
     this.habits,
     this.onOpenHabits,
+    this.showQuickCapture = true,
   });
 
   final DueView view;
@@ -94,6 +95,8 @@ class DueTasksView extends StatefulWidget {
   final VoidCallback? onOpenFocus;
   final HabitsController? habits;
   final VoidCallback? onOpenHabits;
+  /// The home shell can use its floating capture button instead of a second bar.
+  final bool showQuickCapture;
 
   @override
   State<DueTasksView> createState() => _DueTasksViewState();
@@ -710,7 +713,7 @@ class _DueTasksViewState extends State<DueTasksView> {
           ),
         );
         // Today is where the day is planned, so it takes new tasks too.
-        if (label != null || widget.view != DueView.today) return list;
+        if (label != null || widget.view != DueView.today || !widget.showQuickCapture) return list;
         return ColoredBox(
           color: Soft.ground(context),
           child: Column(
