@@ -12,10 +12,12 @@ class FocusView extends StatefulWidget {
     this.beforeStart,
     this.beforePause,
     this.timeLinked = false,
+    this.onQuickAdd,
   });
   final Future<bool> Function()? beforeStart;
   final Future<bool> Function()? beforePause;
   final bool timeLinked;
+  final VoidCallback? onQuickAdd;
   final FocusController controller;
   @override
   State<FocusView> createState() => _FocusViewState();
@@ -106,6 +108,14 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                 ),
               ),
               floating: true,
+              actions: [
+                if (widget.onQuickAdd != null)
+                  IconButton(
+                    tooltip: 'افزودن کار',
+                    onPressed: widget.onQuickAdd,
+                    icon: const Icon(Icons.add_rounded),
+                  ),
+              ],
             ),
             SliverToBoxAdapter(
               child: Center(
