@@ -716,8 +716,9 @@ class _DueTasksViewState extends State<DueTasksView> {
         // Today is where the day is planned, so it takes new tasks too.
         if (label != null ||
             widget.view != DueView.today ||
-            !widget.showQuickCapture)
+            !widget.showQuickCapture) {
           return list;
+        }
         return ColoredBox(
           color: Soft.ground(context),
           child: Column(
