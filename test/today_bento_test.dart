@@ -84,7 +84,10 @@ void main() {
     final workspace = find.byType(TodayWorkspace);
     expect(workspace, findsOneWidget);
     expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
-    expect(find.descendant(of: workspace, matching: find.byType(SoftWell)), findsNothing);
+    expect(
+      find.descendant(of: workspace, matching: find.byType(SoftWell)),
+      findsNothing,
+    );
     expect(find.text('طبق ساعت'), findsNothing);
     expect(find.text('در صف انجام'), findsNothing);
     expect(find.text('دیرشده'), findsNothing);
@@ -112,13 +115,21 @@ void main() {
     );
     await pump(tester);
     final workspace = find.byType(TodayWorkspace);
-    expect(find.descendant(of: workspace, matching: find.text('تماس ساعت‌دار')), findsOneWidget);
-    expect(find.descendant(of: workspace, matching: find.text('مرور یادداشت‌ها')), findsOneWidget);
+    expect(
+      find.descendant(of: workspace, matching: find.text('تماس ساعت‌دار')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: workspace, matching: find.text('مرور یادداشت‌ها')),
+      findsOneWidget,
+    );
     expect(find.text('طبق ساعت'), findsNothing);
     expect(find.text('در صف انجام'), findsNothing);
     expect(find.text('۰۹:۳۰'), findsOneWidget);
-    expect(tester.getTopLeft(find.text('تماس ساعت‌دار')).dy,
-        lessThan(tester.getTopLeft(find.text('مرور یادداشت‌ها')).dy));
+    expect(
+      tester.getTopLeft(find.text('تماس ساعت‌دار')).dy,
+      lessThan(tester.getTopLeft(find.text('مرور یادداشت‌ها')).dy),
+    );
     expect(tester.takeException(), isNull);
   });
 
