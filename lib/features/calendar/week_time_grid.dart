@@ -138,7 +138,8 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(14),
                                   color: scheme.surface,
-                                  boxShadow: daysBetween(widget.selected, day) == 0
+                                  boxShadow:
+                                      daysBetween(widget.selected, day) == 0
                                       ? [
                                           BoxShadow(
                                             color: scheme.shadow.withValues(
@@ -325,7 +326,9 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: scheme.shadow.withValues(alpha: 0.12),
+                                        color: scheme.shadow.withValues(
+                                          alpha: 0.12,
+                                        ),
                                         blurRadius: 4,
                                       ),
                                     ],
