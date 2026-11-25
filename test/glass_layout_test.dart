@@ -104,14 +104,19 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       if (layout.$1 == 'landscape-ime') {
+        await tester.tap(find.byKey(const ValueKey('menval-create-fab')));
+        await tester.pumpAndSettle();
         await tester.enterText(
-          find.byKey(const ValueKey('inline-task-title')),
+          find.byKey(const ValueKey('quick-add-title')),
           'پیش‌نویس محفوظ',
         );
         tester.view.viewInsets = const FakeViewPadding(bottom: 160);
         await tester.pumpAndSettle();
         expect(find.text('پیش‌نویس محفوظ'), findsOneWidget);
         expect(tester.takeException(), isNull);
+        tester.view.viewInsets = const FakeViewPadding();
+        await tester.tap(find.byTooltip('بستن').last);
+        await tester.pumpAndSettle();
       }
       // Panels never nest.
       expect(
@@ -131,7 +136,9 @@ void main() {
         await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
         await tester.pumpAndSettle();
         final capture = tester.getRect(
-          find.byKey(const ValueKey('inline-task-title')),
+          layout.$2.width < sidebarBreakpoint
+              ? find.byKey(const ValueKey('approved-nav-0'))
+              : find.byKey(const ValueKey('inline-task-title')),
         );
         expect(tester.getRect(last).bottom, lessThanOrEqualTo(capture.top));
         await tester.drag(find.byType(Scrollable).first, const Offset(0, 800));
@@ -182,14 +189,7 @@ void main() {
       // Today and focus lay out without overflow too.
       final compact = layout.$2.width < sidebarBreakpoint;
       if (compact) {
-        await tester.tap(find.byKey(const ValueKey('compact-navigation')));
-        await tester.pumpAndSettle();
-        await tester.tap(
-          find.descendant(
-            of: find.byType(PopupMenuItem<String>),
-            matching: find.text('امروز'),
-          ),
-        );
+        await tester.tap(find.byKey(const ValueKey('approved-nav-0')));
       } else {
         await tester.tap(find.byKey(const ValueKey('view-today')));
       }
@@ -197,14 +197,9 @@ void main() {
       expect(tester.takeException(), isNull);
       await _capture(tester, captureKey, '${layout.$1}-today');
       if (compact) {
-        await tester.tap(find.byKey(const ValueKey('compact-navigation')));
+        await tester.tap(find.byKey(const ValueKey('menval-wordmark')));
         await tester.pumpAndSettle();
-        await tester.tap(
-          find.descendant(
-            of: find.byType(PopupMenuItem<String>),
-            matching: find.text('تمرکز'),
-          ),
-        );
+        await tester.tap(find.widgetWithText(ListTile, 'تمرکز').last);
       } else {
         await tester.tap(find.widgetWithText(ListTile, 'تمرکز').first);
       }
