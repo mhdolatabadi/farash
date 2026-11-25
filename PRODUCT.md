@@ -2,27 +2,19 @@
 <!-- impeccable:product-schema 1 -->
 
 ## Platform
-android
+Android and Web/PWA; iOS is out of scope.
 
 ## Product Purpose
-Self-hosted task and planning app, Persian-first, for daily capture and project
-organization. Web/PWA and Android are supported; iOS is out of scope.
+Self-hosted, private, Persian-first task and planning app with projects, quick capture, calendar, focus, habits and time tracking.
 
 ## Capabilities and Constraints
-Flutter client, Go API, PostgreSQL. Preserve owner-scoped accounts/projects/tasks,
-sections, priorities, completion, undo and project navigation. Roadmap features
-must not appear as working controls before implementation.
+Flutter client, Go API, PostgreSQL. Preserve owner-scoped accounts, projects, tasks, sections, priorities, completion and undo, calendar and project navigation. Roadmap features cannot appear as live controls before implementation. The redesign changes **visual presentation**, not product truth or backend contracts.
 
 ## Brand Commitments
-منوال / Menval, Persian RTL, bundled Vazirmatn. The owner rejected every themed
-look (glass, dew, garden, weaving rug) and chose a plain Material 3 app: white
-and teal by day, near-black and lime by night, flat lists, no illustration or
-metaphor. Habits follow Loop Habit Tracker's UI closely. See DESIGN.md.
+منوال / Menval, Persian RTL, bundled Vazirmatn and clear Persian numerals. The owner explicitly requested a ground-up visual redesign on 2026-11-25; the previous light-teal/dark-lime neumorphic UI is no longer the approved direction. The current implementation candidate, **Menval Ledger**, is defined in DESIGN.md and must be judged from real light/dark Android and web captures. Preserve fast task capture, accessibility and sane information density.
 
-## Migration boundary
-The Android application ID, persisted storage keys and deployment identifiers retain the legacy `farash` spelling for compatibility. See `docs/rebrand-menval.md`.
+## Migration Boundary
+Android application ID `ir.mhdolatabadi.farash`, persisted storage keys, OAuth and deployment identifiers stay unchanged for compatibility. See `docs/rebrand-menval.md`.
 
 ## Product Principles
-Fast one-field capture; private by default; reversible completion/deletion;
-legible task content; Web and Android parity. Actual hardware performance and
-accessibility-service validation remain open checks.
+Fast one-field task entry; user data private by default; reversible completion/deletion; legible mixed-language task content; Web/Android parity; no invented statistics or inaccessible controls. Real hardware performance and accessibility-service validation remain separate release checks.
