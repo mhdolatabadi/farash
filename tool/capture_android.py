@@ -123,7 +123,7 @@ def open_drawer():
     # Tapping the hidden menu button again would fail despite a valid screen.
     if matching_nodes(window_xml(), 'حساب و تنظیمات'):
         return
-    tap('باز کردن منو پیمایش', wait_for='حساب و تنظیمات')
+    tap('منوال', wait_for='حساب و تنظیمات')
 
 
 
@@ -155,6 +155,7 @@ def capture_review():
     capture('weaving-large-text')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')
     time.sleep(2)
+    open_drawer()
     tap('تمرکز')
     capture('focus-dark')
     tap('شروع تمرکز')
@@ -171,6 +172,7 @@ def capture_review():
     capture('drawer-dark')
     adb('shell', 'input', 'keyevent', '4')
     time.sleep(2)
+    open_drawer()
     tap('زمان‌ها')
     capture('times-dark')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')
