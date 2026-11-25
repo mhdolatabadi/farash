@@ -8,10 +8,16 @@ import 'package:flutter/material.dart';
 
 /// A provider-independent, owner-scoped task month view.
 class TaskMonthView extends StatefulWidget {
-  const TaskMonthView({super.key, required this.loadTasks, this.now});
+  const TaskMonthView({
+    super.key,
+    required this.loadTasks,
+    this.now,
+    this.onOpenTask,
+  });
 
   final Future<List<Task>> Function(DateTime from, DateTime to) loadTasks;
   final DateTime Function()? now;
+  final ValueChanged<Task>? onOpenTask;
 
   @override
   State<TaskMonthView> createState() => _TaskMonthViewState();
@@ -271,6 +277,9 @@ class _TaskMonthViewState extends State<TaskMonthView> {
           for (final task in selectedTasks)
             ListTile(
               key: ValueKey('month-task-${task.id}'),
+              onTap: widget.onOpenTask == null
+                  ? null
+                  : () => widget.onOpenTask!(task),
               title: Text(task.title),
               leading: Icon(
                 task.isCompleted
