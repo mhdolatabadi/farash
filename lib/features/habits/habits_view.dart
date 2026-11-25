@@ -231,10 +231,13 @@ class _HabitsViewState extends State<HabitsView> {
                   PositionedDirectional(
                     end: 16 + inset,
                     bottom: 16,
-                    child: FloatingActionButton(
-                      tooltip: 'عادت تازه',
-                      onPressed: _add,
-                      child: const Icon(Icons.add_rounded),
+                    child: PressDepth(
+                      borderRadius: BorderRadius.circular(18),
+                      child: FloatingActionButton(
+                        tooltip: 'عادت تازه',
+                        onPressed: _add,
+                        child: const Icon(Icons.add_rounded),
+                      ),
                     ),
                   ),
               ],
