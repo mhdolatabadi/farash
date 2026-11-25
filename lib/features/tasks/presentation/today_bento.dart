@@ -213,10 +213,7 @@ class _DailyOverview extends StatelessWidget {
               children: [
                 tasks,
                 const SizedBox(height: Space.sm),
-                Divider(
-                  height: 1,
-                  color: colors.outlineVariant,
-                ),
+                Divider(height: 1, color: colors.outlineVariant),
                 const SizedBox(height: Space.sm),
                 shortcut,
               ],
