@@ -406,7 +406,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        habitWeekdays[dayDate(today - i).weekday - 1],
+                        habitWeekdays[dayDate(saturdayOf(today) + i).weekday - 1],
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: i == 0 ? theme.colorScheme.onSurface : muted,
                           fontWeight: i == 0
@@ -415,7 +415,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
                         ),
                       ),
                       Text(
-                        persianDigits(dayOfMonth(today - i, settings)),
+                        '',
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: i == 0 ? theme.colorScheme.onSurface : muted,
                           fontWeight: i == 0
@@ -448,6 +448,26 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
 
 /// Short weekday names for the day columns, indexed by weekday − 1.
 const habitWeekdays = ['دو', 'سه', 'چهار', 'پنج', 'جمعه', 'شنبه', 'یک'];
+
+// RTL calendar rows run from Saturday to Friday, matching the approved view.
+int saturdayOf(int day) =>
+    day - ((dayDate(day).weekday + 1) % DateTime.daysPerWeek);
+
+IconData habitGlyph(String name) {
+  if (name.contains('مطالع') || name.contains('کتاب')) {
+    return Icons.menu_book_outlined;
+  }
+  if (name.contains('ورزش') || name.contains('تمرین')) {
+    return Icons.fitness_center_rounded;
+  }
+  if (name.contains('نوشت') || name.contains('یادداشت')) {
+    return Icons.edit_outlined;
+  }
+  if (name.contains('پیاده') || name.contains('قدم')) {
+    return Icons.directions_walk_outlined;
+  }
+  return Icons.check_circle_outline_rounded;
+}
 
 int dayOfMonth(int day, CalendarSettings settings) {
   final date = dayDate(day);
@@ -500,64 +520,71 @@ class HabitRow extends StatelessWidget {
                   ),
                   child: Padding(
                     padding: const EdgeInsetsDirectional.only(
-                      start: Space.gutter,
-                      end: Space.sm,
+                      start: Space.sm, end: Space.xs,
                     ),
                     child: Row(
                       children: [
-                        Semantics(
-                          label: persianDigits(
-                            'قدرت ${(stats.currentScore * 100).round()}٪',
-                          ),
-                          child: ScoreRing(
-                            score: stats.currentScore,
-                            color: color,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
+                        Icon(habitGlyph(habit.name), color: color, size: 18),
+                        const SizedBox(width: Space.xs),
                         Expanded(
-                          child: Text(
-                            habit.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: habit.archived
-                                  ? theme.colorScheme.onSurfaceVariant
-                                  : color,
-                              fontWeight: FontWeight.w600,
-                              height: 1.3,
-                            ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                habit.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: habit.archived
+                                      ? theme.colorScheme.onSurfaceVariant
+                                      : color,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    persianDigits(
+                                      '${stats.currentStreak?.length ?? 0}',
+                                    ),
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      fontSize: 10,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Icon(
+                                    Icons.local_fire_department_outlined,
+                                    size: 13,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                        if (habit.archived)
-                          Padding(
-                            padding: const EdgeInsetsDirectional.only(end: 4),
-                            child: Icon(
-                              Icons.archive_outlined,
-                              size: 18,
-                              semanticLabel: 'بایگانی‌شده',
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
                       ],
                     ),
                   ),
                 ),
               ),
+
               for (var i = 0; i < columns; i++)
                 CheckCell(
                   habit: habit,
                   stats: stats,
                   width: cellWidth,
-                  day: stats.today - i,
+                  day: saturdayOf(stats.today) + i,
                   label: relativeDay(
-                    dayDate(stats.today - i),
+                    dayDate(saturdayOf(stats.today) + i),
                     settings,
                     today: dayDate(stats.today),
                   ),
                   onTap: () =>
-                      recordDay(context, controller, habit, stats.today - i),
+                      recordDay(context, controller, habit, saturdayOf(stats.today) + i),
                 ),
               const SizedBox(width: Space.sm),
             ],
