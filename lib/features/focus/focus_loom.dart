@@ -7,11 +7,7 @@ import 'package:flutter/material.dart';
 /// At zero the frame and warp threads stay visible, but not a single knot is
 /// woven. A task title supplies a stable motif seed within this client.
 class FocusLoom extends StatelessWidget {
-  const FocusLoom({
-    super.key,
-    required this.progress,
-    this.patternSeed = '',
-  });
+  const FocusLoom({super.key, required this.progress, this.patternSeed = ''});
 
   final double progress;
   final String patternSeed;
@@ -94,38 +90,18 @@ class _LoomPainter extends CustomPainter {
       ..color = frame
       ..strokeCap = StrokeCap.round
       ..strokeWidth = rail;
-    canvas.drawLine(
-      Offset(left, top - 8),
-      Offset(left, bottom + 12),
-      wood,
-    );
-    canvas.drawLine(
-      Offset(right, top - 8),
-      Offset(right, bottom + 12),
-      wood,
-    );
+    canvas.drawLine(Offset(left, top - 8), Offset(left, bottom + 12), wood);
+    canvas.drawLine(Offset(right, top - 8), Offset(right, bottom + 12), wood);
     wood.strokeWidth = rail * 1.6;
-    canvas.drawLine(
-      Offset(left - 9, top),
-      Offset(right + 9, top),
-      wood,
-    );
-    canvas.drawLine(
-      Offset(left - 9, bottom),
-      Offset(right + 9, bottom),
-      wood,
-    );
+    canvas.drawLine(Offset(left - 9, top), Offset(right + 9, top), wood);
+    canvas.drawLine(Offset(left - 9, bottom), Offset(right + 9, bottom), wood);
 
     final warp = Paint()
       ..color = thread
       ..strokeWidth = 1;
     for (var i = 0; i <= 31; i++) {
       final x = rug.left + rug.width * i / 31;
-      canvas.drawLine(
-        Offset(x, rug.top),
-        Offset(x, rug.bottom),
-        warp,
-      );
+      canvas.drawLine(Offset(x, rug.top), Offset(x, rug.bottom), warp);
     }
 
     // Rows are woven from the bottom up in exactly ten distinct stages.
