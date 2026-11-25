@@ -22,6 +22,7 @@ class TaskCalendarView extends StatefulWidget {
 
   final CalendarTaskLoader loadTasks;
   final DateTime Function()? now;
+
   /// Hide the page title when hosted inside Menval's shared shell.
   final bool embedded;
 
@@ -163,13 +164,13 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
           ? null
           : AppBar(
               title: const Text('تقویم'),
-        actions: [
-          TextButton(
-            onPressed: () => setState(() => _showMonth = !_showMonth),
-            child: Text(_showMonth ? 'هفته' : 'ماه'),
-          ),
-        ],
-      ),
+              actions: [
+                TextButton(
+                  onPressed: () => setState(() => _showMonth = !_showMonth),
+                  child: Text(_showMonth ? 'هفته' : 'ماه'),
+                ),
+              ],
+            ),
       body: _showMonth
           ? TaskMonthView(loadTasks: widget.loadTasks, now: widget.now)
           : SafeArea(
