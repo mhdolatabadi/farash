@@ -87,9 +87,6 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
       final timer = widget.controller;
       final theme = Theme.of(context);
       final colors = theme.colorScheme;
-      final seconds = (timer.remaining.inMilliseconds / 1000).ceil();
-      final time =
-          '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}';
       final work = timer.minutes == 25;
       return ColoredBox(
         color: Soft.ground(context),
