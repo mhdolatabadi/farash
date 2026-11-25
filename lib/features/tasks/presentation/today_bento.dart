@@ -39,7 +39,9 @@ class TodayBento extends StatelessWidget {
     final summary = _DayStatus(
       open: open,
       done: done,
-      focus: focus,
+      // At 2x text scale, Focus stays in the bottom navigation; avoid
+      // pushing the day's actual tasks below the first viewport.
+      focus: largeText ? null : focus,
       onOpenFocus: onOpenFocus,
     );
     final habits = this.habits;
@@ -129,7 +131,11 @@ class _LedgerDate extends StatelessWidget {
             Text(
               parts.first,
               style: theme.textTheme.displayLarge?.copyWith(
-                fontSize: compact ? 64 : 76,
+                fontSize: MediaQuery.textScalerOf(context).scale(1) >= 1.5
+                    ? 42
+                    : compact
+                    ? 64
+                    : 76,
                 height: 1,
                 fontWeight: FontWeight.w900,
                 color: colors.primary,
