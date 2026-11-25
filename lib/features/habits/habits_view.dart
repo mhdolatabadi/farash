@@ -473,7 +473,7 @@ class HabitRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = habitColor(context, habit.color);
+    final color = theme.colorScheme.onSurface;
     final settings = CalendarScope.of(context);
     // Raised compact rows sit inside a single lower surface.
     return DecoratedBox(
@@ -612,7 +612,9 @@ class CheckCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = habitColor(context, habit.color);
+    final color = theme.brightness == Brightness.dark
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurface;
     final muted = theme.colorScheme.onSurfaceVariant;
     final check = stats.check(day);
     final Widget mark;
