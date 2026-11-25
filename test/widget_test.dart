@@ -320,10 +320,7 @@ void main() {
           }
           if (request.url.path == '/api/v1/auth/refresh') {
             refreshAttempts++;
-            expect(
-              jsonDecode(request.body)['refresh_token'],
-              'old-refresh',
-            );
+            expect(jsonDecode(request.body)['refresh_token'], 'old-refresh');
             if (outcome == 'rejected') {
               return http.Response('{"error":"invalid_refresh_token"}', 401);
             }
@@ -346,11 +343,7 @@ void main() {
         }),
       );
       await tester.pumpWidget(
-        app(
-          sessions: saved,
-          refreshCredentials: refresh,
-          api: api,
-        ),
+        app(sessions: saved, refreshCredentials: refresh, api: api),
       );
       await tester.pumpAndSettle();
       expect(find.byType(DueTasksView), findsOneWidget);
