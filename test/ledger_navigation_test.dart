@@ -38,7 +38,13 @@ void main() {
       expect(tester.getSize(row).height, greaterThanOrEqualTo(48));
       final decorated = find.descendant(
         of: find.byType(SidebarRow),
-        matching: find.byType(DecoratedBox),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is DecoratedBox &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration as BoxDecoration).border
+                  is BorderDirectional,
+        ),
       );
       expect(decorated, findsOneWidget);
       final decoration = tester.widget<DecoratedBox>(decorated).decoration;
