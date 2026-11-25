@@ -316,18 +316,20 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                             right: _gutter + todayIndex * dayWidth,
                             width: dayWidth,
                             child: IgnorePointer(
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: scheme.onSurfaceVariant,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: scheme.shadow.withValues(alpha: 0.12),
-                                      blurRadius: 4,
-                                    ),
-                                  ],
+                              child: Center(
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: scheme.onSurfaceVariant,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: scheme.shadow.withValues(alpha: 0.12),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
