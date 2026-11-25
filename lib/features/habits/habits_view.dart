@@ -399,9 +399,12 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
             SizedBox(
               width: cellWidth,
               child: ExcludeSemantics(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                     Text(
                       habitWeekdays[dayDate(today - i).weekday - 1],
                       style: theme.textTheme.labelSmall?.copyWith(
@@ -416,7 +419,8 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
                         fontWeight: i == 0 ? FontWeight.w700 : FontWeight.w500,
                       ),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
