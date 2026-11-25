@@ -483,12 +483,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Now'), findsNothing);
     expect(api.byTitle('Now').isCompleted, isTrue);
-    expect(
-      find.text(
-        'کاری برای امروز نمانده.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('کاری برای امروز نمانده.'), findsOneWidget);
     await tester.tap(find.text('برگرداندن'));
     await tester.pumpAndSettle();
     expect(find.text('Now'), findsOneWidget);
