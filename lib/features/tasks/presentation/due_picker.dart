@@ -243,11 +243,13 @@ class _DuePickerState extends State<DuePicker> {
               onShift: (by) => _shiftMonth(by, settings),
             ),
             if (_target == _Target.due && _day != null) ...[
-              const Divider(),
-              Row(
+              const SizedBox(height: 8),
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
                 children: [
                   Text('ساعت انجام', style: theme.textTheme.bodyMedium),
-                  const Spacer(),
                   if (_time == null)
                     TextButton.icon(
                       onPressed: _enableTime,
