@@ -166,7 +166,9 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
       final first = JalaliDate.fromGregorian(days.first);
       final last = JalaliDate.fromGregorian(days.last);
       weekLabel = first.year == last.year && first.month == last.month
-          ? persianDigits('${first.day} تا ${last.day} ${jalaliMonths[last.month - 1]}')
+          ? persianDigits(
+              '${first.day} تا ${last.day} ${jalaliMonths[last.month - 1]}',
+            )
           : '${formatDate(days.first, settings)} تا ${formatDate(days.last, settings)}';
     } else {
       weekLabel = days.first.month == days.last.month
@@ -252,7 +254,8 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
                                   : widget.embedded
                                   ? Padding(
                                       padding: const EdgeInsetsDirectional.only(
-                                        top: 4, bottom: 8,
+                                        top: 4,
+                                        bottom: 8,
                                       ),
                                       child: SoftWell(
                                         radius: 34,
