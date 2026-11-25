@@ -411,11 +411,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       defaultProject: () => target,
     );
     try {
-      final task = await showDialog<Task>(
+      final task = await showGeneralDialog<Task>(
         context: context,
         barrierDismissible: false,
-        builder: (_) =>
+        barrierLabel: 'ساخت کار',
+        barrierColor: Colors.black.withValues(alpha: 0.16),
+        transitionDuration: Motion.of(context, Motion.standard),
+        pageBuilder: (_, _, _) =>
             QuickAddDialog(projectName: target.displayName, session: session),
+        transitionBuilder: (context, animation, secondaryAnimation, child) =>
+            SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(1, 0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Motion.enter),
+              ),
+              child: child,
+            ),
       );
       if (task != null && mounted) {
         _refreshCount();
@@ -1113,7 +1126,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= sidebarBreakpoint;
-        final rail = !wide && constraints.maxWidth >= railBreakpoint;
+        final rail = false; // Keep primary navigation below content on tablets.
         return ListenableBuilder(
           listenable: Listenable.merge([widget.projects, ?_labels]),
           builder: (context, _) {
@@ -1130,6 +1143,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     onOpenProject: _select,
                     labels: _labels,
                     sectionsApi: widget.sectionsApi,
+                    showQuickCapture: false,
                     doneToday: widget.tasksApi is ApiClient ? _doneToday : null,
                     focus: _focus,
                     onOpenFocus: () => _switchSection(2),
@@ -1236,14 +1250,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               // with the drawer button, so nothing frames the list twice.
               return Scaffold(
                 key: _scaffoldKey,
-                floatingActionButton: _section == 2 || _section == 3
-                    ? FloatingActionButton(
-                        heroTag: 'farash-tool-capture',
-                        tooltip: 'افزودن کار',
-                        onPressed: _quickAdd,
-                        child: const Icon(Icons.add_rounded),
-                      )
-                    : null,
+                floatingActionButtonLocation:
+                    FloatingActionButtonLocation.startFloat,
+                floatingActionButton: FloatingActionButton(
+                  heroTag: 'menval-quick-capture',
+                  tooltip: 'افزودن کار',
+                  onPressed: _quickAdd,
+                  child: const Icon(Icons.add_rounded),
+                ),
                 appBar: selected == null && view == null && label == null
                     ? AppBar(title: const Text('منوال'))
                     : null,
@@ -1342,14 +1356,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             }
             return Scaffold(
               key: _scaffoldKey,
-              floatingActionButton: _section == 2 || _section == 3
-                  ? FloatingActionButton(
-                      heroTag: 'farash-tool-capture',
-                      tooltip: 'افزودن کار',
-                      onPressed: _quickAdd,
-                      child: const Icon(Icons.add_rounded),
-                    )
-                  : null,
+              floatingActionButtonLocation:
+                    FloatingActionButtonLocation.startFloat,
+                floatingActionButton: FloatingActionButton(
+                  heroTag: 'menval-quick-capture',
+                  tooltip: 'افزودن کار',
+                  onPressed: _quickAdd,
+                  child: const Icon(Icons.add_rounded),
+                ),
               body: SafeArea(
                 child: Row(
                   children: [
