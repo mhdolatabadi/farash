@@ -118,7 +118,8 @@ class _QuickAddDialogState extends State<QuickAddDialog> {
                               controller: _text,
                               autofocus: true,
                               enabled:
-                                  !_busy && !widget.session.hasPendingRecurrence,
+                                  !_busy &&
+                                  !widget.session.hasPendingRecurrence,
                               maxLength: 500,
                               buildCounter:
                                   (
@@ -164,9 +165,10 @@ class _QuickAddDialogState extends State<QuickAddDialog> {
                                             widget.session.hasPendingRecurrence
                                         ? null
                                         : () => setState(
-                                            () => _ignore.add(
-                                              (token.start, token.end),
-                                            ),
+                                            () => _ignore.add((
+                                              token.start,
+                                              token.end,
+                                            )),
                                           ),
                                   ),
                               ],
