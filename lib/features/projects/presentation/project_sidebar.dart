@@ -17,8 +17,7 @@ import 'package:menval/features/tasks/presentation/due_tasks_view.dart';
 /// The navigation list: Inbox, the views across projects, favourites,
 /// the project tree and labels, with the progress and the account pinned
 /// under it. Used as the phone drawer and the wide-screen sidebar, on the
-/// soft ground: compact rows in labelled groups, the open row standing up
-/// as a raised pill and everything else flat.
+/// soft ground: compact rows in labelled groups, the active destination marked with a fine editorial rule.
 class ProjectSidebar extends StatelessWidget {
   const ProjectSidebar({
     super.key,
@@ -360,7 +359,7 @@ class SidebarTheme extends StatelessWidget {
     return ListTileTheme(
       data: ListTileThemeData(
         dense: true,
-        minTileHeight: pointer ? 36 : 48,
+        minTileHeight: pointer ? 40 : 48,
         minLeadingWidth: 18,
         minVerticalPadding: 0,
         visualDensity: VisualDensity.compact,
@@ -377,7 +376,7 @@ class SidebarTheme extends StatelessWidget {
         selectedColor: scheme.primary,
         selectedTileColor: Colors.transparent,
         titleTextStyle: theme.textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
         ),
         leadingAndTrailingTextStyle: theme.textTheme.labelMedium,
       ),
@@ -390,7 +389,7 @@ class SidebarTheme extends StatelessWidget {
 class SidebarRow extends StatelessWidget {
   const SidebarRow({super.key, required this.selected, required this.child});
 
-  /// The corner of every row and of the open row's pill.
+  /// Ledger rows have gently rounded corners, not oversized pills.
   static const radius = 10.0;
 
   final bool selected;
@@ -400,12 +399,16 @@ class SidebarRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final row = Material(type: MaterialType.transparency, child: child);
     if (!selected) return row;
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+          color: colors.primaryContainer.withValues(alpha: 0.64),
           borderRadius: BorderRadius.circular(radius),
+          border: BorderDirectional(
+            start: BorderSide(color: colors.primary, width: 2),
+          ),
         ),
         child: row,
       ),
@@ -458,7 +461,7 @@ class _SectionAction extends StatelessWidget {
       tooltip: tooltip,
       iconSize: 16,
       visualDensity: VisualDensity.compact,
-      constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+      constraints: const BoxConstraints.tightFor(width: 48, height: 48),
       padding: EdgeInsets.zero,
       color: Theme.of(context).colorScheme.onSurfaceVariant,
       icon: Icon(icon),
@@ -579,9 +582,9 @@ class _SectionTitle extends StatelessWidget {
     final muted = theme.colorScheme.onSurfaceVariant;
     final name = Text(
       title,
-      style: theme.textTheme.labelMedium?.copyWith(
+      style: theme.textTheme.labelLarge?.copyWith(
         color: muted,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w800,
       ),
     );
     final onToggle = this.onToggle;
@@ -627,7 +630,7 @@ class _SectionTitle extends StatelessWidget {
         Space.xs,
       ),
       child: SizedBox(
-        height: 32,
+        height: 48,
         child: Row(
           children: [
             Expanded(
