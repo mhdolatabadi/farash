@@ -355,10 +355,10 @@ void main() {
       );
       // The Today shell schedules continuous frames. Wait for its actual
       // readiness condition instead of waiting for every frame to settle.
-      for (var attempt = 0;
-          attempt < 40 && find.byType(DueTasksView).evaluate().isEmpty;
-          attempt++) {
+      var attempts = 0;
+      while (attempts < 40 && find.byType(DueTasksView).evaluate().isEmpty) {
         await tester.pump(const Duration(milliseconds: 100));
+        attempts++;
       }
       expect(find.byType(DueTasksView), findsOneWidget);
 
