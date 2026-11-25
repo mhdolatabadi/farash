@@ -59,8 +59,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.runAsync(() async {
-      final boundary = key.currentContext!.findRenderObject()!
-          as RenderRepaintBoundary;
+      final boundary =
+          key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
       final rendered = await boundary.toImage(pixelRatio: 1);
       final bytes = await rendered.toByteData(format: ui.ImageByteFormat.png);
       final file = File('.impeccable/review/focus-weave-stages.png');
