@@ -321,6 +321,11 @@ void main() {
               200,
             );
           }
+          // The legacy renewal endpoint is absent on this fixture server.
+          // Returning 200 with an empty body would fabricate a bad session.
+          if (request.url.path == '/api/v1/auth/renew') {
+            return http.Response('{"error":"not_found"}', 404);
+          }
           if (request.url.path == '/api/v1/auth/refresh') {
             refreshAttempts++;
             expect(jsonDecode(request.body)['refresh_token'], 'old-refresh');
