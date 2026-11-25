@@ -9,7 +9,7 @@ import 'package:menval/features/focus/focus_controller.dart';
 import 'package:menval/features/projects/data/project.dart';
 import 'package:menval/features/tasks/data/task.dart';
 import 'package:menval/features/tasks/presentation/due_tasks_view.dart';
-import 'package:menval/features/tasks/presentation/today_bento.dart';
+import 'package:menval/features/tasks/presentation/today_workspace.dart';
 
 import 'support/fake_tasks_api.dart';
 
@@ -52,10 +52,13 @@ void main() {
       MaterialApp(
         theme: dark ? MenvalTheme.dark() : MenvalTheme.light(),
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: TextScaler.linear(textScale)),
-          child: CalendarScope(settings: CalendarSettings(), child: child!),
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(textScale),
+          ),
+          child: CalendarScope(
+            settings: CalendarSettings(),
+            child: child!,
+          ),
         ),
         home: Directionality(
           textDirection: TextDirection.rtl,
@@ -77,168 +80,139 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('the tasks tile shows the server count of done tasks', (
+  testWidgets('Today is a task-first workspace, not three summary tiles', (
     tester,
   ) async {
     await pump(tester, doneToday: () async => 3);
-    expect(find.byType(TodayBento), findsOneWidget);
-    expect(find.text('۳ از ۴'), findsOneWidget);
-    expect(find.byType(SoftWell), findsOneWidget);
+    final workspace = find.byType(TodayWorkspace);
+    expect(workspace, findsOneWidget);
+    expect(
+      find.descendant(of: workspace, matching: find.byType(SoftWell)),
+      findsNothing,
+    );
+    expect(find.text('در صف انجام'), findsOneWidget);
+    expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
+    expect(find.text('۳ از ۴ انجام‌شده'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
-  testWidgets('without a server count the tile shows only open tasks', (
+  testWidgets('no server statistics means no invented completion progress', (
     tester,
   ) async {
     await pump(tester);
-    expect(find.text('۱ باز'), findsOneWidget);
-    expect(find.textContaining(' از '), findsNothing);
+    expect(find.text('۱ کار باقی‌مانده'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
-  testWidgets('a failed count hides the progress instead of guessing', (
+  testWidgets('server statistics failure leaves only the real open count', (
     tester,
   ) async {
     await pump(tester, doneToday: () async => throw StateError('offline'));
+    expect(find.text('۱ کار باقی‌مانده'), findsOneWidget);
     expect(tester.takeException(), isNull);
-    expect(find.text('۱ باز'), findsOneWidget);
   });
 
-  testWidgets(
-    'Today progress exposes an RTL-friendly Persian screen-reader label',
-    (tester) async {
-      final semantics = tester.ensureSemantics();
-      await pump(tester, doneToday: () async => 3);
-      expect(
-        find.bySemanticsLabel('۳ کار از ۴ کار امروز انجام شد'),
-        findsOneWidget,
-      );
-      expect(tester.takeException(), isNull);
-      semantics.dispose();
-    },
-  );
-
-  testWidgets('offline count exposes only known open tasks to screen readers', (
+  testWidgets('completion stats retain Persian screen-reader semantics', (
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
-    await pump(tester, doneToday: () async => throw StateError('offline'));
-    expect(find.bySemanticsLabel('۱ کار باز برای امروز'), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('انجام شد')), findsNothing);
-    expect(tester.takeException(), isNull);
+    await pump(tester, doneToday: () async => 3);
+    expect(
+      find.bySemanticsLabel('۳ کار از ۴ کار امروز انجام شد'),
+      findsOneWidget,
+    );
     semantics.dispose();
   });
 
-  testWidgets('the focus tile opens Focus', (tester) async {
+  testWidgets('focus is a real reachable secondary action', (tester) async {
     var opened = 0;
     await pump(tester, onOpenFocus: () => opened++);
-    expect(
-      find.descendant(
-        of: find.byType(TodayBento),
-        matching: find.byIcon(Icons.chevron_left_rounded),
-      ),
-      findsOneWidget,
-    );
-    await tester.tap(find.bySemanticsLabel('باز کردن تمرکز'));
+    final shortcut = find.bySemanticsLabel('باز کردن تمرکز');
+    await tester.ensureVisible(shortcut);
+    await tester.pumpAndSettle();
+    await tester.tap(shortcut);
     expect(opened, 1);
-  });
-
-  testWidgets('narrow, dark and large text lay out without overflow', (
-    tester,
-  ) async {
-    await pump(
-      tester,
-      doneToday: () async => 2,
-      size: const Size(320, 760),
-      textScale: 2,
-      dark: true,
-    );
-    expect(tester.takeException(), isNull);
-    expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
-  });
-
-  testWidgets('390px Android Today keeps tasks above the fold', (tester) async {
-    await pump(
-      tester,
-      size: const Size(390, 844),
-      textScale: 1.3,
-      dark: true,
-      doneToday: () async => 1,
-    );
-    final bento = find.byType(TodayBento);
-    expect(
-      find.descendant(of: bento, matching: find.byType(IntrinsicHeight)),
-      findsNothing,
-    );
-    expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('599px Today stays compact below the tablet breakpoint', (
-    tester,
-  ) async {
-    await pump(tester, size: const Size(599, 850), doneToday: () async => 1);
-    final bento = find.byType(TodayBento);
-    expect(
-      find.descendant(of: bento, matching: find.byType(IntrinsicHeight)),
-      findsNothing,
-    );
-    expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('600px Today uses the wider tablet composition', (tester) async {
-    await pump(tester, size: const Size(600, 850), doneToday: () async => 1);
-    final bento = find.byType(TodayBento);
-    expect(
-      find.descendant(of: bento, matching: find.byType(IntrinsicHeight)),
-      findsOneWidget,
-    );
-    expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('600px Today stacks tiles at 2x text scale', (tester) async {
-    await pump(
-      tester,
-      size: const Size(600, 850),
-      textScale: 2,
-      dark: true,
-      doneToday: () async => 1,
-    );
-    final bento = find.byType(TodayBento);
-    expect(
-      find.descendant(of: bento, matching: find.byType(IntrinsicHeight)),
-      findsNothing,
-    );
-    expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('375px Today keeps multiple tasks at 2x dark text scale', (
+  testWidgets('timed tasks use a clock lane and other tasks stay flexible', (
     tester,
   ) async {
     api.seed(
       'inbox',
-      'پیگیری کار دوم',
-      dates: TaskDates(due: TaskDue.onDay(today)),
+      'تماس ساعت‌دار',
+      dates: TaskDates(
+        due: TaskDue.at(
+          DateTime(today.year, today.month, today.day, 9, 30),
+          'Asia/Tehran',
+        ),
+      ),
     );
-    api.seed(
-      'inbox',
-      'پیگیری کار سوم',
-      dates: TaskDates(due: TaskDue.onDay(today)),
-    );
-    await pump(
-      tester,
-      size: const Size(375, 850),
-      textScale: 2,
-      dark: true,
-      doneToday: () async => 0,
-    );
-    expect(find.byType(TodayBento), findsOneWidget);
-    expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
+    await pump(tester);
+    expect(find.text('طبق ساعت'), findsOneWidget);
+    expect(find.text('در صف انجام'), findsOneWidget);
+    expect(find.text('تماس ساعت‌دار'), findsOneWidget);
+    expect(find.text('۰۹:۳۰'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('375px Today can scroll to the last of twelve tasks', (
+  testWidgets('overdue work is a separate lane with a real bulk action', (
+    tester,
+  ) async {
+    api.seed(
+      'inbox',
+      'کار عقب‌افتاده',
+      dates: TaskDates(
+        due: TaskDue.onDay(today.subtract(const Duration(days: 2))),
+      ),
+    );
+    await pump(tester);
+    expect(find.text('دیرشده'), findsOneWidget);
+    expect(find.text('کار عقب‌افتاده'), findsOneWidget);
+    await tester.ensureVisible(find.text('انتقال همه به امروز'));
+    await tester.tap(find.text('انتقال همه به امروز'));
+    await tester.pumpAndSettle();
+    expect(find.text('دیرشده'), findsNothing);
+    expect(api.byTitle('کار عقب‌افتاده').due, TaskDue.onDay(today));
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final width in [320.0, 375.0, 599.0, 600.0]) {
+    testWidgets('mobile workspace at $width with large RTL text', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        size: Size(width, 850),
+        textScale: 2,
+        dark: true,
+        doneToday: () async => 1,
+      );
+      expect(find.byType(TodayWorkspace), findsOneWidget);
+      expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
+      expect(find.text('در صف انجام'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('desktop has two columns instead of stretched mobile cards', (
+    tester,
+  ) async {
+    await pump(tester, size: const Size(1200, 900));
+    final taskColumn = find.text('در صف انجام');
+    final companion = find.text('مرور روز');
+    expect(taskColumn, findsOneWidget);
+    expect(companion, findsOneWidget);
+    expect(
+      (tester.getTopLeft(taskColumn).dx - tester.getTopLeft(companion).dx).abs(),
+      greaterThan(120),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('twelve tasks still scroll to the last without covering capture', (
     tester,
   ) async {
     for (var i = 2; i <= 12; i++) {
@@ -260,20 +234,6 @@ void main() {
           .first,
     );
     expect(find.text('کار شماره 12'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('320px Today uses a compact date row above actions', (
-    tester,
-  ) async {
-    await pump(tester, size: const Size(320, 740), doneToday: () async => 1);
-    final bento = find.byType(TodayBento);
-    expect(
-      find.descendant(of: bento, matching: find.byType(IntrinsicHeight)),
-      findsNothing,
-    );
-    expect(find.text('۱ از ۲'), findsOneWidget);
-    expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
