@@ -141,7 +141,8 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                   ),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(14),
-                                    color: daysBetween(widget.selected, day) == 0
+                                    color:
+                                        daysBetween(widget.selected, day) == 0
                                         ? scheme.onSurface
                                         : scheme.surface,
                                     boxShadow:
@@ -166,11 +167,19 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                           weekdayNames[day.weekday - 1],
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                            color: daysBetween(widget.selected, day) == 0
-                                                ? scheme.surface
-                                                : scheme.onSurface,
-                                          ),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelSmall
+                                              ?.copyWith(
+                                                color:
+                                                    daysBetween(
+                                                          widget.selected,
+                                                          day,
+                                                        ) ==
+                                                        0
+                                                    ? scheme.surface
+                                                    : scheme.onSurface,
+                                              ),
                                         ),
                                         Text(
                                           persianDigits(
@@ -181,11 +190,19 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                                   ).split(' ').first
                                                 : '${day.day}',
                                           ),
-                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                            color: daysBetween(widget.selected, day) == 0
-                                                ? scheme.surface
-                                                : scheme.onSurface,
-                                          ),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                color:
+                                                    daysBetween(
+                                                          widget.selected,
+                                                          day,
+                                                        ) ==
+                                                        0
+                                                    ? scheme.surface
+                                                    : scheme.onSurface,
+                                              ),
                                         ),
                                       ],
                                     ),
