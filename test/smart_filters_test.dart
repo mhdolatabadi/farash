@@ -103,7 +103,9 @@ void main() {
     expect(find.text('فیلترها'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('filter-f1')));
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(AppBar, 'تماس‌ها'), findsOneWidget);
+    // The redesigned shell embeds search without requiring a nested AppBar.
+    // Verify that the saved filter opened the actual search workspace.
+    expect(find.byType(SearchWorkspace), findsOneWidget);
     expect(tasks.searches.last.queryParameters['q'], '@تلفن');
     expect(tasks.searches.last.queryParameters['sort'], 'priority');
     expect(find.text('گروه: پروژه'), findsOneWidget);
