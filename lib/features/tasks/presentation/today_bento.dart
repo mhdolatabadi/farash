@@ -242,11 +242,11 @@ class _WorkProgress extends StatelessWidget {
     final progress = done == null || total == 0 ? null : done! / total;
     final value = done == null
         ? '${persianDigits(open)} باز'
-        : '${persianDigits(done)} از ${persianDigits(total)}';
+        : '${persianDigits(done!)} از ${persianDigits(total)}';
     return Semantics(
       label: done == null
           ? '${persianDigits(open)} کار باز برای امروز'
-          : '${persianDigits(done)} کار از ${persianDigits(total)} کار امروز انجام شد',
+          : '${persianDigits(done!)} کار از ${persianDigits(total)} کار امروز انجام شد',
       excludeSemantics: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,6 +368,25 @@ class _FocusShortcut extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _Caption extends StatelessWidget {
+  const _Caption(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: theme.textTheme.labelMedium?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w700,
+      ),
     );
   }
 }
