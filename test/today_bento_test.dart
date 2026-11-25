@@ -240,13 +240,17 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('600px Today uses the wider tablet composition', (tester) async {
+  testWidgets('600px Today uses a responsive tablet composition', (
+    tester,
+  ) async {
     await pump(tester, size: const Size(600, 850), doneToday: () async => 1);
     final bento = find.byType(TodayBento);
+    // LayoutBuilder must not be measured through IntrinsicHeight.
     expect(
       find.descendant(of: bento, matching: find.byType(IntrinsicHeight)),
-      findsOneWidget,
+      findsNothing,
     );
+    expect(find.text('کارهای امروز'), findsOneWidget);
     expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
