@@ -522,6 +522,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           _openNativeCalendar();
                         } else if (choice == 'habits') {
                           _switchSection(4);
+                        } else if (choice == 'focus') {
+                          _switchSection(2);
                         } else if (choice == 'more') {
                           _scaffoldKey.currentState?.openDrawer();
                         }
@@ -535,6 +537,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             child: Text('عادت‌ها'),
                           ),
                         const PopupMenuItem(value: 'today', child: Text('امروز')),
+                        const PopupMenuItem(value: 'focus', child: Text('تمرکز')),
                         const PopupMenuItem(value: 'more', child: Text('بخش‌های بیشتر')),
                       ],
                     ),
