@@ -8,9 +8,8 @@ import 'package:menval/features/focus/focus_controller.dart';
 import 'package:menval/features/habits/habit.dart';
 import 'package:menval/features/habits/habits_controller.dart';
 
-/// The tiles above «امروز»: the date, the day's tasks, the focus timer and
-/// today's habits. A tile whose data is missing is left out, never filled
-/// with a guess.
+/// The daily brief keeps tasks visually ahead of supporting tools.
+/// The date is typography, not another decorative dashboard card.
 class TodayBento extends StatelessWidget {
   const TodayBento({
     super.key,
@@ -24,13 +23,8 @@ class TodayBento extends StatelessWidget {
   });
 
   final DateTime today;
-
-  /// Open tasks due today or late.
   final int open;
-
-  /// Tasks the server counted as completed today; null while unknown.
   final int? done;
-
   final FocusController? focus;
   final VoidCallback? onOpenFocus;
   final HabitsController? habits;
@@ -39,20 +33,23 @@ class TodayBento extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scale = MediaQuery.textScalerOf(context).scale(1);
-    final tasks = _TasksTile(open: open, done: done);
-    final focus = this.focus;
-    final focusTile = focus == null
-        ? null
-        : _FocusTile(controller: focus, onOpen: onOpenFocus);
+    final compact = MediaQuery.sizeOf(context).width < 600 || scale >= 1.5;
+    final date = _DateHeading(today: today, compact: compact);
+    final overview = _DailyOverview(
+      open: open,
+      done: done,
+      focus: focus,
+      onOpenFocus: onOpenFocus,
+    );
     final habits = this.habits;
-    final habitsTile = habits == null
+    final habitTile = habits == null
         ? null
         : ListenableBuilder(
             listenable: habits,
             builder: (context, _) {
               final list = [
-                for (final h in habits.visible)
-                  if (!h.archived) h,
+                for (final habit in habits.visible)
+                  if (!habit.archived) habit,
               ];
               if (list.isEmpty) return const SizedBox.shrink();
               return Padding(
@@ -65,20 +62,9 @@ class TodayBento extends StatelessWidget {
               );
             },
           );
-    // Large text stacks the tiles; otherwise the date takes the height of
-    // the two tiles beside it.
-    final stacked = scale >= 1.5;
-    // All phone widths use the compact date row. The taller bento
-    // composition is reserved for tablets and desktop, where it does
-    // not push the task list below the first viewport.
-    final narrow = !stacked && MediaQuery.sizeOf(context).width < 600;
-    final date = _DateTile(
-      today: today,
-      tall: !stacked && !narrow,
-      horizontal: narrow,
-    );
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
+      padding: const EdgeInsetsDirectional.fromSTEB(
         Space.gutter - 2,
         Space.sm,
         Space.gutter - 2,
@@ -87,90 +73,39 @@ class TodayBento extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (stacked) ...[
-            date,
-            const SizedBox(height: Space.md),
-            tasks,
-            if (focusTile != null) ...[
-              const SizedBox(height: Space.md),
-              focusTile,
-            ],
-          ] else if (narrow) ...[
+          if (compact) ...[
             date,
             const SizedBox(height: Space.sm),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: tasks),
-                if (focusTile != null) ...[
-                  const SizedBox(width: Space.sm),
-                  Expanded(child: focusTile),
-                ],
-              ],
-            ),
+            overview,
           ] else
             IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(child: date),
-                  const SizedBox(width: Space.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        tasks,
-                        if (focusTile != null) ...[
-                          const SizedBox(height: Space.md),
-                          focusTile,
-                        ],
-                      ],
-                    ),
-                  ),
+                  const SizedBox(width: Space.lg),
+                  Expanded(child: overview),
                 ],
               ),
             ),
-          ?habitsTile,
+          ?habitTile,
         ],
       ),
     );
   }
 }
 
-class _Caption extends StatelessWidget {
-  const _Caption(this.text);
-  final String text;
+class _DateHeading extends StatelessWidget {
+  const _DateHeading({required this.today, required this.compact});
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Text(
-      text,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: theme.textTheme.labelMedium?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant,
-        fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-}
-
-class _DateTile extends StatelessWidget {
-  const _DateTile({
-    required this.today,
-    required this.tall,
-    this.horizontal = false,
-  });
   final DateTime today;
-  final bool tall;
-  final bool horizontal;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final settings = CalendarScope.of(context);
-    // "۶ آبان ۱۴۰۵": the day alone, then month and year.
     final parts = formatDate(
       today,
       settings,
@@ -178,119 +113,51 @@ class _DateTile extends StatelessWidget {
       alwaysYear: true,
     ).split(' ');
     final weekday = weekdayNames[today.weekday - 1];
+
     return Semantics(
       label: '$weekday ${parts.join(' ')}',
       excludeSemantics: true,
-      child: SoftTile(
-        padding: horizontal
-            ? const EdgeInsets.symmetric(horizontal: 16, vertical: 8)
-            : const EdgeInsets.all(14),
-        child: horizontal
-            ? Row(
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          Space.xs,
+          Space.sm,
+          Space.xs,
+          Space.sm,
+        ),
+        child: Row(
+          children: [
+            Text(
+              parts.first,
+              style: theme.textTheme.displayLarge?.copyWith(
+                color: colors.primary,
+                fontSize: compact ? 56 : 72,
+                height: 1,
+                fontWeight: FontWeight.w800,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(width: Space.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    parts.first,
-                    style: theme.textTheme.displayMedium?.copyWith(
-                      fontSize: 42,
-                      height: 1,
-                      fontWeight: FontWeight.w900,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: Space.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _Caption(weekday),
-                        Text(
-                          parts.skip(1).join(' '),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _Caption(weekday),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      parts.first,
-                      style: theme.textTheme.displayLarge?.copyWith(
-                        fontSize: tall ? 76 : 56,
-                        height: 1.05,
-                        fontWeight: FontWeight.w900,
-                        color: theme.colorScheme.primary,
-                      ),
+                    weekday,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: colors.onSurface,
                     ),
                   ),
                   Text(
                     parts.skip(1).join(' '),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
-}
-
-class _TasksTile extends StatelessWidget {
-  const _TasksTile({required this.open, required this.done});
-  final int open;
-  final int? done;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final done = this.done;
-    final total = (done ?? 0) + open;
-    final value = done == null || total == 0 ? null : done / total;
-    final text = done == null
-        ? '${persianDigits(open)} باز'
-        : '${persianDigits(done)} از ${persianDigits(total)}';
-    return Semantics(
-      label: done == null
-          ? '${persianDigits(open)} کار باز برای امروز'
-          : '${persianDigits(done)} کار از ${persianDigits(total)} کار امروز انجام شد',
-      excludeSemantics: true,
-      child: SoftTile(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: Row(
-          children: [
-            if (value != null) ...[
-              _Ring(value: value),
-              const SizedBox(width: 10),
-            ],
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const _Caption('کارها'),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      text,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -303,35 +170,143 @@ class _TasksTile extends StatelessWidget {
   }
 }
 
-class _Ring extends StatelessWidget {
-  const _Ring({required this.value});
-  final double value;
+/// A single glanceable surface replaces competing task and focus cards.
+class _DailyOverview extends StatelessWidget {
+  const _DailyOverview({
+    required this.open,
+    required this.done,
+    this.focus,
+    this.onOpenFocus,
+  });
+
+  final int open;
+  final int? done;
+  final FocusController? focus;
+  final VoidCallback? onOpenFocus;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return SizedBox.square(
-      dimension: 40,
-      child: CircularProgressIndicator(
-        value: value,
-        strokeWidth: 6,
-        strokeCap: StrokeCap.round,
-        color: colors.primary,
-        backgroundColor: colors.outlineVariant,
+    final focus = this.focus;
+    return Container(
+      padding: const EdgeInsets.all(Space.md),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: colors.outlineVariant.withValues(alpha: 0.65),
+        ),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final scaled = MediaQuery.textScalerOf(context).scale(1);
+          final column = constraints.maxWidth < 330 || scaled >= 1.4;
+          final tasks = _TasksOverview(open: open, done: done);
+          if (focus == null) return tasks;
+          final shortcut = _FocusShortcut(
+            controller: focus,
+            onOpen: onOpenFocus,
+          );
+          if (column) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                tasks,
+                const SizedBox(height: Space.sm),
+                Divider(
+                  height: 1,
+                  color: colors.outlineVariant,
+                ),
+                const SizedBox(height: Space.sm),
+                shortcut,
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: tasks),
+              const SizedBox(width: Space.md),
+              shortcut,
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-/// The running or ready timer; opens Focus.
-class _FocusTile extends StatelessWidget {
-  const _FocusTile({required this.controller, this.onOpen});
+class _TasksOverview extends StatelessWidget {
+  const _TasksOverview({required this.open, required this.done});
+
+  final int open;
+  final int? done;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final total = (done ?? 0) + open;
+    final fraction = done == null || total == 0 ? null : done! / total;
+    final value = done == null
+        ? '${persianDigits(open)} باز'
+        : '${persianDigits(done)} از ${persianDigits(total)}';
+
+    return Semantics(
+      label: done == null
+          ? '${persianDigits(open)} کار باز برای امروز'
+          : '${persianDigits(done)} کار از ${persianDigits(total)} کار امروز انجام شد',
+      excludeSemantics: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'کارهای امروز',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: colors.onSurface,
+            ),
+          ),
+          if (fraction != null) ...[
+            const SizedBox(height: Space.sm),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: fraction,
+                minHeight: 4,
+                color: colors.primary,
+                backgroundColor: colors.outlineVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Small and reachable; navigation, not a second primary action.
+class _FocusShortcut extends StatelessWidget {
+  const _FocusShortcut({required this.controller, this.onOpen});
+
   final FocusController controller;
   final VoidCallback? onOpen;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
@@ -346,45 +321,63 @@ class _FocusTile extends StatelessWidget {
               ? 'تمرکز در جریان، $clock مانده؛ باز کردن تمرکز'
               : 'باز کردن تمرکز',
           excludeSemantics: true,
-          child: SoftTile(
-            onTap: onOpen,
-            padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 10, 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          child: Material(
+            color: colors.primaryContainer,
+            borderRadius: BorderRadius.circular(14),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onOpen,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 52),
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(
+                    Space.md,
+                    Space.sm,
+                    Space.sm,
+                    Space.sm,
+                  ),
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const _Caption('تمرکز'),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: AlignmentDirectional.centerStart,
-                        child: Text(
-                          clock,
-                          textDirection: TextDirection.ltr,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            fontFeatures: const [FontFeature.tabularFigures()],
+                      Icon(
+                        Icons.timer_outlined,
+                        size: 20,
+                        color: colors.onPrimaryContainer,
+                      ),
+                      const SizedBox(width: Space.sm),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'تمرکز',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colors.onPrimaryContainer,
+                            ),
                           ),
-                        ),
+                          Text(
+                            clock,
+                            textDirection: TextDirection.ltr,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: colors.onPrimaryContainer,
+                              fontWeight: FontWeight.w800,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: Space.sm),
+                      Icon(
+                        Icons.chevron_left_rounded,
+                        color: colors.onPrimaryContainer,
+                        size: 22,
                       ),
                     ],
                   ),
                 ),
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    Icons.chevron_left_rounded,
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         );
