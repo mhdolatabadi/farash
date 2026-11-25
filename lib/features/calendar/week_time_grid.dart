@@ -6,6 +6,7 @@ import 'package:menval/core/text/persian_digits.dart';
 import 'package:menval/features/calendar/week_event_layout.dart';
 import 'package:menval/features/tasks/data/task.dart';
 import 'package:flutter/material.dart';
+import 'package:menval/app/press_depth.dart';
 
 /// Scrollable, accessible seven-day timetable with real-time positions.
 /// This is a view of Menval tasks, not a Google Calendar data import.
@@ -123,59 +124,61 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                             label: formatDate(day, settings, withWeekday: true),
                             selected: daysBetween(widget.selected, day) == 0,
                             button: true,
-                            child: InkWell(
-                              key: ValueKey('week-day-${dateKey(day)}'),
-                              borderRadius: BorderRadius.circular(14),
-                              onTap: () => widget.onSelectDay(day),
-                              child: Container(
-                                constraints: const BoxConstraints(
-                                  minHeight: 48,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(14),
-                                  color: scheme.surface,
-                                  boxShadow:
-                                      daysBetween(widget.selected, day) == 0
-                                      ? [
-                                          BoxShadow(
-                                            color: scheme.shadow.withValues(
-                                              alpha: 0.09,
+                            child: PressDepth(
+                              child: InkWell(
+                                key: ValueKey('week-day-${dateKey(day)}'),
+                                borderRadius: BorderRadius.circular(14),
+                                onTap: () => widget.onSelectDay(day),
+                                child: Container(
+                                  constraints: const BoxConstraints(
+                                    minHeight: 48,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(14),
+                                    color: scheme.surface,
+                                    boxShadow:
+                                        daysBetween(widget.selected, day) == 0
+                                        ? [
+                                            BoxShadow(
+                                              color: scheme.shadow.withValues(
+                                                alpha: 0.09,
+                                              ),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 2),
                                             ),
-                                            blurRadius: 12,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      weekdayNames[day.weekday - 1],
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.labelSmall,
-                                    ),
-                                    Text(
-                                      persianDigits(
-                                        settings.isJalali
-                                            ? formatDate(
-                                                day,
-                                                settings,
-                                              ).split(' ').first
-                                            : '${day.day}',
+                                          ]
+                                        : null,
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        weekdayNames[day.weekday - 1],
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.labelSmall,
                                       ),
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.titleMedium,
-                                    ),
-                                  ],
+                                      Text(
+                                        persianDigits(
+                                          settings.isJalali
+                                              ? formatDate(
+                                                  day,
+                                                  settings,
+                                                ).split(' ').first
+                                              : '${day.day}',
+                                        ),
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleMedium,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -221,24 +224,26 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                               for (final task in allDay[day].take(2))
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 2),
-                                  child: Material(
-                                    color: scheme.secondaryContainer,
-                                    borderRadius: BorderRadius.circular(5),
-                                    child: InkWell(
-                                      key: ValueKey('week-all-day-${task.id}'),
-                                      onTap: () => widget.onOpenTask(task),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 5,
-                                          vertical: 2,
-                                        ),
-                                        child: Text(
-                                          task.title,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: scheme.onSecondaryContainer,
+                                  child: PressDepth(
+                                    child: Material(
+                                      color: scheme.secondaryContainer,
+                                      borderRadius: BorderRadius.circular(5),
+                                      child: InkWell(
+                                        key: ValueKey('week-all-day-${task.id}'),
+                                        onTap: () => widget.onOpenTask(task),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 5,
+                                            vertical: 2,
+                                          ),
+                                          child: Text(
+                                            task.title,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: scheme.onSecondaryContainer,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -386,39 +391,41 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
       child: Semantics(
         label: '${block.task.title}، $displayTime',
         button: true,
-        child: Material(
-          color: color,
-          elevation: 1.3,
-          shadowColor: scheme.shadow.withValues(alpha: 0.19),
-          borderRadius: BorderRadius.circular(9),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            key: ValueKey('week-timed-${block.task.id}-${block.dayIndex}'),
-            onTap: () => widget.onOpenTask(block.task),
-            child: Padding(
-              padding: const EdgeInsets.all(4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    block.task.title,
-                    maxLines: height > 70 ? 2 : 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      height: 1.1,
-                    ),
-                  ),
-                  if (height > 42)
+        child: PressDepth(
+          child: Material(
+            color: color,
+            elevation: 1.3,
+            shadowColor: scheme.shadow.withValues(alpha: 0.19),
+            borderRadius: BorderRadius.circular(9),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              key: ValueKey('week-timed-${block.task.id}-${block.dayIndex}'),
+              onTap: () => widget.onOpenTask(block.task),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      displayTime,
-                      maxLines: 1,
+                      block.task.title,
+                      maxLines: height > 70 ? 2 : 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: textColor, fontSize: 10),
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        height: 1.1,
+                      ),
                     ),
-                ],
+                    if (height > 42)
+                      Text(
+                        displayTime,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: textColor, fontSize: 10),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
