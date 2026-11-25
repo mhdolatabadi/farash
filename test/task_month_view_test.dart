@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:menval/core/calendar/calendar_month.dart';
 import 'package:menval/core/calendar/calendar_scope.dart';
 import 'package:menval/core/calendar/calendar_settings.dart';
 import 'package:menval/features/calendar/task_month_view.dart';
@@ -129,5 +130,74 @@ void main() {
     await tester.pumpAndSettle();
     expect(calls, 2);
     expect(find.text('برای این روز کاری زمان‌بندی نشده است.'), findsOneWidget);
+  });
+  testWidgets('adjacent Gregorian day reloads without extra same-month fetch', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    var calls = 0;
+    await tester.pumpWidget(
+      app((from, to) async {
+        calls++;
+        if (calls == 1) return [];
+        return [
+          Task(
+            id: 'dec-task',
+            projectId: 'inbox',
+            title: 'کار ماه جدید',
+            due: TaskDue.onDay(DateTime(2026, 12, 1)),
+          ),
+        ];
+      }, settings: CalendarSettings(system: CalendarSystem.gregorian)),
+    );
+    await tester.pumpAndSettle();
+    expect(calls, 1);
+
+    await tester.tap(find.byKey(const ValueKey('month-day-2026-11-24')));
+    await tester.pumpAndSettle();
+    expect(calls, 1);
+
+    await tester.tap(find.byKey(const ValueKey('month-day-2026-12-1')));
+    await tester.pumpAndSettle();
+    expect(calls, 2);
+    expect(find.text('کار ماه جدید'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('adjacent Jalali day loads its own month tasks', (tester) async {
+    final settings = CalendarSettings();
+    final month = monthContaining(DateTime(2026, 11, 23), settings);
+    final adjacent = month.days.firstWhere(
+      (day) => day.isBefore(month.firstDay) || day.isAfter(month.lastDay),
+    );
+    var calls = 0;
+    await tester.pumpWidget(
+      app((from, to) async {
+        calls++;
+        if (calls == 1) return [];
+        return [
+          Task(
+            id: 'adjacent',
+            projectId: 'inbox',
+            title: 'کار روز کناری',
+            due: TaskDue.onDay(adjacent),
+          ),
+        ];
+      }, settings: settings),
+    );
+    await tester.pumpAndSettle();
+    expect(calls, 1);
+
+    await tester.tap(
+      find.byKey(
+        ValueKey('month-day-${adjacent.year}-${adjacent.month}-${adjacent.day}'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(calls, 2);
+    expect(find.text('کار روز کناری'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }
