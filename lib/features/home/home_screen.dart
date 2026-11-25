@@ -1384,7 +1384,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         Space.md,
                       ),
                       child: SizedBox(
-                        width: 205,
+                        width: 260,
                         child: Panel(
                           radius: 18,
                           child: ListenableBuilder(
