@@ -2,6 +2,7 @@ import 'package:menval/features/time_tracking/time_tracking.dart';
 import 'package:menval/features/time_tracking/time_tracking_view.dart';
 import 'package:flutter/material.dart';
 import 'package:menval/app/motion.dart';
+import 'package:menval/app/press_depth.dart';
 import 'package:menval/app/spacing.dart';
 import 'package:menval/core/calendar/calendar_scope.dart';
 import 'package:menval/core/calendar/date_labels.dart';
@@ -215,7 +216,7 @@ class TaskTile extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            row,
+            PressDepth(child: row),
             if (divider)
               Padding(
                 padding: EdgeInsetsDirectional.only(
