@@ -102,7 +102,8 @@ class _HabitsViewState extends State<HabitsView> {
             // Seven Loop-like days remain visible even on 320px phones.
             final cellWidth =
                 ((width - 2 * (Space.gutter - 2) - Space.sm - 95) / 7)
-                    .clamp(26.0, habitCellWidth);
+                    .clamp(26.0, habitCellWidth)
+                    .toDouble();
             const columns = 7;
             final list = CustomScrollView(
               slivers: [
