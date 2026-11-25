@@ -1420,13 +1420,13 @@ class _Brand extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const MenvalMark(size: 22),
+          const MenvalMark(size: 32),
           const SizedBox(width: Space.sm),
           Text(
             'منوال',
             style: Theme.of(
               context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
           ),
         ],
       ),
@@ -1582,7 +1582,7 @@ class _SearchField extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             child: SizedBox(
-              height: 40,
+              height: 48,
               child: Row(
                 children: [
                   const SizedBox(width: 12),
