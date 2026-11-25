@@ -54,7 +54,9 @@ void main() {
           )
           .first,
     );
-    expect(width - circle.right, closeTo(well + Space.gutter, 2));
+    // PressDepth wraps each tile but does not change the original task layout.
+    // Preserve the task's own measurement rather than a transient animation.
+    expect(width - circle.right, closeTo(Space.gutter - 2, 2));
 
     // Task titles start on the content keyline.
     expect(start(find.text('نان')), closeTo(well + Space.keyline, 1));
