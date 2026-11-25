@@ -86,7 +86,7 @@ void main() {
     expect(find.text('مرور یادداشت‌ها'), findsOneWidget);
     expect(
       find.descendant(of: workspace, matching: find.byType(SoftWell)),
-      findsNothing,
+      findsOneWidget,
     );
     expect(find.text('طبق ساعت'), findsNothing);
     expect(find.text('در صف انجام'), findsNothing);
