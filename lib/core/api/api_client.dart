@@ -769,7 +769,10 @@ class ApiClient
         token != null &&
         method == 'GET' &&
         OfflineReadCache.allows(path);
-    if (method != 'GET' && method != 'HEAD' && cache?.isOffline == true) {
+    if (method != 'GET' &&
+        method != 'HEAD' &&
+        path != '/api/v1/auth/refresh' &&
+        cache?.isOffline == true) {
       throw const ApiException(
         'حالت آفلاین فقط برای مشاهده است. ابتدا دوباره متصل شوید.',
       );
