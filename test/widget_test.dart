@@ -283,7 +283,12 @@ void main() {
     expect(find.byType(DueTasksView), findsNothing);
   });
 
-  for (final outcome in ['valid', 'rejected', 'different-owner']) {
+  for (final outcome in [
+    'valid',
+    'rejected',
+    'different-owner',
+    'network-outage',
+  ]) {
     testWidgets('offline reconnect with $outcome refresh preserves identity', (
       tester,
     ) async {
@@ -321,6 +326,9 @@ void main() {
             );
             if (outcome == 'rejected') {
               return http.Response('{"error":"invalid_refresh_token"}', 401);
+            }
+            if (outcome == 'network-outage') {
+              throw http.ClientException('temporary connection failure');
             }
             return http.Response(
               jsonEncode({
