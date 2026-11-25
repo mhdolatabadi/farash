@@ -7,6 +7,7 @@ import 'package:menval/features/calendar/task_month_view.dart';
 import 'package:menval/features/calendar/week_time_grid.dart';
 import 'package:menval/features/tasks/data/task.dart';
 import 'package:flutter/material.dart';
+import 'package:menval/app/soft.dart';
 
 typedef CalendarTaskLoader =
     Future<List<Task>> Function(DateTime from, DateTime to);
@@ -229,6 +230,24 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
                                             child: const Text('تلاش دوباره'),
                                           ),
                                         ],
+                                      ),
+                                    )
+                                  : widget.embedded
+                                  ? Padding(
+                                      padding: const EdgeInsetsDirectional.only(
+                                        top: 4, bottom: 8,
+                                      ),
+                                      child: SoftWell(
+                                        radius: 34,
+                                        padding: const EdgeInsets.all(4),
+                                        child: WeekTimeGrid(
+                                          start: _start,
+                                          tasks: _tasks,
+                                          selected: _selected,
+                                          now: (widget.now ?? DateTime.now)(),
+                                          onSelectDay: _selectDay,
+                                          onOpenTask: _openTask,
+                                        ),
                                       ),
                                     )
                                   : WeekTimeGrid(
