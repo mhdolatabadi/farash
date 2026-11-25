@@ -1236,7 +1236,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               // with the drawer button, so nothing frames the list twice.
               return Scaffold(
                 key: _scaffoldKey,
-                floatingActionButton: _section == 2 || _section == 3
+                floatingActionButton: _section == 3
                     ? FloatingActionButton(
                         heroTag: 'farash-tool-capture',
                         tooltip: 'افزودن کار',
@@ -1342,7 +1342,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             }
             return Scaffold(
               key: _scaffoldKey,
-              floatingActionButton: _section == 2 || _section == 3
+              floatingActionButton: _section == 3
                   ? FloatingActionButton(
                       heroTag: 'farash-tool-capture',
                       tooltip: 'افزودن کار',
