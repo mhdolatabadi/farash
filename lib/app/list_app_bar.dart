@@ -97,7 +97,7 @@ class ListAppBar extends SliverPersistentHeaderDelegate {
                                               1.5
                                           ? theme.textTheme.titleMedium
                                           : theme.textTheme.titleLarge)
-                                      ?.copyWith(fontWeight: FontWeight.w700),
+                                      ?.copyWith(fontWeight: FontWeight.w800),
                             ),
                           ),
                         ),
