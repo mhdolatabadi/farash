@@ -245,7 +245,11 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: Text(applied?.name ?? 'جست‌وجو و فیلترها'),
+      title: Text(
+        applied?.name ?? 'جست‌وجو و فیلترها',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       actions: [
         if (applied case final filter?)
           IconButton(
@@ -303,7 +307,12 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
                       icon: const Icon(Icons.bookmark_add_outlined),
                       label: const Text('ذخیرهٔ فیلتر'),
                     ),
-                    DropdownButton<String>(
+                    SizedBox(
+                      width: MediaQuery.sizeOf(context).width < 420
+                          ? MediaQuery.sizeOf(context).width - Space.gutter * 2
+                          : 240,
+                      child: DropdownButton<String>(
+                        isExpanded: true,
                       value: sort,
                       onChanged: (value) {
                         if (value != null) {
@@ -315,11 +324,21 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
                         for (final choice in filterSorts)
                           DropdownMenuItem(
                             value: choice.$1,
-                            child: Text('مرتب‌سازی: ${choice.$2}'),
+                            child: Text(
+                              'مرتب‌سازی: ${choice.$2}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                       ],
+                      ),
                     ),
-                    DropdownButton<String>(
+                    SizedBox(
+                      width: MediaQuery.sizeOf(context).width < 420
+                          ? MediaQuery.sizeOf(context).width - Space.gutter * 2
+                          : 240,
+                      child: DropdownButton<String>(
+                        isExpanded: true,
                       value: group,
                       onChanged: (value) {
                         if (value != null) setState(() => group = value);
@@ -328,9 +347,14 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
                         for (final choice in filterGroups)
                           DropdownMenuItem(
                             value: choice.$1,
-                            child: Text('گروه: ${choice.$2}'),
+                            child: Text(
+                              'گروه: ${choice.$2}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                       ],
+                      ),
                     ),
                     FilterChip(
                       label: const Text('کارهای انجام‌شده'),
