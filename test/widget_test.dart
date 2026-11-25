@@ -353,16 +353,10 @@ void main() {
       await tester.pumpWidget(
         app(sessions: saved, refreshCredentials: refresh, api: api),
       );
-      // Startup performs several asynchronous storage and API reads. Advance
-      // frames until the authenticated shell appears, without waiting for
-      // the Today screen's continuously scheduled animations to settle.
-      for (
-        var attempt = 0;
-        attempt < 30 && find.byType(DueTasksView).evaluate().isEmpty;
-        attempt++
-      ) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      // Let the initial authenticated shell finish its asynchronous startup.
+      // The continuously scheduled Today animations only matter after the
+      // offline reconnect banner is shown; startup itself can settle.
+      await tester.pumpAndSettle();
       expect(find.byType(DueTasksView), findsOneWidget);
 
       // Simulate an Android app left open until its old access JWT expires.
