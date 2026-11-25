@@ -1276,25 +1276,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
       // Secondary tools remain reachable from the compact mobile drawer.
       for (final (index, icon, title) in [
-          (2, Icons.timelapse_outlined, 'تمرکز'),
-          if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
-          if (_habits != null) (4, Icons.task_alt_rounded, 'عادت‌ها'),
-        ])
-          SidebarRow(
+        (2, Icons.timelapse_outlined, 'تمرکز'),
+        if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
+        if (_habits != null) (4, Icons.task_alt_rounded, 'عادت‌ها'),
+      ])
+        SidebarRow(
+          selected: _section == index,
+          child: ListTile(
+            leading: Icon(icon),
+            title: Text(title),
+            trailing: index == 2 && _focusBadge != null
+                ? Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 8),
+                    child: Text(_focusBadge!),
+                  )
+                : null,
             selected: _section == index,
-            child: ListTile(
-              leading: Icon(icon),
-              title: Text(title),
-              trailing: index == 2 && _focusBadge != null
-                  ? Padding(
-                      padding: const EdgeInsetsDirectional.only(end: 8),
-                      child: Text(_focusBadge!),
-                    )
-                  : null,
-              selected: _section == index,
-              onTap: () => _switchSection(index),
-            ),
+            onTap: () => _switchSection(index),
           ),
+        ),
       if (widget.habitReminders is LocalHabitReminders)
         SidebarRow(
           key: const ValueKey('tool-task-due-notifications'),
