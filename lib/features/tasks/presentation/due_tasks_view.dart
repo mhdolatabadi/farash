@@ -414,11 +414,6 @@ class _DueTasksViewState extends State<DueTasksView> {
     return null;
   }
 
-  bool _isClockLane(Task task) =>
-      _bento &&
-      task.due?.isTimed == true &&
-      daysBetween(_today, task.due!.day) == 0;
-
   Widget _row(Task task, {required bool last}) {
     final project = _projectOf(task);
     final tile = TaskTile(
@@ -427,12 +422,12 @@ class _DueTasksViewState extends State<DueTasksView> {
       divider: !last,
       dense: true,
       showToday: widget.view != DueView.today || widget.label != null,
-      showDue: !_isClockLane(task),
-      tag: project == null ? null : _ProjectTag(project: project),
+      showDue: true,
+      tag: _bento || project == null ? null : _ProjectTag(project: project),
       labels: [for (final id in task.labelIds) ?widget.labels?.byId(id)],
       onToggle: () => _complete(task),
       onOpen: () => _openTask(task),
-      trailing: task.due == null
+      trailing: _bento || task.due == null
           ? null
           : IconButton(
               tooltip: 'تغییر روز «${task.title}»',
@@ -492,8 +487,7 @@ class _DueTasksViewState extends State<DueTasksView> {
     );
   }
 
-  /// A real working surface: timed commitments, flexible tasks, then late
-  /// work. The old three-card dashboard no longer appears in this route.
+  /// One unclassified list with optional late-task bulk rescheduling.
   List<Widget> _todayBody() {
     final today = _today;
     final overdue = [
@@ -644,10 +638,10 @@ class _DueTasksViewState extends State<DueTasksView> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        // Today is an actual two-column workspace on wide screens.
-        // Agenda and project lists keep the narrower reading measure.
-        final limit = _bento ? 1180.0 : _maxListWidth;
-        final inset = width > limit ? (width - limit) / 2 : 0.0;
+        // All task lists use a readable measure, including Today.
+        final inset = width > _maxListWidth
+            ? (width - _maxListWidth) / 2
+            : 0.0;
         final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
         final topPadding = MediaQuery.paddingOf(context).top;
         final list = RefreshIndicator(
