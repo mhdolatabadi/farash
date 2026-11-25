@@ -100,7 +100,7 @@ class _QuickAddDialogState extends State<QuickAddDialog> {
     final colors = Theme.of(context).colorScheme;
     final availableHeight = MediaQuery.sizeOf(context).height -
         MediaQuery.viewInsetsOf(context).bottom - 24;
-    final height = availableHeight.clamp(210.0, 445.0);
+    final height = availableHeight.clamp(210.0, 445.0).toDouble();
     final parsed = parseQuickTask(
       _text.text,
       now: DateTime.now(),
