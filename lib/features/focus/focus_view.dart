@@ -116,7 +116,7 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                       Space.gutter,
                       Space.sm,
                       Space.gutter,
-                      Space.xxl + 88, // Clear the shell's global capture FAB.
+                      Space.xxl,
                     ),
                     child: Column(
                       children: [
