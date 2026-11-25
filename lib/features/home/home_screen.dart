@@ -1511,12 +1511,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           end: Space.sm,
                         ),
                         child: PressDepth(
-                          shadows: true,
-                          child: IconButton(
-                            key: const ValueKey('menval-header-search'),
+                          borderRadius: BorderRadius.circular(28),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              shape: BoxShape.circle,
+                              boxShadow: Soft.raised(context, depth: 2),
+                            ),
+                            child: IconButton(
+                              key: const ValueKey('menval-header-search'),
                             tooltip: 'جست‌وجو',
                             onPressed: () => _openSearch(api),
                             icon: const Icon(Icons.search_rounded),
+                            ),
                           ),
                         ),
                       ),
