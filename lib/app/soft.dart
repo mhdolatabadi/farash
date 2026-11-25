@@ -32,9 +32,8 @@ abstract final class Soft {
     );
   }
 
-  static BorderSide hairline(BuildContext context) => BorderSide(
-    color: Theme.of(context).colorScheme.outlineVariant,
-  );
+  static BorderSide hairline(BuildContext context) =>
+      BorderSide(color: Theme.of(context).colorScheme.outlineVariant);
 }
 
 /// A quiet paper tile; onTap is optional and retains native ink feedback.
@@ -67,7 +66,9 @@ class SoftTile extends StatelessWidget {
       decoration: ShapeDecoration(
         shape: shape,
         color: color ?? p.containerLowest,
-        shadows: depth > 0 ? Soft.raised(context, depth: depth * 0.5) : const [],
+        shadows: depth > 0
+            ? Soft.raised(context, depth: depth * 0.5)
+            : const [],
       ),
       child: Material(
         type: MaterialType.transparency,
