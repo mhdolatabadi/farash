@@ -1522,9 +1522,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             ),
                             child: IconButton(
                               key: const ValueKey('menval-header-search'),
-                            tooltip: 'جست‌وجو',
-                            onPressed: () => _openSearch(api),
-                            icon: const Icon(Icons.search_rounded),
+                              tooltip: 'جست‌وجو',
+                              onPressed: () => _openSearch(api),
+                              icon: const Icon(Icons.search_rounded),
                             ),
                           ),
                         ),
