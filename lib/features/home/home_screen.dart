@@ -619,11 +619,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<List<Task>> _loadCalendarTasks(DateTime from, DateTime to) async {
     final token = widget.token();
     if (token == null) throw StateError('Session unavailable');
-    final tasks = await widget.tasksApi.listDueTasks(
-      token,
-      from: from,
-      to: to,
-    );
+    final tasks = await widget.tasksApi.listDueTasks(token, from: from, to: to);
     if (widget.token() != token) throw StateError('Session changed');
     return tasks;
   }
@@ -640,9 +636,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (controller == null) return;
     final habit = await createHabit(context, controller);
     if (!mounted || habit == null) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('«${habit.name}» اضافه شد.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('«${habit.name}» اضافه شد.')));
   }
 
   Widget _approvedNav() {
@@ -651,7 +647,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       top: false,
       child: Padding(
         padding: const EdgeInsetsDirectional.fromSTEB(
-          Space.md, Space.xs, Space.md, Space.md,
+          Space.md,
+          Space.xs,
+          Space.md,
+          Space.md,
         ),
         child: Center(
           heightFactor: 1,
@@ -688,9 +687,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 onTap: section == 4 && _habits == null
                                     ? null
                                     : () => _switchSection(section),
-                                child: (section == 0
-                                            ? _section == 0 || _section == 1
-                                            : _section == section)
+                                child:
+                                    (section == 0
+                                        ? _section == 0 || _section == 1
+                                        : _section == section)
                                     ? SoftWell(
                                         radius: 20,
                                         padding: const EdgeInsets.symmetric(
@@ -698,7 +698,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                           horizontal: Space.xs,
                                         ),
                                         child: _navLabel(
-                                          icon, label, colors.onSurface, true,
+                                          icon,
+                                          label,
+                                          colors.onSurface,
+                                          true,
                                         ),
                                       )
                                     : Padding(
@@ -728,24 +731,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _navLabel(
-    IconData icon, String text, Color color, bool selected,
-  ) => Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(icon, size: 21, color: color),
-      const SizedBox(height: Space.xs),
-      Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-        ),
-      ),
-    ],
-  );
+  Widget _navLabel(IconData icon, String text, Color color, bool selected) =>
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 21, color: color),
+          const SizedBox(height: Space.xs),
+          Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ],
+      );
 
   int _captureRevision = 0;
 
@@ -1494,8 +1496,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             const SizedBox(width: Space.sm),
                             Text(
                               'منوال',
-                              style: Theme.of(context)
-                                  .textTheme.titleMedium
+                              style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(fontWeight: FontWeight.w700),
                             ),
                           ],
@@ -1506,7 +1507,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   actions: [
                     if (widget.tasksApi case final SearchApi api)
                       Padding(
-                        padding: const EdgeInsetsDirectional.only(end: Space.sm),
+                        padding: const EdgeInsetsDirectional.only(
+                          end: Space.sm,
+                        ),
                         child: PressDepth(
                           child: IconButton(
                             key: const ValueKey('menval-header-search'),
@@ -1530,8 +1533,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   child: FloatingActionButton(
                     key: const ValueKey('menval-create-fab'),
                     tooltip: _section == 4 ? 'عادت جدید' : 'کار جدید',
-                    onPressed:
-                        _section == 4 ? _createHabitFromFab : _quickAdd,
+                    onPressed: _section == 4 ? _createHabitFromFab : _quickAdd,
                     child: const Icon(Icons.add_rounded),
                   ),
                 ),
