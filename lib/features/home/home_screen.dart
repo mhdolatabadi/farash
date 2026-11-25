@@ -34,6 +34,7 @@ import 'package:menval/features/focus/focus_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:menval/features/tasks/application/quick_capture.dart';
+import 'package:menval/features/tasks/data/quick_parse.dart';
 import 'package:menval/features/tasks/presentation/quick_add_dialog.dart';
 import 'package:menval/features/progress/progress.dart';
 import 'package:menval/features/progress/progress_card.dart';
@@ -219,6 +220,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       local.openedTaskProject.removeListener(_openTaskDueReminder);
     }
     ++_taskDueSyncGeneration;
+    _inlineTask.dispose();
     _habits?.dispose();
     _focus.dispose();
     widget.startView?.removeListener(_applyStartView);
@@ -340,6 +342,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   bool _quickAdding = false;
+  final _inlineTask = TextEditingController();
 
   KeyEventResult _quickKey(KeyEvent event) {
     final keyboard = HardwareKeyboard.instance;
@@ -384,7 +387,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return KeyEventResult.handled;
   }
 
-  Future<void> _quickAdd() async {
+  Future<void> _quickAdd({String? initialText}) async {
     if (_quickAdding) return;
     final selected =
         ModalRoute.of(context)?.isCurrent == true &&
@@ -411,25 +414,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       defaultProject: () => target,
     );
     try {
-      final task = await showGeneralDialog<Task>(
+      final task = await showModalBottomSheet<Task>(
         context: context,
-        barrierDismissible: false,
-        barrierLabel: 'ساخت کار',
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         barrierColor: Colors.black.withValues(alpha: 0.16),
-        transitionDuration: Motion.of(context, Motion.standard),
-        pageBuilder: (_, _, _) =>
-            QuickAddDialog(projectName: target.displayName, session: session),
-        transitionBuilder: (context, animation, secondaryAnimation, child) =>
-            SlideTransition(
-              position:
-                  Tween<Offset>(
-                    begin: const Offset(1, 0),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(parent: animation, curve: Motion.enter),
-                  ),
-              child: child,
-            ),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        ),
+        builder: (sheetContext) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+          ),
+          child: QuickAddDialog(
+            projectName: target.displayName,
+            session: session,
+            initialText: initialText ?? '',
+          ),
+        ),
       );
       if (task != null && mounted) {
         _refreshCount();
@@ -442,6 +445,160 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } finally {
       _quickAdding = false;
     }
+  }
+
+  Future<void> _submitInline() async {
+    final raw = _inlineTask.text.trim();
+    if (raw.isEmpty || _quickAdding) return;
+    final selected = _section == 1 && _view == null && _labelId == null
+        ? _selected
+        : null;
+    final target = selected != null && !selected.isFolder && !selected.isArchived
+        ? selected
+        : widget.projects.inbox;
+    if (target == null || target.isFolder || target.isArchived) return;
+    _quickAdding = true;
+    try {
+      final session = QuickCaptureSession(
+        api: widget.tasksApi,
+        sections: widget.sectionsApi,
+        labels: _labels,
+        token: widget.token,
+        projects: () => widget.projects.projects,
+        defaultProject: () => target,
+      );
+      await session.capture(
+        parseQuickTask(raw, now: DateTime.now()),
+        raw,
+        calendar: CalendarScope.of(context).isJalali ? 'jalali' : 'gregorian',
+        defaultDay: _section == 0 ? DateTime.now() : null,
+      );
+      if (!mounted) return;
+      _inlineTask.clear();
+      _refreshCount();
+      setState(() => _captureRevision++);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('کار اضافه شد.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      _quickAdding = false;
+    }
+  }
+
+  Widget _captureBar() {
+    final colors = Theme.of(context).colorScheme;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 4, 12, 10),
+        child: Center(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Material(
+              color: colors.surface,
+              elevation: 3,
+              shadowColor: colors.shadow.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+                child: Row(
+                  children: [
+                    PopupMenuButton<String>(
+                      key: const ValueKey('compact-navigation'),
+                      tooltip: 'بخش‌ها',
+                      icon: const Icon(Icons.apps_outlined, size: 20),
+                      onSelected: (choice) {
+                        if (choice == 'tasks') {
+                          _switchSection(1);
+                        } else if (choice == 'today') {
+                          _switchSection(0);
+                        } else if (choice == 'calendar') {
+                          _openNativeCalendar();
+                        } else if (choice == 'habits') {
+                          _switchSection(4);
+                        } else if (choice == 'more') {
+                          _scaffoldKey.currentState?.openDrawer();
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(value: 'tasks', child: Text('کارها')),
+                        const PopupMenuItem(value: 'calendar', child: Text('تقویم')),
+                        if (_habits != null)
+                          const PopupMenuItem(
+                            value: 'habits',
+                            child: Text('عادت‌ها'),
+                          ),
+                        const PopupMenuItem(value: 'today', child: Text('امروز')),
+                        const PopupMenuItem(value: 'more', child: Text('بخش‌های بیشتر')),
+                      ],
+                    ),
+                    IconButton(
+                      key: const ValueKey('quick-add-more'),
+                      tooltip: 'تاریخ و ساعت کار',
+                      onPressed: () => _quickAdd(
+                        initialText: _inlineTask.text.trim(),
+                      ),
+                      icon: const Icon(Icons.schedule_outlined, size: 20),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        key: const ValueKey('inline-task-title'),
+                        controller: _inlineTask,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _submitInline(),
+                        decoration: const InputDecoration(
+                          hintText: 'کار جدید…',
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 6),
+                        ),
+                      ),
+                    ),
+                    IconButton.filled(
+                      key: const ValueKey('inline-task-submit'),
+                      tooltip: 'ثبت کار',
+                      onPressed: _submitInline,
+                      icon: const Icon(Icons.keyboard_return_rounded, size: 20),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openNativeCalendar() {
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.pop(context);
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => TaskCalendarView(
+          loadTasks: (from, to) async {
+            final token = widget.token();
+            if (token == null) throw StateError('Session unavailable');
+            final tasks = await widget.tasksApi.listDueTasks(
+              token,
+              from: from,
+              to: to,
+            );
+            if (widget.token() != token) {
+              throw StateError('Session changed');
+            }
+            return tasks;
+          },
+        ),
+      ),
+    );
   }
 
   int _captureRevision = 0;
@@ -1028,32 +1185,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         child: ListTile(
           leading: const Icon(Icons.calendar_month_outlined),
           title: const Text('تقویم'),
-          onTap: () {
-            if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
-              Navigator.pop(context);
-            }
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => TaskCalendarView(
-                  loadTasks: (from, to) async {
-                    final token = widget.token();
-                    if (token == null) {
-                      throw StateError('Session unavailable');
-                    }
-                    final tasks = await widget.tasksApi.listDueTasks(
-                      token,
-                      from: from,
-                      to: to,
-                    );
-                    if (widget.token() != token) {
-                      throw StateError('Session changed');
-                    }
-                    return tasks;
-                  },
-                ),
-              ),
-            );
-          },
+          onTap: _openNativeCalendar,
         ),
       ),
       if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint)
@@ -1251,14 +1383,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               // with the drawer button, so nothing frames the list twice.
               return Scaffold(
                 key: _scaffoldKey,
-                floatingActionButtonLocation:
-                    FloatingActionButtonLocation.startFloat,
-                floatingActionButton: FloatingActionButton(
-                  heroTag: 'menval-quick-capture',
-                  tooltip: 'افزودن کار',
-                  onPressed: _quickAdd,
-                  child: const Icon(Icons.add_rounded),
-                ),
                 appBar: selected == null && view == null && label == null
                     ? AppBar(title: const Text('منوال'))
                     : null,
@@ -1266,44 +1390,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   backgroundColor: Soft.ground(context),
                   child: _sidebar(),
                 ),
-                bottomNavigationBar: rail
-                    ? null
-                    : DecoratedBox(
-                        decoration: BoxDecoration(
-                          // The soft destinations carry their ground down
-                          // under the bar.
-                          color: _softSection
-                              ? Soft.ground(context)
-                              : Theme.of(context).colorScheme.surface,
-                          border: Border(
-                            top: BorderSide(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.outlineVariant,
-                            ),
-                          ),
-                        ),
-                        child: ListenableBuilder(
-                          listenable: _focus,
-                          builder: (context, _) => NavigationBar(
-                            backgroundColor: _softSection
-                                ? Soft.ground(context)
-                                : null,
-                            selectedIndex: _navSections.indexOf(_section),
-                            onDestinationSelected: (i) =>
-                                _switchSection(_navSections[i]),
-                            destinations: [
-                              for (final (icon, selectedIcon, label)
-                                  in _destinations())
-                                NavigationDestination(
-                                  icon: icon,
-                                  selectedIcon: selectedIcon,
-                                  label: label,
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
+                bottomNavigationBar: _captureBar(),
                 body: Row(
                   children: [
                     if (rail) ...[
@@ -1357,14 +1444,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             }
             return Scaffold(
               key: _scaffoldKey,
-              floatingActionButtonLocation:
-                  FloatingActionButtonLocation.startFloat,
-              floatingActionButton: FloatingActionButton(
-                heroTag: 'menval-quick-capture',
-                tooltip: 'افزودن کار',
-                onPressed: _quickAdd,
-                child: const Icon(Icons.add_rounded),
-              ),
+              bottomNavigationBar: _captureBar(),
               body: SafeArea(
                 child: Row(
                   children: [
@@ -1378,7 +1458,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         Space.md,
                       ),
                       child: SizedBox(
-                        width: 260,
+                        width: 205,
                         child: Panel(
                           radius: 18,
                           child: ListenableBuilder(
