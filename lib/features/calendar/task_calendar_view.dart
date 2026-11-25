@@ -13,10 +13,17 @@ typedef CalendarTaskLoader =
 
 /// Menval's own task calendar. Calendar providers can be separate overlays.
 class TaskCalendarView extends StatefulWidget {
-  const TaskCalendarView({super.key, required this.loadTasks, this.now});
+  const TaskCalendarView({
+    super.key,
+    required this.loadTasks,
+    this.now,
+    this.embedded = false,
+  });
 
   final CalendarTaskLoader loadTasks;
   final DateTime Function()? now;
+  /// Hide the page title when hosted inside Menval's shared shell.
+  final bool embedded;
 
   @override
   State<TaskCalendarView> createState() => _TaskCalendarViewState();
@@ -152,8 +159,10 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
         DateTime(_start.year, _start.month, _start.day + i),
     ];
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('تقویم'),
+      appBar: widget.embedded
+          ? null
+          : AppBar(
+              title: const Text('تقویم'),
         actions: [
           TextButton(
             onPressed: () => setState(() => _showMonth = !_showMonth),
