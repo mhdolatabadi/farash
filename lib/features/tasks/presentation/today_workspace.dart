@@ -101,7 +101,9 @@ class TodayWorkspace extends StatelessWidget {
     final companion = _DayCompanion(
       open: todayTasks.length + overdueTasks.length,
       done: done,
-      focus: focus,
+      // Keep the secondary timer out of the work queue at 2x text.
+      // The persistent Focus destination remains available.
+      focus: scale >= 1.5 ? null : focus,
       onOpenFocus: onOpenFocus,
       habits: habits,
       onOpenHabits: onOpenHabits,
