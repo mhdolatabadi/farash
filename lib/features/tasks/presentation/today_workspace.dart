@@ -82,10 +82,7 @@ class TodayWorkspace extends StatelessWidget {
                   shadowColor: colors.shadow.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(12),
                   clipBehavior: Clip.antiAlias,
-                  child: rowBuilder(
-                    tasks[index],
-                    index == tasks.length - 1,
-                  ),
+                  child: rowBuilder(tasks[index], index == tasks.length - 1),
                 ),
               ),
           if (overdueTasks.isNotEmpty)
