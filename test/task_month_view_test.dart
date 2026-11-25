@@ -13,6 +13,10 @@ void main() {
     Future<List<Task>> Function(DateTime, DateTime) loader, {
     CalendarSettings? settings,
   }) => MaterialApp(
+    builder: (context, child) => Directionality(
+      textDirection: TextDirection.rtl,
+      child: child!,
+    ),
     home: CalendarScope(
       settings: settings ?? CalendarSettings(),
       child: Scaffold(
