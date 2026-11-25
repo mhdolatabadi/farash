@@ -27,7 +27,7 @@ void main() {
           ),
           home: Scaffold(
             body: TaskTile(
-              task: const Task(
+              task: Task(
                 id: 'ledger-task',
                 projectId: 'inbox',
                 title: 'نوشتن یادداشت‌های طراحی منوال',
