@@ -639,9 +639,7 @@ class _DueTasksViewState extends State<DueTasksView> {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         // All task lists use a readable measure, including Today.
-        final inset = width > _maxListWidth
-            ? (width - _maxListWidth) / 2
-            : 0.0;
+        final inset = width > _maxListWidth ? (width - _maxListWidth) / 2 : 0.0;
         final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
         final topPadding = MediaQuery.paddingOf(context).top;
         final list = RefreshIndicator(
@@ -653,24 +651,28 @@ class _DueTasksViewState extends State<DueTasksView> {
                 pinned: true,
                 delegate: ListAppBar(
                   background: Soft.ground(context),
-                  title: label?.tag ?? widget.view.title,
-                  subtitle: count,
-                  mark: label != null
-                      ? Icon(Icons.sell, color: label.swatch)
-                      : Icon(
-                          widget.view.icon,
-                          color: theme.colorScheme.primary,
-                        ),
-                  actions: [
-                    IconButton(
-                      tooltip: 'به‌روزرسانی',
-                      onPressed: _load,
-                      icon: const Icon(Icons.refresh),
-                    ),
-                  ],
+                  title: _bento ? '' : label?.tag ?? widget.view.title,
+                  subtitle: _bento ? '' : count,
+                  mark: _bento
+                      ? const SizedBox.shrink()
+                      : label != null
+                          ? Icon(Icons.sell, color: label.swatch)
+                          : Icon(
+                              widget.view.icon,
+                              color: theme.colorScheme.primary,
+                            ),
+                  actions: _bento
+                      ? []
+                      : [
+                          IconButton(
+                            tooltip: 'به‌روزرسانی',
+                            onPressed: _load,
+                            icon: const Icon(Icons.refresh),
+                          ),
+                        ],
                   topPadding: topPadding,
                   inset: inset,
-                  // The bento's tiles carry the count on «امروز».
+                  // This minimal view has no dashboard title or counter.
                   expandedHeight: _bento || constraints.maxHeight < 240
                       ? 0
                       : 24 * scale,
