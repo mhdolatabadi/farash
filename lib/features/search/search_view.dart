@@ -313,24 +313,24 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
                           : 240,
                       child: DropdownButton<String>(
                         isExpanded: true,
-                      value: sort,
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => sort = value);
-                          search();
-                        }
-                      },
-                      items: [
-                        for (final choice in filterSorts)
-                          DropdownMenuItem(
-                            value: choice.$1,
-                            child: Text(
-                              'مرتب‌سازی: ${choice.$2}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                        value: sort,
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => sort = value);
+                            search();
+                          }
+                        },
+                        items: [
+                          for (final choice in filterSorts)
+                            DropdownMenuItem(
+                              value: choice.$1,
+                              child: Text(
+                                'مرتب‌سازی: ${choice.$2}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                      ],
+                        ],
                       ),
                     ),
                     SizedBox(
@@ -339,21 +339,21 @@ class _SearchWorkspaceState extends State<SearchWorkspace> {
                           : 240,
                       child: DropdownButton<String>(
                         isExpanded: true,
-                      value: group,
-                      onChanged: (value) {
-                        if (value != null) setState(() => group = value);
-                      },
-                      items: [
-                        for (final choice in filterGroups)
-                          DropdownMenuItem(
-                            value: choice.$1,
-                            child: Text(
-                              'گروه: ${choice.$2}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                        value: group,
+                        onChanged: (value) {
+                          if (value != null) setState(() => group = value);
+                        },
+                        items: [
+                          for (final choice in filterGroups)
+                            DropdownMenuItem(
+                              value: choice.$1,
+                              child: Text(
+                                'گروه: ${choice.$2}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                      ],
+                        ],
                       ),
                     ),
                     FilterChip(
