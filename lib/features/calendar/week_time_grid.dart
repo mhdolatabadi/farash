@@ -229,7 +229,9 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                       color: scheme.secondaryContainer,
                                       borderRadius: BorderRadius.circular(5),
                                       child: InkWell(
-                                        key: ValueKey('week-all-day-${task.id}'),
+                                        key: ValueKey(
+                                          'week-all-day-${task.id}',
+                                        ),
                                         onTap: () => widget.onOpenTask(task),
                                         child: Padding(
                                           padding: const EdgeInsets.symmetric(
@@ -242,7 +244,8 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               fontSize: 11,
-                                              color: scheme.onSecondaryContainer,
+                                              color:
+                                                  scheme.onSecondaryContainer,
                                             ),
                                           ),
                                         ),
