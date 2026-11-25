@@ -99,6 +99,7 @@ class DueTasksView extends StatefulWidget {
 
   /// The home shell can use its floating capture button instead of a second bar.
   final bool showQuickCapture;
+
   /// The signed-in shell supplies its own shared Menval toolbar.
   final bool hideHeader;
 
@@ -658,34 +659,34 @@ class _DueTasksViewState extends State<DueTasksView> {
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: ListAppBar(
-                  background: Soft.ground(context),
-                  title: _bento ? '' : label?.tag ?? widget.view.title,
-                  subtitle: _bento ? '' : count,
-                  mark: _bento
-                      ? const SizedBox.shrink()
-                      : label != null
-                      ? Icon(Icons.sell, color: label.swatch)
-                      : Icon(
-                          widget.view.icon,
-                          color: theme.colorScheme.primary,
-                        ),
-                  actions: _bento
-                      ? []
-                      : [
-                          IconButton(
-                            tooltip: 'به‌روزرسانی',
-                            onPressed: _load,
-                            icon: const Icon(Icons.refresh),
+                    background: Soft.ground(context),
+                    title: _bento ? '' : label?.tag ?? widget.view.title,
+                    subtitle: _bento ? '' : count,
+                    mark: _bento
+                        ? const SizedBox.shrink()
+                        : label != null
+                        ? Icon(Icons.sell, color: label.swatch)
+                        : Icon(
+                            widget.view.icon,
+                            color: theme.colorScheme.primary,
                           ),
-                        ],
-                  topPadding: topPadding,
-                  inset: inset,
-                  // This minimal view has no dashboard title or counter.
-                  expandedHeight: _bento || constraints.maxHeight < 240
-                      ? 0
-                      : 24 * scale,
+                    actions: _bento
+                        ? []
+                        : [
+                            IconButton(
+                              tooltip: 'به‌روزرسانی',
+                              onPressed: _load,
+                              icon: const Icon(Icons.refresh),
+                            ),
+                          ],
+                    topPadding: topPadding,
+                    inset: inset,
+                    // This minimal view has no dashboard title or counter.
+                    expandedHeight: _bento || constraints.maxHeight < 240
+                        ? 0
+                        : 24 * scale,
+                  ),
                 ),
-              ),
               if (label == null &&
                   (widget.view == DueView.upcoming ||
                       widget.view == DueView.week))
