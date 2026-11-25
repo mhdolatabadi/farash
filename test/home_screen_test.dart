@@ -157,7 +157,8 @@ void main() {
     await tester.tap(find.widgetWithText(NavigationDestination, 'تمرکز'));
     await tester.pumpAndSettle();
     expect(runningDot, findsNothing);
-    expect(find.byTooltip('افزودن کار'), findsNothing);
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.byTooltip('افزودن کار'), findsOneWidget);
     // At 320px the global capture FAB can cover the lower action until
     // the focus surface is scrolled. Tap it only once in view.
     await tester.drag(
@@ -347,7 +348,8 @@ void main() {
     expect(find.byType(FloatingActionButton), findsNothing);
     await tester.tap(find.widgetWithText(NavigationDestination, 'تمرکز'));
     await tester.pumpAndSettle();
-    expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.byTooltip('افزودن کار'), findsOneWidget);
     await tester.tap(find.widgetWithText(NavigationDestination, 'کارها'));
     await tester.pumpAndSettle();
     expect(find.byType(FloatingActionButton), findsNothing);
