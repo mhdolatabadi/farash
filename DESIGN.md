@@ -1,91 +1,84 @@
 ---
-name: Menval Calm
-description: A calm Material 3 task app on a soft ground; one accent, raised tiles, dense lists in wells, no ornament.
+name: Menval Ledger
+description: A contemporary Persian daily planner with an editorial daybook rhythm, warm paper, dark ink, cinnabar action, fine rules, and restrained elevation.
 colors:
-  day-primary: '#0E7490'
+  day-primary: '#9F3F2D'
   day-on-primary: '#FFFFFF'
-  day-primary-container: '#D9EEF2'
-  day-on-primary-container: '#0B4F63'
-  day-accent: '#0757B5'
-  day-surface: '#FFFFFF'
-  day-ink: '#1B1F24'
-  day-muted-ink: '#5F6670'
-  day-container-low: '#F6F7F9'
-  day-container: '#F0F2F4'
-  day-outline: '#C9CED4'
-  day-divider: '#EEF0F2'
-  day-error: '#B42318'
-  day-soft-ground: '#E9EDF1'
-  day-soft-light: '#FFFFFF'
-  day-soft-shade: '#C9D0D7'
-  primary: '#C8F25A'
-  on-primary: '#0F1115'
-  primary-container: '#2E3A14'
-  on-primary-container: '#DDF79A'
-  accent: '#74A7FF'
-  surface: '#0F1115'
-  ink: '#ECEDEE'
-  muted-ink: '#9BA1A6'
-  container-low: '#15181D'
-  container: '#191C22'
-  outline: '#4A4F57'
-  divider: '#1E2127'
-  error: '#FF8A8A'
-  soft-ground: '#16191E'
-  soft-light: '#22262D'
-  soft-shade: '#0A0C0F'
+  day-primary-container: '#F5DBD1'
+  day-on-primary-container: '#742A1C'
+  day-accent: '#21645E'
+  day-surface: '#FCFAF6'
+  day-ink: '#292722'
+  day-muted-ink: '#66635D'
+  day-container-low: '#F4F0E9'
+  day-container: '#EEE8DF'
+  day-outline: '#9C9488'
+  day-divider: '#DDD5C9'
+  primary: '#FFB69B'
+  on-primary: '#43261F'
+  primary-container: '#56382F'
+  on-primary-container: '#FFE2D6'
+  accent: '#8DD1C3'
+  surface: '#191F1D'
+  ink: '#F5F0E9'
+  muted-ink: '#B8B5AB'
+  container-low: '#222925'
+  container: '#2A332E'
+  outline: '#869287'
+  divider: '#414A43'
 typography:
-  title: {fontFamily: Vazirmatn, fontSize: 22, fontWeight: 700}
-  body: {fontFamily: Vazirmatn, fontSize: 16}
-  timer: {fontFamily: Vazirmatn, fontWeight: 700, features: tabular}
-rounded: {field: 12, surface: 16, tile: 22, sheet: 28, button: stadium}
+  family: Vazirmatn
+  editorialDate: {fontSize: 68, fontWeight: 900, tabular: true}
+  screenTitle: {fontSize: 24, fontWeight: 800}
+  body: {fontSize: 16, lineHeight: 1.5}
+  secondary: {fontSize: 13}
+rounded: {field: 12, surface: 16, tile: 18, sheet: 24, button: 14}
 spacing: {xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, gutter: 16, keyline: 56}
 ---
 
-# Design System: Menval Calm
+# Menval Ledger · دفتر روزها
 
-## Overview
+## Intent
 
-Menval is an Operate surface: people open it to capture and finish work, so a category-fluent user should trust every screen immediately. Material 3 governs structure, navigation and components; the brand lives only in color, Persian typography and precise spacing. There is no illustration, metaphor, reward art or ornament. The owner chose this after rejecting the glass, garden and weaving looks; the comparison board is at https://claude.ai/artifact/DtsjUw4u7MrgYgF15jpevY (row A for structure and the light theme, row C for the dark colors). In October 2026 the owner added a soft bento layer to the three main destinations, blending three Dribbble directions: bento tiles, soft UI and dense Linear-style rows (issue #146; options at https://claude.ai/artifact/XwCrpTtJBADVWoYgHUvzYv).
+Menval is a private, Persian-first task and planning app. The user explicitly asked to discard the incumbent look and redesign it from the ground up. This replaces *Menval Calm*, its equal-weight neumorphic bento cards and lime-on-black/teal-on-grey visual grammar. It does **not** replace the product, data model, interactions, account boundaries, Persian-first content or Android installation identity.
 
-## Colors
+Our new visual point of view is the **contemporary daybook**: a clear place to record and finish work, with the authority of good Persian editorial typography, rhythm and ample margins. Its cultural reference is a thoughtfully typeset notebook or agenda, not a literal diary imitation. No simulated paper texture, faux bookbinding, rug drawings, gradients, glass, or ornamental marketing illustrations.
 
-One accent per theme. By day: white surfaces, ink text, teal `#0E7490` for the primary action, today, the running timer and selection. By night: near-black `#0F1115`, light ink, and lime `#C8F25A` with dark text on it. Tomorrow uses the blue accent; overdue dates and errors use the error role, and nothing else does. Priorities keep the familiar red, orange, blue and grey per theme (`MenvalPalette.calm`). Every color reaches widgets through `ColorScheme` roles or `MenvalPaletteColors`; widgets never hard-code hex values.
+## Identity
 
-## Typography
+- **Ground:** warm white paper in light mode; deep green-charcoal ink in dark mode. Both are intentional backgrounds, not elevated slabs.
+- **Ink:** near-black body text with explicit content hierarchy; muted ink only for genuinely secondary information.
+- **Action:** one cinnabar/terracotta primary color for check state, main CTA, focus and selected navigation. Dark mode uses its light coral analogue. A reserved green-teal accent identifies near-future dates without competing for attention.
+- **Mark:** a simple Persian «م» in a square signet. It scales as a normal vector/text mark and does not replace any platform icons or accessible labels.
+- **Depth:** list surfaces are bordered and quiet, never inset shadows. A small downward soft shadow is allowed on transient panes; no double-direction neumorphism.
+- **Shape:** restrained rounded rectangles (12–18), not universally oversized pills. Visible focus and pressed states stay Material-native.
+- **Typography:** bundled Vazirmatn, Persian digits and RTL. Date and page titles lead; task content is the centre. Large numbers use tabular figures when appropriate.
 
-Vazirmatn for every role, Persian digits, RTL first. Screen titles use `titleLarge` bold; section labels in lists use `titleSmall` bold in muted ink; task titles use `bodyLarge`. The timer uses tabular figures, isolated LTR, scaled to the ring. Text follows the user's scale; at large scales, controls wrap rather than truncate.
+## Layout and hierarchy
 
-## Layout
+### Today
+1. A large, expressive date and weekday as a typographic heading.
+2. A single compact daily overview: only confirmed progress, an optional focus shortcut with a live countdown, and honest open-task count.
+3. Task list and overdue tasks immediately visible; rows get more room and remain directly actionable.
+4. One quick capture field fixed above bottom navigation/safe area. Its focus, error and disabled states are explicit.
 
-Phones: four destinations in the navigation bar, امروز, کارها, تمرکز and, with time support, زمان‌ها (habits add عادت‌ها). The drawer holds views, projects and labels. At 840 logical pixels and wider, a sidebar replaces the bar; it lists the Inbox and views first, then the tools (تمرکز, زمان‌ها, عادت‌ها), then projects and labels, so nothing appears twice. Lists keep a readable measure on wide screens.
+### Other destinations
+- **Inbox/projects:** compact editorial list headers, task-first rows, clear priority circles, minimal metadata only when relevant.
+- **Focus:** timer is the focal content, secondary actions don't compete with start/pause. No unrelated floating control blocking the dial.
+- **Calendar:** native date navigation with stable task/event separation and consistent task detail entry.
+- **Time and habits:** same card, type and color tokens, but visualizations are data-first and never invent results.
+- **Desktop:** a stable sidebar and measure-limited task canvas, not stretched oversized cards.
 
-The sidebar and drawer (issue #158) follow what roughly 200 task-app and SaaS sidebars on Dribbble share: brand on top, a search field sunk in as a small well (with a `Ctrl K` hint on pointer devices; Ctrl/Cmd+K opens search), compact rows in labelled groups, and the progress and account pinned under a hairline at the bottom. On wide screens the sidebar is one raised panel (`Panel`, radius 18) floating on the ground, like the page's tiles. Rows share one style (`SidebarTheme`): 18 icons, medium-weight titles, 36 high under a pointer and 48 on touch, and a muted open-task count at the row's end. The row menu replaces the count on hover (`HoverSwap`); on touch it opens with a long press, so no row carries three dots. Groups: Inbox and the views (no label), «ابزارها» (تمرکز, زمان‌ها, عادت‌ها, wide screens only), favourites, «پروژه‌ها» with quiet archive and add buttons, and «برچسب‌ها»; projects and labels fold away from their names. The open row sits on a soft tint of the accent, with the accent on its icon and title. «پیشرفت من» is one flat line with the level, a thin bar of this week's days and a caption; under it the account row (initial, email, menu) holds the account's actions. Capture is not a navigation row: the capture bar on each list and the `q` shortcut cover it.
+## Components and states
 
-Spacing comes from one 4-point scale in `lib/app/spacing.dart` (`Space`), never from one-off numbers. Every list lines up on two keylines, measured from the edge of the well it sits in (the well itself starts 14 in from the screen edge): the 16 gutter, where check circles, section labels, the empty-list line and header icon glyphs start, and the 56 content keyline, where row titles, row dividers and the header's mark (beside the menu) start. List rows run edge to edge and carry the gutter themselves; containers do not add their own side padding. The header's open count shares the title's start edge and sits just under it. A section label takes 24 above and 4 below, so it belongs to the rows it names; the first one under the header takes 8. In the task editor, actions such as «افزودن زیرکار» are rows with the same icon and label keylines as the properties above them, not loose text buttons. The capture field stays above the navigation and safe areas, and the last task always scrolls clear of it.
+- `SoftTile` and `SoftWell` retain their API for migration but render clean Ledger surfaces; `Panel` follows those rules.
+- Buttons have 48dp minimum touch targets; visual icons may be smaller but tap regions are not.
+- Empty states point at the next real action. Loading, error, offline, keyboard/IME, focused and disabled states remain readable.
+- Primary tasks and quick capture should be above the fold on a normal phone with real sample data, including 320px widths.
+- At 1.3× and 2× text scales, content wraps/stacks instead of clipping or hiding actions.
+- Keep semantic labels, tooltip parity, RTL ordering, Persian digits and selected states.
+- No fabricated completion count, token status, time tracking, provider event or upcoming feature.
 
-A saved `garden` or `weaving` start view migrates to `today`, which is also the default.
+## Delivery and rollout
 
-## Elevation and shapes
-
-Every screen, sheet, dialog and menu stands on `softGround`, which is also the theme's `surface` (`lib/app/soft.dart`); the owner asked for the soft layer on every page and detail screen (issue #155). A summary sits on a `SoftTile`, which rises off the ground with a shade shadow toward the bottom end and a light shadow toward the top start. A list or the focus dial sits in a `SoftWell`, sunk in with inner shadows. Tiles and wells use a 22 radius, and both carry a hairline, so an edge never depends on a shadow alone. Slivers that cannot paint inner shadows use the flat `Soft.wellDecoration`. `Panel` is a raised tile too, so the side editor, the sign-in card, the sprint card and the time totals rise off the ground. Every list of rows (projects, upcoming, 7 days, all, search, the sprint backlog and board columns, time entries, badges, the task editor's properties and subtasks) sits in a well, with dense rows. Habit detail sections, the weekly report and challenge, and the level and points on «پیشرفت من» are tiles. Fields are small wells: filled a touch darker than the ground, with a hairline. Nothing is flat white any more; tone and the two shadows separate layers. Tiles and wells never nest more than one level deep. Buttons are stadium-shaped and at least 48 high; fields have a 12 radius outline; sheets and dialogs use 28. The FAB keeps Material's small elevation.
-
-## Components
-
-- **Task rows** are full-width and flat, separated by a hairline that starts at the title. The check circle takes the priority color. Selection fills the row with the primary container. Near dates sit in a tinted pill: today in the primary, tomorrow in the accent, late in the error color.
-- **امروز bento**: a date tile with the day numeral in the primary color, a tasks tile, a focus tile with the live timer and a play button, and a habits tile with up to five check squares. The tasks tile shows «۳ از ۴» with a ring only when the progress API confirmed today's done count; otherwise it shows only the open count. At text scale 1.5 and above, the tiles stack. Below the tiles, the day's rows are dense (6 vertical padding, the check keeps its 48 target) and sit in one well.
-- **عادت‌ها** opens with two tiles, today's done count with a ring and the best current streak, and puts the Loop-style grid in a well.
-- **Navigation** uses Material's indicator in the primary container, labels bold when selected.
-- **Focus** has a segmented mode picker (chips when the labels do not fit), one progress ring around the timer that shows real elapsed time, set in a round well, the task title under it, and a large primary start/pause button with a small soft-tile reset beside it. Its lifecycle and time-tracking behavior are described in `docs/time-tracking.md`.
-- **Sidebar progress** (level, XP, weekly goal) comes from the account API; unavailable data never shows an invented score.
-
-## Motion
-
-150 to 280 ms, conveying state only: row arrival and completion, the check, page fades. `Motion.of` removes durations when reduced motion is requested.
-
-## Do's and Don'ts
-
-- Do keep one accent per theme and use it only for primary actions, today, the running timer and selection.
-- Do follow Material 3 components before inventing a control.
-- Don't add illustrations, metaphors, decorative glow, glass or gradients. Outside the soft layer, don't wrap lists in cards.
-- Don't show progress, rewards or scores the server did not confirm.
+PR #258 initiates the V2 visual foundation, shared components and Today. Subsequent PRs must migrate detail/Focus/calendar/time/sidebars and visual QA in that order, while preserving all existing behavior. Every PR has narrow and wide Android/web capture checks, light/dark coverage and regression tests. Keep the previous theme on `main` until CI and real screenshots show that the new system improves legibility. Roll back by reverting the isolated V2 UI PR; no persistence/API/data migration is involved.
