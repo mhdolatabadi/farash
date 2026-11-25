@@ -33,7 +33,7 @@ class WeekTimeGrid extends StatefulWidget {
 }
 
 class _WeekTimeGridState extends State<WeekTimeGrid> {
-  static const _gutter = 64.0;
+  static const _gutter = 44.0;
   static const _hourHeight = 68.0;
   static const _minDayWidth = 136.0;
   late final ScrollController _vertical = ScrollController(
@@ -63,7 +63,14 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
     builder: (context, constraints) {
       final scheme = Theme.of(context).colorScheme;
       final settings = CalendarScope.of(context);
-      final width = math.max(constraints.maxWidth, _gutter + _minDayWidth * 7);
+      // Keep all seven weekday lanes visible on mobile without horizontal scroll.
+      final minDayWidth = constraints.maxWidth < 760
+          ? 38.0
+          : _minDayWidth;
+      final width = math.max(
+        constraints.maxWidth,
+        _gutter + minDayWidth * 7,
+      );
       final dayWidth = (width - _gutter) / 7;
       if (_scrollToSelectedDay) {
         _scrollToSelectedDay = false;
