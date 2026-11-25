@@ -742,14 +742,12 @@ class _DayHeading extends StatelessWidget {
     super.key,
     required this.title,
     this.detail,
-    this.action,
     this.late = false,
     this.first = false,
   });
 
   final String title;
   final String? detail;
-  final Widget? action;
   final bool late;
 
   /// Right under the app bar, whose count already leaves room above.
@@ -794,7 +792,6 @@ class _DayHeading extends StatelessWidget {
               ),
             ),
           ),
-          ?action,
         ],
       ),
     );
