@@ -1094,7 +1094,7 @@ class _QuickAddState extends State<QuickAddBar> {
     // One panel: the field, its priority and the send button read
     // as a single control, edged in the accent while it has focus.
     return Panel(
-      radius: 22,
+      radius: 16,
       borderColor: _focused ? theme.colorScheme.primary : null,
       padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 8, 4),
       child: Column(
