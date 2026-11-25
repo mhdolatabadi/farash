@@ -4,7 +4,7 @@ import 'package:menval/features/focus/focus_controller.dart';
 import 'package:menval/features/habits/habits_controller.dart';
 import 'package:menval/features/tasks/data/task.dart';
 
-/// A quiet, single-column task list for Today.
+/// A quiet, single-column task list for Today, with subtle elevation.
 ///
 /// There are no time lanes, category headings, calendar strip, statistics,
 /// companion panels, Focus shortcuts, or decorative cards. Timed tasks keep
@@ -51,6 +51,7 @@ class TodayWorkspace extends StatelessWidget {
         return 0;
       });
     final tasks = [...todayOrdered, ...overdueTasks];
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(
         Space.gutter,
@@ -71,11 +72,22 @@ class TodayWorkspace extends StatelessWidget {
                 ),
               ),
             )
-          else ...[
-            const Divider(height: 1),
+          else
             for (var index = 0; index < tasks.length; index++)
-              rowBuilder(tasks[index], index == tasks.length - 1),
-          ],
+              Padding(
+                padding: const EdgeInsets.only(bottom: Space.sm),
+                child: Material(
+                  color: colors.surface,
+                  elevation: 1.5,
+                  shadowColor: colors.shadow.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(12),
+                  clipBehavior: Clip.antiAlias,
+                  child: rowBuilder(
+                    tasks[index],
+                    index == tasks.length - 1,
+                  ),
+                ),
+              ),
           if (overdueTasks.isNotEmpty)
             Align(
               alignment: AlignmentDirectional.centerStart,
