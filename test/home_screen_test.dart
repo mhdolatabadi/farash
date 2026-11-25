@@ -141,6 +141,7 @@ void main() {
     await tester.tap(find.widgetWithText(NavigationDestination, 'تمرکز'));
     await tester.pumpAndSettle();
     expect(find.byType(ProjectTasksView), findsNothing);
+    expect(find.byTooltip('افزودن کار'), findsNothing);
 
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
