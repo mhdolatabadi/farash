@@ -8,10 +8,16 @@ import 'package:flutter/material.dart';
 
 /// A provider-independent, owner-scoped task month view.
 class TaskMonthView extends StatefulWidget {
-  const TaskMonthView({super.key, required this.loadTasks, this.now});
+  const TaskMonthView({
+    super.key,
+    required this.loadTasks,
+    this.now,
+    this.onOpenTask,
+  });
 
   final Future<List<Task>> Function(DateTime from, DateTime to) loadTasks;
   final DateTime Function()? now;
+  final ValueChanged<Task>? onOpenTask;
 
   @override
   State<TaskMonthView> createState() => _TaskMonthViewState();
@@ -76,6 +82,16 @@ class _TaskMonthViewState extends State<TaskMonthView> {
     }
   }
 
+  void _selectDay(DateTime day) {
+    final settings = CalendarScope.of(context);
+    final previousMonth = monthContaining(_selected, settings).firstDay;
+    final targetMonth = monthContaining(day, settings).firstDay;
+    setState(() => _selected = dayOf(day));
+    // Adjacent-month cells must navigate and fetch the new month rather
+    // than leave the old header and stale data visible.
+    if (targetMonth != previousMonth) _load();
+  }
+
   void _move(int months) {
     setState(() {
       _selected = shiftCalendarMonth(
@@ -92,6 +108,7 @@ class _TaskMonthViewState extends State<TaskMonthView> {
     final settings = CalendarScope.of(context);
     final month = monthContaining(_selected, settings);
     final theme = Theme.of(context);
+    final today = dayOf((widget.now ?? DateTime.now)());
     final counts = <DateTime, int>{};
     for (final task in _tasks) {
       final due = task.due;
@@ -174,26 +191,39 @@ class _TaskMonthViewState extends State<TaskMonthView> {
                           !day.isBefore(month.firstDay) &&
                           !day.isAfter(month.lastDay);
                       final selected = daysBetween(day, _selected) == 0;
+                      final isToday = daysBetween(day, today) == 0;
                       final dayNumber = settings.isJalali
                           ? JalaliDate.fromGregorian(day).day
                           : day.day;
                       return Padding(
                         padding: const EdgeInsets.all(2),
                         child: Semantics(
-                          label: formatDate(day, settings, withWeekday: true),
+                          label:
+                              '${formatDate(day, settings, withWeekday: true)}'
+                              '${isToday ? '، امروز' : ''}، '
+                              '${persianDigits('${counts[day] ?? 0}')} کار باز',
                           button: true,
+                          selected: selected,
+                          onTap: () => _selectDay(day),
+                          excludeSemantics: true,
                           child: InkWell(
                             key: ValueKey(
                               'month-day-${day.year}-${day.month}-${day.day}',
                             ),
                             borderRadius: BorderRadius.circular(12),
-                            onTap: () => setState(() => _selected = day),
+                            onTap: () => _selectDay(day),
                             child: Container(
                               constraints: const BoxConstraints(minHeight: 56),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
                                 color: selected
                                     ? theme.colorScheme.primaryContainer
+                                    : null,
+                                border: isToday
+                                    ? Border.all(
+                                        color: theme.colorScheme.primary,
+                                        width: 1.5,
+                                      )
                                     : null,
                               ),
                               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -247,6 +277,9 @@ class _TaskMonthViewState extends State<TaskMonthView> {
           for (final task in selectedTasks)
             ListTile(
               key: ValueKey('month-task-${task.id}'),
+              onTap: widget.onOpenTask == null
+                  ? null
+                  : () => widget.onOpenTask!(task),
               title: Text(task.title),
               leading: Icon(
                 task.isCompleted

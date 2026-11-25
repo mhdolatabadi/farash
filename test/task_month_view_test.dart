@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:menval/core/calendar/calendar_month.dart';
 import 'package:menval/core/calendar/calendar_scope.dart';
 import 'package:menval/core/calendar/calendar_settings.dart';
 import 'package:menval/features/calendar/task_month_view.dart';
@@ -12,6 +13,8 @@ void main() {
     Future<List<Task>> Function(DateTime, DateTime) loader, {
     CalendarSettings? settings,
   }) => MaterialApp(
+    builder: (context, child) =>
+        Directionality(textDirection: TextDirection.rtl, child: child!),
     home: CalendarScope(
       settings: settings ?? CalendarSettings(),
       child: Scaffold(
@@ -129,5 +132,68 @@ void main() {
     await tester.pumpAndSettle();
     expect(calls, 2);
     expect(find.text('برای این روز کاری زمان‌بندی نشده است.'), findsOneWidget);
+  });
+
+  testWidgets('tapping a neighboring month day loads its month', (
+    tester,
+  ) async {
+    final settings = CalendarSettings();
+    final current = monthContaining(DateTime(2026, 11, 23), settings);
+    final neighbor = current.gridStart.isBefore(current.firstDay)
+        ? current.gridStart
+        : current.gridEnd;
+    final nextMonth = monthContaining(neighbor, settings);
+    expect(nextMonth.firstDay, isNot(current.firstDay));
+    final loads = <DateTime>[];
+
+    await tester.pumpWidget(
+      app((from, to) async {
+        loads.add(from);
+        return [
+          Task(
+            id: 'neighbor',
+            projectId: 'inbox',
+            title: 'کار ماه همسایه',
+            due: TaskDue.onDay(neighbor),
+          ),
+        ];
+      }, settings: settings),
+    );
+    await tester.pumpAndSettle();
+
+    final day = find.byKey(
+      ValueKey('month-day-${neighbor.year}-${neighbor.month}-${neighbor.day}'),
+    );
+    await tester.ensureVisible(day);
+    await tester.tap(day);
+    await tester.pumpAndSettle();
+
+    expect(loads, hasLength(2));
+    expect(loads.last, nextMonth.gridStart);
+    expect(find.text('کار ماه همسایه'), findsOneWidget);
+  });
+
+  testWidgets('today remains distinguishable on a narrow RTL phone', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(app((from, to) async => []));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('month-day-2026-11-23')), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.label?.contains('امروز') == true &&
+            widget.properties.selected == true,
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 }

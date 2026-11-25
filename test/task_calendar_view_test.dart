@@ -154,6 +154,34 @@ void main() {
     expect(find.byType(TaskMonthView), findsNothing);
   });
 
+  testWidgets('month task opens the same detail sheet as week view', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      app(
+        (from, to) async => [
+          Task(
+            id: 'month-detail',
+            projectId: 'inbox',
+            title: 'جزئیات کار ماه',
+            due: TaskDue.onDay(DateTime(2026, 11, 23)),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('ماه'));
+    await tester.pumpAndSettle();
+
+    final row = find.byKey(const ValueKey('month-task-month-detail'));
+    await tester.ensureVisible(row);
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+
+    expect(find.text('بستن'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('a stale previous-week response never replaces new week', (
     tester,
   ) async {
