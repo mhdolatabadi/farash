@@ -20,6 +20,9 @@ void main() {
 
     expect(timer.running, isTrue);
     expect(find.text('شروع دوبارهٔ نوبت؟'), findsNothing);
+    // Cancel must leave the session active; stop its ticker before the
+    // widget-test binding checks for pending timers.
+    timer.pause();
     // A running timer creates a periodic ticker; stop it before test teardown.
     timer.pause();
   });
