@@ -46,9 +46,7 @@ class TodayWorkspace extends StatelessWidget {
     final timed = [
       for (final task in todayTasks)
         if (task.due?.isTimed == true) task,
-    ]..sort(
-      (a, b) => a.due!.datetime!.compareTo(b.due!.datetime!),
-    );
+    ]..sort((a, b) => a.due!.datetime!.compareTo(b.due!.datetime!));
     final flexible = [
       for (final task in todayTasks)
         if (task.due?.isTimed != true) task,
@@ -78,8 +76,7 @@ class TodayWorkspace extends StatelessWidget {
                 rowBuilder(flexible[index], index == flexible.length - 1),
             ],
           ),
-        if (todayTasks.isEmpty)
-          const _EmptyDay(),
+        if (todayTasks.isEmpty) const _EmptyDay(),
         if (overdueTasks.isNotEmpty)
           _WorkSection(
             title: 'دیرشده',
@@ -156,10 +153,7 @@ class TodayWorkspace extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: Space.xxl),
-              SizedBox(
-                width: 248,
-                child: companion,
-              ),
+              SizedBox(width: 248, child: companion),
             ],
           ),
         );
@@ -212,11 +206,7 @@ class _DateMasthead extends StatelessWidget {
             ),
           ),
           const SizedBox(width: Space.md),
-          Container(
-            width: 1,
-            height: 48,
-            color: colors.outlineVariant,
-          ),
+          Container(width: 1, height: 48, color: colors.outlineVariant),
           const SizedBox(width: Space.md),
           Expanded(
             child: Column(
@@ -487,7 +477,9 @@ class _DayCompanion extends StatelessWidget {
                           const SizedBox(width: Space.sm),
                           Expanded(
                             child: Text(
-                              controller.running ? 'تمرکز در جریان' : 'شروع تمرکز',
+                              controller.running
+                                  ? 'تمرکز در جریان'
+                                  : 'شروع تمرکز',
                               style: theme.textTheme.labelLarge?.copyWith(
                                 color: colors.onPrimaryContainer,
                               ),
@@ -512,10 +504,7 @@ class _DayCompanion extends StatelessWidget {
         ],
         if (habits case final controller?) ...[
           const SizedBox(height: Space.lg),
-          TodayHabitsStrip(
-            controller: controller,
-            onOpen: onOpenHabits,
-          ),
+          TodayHabitsStrip(controller: controller, onOpen: onOpenHabits),
         ],
       ],
     );
