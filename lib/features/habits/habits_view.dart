@@ -708,14 +708,28 @@ class CheckCell extends StatelessWidget {
         ),
       };
       state = text;
-      mark = Icon(
-        icon,
-        color: tint,
-        size: switch (check) {
-          DayCheck.yes || DayCheck.auto => 24,
-          DayCheck.skip => 20,
-          _ => 16,
-        },
+      final active = check == DayCheck.yes || check == DayCheck.auto;
+      mark = AnimatedContainer(
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 120),
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: active ? tint : Colors.transparent,
+          border: Border.all(
+            color: active
+                ? tint
+                : theme.colorScheme.outline.withValues(alpha: 0.6),
+            width: active ? 1 : 1.7,
+          ),
+        ),
+        child: active
+            ? Icon(Icons.check_rounded, size: 14, color: theme.colorScheme.surface)
+            : check == DayCheck.no || check == DayCheck.skip
+            ? Icon(icon, size: 12, color: tint)
+            : null,
       );
     }
     return Semantics(
