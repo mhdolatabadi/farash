@@ -121,16 +121,13 @@ void main() {
     expect(api.all, hasLength(1));
   });
 
-  testWidgets('medium widths move the destinations to a rail', (tester) async {
+  testWidgets('medium widths use bottom navigation instead of a rail', (
+    tester,
+  ) async {
     await pumpHome(tester, size: const Size(700, 800));
-    expect(find.byType(NavigationRail), findsOneWidget);
-    expect(find.byType(NavigationBar), findsNothing);
-    await tester.tap(
-      find.descendant(
-        of: find.byType(NavigationRail),
-        matching: find.text('امروز'),
-      ),
-    );
+    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(NavigationBar), findsOneWidget);
+    await tester.tap(find.widgetWithText(NavigationDestination, 'امروز'));
     await tester.pumpAndSettle();
     expect(find.byType(DueTasksView), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -339,16 +336,41 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('focus quick capture does not duplicate list capture', (
+  testWidgets('quick capture FAB stays available without duplication', (
     tester,
   ) async {
     await pumpHome(tester, size: const Size(400, 800));
-    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+    await tester.tap(find.byTooltip('افزودن کار'));
+    await tester.pumpAndSettle();
+    expect(find.byType(QuickAddDialog), findsOneWidget);
+    await tester.tap(find.byTooltip('بستن'));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(NavigationDestination, 'تمرکز'));
     await tester.pumpAndSettle();
     expect(find.byType(FloatingActionButton), findsOneWidget);
     await tester.tap(find.widgetWithText(NavigationDestination, 'کارها'));
     await tester.pumpAndSettle();
-    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('quick-add opens a side-aligned surface, not an alert dialog', (
+    tester,
+  ) async {
+    await pumpHome(tester, size: const Size(400, 800));
+    await tester.tap(find.byTooltip('افزودن کار'));
+    await tester.pumpAndSettle();
+    expect(find.byType(QuickAddDialog), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(QuickAddDialog),
+        matching: find.byType(AlertDialog),
+      ),
+      findsNothing,
+    );
+    final rect = tester.getRect(find.byType(QuickAddDialog));
+    expect(rect.right, closeTo(400, 1));
+    expect(tester.takeException(), isNull);
   });
 }
