@@ -198,6 +198,7 @@ class _TaskMonthViewState extends State<TaskMonthView> {
                               '${persianDigits('${counts[day] ?? 0}')} کار باز',
                           button: true,
                           selected: selected,
+                          onTap: () => _selectDay(day),
                           excludeSemantics: true,
                           child: InkWell(
                             key: ValueKey(
