@@ -60,15 +60,16 @@ class TodayWorkspace extends StatelessWidget {
         Space.gutter,
         Space.xxl,
       ),
-      child: SoftWell(
-        radius: 24,
-        padding: const EdgeInsetsDirectional.fromSTEB(
-          Space.md,
-          Space.lg,
-          Space.md,
-          Space.md,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: (MediaQuery.sizeOf(context).height - 260).clamp(220.0, 900.0),
         ),
-        child: Column(
+        child: SoftWell(
+          radius: 36,
+          padding: const EdgeInsetsDirectional.fromSTEB(
+            Space.md, Space.xl, Space.md, Space.md,
+          ),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (tasks.isEmpty)
@@ -87,9 +88,9 @@ class TodayWorkspace extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: Space.sm),
                   child: Material(
                     color: colors.surface,
-                    elevation: 1.5,
+                    elevation: 3,
                     shadowColor: colors.shadow.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(24),
                     clipBehavior: Clip.antiAlias,
                     child: rowBuilder(tasks[index], index == tasks.length - 1),
                   ),
@@ -103,6 +104,7 @@ class TodayWorkspace extends StatelessWidget {
                 ),
               ),
           ],
+          ),
         ),
       ),
     );
