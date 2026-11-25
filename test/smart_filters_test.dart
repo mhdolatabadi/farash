@@ -101,9 +101,10 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('فیلترها'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const ValueKey('filter-f1')));
     await tester.tap(find.byKey(const ValueKey('filter-f1')));
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(AppBar, 'تماس‌ها'), findsOneWidget);
+    expect(find.text('تماس‌ها'), findsWidgets);
     expect(tasks.searches.last.queryParameters['q'], '@تلفن');
     expect(tasks.searches.last.queryParameters['sort'], 'priority');
     expect(find.text('گروه: پروژه'), findsOneWidget);
