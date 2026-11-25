@@ -155,7 +155,10 @@ def capture_review():
     capture('weaving-large-text')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')
     time.sleep(2)
-    tap('تمرکز')
+    # Focus moved into the compact navigation drawer. Reach it through the
+    # real accessible menu rather than assuming a visible bottom tab.
+    open_drawer()
+    tap('تمرکز', wait_for='شروع تمرکز')
     capture('focus-dark')
     tap('شروع تمرکز')
     capture('focus-running')
