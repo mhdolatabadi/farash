@@ -209,3 +209,62 @@ func TestSyncBootstrapKeepsEditsMovedPastAnEarlierPage(t *testing.T) {
 		t.Fatal(deleted, err)
 	}
 }
+
+func TestSyncPagingWithInterleavedWritesAndReplay(t *testing.T) {
+	ctx := context.Background()
+	pool := testPool(t)
+	s := New(pool)
+	owner, err := s.CreateUser(ctx, "sync-interleaved@example.com", "hash")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `INSERT INTO projects(id,owner_id,name) VALUES('p',$1,'Project')`, owner.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `INSERT INTO tasks(id,owner_id,project_id,title) VALUES('a',$1,'p','A'),('b',$1,'p','B')`, owner.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	first, err := s.PullSync(ctx, owner.ID, "", 1)
+	if err != nil || len(first.Changes) != 1 || !first.HasMore {
+		t.Fatalf("first page: %+v: %v", first, err)
+	}
+	// A lost HTTP response must be replayable without moving the cursor.
+	replayed, err := s.PullSync(ctx, owner.ID, "", 1)
+	if err != nil || replayed.Cursor != first.Cursor || len(replayed.Changes) != 1 || replayed.Changes[0].ID != first.Changes[0].ID {
+		t.Fatalf("replayed page: %+v: %v", replayed, err)
+	}
+	// A new write arrives after the first page was committed, before the
+	// client drains the feed. It must not be hidden by the old page boundary.
+	if _, err := pool.Exec(ctx, `INSERT INTO tasks(id,owner_id,project_id,title) VALUES('c',$1,'p','New')`, owner.ID); err != nil {
+		t.Fatal(err)
+	}
+	seen := map[string]bool{first.Changes[0].ID: true}
+	cursor := first.Cursor
+	for i := 0; i < 10; i++ {
+		page, err := s.PullSync(ctx, owner.ID, cursor, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, change := range page.Changes {
+			if seen[change.ID] {
+				t.Fatalf("duplicate entity %q while draining feed", change.ID)
+			}
+			seen[change.ID] = true
+		}
+		cursor = page.Cursor
+		if !page.HasMore {
+			break
+		}
+		if i == 9 {
+			t.Fatal("pagination did not terminate")
+		}
+	}
+	if !seen["p"] || !seen["a"] || !seen["b"] || !seen["c"] || len(seen) != 4 {
+		t.Fatalf("interleaved write missing: %v", seen)
+	}
+	empty, err := s.PullSync(ctx, owner.ID, cursor, 1)
+	if err != nil || empty.HasMore || len(empty.Changes) != 0 || empty.Cursor != cursor {
+		t.Fatalf("empty poll advanced cursor: %+v: %v", empty, err)
+	}
+}
