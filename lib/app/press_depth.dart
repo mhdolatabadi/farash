@@ -36,7 +36,7 @@ class _PressDepthState extends State<PressDepth> {
   bool _pressed = false;
 
   void _down(PointerDownEvent event) {
-    if (!widget.enabled || _pointer != null) return;
+    if (!mounted || !widget.enabled || _pointer != null) return;
     if (event.kind == PointerDeviceKind.mouse && event.buttons != 1) return;
     _pointer = event.pointer;
     _origin = event.position;
@@ -54,7 +54,7 @@ class _PressDepthState extends State<PressDepth> {
     if (_pointer != pointer) return;
     _pointer = null;
     _origin = null;
-    if (_pressed) setState(() => _pressed = false);
+    if (mounted && _pressed) setState(() => _pressed = false);
   }
 
   @override
