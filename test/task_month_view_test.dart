@@ -192,7 +192,9 @@ void main() {
 
     await tester.tap(
       find.byKey(
-        ValueKey('month-day-${adjacent.year}-${adjacent.month}-${adjacent.day}'),
+        ValueKey(
+          'month-day-${adjacent.year}-${adjacent.month}-${adjacent.day}',
+        ),
       ),
     );
     await tester.pumpAndSettle();
