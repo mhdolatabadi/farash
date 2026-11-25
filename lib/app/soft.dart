@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:menval/app/palette.dart';
+import 'package:menval/app/press_depth.dart';
 
 /// The soft surfaces of the main destinations: tiles that rise off the
 /// ground and wells sunk into it. Each also carries a hairline, so an edge
@@ -82,9 +83,13 @@ class SoftTile extends StatelessWidget {
         type: MaterialType.transparency,
         shape: shape,
         clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(padding: padding, child: child),
+        child: PressDepth(
+          enabled: onTap != null,
+          borderRadius: BorderRadius.circular(radius),
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(padding: padding, child: child),
+          ),
         ),
       ),
     );
