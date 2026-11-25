@@ -116,6 +116,8 @@ void main() {
   ) async {
     final semantics = tester.ensureSemantics();
     await pump(tester, doneToday: () async => 3);
+    await tester.ensureVisible(find.text('۳ از ۴ انجام‌شده'));
+    await tester.pumpAndSettle();
     expect(
       find.bySemanticsLabel('۳ کار از ۴ کار امروز انجام شد'),
       findsOneWidget,
@@ -126,7 +128,7 @@ void main() {
   testWidgets('focus is a real reachable secondary action', (tester) async {
     var opened = 0;
     await pump(tester, onOpenFocus: () => opened++);
-    final shortcut = find.bySemanticsLabel('باز کردن تمرکز');
+    final shortcut = find.text('شروع تمرکز');
     await tester.ensureVisible(shortcut);
     await tester.pumpAndSettle();
     await tester.tap(shortcut);
