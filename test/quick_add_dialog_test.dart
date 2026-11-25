@@ -111,7 +111,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(api.all, hasLength(1));
       expect(
-        tester.widget<TextField>(find.byKey(const ValueKey('quick-add-title'))).enabled,
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('quick-add-title')))
+            .enabled,
         isFalse,
       );
       expect(
