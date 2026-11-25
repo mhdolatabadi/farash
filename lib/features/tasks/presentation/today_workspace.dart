@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:menval/app/spacing.dart';
+import 'package:menval/app/soft.dart';
 import 'package:menval/features/focus/focus_controller.dart';
 import 'package:menval/features/habits/habits_controller.dart';
 import 'package:menval/features/tasks/data/task.dart';
@@ -59,9 +60,14 @@ class TodayWorkspace extends StatelessWidget {
         Space.gutter,
         Space.xxl,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+      child: SoftWell(
+        radius: 24,
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          Space.md, Space.lg, Space.md, Space.md,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           if (tasks.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: Space.xl),
@@ -93,7 +99,8 @@ class TodayWorkspace extends StatelessWidget {
                 child: const Text('انتقال کارهای عقب‌افتاده به امروز'),
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
