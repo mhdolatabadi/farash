@@ -316,7 +316,8 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                           maxLines: 4,
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontFamily: 'Vazirmatn',
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
+                            color: theme.colorScheme.onSurface,
                           ),
                           decoration: _bare(theme, 'عنوان کار'),
                           validator: (value) => (value ?? '').trim().isEmpty
@@ -337,8 +338,8 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                       controller: _description,
                       maxLength: 20000,
                       buildCounter: _counterNearLimit,
-                      minLines: 2,
-                      maxLines: 10,
+                      minLines: 1,
+                      maxLines: 8,
                       keyboardType: TextInputType.multiline,
                       style: theme.textTheme.bodyLarge,
                       decoration: _bare(theme, 'توضیحات'),
@@ -678,7 +679,7 @@ class _SectionHeading extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(top: Space.lg, bottom: Space.xs),
+      padding: const EdgeInsets.only(top: Space.xl, bottom: Space.sm),
       child: Text(
         text,
         style: theme.textTheme.labelLarge?.copyWith(
@@ -981,7 +982,12 @@ class _PropertyRow extends StatelessWidget {
             children: [
               Icon(icon, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(width: 12),
-              Text(label, style: theme.textTheme.bodyLarge),
+              Text(
+                label,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           );
           if (!expand && constraints.maxWidth < 480) {
