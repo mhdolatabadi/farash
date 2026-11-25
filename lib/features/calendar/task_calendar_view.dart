@@ -160,6 +160,21 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
       for (var i = 0; i < 7; i++)
         DateTime(_start.year, _start.month, _start.day + i),
     ];
+    // The approved calendar header shows a compact weekday-range label.
+    final String weekLabel;
+    if (settings.isJalali) {
+      final first = JalaliDate.fromGregorian(days.first);
+      final last = JalaliDate.fromGregorian(days.last);
+      weekLabel = first.year == last.year && first.month == last.month
+          ? persianDigits('${first.day} تا ${last.day} ${jalaliMonths[last.month - 1]}')
+          : '${formatDate(days.first, settings)} تا ${formatDate(days.last, settings)}';
+    } else {
+      weekLabel = days.first.month == days.last.month
+          ? persianDigits(
+              '${days.first.day} تا ${days.last.day} ${gregorianMonths[days.last.month - 1]}',
+            )
+          : '${formatDate(days.first, settings)} تا ${formatDate(days.last, settings)}';
+    }
     return Scaffold(
       appBar: widget.embedded
           ? null
@@ -188,7 +203,7 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
                         ),
                         Expanded(
                           child: Text(
-                            '${formatDate(days.first, settings)} تا ${formatDate(days.last, settings)}',
+                            weekLabel,
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
