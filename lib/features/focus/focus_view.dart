@@ -51,8 +51,32 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
   }
 
   Future<void> _reset() async {
+    final timer = widget.controller;
+    // Do not silently discard a session with elapsed time.
+    if (!timer.finished && (timer.running || timer.progress > 0)) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('شروع دوبارهٔ نوبت؟'),
+          content: const Text(
+            'زمان سپری‌شدهٔ این نوبت از دست می‌رود. می‌خواهید از نو شروع کنید؟',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('انصراف'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('از نو'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || confirmed != true) return;
+    }
     if (await (widget.beforePause?.call() ?? Future.value(true)) && mounted) {
-      widget.controller.reset();
+      timer.reset();
     }
   }
 
@@ -236,10 +260,10 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                           runSpacing: Space.md,
                           children: [
                             Tooltip(
-                              message: 'از نو',
+                              message: 'بازنشانی نوبت تمرکز',
                               child: Semantics(
                                 button: true,
-                                label: 'از نو',
+                                label: 'بازنشانی نوبت تمرکز',
                                 excludeSemantics: true,
                                 child: SizedBox.square(
                                   dimension: 56,
