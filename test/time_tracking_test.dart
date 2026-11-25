@@ -131,24 +131,14 @@ void main() {
     expect(api.active?['source'], 'focus');
     expect(api.calls.first['task_id'], task.id);
     expect(api.calls.first['focus_seconds'], 1500);
-    await tester.tap(find.byKey(const ValueKey('compact-navigation')));
+    await tester.tap(find.byKey(const ValueKey('menval-wordmark')));
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.descendant(
-        of: find.byType(PopupMenuItem<String>),
-        matching: find.text('کارها'),
-      ),
-    );
+    await tester.tap(find.widgetWithText(ListTile, 'صندوق ورودی').first);
     await tester.pumpAndSettle();
     expect(find.byTooltip('توقف ثبت زمان'), findsWidgets);
-    await tester.tap(find.byKey(const ValueKey('compact-navigation')));
+    await tester.tap(find.byKey(const ValueKey('menval-wordmark')));
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.descendant(
-        of: find.byType(PopupMenuItem<String>),
-        matching: find.text('تمرکز'),
-      ),
-    );
+    await tester.tap(find.widgetWithText(ListTile, 'تمرکز').first);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('مکث'));
     await tester.tap(find.text('مکث'));
