@@ -56,9 +56,6 @@ import 'package:menval/features/tasks/presentation/project_tasks_view.dart';
 /// Wide layouts keep the project list on screen; phones use a drawer.
 const sidebarBreakpoint = 840.0;
 
-/// Between phone and wide, the destinations move to a side rail.
-const railBreakpoint = 600.0;
-
 /// The signed-in shell: project navigation and the selected project.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -996,59 +993,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-  /// The top-level destinations, shared by the bottom bar and the rail.
-  List<(Widget icon, Widget selectedIcon, String label)> _destinations() {
-    final badge = _focusBadge;
-    Widget focusIcon(IconData data) {
-      if (badge == null) return Icon(data);
-      return Semantics(
-        label: 'تمرکز در جریان، $badge باقی‌مانده',
-        child: Badge(
-          isLabelVisible: true,
-          label: null,
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          alignment: AlignmentDirectional.topEnd,
-          offset: const Offset(2, -2),
-          child: Icon(data),
-        ),
-      );
-    }
-
-    return [
-      (
-        const Icon(Icons.today_outlined),
-        const Icon(Icons.today_rounded),
-        'امروز',
-      ),
-      (
-        const Icon(Icons.check_circle_outline_rounded),
-        const Icon(Icons.check_circle_rounded),
-        'کارها',
-      ),
-      (
-        focusIcon(Icons.timelapse_outlined),
-        focusIcon(Icons.timelapse_rounded),
-        'تمرکز',
-      ),
-      if (_tracker != null)
-        (
-          const Icon(Icons.timer_outlined),
-          const Icon(Icons.timer_rounded),
-          'زمان‌ها',
-        ),
-      if (_habits != null)
-        (
-          const Icon(Icons.task_alt_outlined),
-          const Icon(Icons.task_alt_rounded),
-          'عادت‌ها',
-        ),
-    ];
-  }
-
-  /// Today, Focus and Habits sit on the soft ground.
-  bool get _softSection =>
-      _section == 0 || _section == 2 || (_section == 4 && _habits != null);
-
   /// Tasks the server counts as completed today, from the progress
   /// report; null when the report has no such day.
   Future<int?> _doneToday() async {
@@ -1066,15 +1010,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
     return null;
   }
-
-  /// The sections behind the phone's bottom destinations, in order.
-  List<int> get _navSections => [
-    0,
-    1,
-    2,
-    if (_tracker != null) 3,
-    if (_habits != null) 4,
-  ];
 
   MatrixRules? _matrix;
   MatrixRules get _matrixRules => _matrix ??= MatrixRules(
@@ -1262,7 +1197,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= sidebarBreakpoint;
-        final rail = false; // Keep primary navigation below content on tablets.
         return ListenableBuilder(
           listenable: Listenable.merge([widget.projects, ?_labels]),
           builder: (context, _) {
@@ -1396,32 +1330,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 bottomNavigationBar: _captureBar(),
                 body: Row(
                   children: [
-                    if (rail) ...[
-                      SafeArea(
-                        right: false,
-                        left: false,
-                        child: ListenableBuilder(
-                          listenable: _focus,
-                          builder: (context, _) => NavigationRail(
-                            selectedIndex: _navSections.indexOf(_section),
-                            onDestinationSelected: (i) =>
-                                _switchSection(_navSections[i]),
-                            labelType: NavigationRailLabelType.all,
-                            groupAlignment: 0,
-                            destinations: [
-                              for (final (icon, selectedIcon, label)
-                                  in _destinations())
-                                NavigationRailDestination(
-                                  icon: icon,
-                                  selectedIcon: selectedIcon,
-                                  label: Text(label),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const VerticalDivider(width: 1),
-                    ],
                     Expanded(
                       child: Column(
                         children: [
