@@ -1145,6 +1145,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     beforeStart: _beforeFocusStart,
                     beforePause: _beforeFocusPause,
                     timeLinked: _tracker != null && _focusTask != null,
+                    onQuickAdd: _quickAdd,
                   )
                 : _section == 4 && _habits != null
                 ? HabitsView(
