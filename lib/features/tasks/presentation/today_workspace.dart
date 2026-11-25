@@ -61,11 +61,14 @@ class TodayWorkspace extends StatelessWidget {
         Space.xxl,
       ),
       child: SoftWell(
-          radius: 36,
-          padding: const EdgeInsetsDirectional.fromSTEB(
-            Space.md, Space.xl, Space.md, Space.md,
-          ),
-          child: Column(
+        radius: 36,
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          Space.md,
+          Space.xl,
+          Space.md,
+          Space.md,
+        ),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (tasks.isEmpty)
@@ -100,7 +103,7 @@ class TodayWorkspace extends StatelessWidget {
                 ),
               ),
           ],
-          ),
+        ),
       ),
     );
   }
