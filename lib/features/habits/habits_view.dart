@@ -270,7 +270,10 @@ class _HabitsViewState extends State<HabitsView> {
                   Positioned.fill(
                     child: Padding(
                       padding: const EdgeInsetsDirectional.fromSTEB(
-                        Space.md, Space.lg, Space.md, Space.lg,
+                        Space.md,
+                        Space.lg,
+                        Space.md,
+                        Space.lg,
                       ),
                       child: IgnorePointer(
                         child: SoftWell(
@@ -426,7 +429,8 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        habitWeekdays[dayDate(saturdayOf(today) + i).weekday - 1],
+                        habitWeekdays[dayDate(saturdayOf(today) + i).weekday -
+                            1],
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: i == 0 ? theme.colorScheme.onSurface : muted,
                           fontWeight: i == 0
@@ -531,7 +535,8 @@ class HabitRow extends StatelessWidget {
                   ),
                   child: Padding(
                     padding: const EdgeInsetsDirectional.only(
-                      start: Space.sm, end: Space.xs,
+                      start: Space.sm,
+                      end: Space.xs,
                     ),
                     child: Row(
                       children: [
@@ -594,8 +599,12 @@ class HabitRow extends StatelessWidget {
                     settings,
                     today: dayDate(stats.today),
                   ),
-                  onTap: () =>
-                      recordDay(context, controller, habit, saturdayOf(stats.today) + i),
+                  onTap: () => recordDay(
+                    context,
+                    controller,
+                    habit,
+                    saturdayOf(stats.today) + i,
+                  ),
                 ),
               const SizedBox(width: Space.sm),
             ],
@@ -737,7 +746,11 @@ class CheckCell extends StatelessWidget {
           ),
         ),
         child: active
-            ? Icon(Icons.check_rounded, size: 14, color: theme.colorScheme.surface)
+            ? Icon(
+                Icons.check_rounded,
+                size: 14,
+                color: theme.colorScheme.surface,
+              )
             : check == DayCheck.no || check == DayCheck.skip
             ? Icon(icon, size: 12, color: tint)
             : null,
