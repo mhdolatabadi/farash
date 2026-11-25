@@ -253,8 +253,7 @@ class _MenvalAppState extends State<MenvalApp> {
       final refresh = await _refreshStore.readRefreshToken();
       if (refresh == null) rethrow;
       final renewed = await api.refreshSession(refresh);
-      if (renewed.user.id != session.user.id ||
-          renewed.refreshToken == null) {
+      if (renewed.user.id != session.user.id || renewed.refreshToken == null) {
         throw const ApiException('بازیابی امن نشست ممکن نشد.');
       }
       if (!mounted ||
