@@ -8,6 +8,7 @@ import 'package:menval/features/calendar_connections/calendar_connections_view.d
 import 'package:menval/features/habits/habits_controller.dart';
 import 'package:menval/features/habits/habits_view.dart';
 import 'package:menval/features/habits/habit_detail.dart';
+import 'package:menval/features/habits/habit_editor.dart';
 import 'package:menval/features/habits/reminders/habit_reminders.dart';
 import 'package:menval/features/habits/reminders/local_reminders.dart';
 import 'package:menval/features/habits/reminders/task_due_preference.dart';
@@ -615,30 +616,136 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  Future<List<Task>> _loadCalendarTasks(DateTime from, DateTime to) async {
+    final token = widget.token();
+    if (token == null) throw StateError('Session unavailable');
+    final tasks = await widget.tasksApi.listDueTasks(
+      token,
+      from: from,
+      to: to,
+    );
+    if (widget.token() != token) throw StateError('Session changed');
+    return tasks;
+  }
+
   void _openNativeCalendar() {
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.pop(context);
     }
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => TaskCalendarView(
-          loadTasks: (from, to) async {
-            final token = widget.token();
-            if (token == null) throw StateError('Session unavailable');
-            final tasks = await widget.tasksApi.listDueTasks(
-              token,
-              from: from,
-              to: to,
-            );
-            if (widget.token() != token) {
-              throw StateError('Session changed');
-            }
-            return tasks;
-          },
+    _switchSection(5);
+  }
+
+  Future<void> _createHabitFromFab() async {
+    final controller = _habits;
+    if (controller == null) return;
+    final habit = await createHabit(context, controller);
+    if (!mounted || habit == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('«${habit.name}» اضافه شد.')),
+    );
+  }
+
+  Widget _approvedNav() {
+    final colors = Theme.of(context).colorScheme;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          Space.md, Space.xs, Space.md, Space.md,
+        ),
+        child: Center(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Soft.ground(context),
+                borderRadius: BorderRadius.circular(26),
+                boxShadow: Soft.raised(context, depth: 3),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(Space.xs),
+                child: Row(
+                  children: [
+                    for (final (section, label, icon) in [
+                      (0, 'کارها', Icons.format_list_bulleted_rounded),
+                      (5, 'تقویم', Icons.calendar_month_outlined),
+                      (4, 'عادت‌ها', Icons.check_circle_outline_rounded),
+                    ])
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Semantics(
+                            button: true,
+                            selected: section == 0
+                                ? _section == 0 || _section == 1
+                                : _section == section,
+                            child: PressDepth(
+                              enabled: section != 4 || _habits != null,
+                              child: InkWell(
+                                key: ValueKey('approved-nav-$section'),
+                                borderRadius: BorderRadius.circular(20),
+                                onTap: section == 4 && _habits == null
+                                    ? null
+                                    : () => _switchSection(section),
+                                child: (section == 0
+                                            ? _section == 0 || _section == 1
+                                            : _section == section)
+                                    ? SoftWell(
+                                        radius: 20,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: Space.sm,
+                                          horizontal: Space.xs,
+                                        ),
+                                        child: _navLabel(
+                                          icon, label, colors.onSurface, true,
+                                        ),
+                                      )
+                                    : Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: Space.sm,
+                                          horizontal: Space.xs,
+                                        ),
+                                        child: _navLabel(
+                                          icon,
+                                          label,
+                                          colors.onSurfaceVariant,
+                                          false,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
+
+  Widget _navLabel(
+    IconData icon, String text, Color color, bool selected,
+  ) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 21, color: color),
+      const SizedBox(height: Space.xs),
+      Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        ),
+      ),
+    ],
+  );
 
   int _captureRevision = 0;
 
@@ -1253,6 +1360,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     labels: _labels,
                     sectionsApi: widget.sectionsApi,
                     showQuickCapture: false,
+                    hideHeader: true,
                     doneToday: widget.tasksApi is ApiClient ? _doneToday : null,
                     focus: _focus,
                     onOpenFocus: () => _switchSection(2),
@@ -1260,6 +1368,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     onOpenHabits: _habits == null
                         ? null
                         : () => _switchSection(4),
+                  )
+                : _section == 5
+                ? TaskCalendarView(
+                    key: const ValueKey('embedded-week-calendar'),
+                    embedded: true,
+                    loadTasks: _loadCalendarTasks,
                   )
                 : _section == 2
                 ? FocusView(
@@ -1274,6 +1388,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     key: const ValueKey('habits-view'),
                     controller: _habits,
                     onQuickAdd: _quickAdd,
+                    embedded: true,
                   )
                 : _section == 3 && _tracker != null
                 ? TimeTrackingView(
@@ -1359,14 +1474,67 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               // with the drawer button, so nothing frames the list twice.
               return Scaffold(
                 key: _scaffoldKey,
-                appBar: selected == null && view == null && label == null
-                    ? AppBar(title: const Text('منوال'))
-                    : null,
+                appBar: AppBar(
+                  automaticallyImplyLeading: false,
+                  backgroundColor: Soft.ground(context),
+                  surfaceTintColor: Colors.transparent,
+                  toolbarHeight: 62,
+                  titleSpacing: Space.gutter,
+                  title: PressDepth(
+                    child: InkWell(
+                      key: const ValueKey('menval-wordmark'),
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => _scaffoldKey.currentState?.openDrawer(),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: Space.xs),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const MenvalMark(size: 22),
+                            const SizedBox(width: Space.sm),
+                            Text(
+                              'منوال',
+                              style: Theme.of(context)
+                                  .textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  actions: [
+                    if (widget.tasksApi case final SearchApi api)
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(end: Space.sm),
+                        child: PressDepth(
+                          child: IconButton(
+                            key: const ValueKey('menval-header-search'),
+                            tooltip: 'جست‌وجو',
+                            onPressed: () => _openSearch(api),
+                            icon: const Icon(Icons.search_rounded),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
                 drawer: Drawer(
                   backgroundColor: Soft.ground(context),
                   child: _sidebar(),
                 ),
-                bottomNavigationBar: _captureBar(),
+                bottomNavigationBar: _approvedNav(),
+                floatingActionButtonLocation:
+                    FloatingActionButtonLocation.startFloat,
+                floatingActionButton: PressDepth(
+                  borderRadius: BorderRadius.circular(18),
+                  child: FloatingActionButton(
+                    key: const ValueKey('menval-create-fab'),
+                    tooltip: _section == 4 ? 'عادت جدید' : 'کار جدید',
+                    onPressed:
+                        _section == 4 ? _createHabitFromFab : _quickAdd,
+                    child: const Icon(Icons.add_rounded),
+                  ),
+                ),
                 body: Row(
                   children: [
                     Expanded(
