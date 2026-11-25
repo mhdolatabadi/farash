@@ -119,7 +119,11 @@ void main() {
     await tester.ensureVisible(find.text('۳ از ۴ انجام‌شده'));
     await tester.pumpAndSettle();
     expect(
-      find.bySemanticsLabel('۳ کار از ۴ کار امروز انجام شد'),
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.label == '۳ کار از ۴ کار امروز انجام شد',
+      ),
       findsOneWidget,
     );
     semantics.dispose();
