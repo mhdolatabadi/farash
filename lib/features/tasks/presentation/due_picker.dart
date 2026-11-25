@@ -259,7 +259,6 @@ class _DuePickerState extends State<DuePicker> {
                       child: DropdownButton<int>(
                         value: _time!.hour,
                         menuMaxHeight: 320,
-                        tooltip: 'ساعت',
                         items: [
                           for (var hour = 0; hour < 24; hour++)
                             DropdownMenuItem<int>(
@@ -286,7 +285,6 @@ class _DuePickerState extends State<DuePicker> {
                       child: DropdownButton<int>(
                         value: _time!.minute,
                         menuMaxHeight: 320,
-                        tooltip: 'دقیقه',
                         items: [
                           for (var minute = 0; minute < 60; minute++)
                             DropdownMenuItem<int>(
