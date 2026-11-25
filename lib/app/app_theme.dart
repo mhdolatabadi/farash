@@ -85,10 +85,7 @@ abstract final class MenvalTheme {
         fontSize: 18,
         fontWeight: FontWeight.w700,
       ),
-      bodyLarge: base.textTheme.bodyLarge?.copyWith(
-        fontSize: 16,
-        height: 1.5,
-      ),
+      bodyLarge: base.textTheme.bodyLarge?.copyWith(fontSize: 16, height: 1.5),
       bodyMedium: base.textTheme.bodyMedium?.copyWith(
         fontSize: 14,
         height: 1.5,
@@ -168,9 +165,7 @@ abstract final class MenvalTheme {
         titleTextStyle: base.textTheme.bodyLarge?.copyWith(
           color: colors.onSurface,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         iconColor: colors.onSurfaceVariant,
         selectedColor: colors.onPrimaryContainer,
         selectedTileColor: colors.primaryContainer,
