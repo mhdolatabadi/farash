@@ -60,8 +60,16 @@ class _ApprovedPreviewApi extends FakeTasksApi implements HabitsApi {
         durationMinutes: 45,
       ),
     );
-    seed('inbox', 'پاسخ به پیام‌ها', dates: TaskDates(due: TaskDue.onDay(at(0, 0))));
-    seed('inbox', 'مرور کارهای فردا', dates: TaskDates(due: TaskDue.onDay(at(0, 0))));
+    seed(
+      'inbox',
+      'پاسخ به پیام‌ها',
+      dates: TaskDates(due: TaskDue.onDay(at(0, 0))),
+    );
+    seed(
+      'inbox',
+      'مرور کارهای فردا',
+      dates: TaskDates(due: TaskDue.onDay(at(0, 0))),
+    );
 
     // Other weekdays have simultaneous events, as in the approved time grid.
     seed(
@@ -111,71 +119,72 @@ void main() {
     await icons.load();
   });
 
-  testWidgets('approved three-screen shell renders with no extra input or titles', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
+  testWidgets(
+    'approved three-screen shell renders with no extra input or titles',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
 
-    final api = _ApprovedPreviewApi()..seedFixture();
-    final projects = ProjectsController(
-      api: FakeProjectsApi(),
-      token: () => 'fixture',
-    );
-    addTearDown(projects.dispose);
-    final key = GlobalKey();
+      final api = _ApprovedPreviewApi()..seedFixture();
+      final projects = ProjectsController(
+        api: FakeProjectsApi(),
+        token: () => 'fixture',
+      );
+      addTearDown(projects.dispose);
+      final key = GlobalKey();
 
-    await tester.pumpWidget(
-      RepaintBoundary(
-        key: key,
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          locale: const Locale('fa'),
-          supportedLocales: const [Locale('fa')],
-          localizationsDelegates: GlobalMaterialLocalizations.delegates,
-          theme: MenvalTheme.light(),
-          builder: (context, child) =>
-              CalendarScope(settings: CalendarSettings(), child: child!),
-          home: HomeScreen(
-            email: 'fixture@example.com',
-            onLogout: () {},
-            projects: projects,
-            tasksApi: api,
-            token: () => 'fixture',
-            startView: StartView(value: StartView.today),
+      await tester.pumpWidget(
+        RepaintBoundary(
+          key: key,
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa')],
+            localizationsDelegates: GlobalMaterialLocalizations.delegates,
+            theme: MenvalTheme.light(),
+            builder: (context, child) =>
+                CalendarScope(settings: CalendarSettings(), child: child!),
+            home: HomeScreen(
+              email: 'fixture@example.com',
+              onLogout: () {},
+              projects: projects,
+              tasksApi: api,
+              token: () => 'fixture',
+              startView: StartView(value: StartView.today),
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('menval-wordmark')), findsOneWidget);
-    expect(find.byKey(const ValueKey('menval-create-fab')), findsOneWidget);
-    expect(find.byKey(const ValueKey('inline-task-title')), findsNothing);
-    expect(find.byKey(const ValueKey('approved-nav-0')), findsOneWidget);
-    expect(find.text('مرور طراحی منوال'), findsOneWidget);
-    await _capture(tester, key, 'approved-reference-tasks');
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('menval-wordmark')), findsOneWidget);
+      expect(find.byKey(const ValueKey('menval-create-fab')), findsOneWidget);
+      expect(find.byKey(const ValueKey('inline-task-title')), findsNothing);
+      expect(find.byKey(const ValueKey('approved-nav-0')), findsOneWidget);
+      expect(find.text('مرور طراحی منوال'), findsOneWidget);
+      await _capture(tester, key, 'approved-reference-tasks');
 
-    await tester.tap(find.byKey(const ValueKey('approved-nav-4')));
-    await tester.pumpAndSettle();
-    expect(find.text('مطالعه'), findsOneWidget);
-    expect(find.byKey(const ValueKey('menval-create-fab')), findsOneWidget);
-    await _capture(tester, key, 'approved-reference-habits');
+      await tester.tap(find.byKey(const ValueKey('approved-nav-4')));
+      await tester.pumpAndSettle();
+      expect(find.text('مطالعه'), findsOneWidget);
+      expect(find.byKey(const ValueKey('menval-create-fab')), findsOneWidget);
+      await _capture(tester, key, 'approved-reference-habits');
 
-    await tester.tap(find.byKey(const ValueKey('approved-nav-5')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('menval-create-fab')), findsOneWidget);
-    expect(find.byKey(const ValueKey('inline-task-title')), findsNothing);
-    await _capture(tester, key, 'approved-reference-week');
-    expect(tester.takeException(), isNull);
-  });
+      await tester.tap(find.byKey(const ValueKey('approved-nav-5')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('menval-create-fab')), findsOneWidget);
+      expect(find.byKey(const ValueKey('inline-task-title')), findsNothing);
+      await _capture(tester, key, 'approved-reference-week');
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 Future<void> _capture(WidgetTester tester, GlobalKey key, String name) async {
   if (Platform.environment['CAPTURE_GLASS_UI'] != '1') return;
   await tester.runAsync(() async {
-    final boundary = key.currentContext!.findRenderObject()!
-        as RenderRepaintBoundary;
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
     final picture = await boundary.toImage(pixelRatio: 1);
     final bytes = await picture.toByteData(format: ui.ImageByteFormat.png);
     final file = File('.impeccable/review/$name.png');
