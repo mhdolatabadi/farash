@@ -107,6 +107,8 @@ class _LedgerDate extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final settings = CalendarScope.of(context);
+    final scale = MediaQuery.textScalerOf(context).scale(1);
+    final dateSize = scale >= 1.5 ? 42.0 : (compact ? 64.0 : 76.0);
     final parts = formatDate(
       today,
       settings,
@@ -131,11 +133,7 @@ class _LedgerDate extends StatelessWidget {
             Text(
               parts.first,
               style: theme.textTheme.displayLarge?.copyWith(
-                fontSize: MediaQuery.textScalerOf(context).scale(1) >= 1.5
-                    ? 42
-                    : compact
-                    ? 64
-                    : 76,
+                fontSize: dateSize,
                 height: 1,
                 fontWeight: FontWeight.w900,
                 color: colors.primary,
