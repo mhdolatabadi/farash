@@ -66,6 +66,7 @@ class DueTasksView extends StatefulWidget {
     this.habits,
     this.onOpenHabits,
     this.showQuickCapture = true,
+    this.hideHeader = false,
   });
 
   final DueView view;
@@ -98,6 +99,8 @@ class DueTasksView extends StatefulWidget {
 
   /// The home shell can use its floating capture button instead of a second bar.
   final bool showQuickCapture;
+  /// The signed-in shell supplies its own shared Menval toolbar.
+  final bool hideHeader;
 
   @override
   State<DueTasksView> createState() => _DueTasksViewState();
@@ -648,12 +651,13 @@ class _DueTasksViewState extends State<DueTasksView> {
         final topPadding = MediaQuery.paddingOf(context).top;
         final list = RefreshIndicator(
           onRefresh: _load,
-          edgeOffset: topPadding + listBarHeight,
+          edgeOffset: topPadding + (widget.hideHeader ? 0 : listBarHeight),
           child: CustomScrollView(
             slivers: [
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: ListAppBar(
+              if (!widget.hideHeader)
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: ListAppBar(
                   background: Soft.ground(context),
                   title: _bento ? '' : label?.tag ?? widget.view.title,
                   subtitle: _bento ? '' : count,
