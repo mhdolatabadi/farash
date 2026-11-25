@@ -160,27 +160,27 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                      Text(
-                                        weekdayNames[day.weekday - 1],
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.labelSmall,
-                                      ),
-                                      Text(
-                                        persianDigits(
-                                          settings.isJalali
-                                              ? formatDate(
-                                                  day,
-                                                  settings,
-                                                ).split(' ').first
-                                              : '${day.day}',
+                                        Text(
+                                          weekdayNames[day.weekday - 1],
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.labelSmall,
                                         ),
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.titleMedium,
-                                      ),
+                                        Text(
+                                          persianDigits(
+                                            settings.isJalali
+                                                ? formatDate(
+                                                    day,
+                                                    settings,
+                                                  ).split(' ').first
+                                                : '${day.day}',
+                                          ),
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.titleMedium,
+                                        ),
                                       ],
                                     ),
                                   ),
