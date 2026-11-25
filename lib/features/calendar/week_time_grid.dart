@@ -64,7 +64,7 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
       final scheme = Theme.of(context).colorScheme;
       final settings = CalendarScope.of(context);
       // Keep all seven weekday lanes visible on mobile without horizontal scroll.
-      final minDayWidth = constraints.maxWidth < 760 ? 38.0 : _minDayWidth;
+      final minDayWidth = constraints.maxWidth < 760 ? 30.0 : _minDayWidth;
       final width = math.max(constraints.maxWidth, _gutter + minDayWidth * 7);
       final dayWidth = (width - _gutter) / 7;
       if (_scrollToSelectedDay) {
