@@ -1,29 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:menval/app/soft.dart';
 
-/// The app's mark: a check in a rounded square of the primary color.
+/// The Persian letter «م» is a small signet for Menval, not a generic task tick.
 class MenvalMark extends StatelessWidget {
   const MenvalMark({super.key, this.size = 28});
   final double size;
+
   @override
   Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme;
+    final colors = Theme.of(context).colorScheme;
     return ExcludeSemantics(
       child: Container(
         width: size,
         height: size,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: c.primary,
-          borderRadius: BorderRadius.circular(size * .28),
+          color: colors.primary,
+          borderRadius: BorderRadius.circular(size * 0.24),
         ),
-        child: Icon(Icons.check_rounded, size: size * .72, color: c.onPrimary),
+        child: Text(
+          'م',
+          textDirection: TextDirection.rtl,
+          style: TextStyle(
+            fontFamily: 'Vazirmatn',
+            color: colors.onPrimary,
+            height: 1,
+            fontWeight: FontWeight.w900,
+            fontSize: size * 0.61,
+          ),
+        ),
       ),
     );
   }
 }
 
-/// A raised soft tile with a hairline edge: the one container on the
-/// soft ground (see soft.dart).
+/// A restrained bordered panel on the Ledger page.
 class Panel extends StatelessWidget {
   const Panel({
     super.key,
@@ -49,8 +60,8 @@ class Panel extends StatelessWidget {
     return DecoratedBox(
       decoration: ShapeDecoration(
         shape: shape,
-        color: color ?? Soft.ground(context),
-        shadows: Soft.raised(context, depth: 4),
+        color: color ?? Theme.of(context).colorScheme.surfaceContainerLowest,
+        shadows: Soft.raised(context, depth: 2),
       ),
       child: Material(
         type: MaterialType.transparency,
