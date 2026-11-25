@@ -450,7 +450,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final selected = _section == 1 && _view == null && _labelId == null
         ? _selected
         : null;
-    final target = selected != null && !selected.isFolder && !selected.isArchived
+    final target =
+        selected != null && !selected.isFolder && !selected.isArchived
         ? selected
         : widget.projects.inbox;
     if (target == null || target.isFolder || target.isArchived) return;
@@ -474,14 +475,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _inlineTask.clear();
       _refreshCount();
       setState(() => _captureRevision++);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('کار اضافه شد.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('کار اضافه شد.')));
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
     } finally {
       _quickAdding = false;
     }
@@ -526,24 +527,38 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         }
                       },
                       itemBuilder: (_) => [
-                        const PopupMenuItem(value: 'tasks', child: Text('کارها')),
-                        const PopupMenuItem(value: 'calendar', child: Text('تقویم')),
+                        const PopupMenuItem(
+                          value: 'tasks',
+                          child: Text('کارها'),
+                        ),
+                        const PopupMenuItem(
+                          value: 'calendar',
+                          child: Text('تقویم'),
+                        ),
                         if (_habits != null)
                           const PopupMenuItem(
                             value: 'habits',
                             child: Text('عادت‌ها'),
                           ),
-                        const PopupMenuItem(value: 'today', child: Text('امروز')),
-                        const PopupMenuItem(value: 'focus', child: Text('تمرکز')),
-                        const PopupMenuItem(value: 'more', child: Text('بخش‌های بیشتر')),
+                        const PopupMenuItem(
+                          value: 'today',
+                          child: Text('امروز'),
+                        ),
+                        const PopupMenuItem(
+                          value: 'focus',
+                          child: Text('تمرکز'),
+                        ),
+                        const PopupMenuItem(
+                          value: 'more',
+                          child: Text('بخش‌های بیشتر'),
+                        ),
                       ],
                     ),
                     IconButton(
                       key: const ValueKey('quick-add-more'),
                       tooltip: 'تاریخ و ساعت کار',
-                      onPressed: () => _quickAdd(
-                        initialText: _inlineTask.text.trim(),
-                      ),
+                      onPressed: () =>
+                          _quickAdd(initialText: _inlineTask.text.trim()),
                       icon: const Icon(Icons.schedule_outlined, size: 20),
                     ),
                     Expanded(
