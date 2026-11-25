@@ -393,6 +393,34 @@ class _FocusTile extends StatelessWidget {
   }
 }
 
+/// Keeps the existing tappable habit behavior while the new day layout
+/// places habits behind the actual task queue.
+class TodayHabitsStrip extends StatelessWidget {
+  const TodayHabitsStrip({super.key, required this.controller, this.onOpen});
+
+  final HabitsController controller;
+  final VoidCallback? onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        final visible = [
+          for (final habit in controller.visible)
+            if (!habit.archived) habit,
+        ];
+        if (visible.isEmpty) return const SizedBox.shrink();
+        return _HabitsTile(
+          controller: controller,
+          habits: visible,
+          onOpen: onOpen,
+        );
+      },
+    );
+  }
+}
+
 /// Today's habits, each ticked in place as in Loop; a measurable habit
 /// opens the habits screen instead.
 class _HabitsTile extends StatelessWidget {
