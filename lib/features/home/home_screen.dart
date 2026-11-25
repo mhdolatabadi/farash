@@ -421,12 +421,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             QuickAddDialog(projectName: target.displayName, session: session),
         transitionBuilder: (context, animation, secondaryAnimation, child) =>
             SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(1, 0),
-                end: Offset.zero,
-              ).animate(
-                CurvedAnimation(parent: animation, curve: Motion.enter),
-              ),
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(1, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(parent: animation, curve: Motion.enter),
+                  ),
               child: child,
             ),
       );
@@ -1357,13 +1358,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             return Scaffold(
               key: _scaffoldKey,
               floatingActionButtonLocation:
-                    FloatingActionButtonLocation.startFloat,
-                floatingActionButton: FloatingActionButton(
-                  heroTag: 'menval-quick-capture',
-                  tooltip: 'افزودن کار',
-                  onPressed: _quickAdd,
-                  child: const Icon(Icons.add_rounded),
-                ),
+                  FloatingActionButtonLocation.startFloat,
+              floatingActionButton: FloatingActionButton(
+                heroTag: 'menval-quick-capture',
+                tooltip: 'افزودن کار',
+                onPressed: _quickAdd,
+                child: const Icon(Icons.add_rounded),
+              ),
               body: SafeArea(
                 child: Row(
                   children: [
