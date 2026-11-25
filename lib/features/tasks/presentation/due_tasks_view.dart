@@ -414,6 +414,11 @@ class _DueTasksViewState extends State<DueTasksView> {
     return null;
   }
 
+  bool _isClockLane(Task task) =>
+      _bento &&
+      task.due?.isTimed == true &&
+      daysBetween(_today, task.due!.day) == 0;
+
   Widget _row(Task task, {required bool last}) {
     final project = _projectOf(task);
     final tile = TaskTile(
@@ -422,9 +427,7 @@ class _DueTasksViewState extends State<DueTasksView> {
       divider: !last,
       dense: true,
       showToday: widget.view != DueView.today || widget.label != null,
-      showDue: !(_bento &&
-          task.due?.isTimed == true &&
-          daysBetween(_today, task.due!.day) == 0),
+      showDue: !_isClockLane(task),
       tag: project == null ? null : _ProjectTag(project: project),
       labels: [for (final id in task.labelIds) ?widget.labels?.byId(id)],
       onToggle: () => _complete(task),
