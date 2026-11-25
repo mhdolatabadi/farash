@@ -210,7 +210,6 @@ func TestSyncBootstrapKeepsEditsMovedPastAnEarlierPage(t *testing.T) {
 	}
 }
 
-
 func TestSyncPagingWithInterleavedWritesAndReplay(t *testing.T) {
 	ctx := context.Background()
 	pool := testPool(t)
