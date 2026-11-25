@@ -1492,12 +1492,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const MenvalMark(size: 22),
+                            const MenvalMark(size: 28),
                             const SizedBox(width: Space.sm),
                             Text(
                               'منوال',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w700),
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w800),
                             ),
                           ],
                         ),
@@ -1511,6 +1511,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           end: Space.sm,
                         ),
                         child: PressDepth(
+                          shadows: true,
                           child: IconButton(
                             key: const ValueKey('menval-header-search'),
                             tooltip: 'جست‌وجو',
