@@ -434,15 +434,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
                               : FontWeight.w500,
                         ),
                       ),
-                      Text(
-                        '',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: i == 0 ? theme.colorScheme.onSurface : muted,
-                          fontWeight: i == 0
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                        ),
-                      ),
+                     ),
                     ],
                   ),
                 ),
