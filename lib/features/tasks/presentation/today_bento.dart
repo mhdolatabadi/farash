@@ -78,15 +78,13 @@ class TodayBento extends StatelessWidget {
             const SizedBox(height: Space.sm),
             overview,
           ] else
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(child: date),
-                  const SizedBox(width: Space.lg),
-                  Expanded(child: overview),
-                ],
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: date),
+                const SizedBox(width: Space.lg),
+                Expanded(child: overview),
+              ],
             ),
           ?habitTile,
         ],
