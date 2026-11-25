@@ -60,11 +60,7 @@ class TodayWorkspace extends StatelessWidget {
         Space.gutter,
         Space.xxl,
       ),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: (MediaQuery.sizeOf(context).height - 260).clamp(220.0, 900.0),
-        ),
-        child: SoftWell(
+      child: SoftWell(
           radius: 36,
           padding: const EdgeInsetsDirectional.fromSTEB(
             Space.md, Space.xl, Space.md, Space.md,
@@ -105,7 +101,6 @@ class TodayWorkspace extends StatelessWidget {
               ),
           ],
           ),
-        ),
       ),
     );
   }
