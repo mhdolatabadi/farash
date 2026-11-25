@@ -16,7 +16,7 @@ class FocusLoom extends StatelessWidget {
   final double progress;
   final String patternSeed;
 
-  int get stages => (progress.clamp(0.0, 1.0) * 10).ceil().clamp(0, 10);
+  int get stages => (progress.clamp(0.0, 1.0).toDouble() * 10).ceil();
 
   @override
   Widget build(BuildContext context) {
