@@ -3,10 +3,10 @@ import 'package:menval/app/palette.dart';
 
 abstract final class MenvalTheme {
   /// The palette the app ships with.
-  static const palette = MenvalPalette.calm;
+  static const palette = MenvalPalette.ledger;
 
   static const _fieldRadius = 12.0;
-  static const _tileRadius = 22.0;
+  static const _tileRadius = 18.0;
 
   static ThemeData light([MenvalPalette palette = MenvalTheme.palette]) =>
       _build(Brightness.light, palette);
@@ -58,18 +58,53 @@ abstract final class MenvalTheme {
       borderRadius: BorderRadius.circular(_fieldRadius),
       borderSide: BorderSide(color: colors.outlineVariant),
     );
-    final well = Color.lerp(p.softGround, p.softShade, 0.22)!;
+    final well = p.containerLow;
     final tileShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(_tileRadius),
-      side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.6)),
+      side: BorderSide(color: colors.outlineVariant),
     );
     const stadium = StadiumBorder();
 
+    final typography = base.textTheme.copyWith(
+      displayLarge: base.textTheme.displayLarge?.copyWith(
+        fontSize: 60,
+        fontWeight: FontWeight.w900,
+        height: 1.06,
+      ),
+      headlineMedium: base.textTheme.headlineMedium?.copyWith(
+        fontSize: 30,
+        fontWeight: FontWeight.w800,
+        height: 1.23,
+      ),
+      titleLarge: base.textTheme.titleLarge?.copyWith(
+        fontSize: 24,
+        fontWeight: FontWeight.w800,
+        height: 1.3,
+      ),
+      titleMedium: base.textTheme.titleMedium?.copyWith(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+      ),
+      bodyLarge: base.textTheme.bodyLarge?.copyWith(
+        fontSize: 16,
+        height: 1.5,
+      ),
+      bodyMedium: base.textTheme.bodyMedium?.copyWith(
+        fontSize: 14,
+        height: 1.5,
+      ),
+      labelMedium: base.textTheme.labelMedium?.copyWith(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+
     return base.copyWith(
       extensions: [MenvalPaletteColors(p)],
+      textTheme: typography,
       scaffoldBackgroundColor: colors.surface,
       navigationBarTheme: NavigationBarThemeData(
-        height: 80,
+        height: 72,
         elevation: 0,
         backgroundColor: colors.surface,
         indicatorColor: colors.primaryContainer,
@@ -97,7 +132,7 @@ abstract final class MenvalTheme {
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: base.textTheme.titleLarge?.copyWith(
+        titleTextStyle: typography.titleLarge?.copyWith(
           color: colors.onSurface,
           fontWeight: FontWeight.w700,
         ),
@@ -117,7 +152,7 @@ abstract final class MenvalTheme {
       cardTheme: CardThemeData(
         elevation: 0,
         margin: EdgeInsets.zero,
-        color: p.softGround,
+        color: p.containerLowest,
         shape: tileShape,
       ),
       dividerTheme: DividerThemeData(
@@ -133,7 +168,9 @@ abstract final class MenvalTheme {
         titleTextStyle: base.textTheme.bodyLarge?.copyWith(
           color: colors.onSurface,
         ),
-        shape: stadium,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         iconColor: colors.onSurfaceVariant,
         selectedColor: colors.onPrimaryContainer,
         selectedTileColor: colors.primaryContainer,
@@ -157,7 +194,9 @@ abstract final class MenvalTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: ButtonStyle(
           minimumSize: const WidgetStatePropertyAll(Size(64, 48)),
-          shape: const WidgetStatePropertyAll(stadium),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
           textStyle: WidgetStatePropertyAll(
             base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
@@ -199,10 +238,10 @@ abstract final class MenvalTheme {
         backgroundColor: colors.primary,
         foregroundColor: colors.onPrimary,
         elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: p.softGround,
+        color: p.containerLowest,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -214,7 +253,7 @@ abstract final class MenvalTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: p.softGround,
+        backgroundColor: p.containerLowest,
         showDragHandle: true,
         surfaceTintColor: Colors.transparent,
         shape: const RoundedRectangleBorder(
@@ -222,9 +261,9 @@ abstract final class MenvalTheme {
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: p.softGround,
+        backgroundColor: p.containerLowest,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: colors.primary,
