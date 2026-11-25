@@ -184,8 +184,8 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                             final scale = MediaQuery.textScalerOf(
                               context,
                             ).scale(1);
-                            final wide = constraints.maxWidth >= 520 &&
-                                scale < 1.5;
+                            final wide =
+                                constraints.maxWidth >= 520 && scale < 1.5;
                             final loom = SizedBox(
                               width: wide
                                   ? 220
