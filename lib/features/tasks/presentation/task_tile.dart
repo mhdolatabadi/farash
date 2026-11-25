@@ -115,6 +115,7 @@ class TaskTile extends StatelessWidget {
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: done ? FontWeight.w400 : FontWeight.w600,
                         decoration: done ? TextDecoration.lineThrough : null,
                         color: done
                             ? theme.colorScheme.onSurfaceVariant
