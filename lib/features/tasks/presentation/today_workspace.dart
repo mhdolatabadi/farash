@@ -63,42 +63,45 @@ class TodayWorkspace extends StatelessWidget {
       child: SoftWell(
         radius: 24,
         padding: const EdgeInsetsDirectional.fromSTEB(
-          Space.md, Space.lg, Space.md, Space.md,
+          Space.md,
+          Space.lg,
+          Space.md,
+          Space.md,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-          if (tasks.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: Space.xl),
-              child: Text(
-                'کاری برای امروز نمانده.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            )
-          else
-            for (var index = 0; index < tasks.length; index++)
+            if (tasks.isEmpty)
               Padding(
-                padding: const EdgeInsets.only(bottom: Space.sm),
-                child: Material(
-                  color: colors.surface,
-                  elevation: 1.5,
-                  shadowColor: colors.shadow.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(12),
-                  clipBehavior: Clip.antiAlias,
-                  child: rowBuilder(tasks[index], index == tasks.length - 1),
+                padding: const EdgeInsets.symmetric(vertical: Space.xl),
+                child: Text(
+                  'کاری برای امروز نمانده.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              )
+            else
+              for (var index = 0; index < tasks.length; index++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: Space.sm),
+                  child: Material(
+                    color: colors.surface,
+                    elevation: 1.5,
+                    shadowColor: colors.shadow.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(12),
+                    clipBehavior: Clip.antiAlias,
+                    child: rowBuilder(tasks[index], index == tasks.length - 1),
+                  ),
+                ),
+            if (overdueTasks.isNotEmpty)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton(
+                  onPressed: onMoveOverdue,
+                  child: const Text('انتقال کارهای عقب‌افتاده به امروز'),
                 ),
               ),
-          if (overdueTasks.isNotEmpty)
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: TextButton(
-                onPressed: onMoveOverdue,
-                child: const Text('انتقال کارهای عقب‌افتاده به امروز'),
-              ),
-            ),
           ],
         ),
       ),
