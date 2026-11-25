@@ -52,13 +52,10 @@ void main() {
       MaterialApp(
         theme: dark ? MenvalTheme.dark() : MenvalTheme.light(),
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(textScale),
-          ),
-          child: CalendarScope(
-            settings: CalendarSettings(),
-            child: child!,
-          ),
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: CalendarScope(settings: CalendarSettings(), child: child!),
         ),
         home: Directionality(
           textDirection: TextDirection.rtl,
@@ -206,34 +203,36 @@ void main() {
     expect(taskColumn, findsOneWidget);
     expect(companion, findsOneWidget);
     expect(
-      (tester.getTopLeft(taskColumn).dx - tester.getTopLeft(companion).dx).abs(),
+      (tester.getTopLeft(taskColumn).dx - tester.getTopLeft(companion).dx)
+          .abs(),
       greaterThan(120),
     );
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('twelve tasks still scroll to the last without covering capture', (
-    tester,
-  ) async {
-    for (var i = 2; i <= 12; i++) {
-      api.seed(
-        'inbox',
-        'کار شماره $i',
-        dates: TaskDates(due: TaskDue.onDay(today)),
+  testWidgets(
+    'twelve tasks still scroll to the last without covering capture',
+    (tester) async {
+      for (var i = 2; i <= 12; i++) {
+        api.seed(
+          'inbox',
+          'کار شماره $i',
+          dates: TaskDates(due: TaskDue.onDay(today)),
+        );
+      }
+      await pump(tester, size: const Size(375, 850), textScale: 2, dark: true);
+      await tester.scrollUntilVisible(
+        find.text('کار شماره 12'),
+        250,
+        scrollable: find
+            .descendant(
+              of: find.byType(CustomScrollView),
+              matching: find.byType(Scrollable),
+            )
+            .first,
       );
-    }
-    await pump(tester, size: const Size(375, 850), textScale: 2, dark: true);
-    await tester.scrollUntilVisible(
-      find.text('کار شماره 12'),
-      250,
-      scrollable: find
-          .descendant(
-            of: find.byType(CustomScrollView),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    expect(find.text('کار شماره 12'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.text('کار شماره 12'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
