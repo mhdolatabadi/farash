@@ -242,13 +242,46 @@ class _MenvalAppState extends State<MenvalApp> {
     final api = _apiClient;
     final session = _session;
     if (api == null || session == null) return;
+    final generation = _sessionEpoch;
     try {
       await api.reconnect(session.token);
-      await _projects?.load();
     } on ApiException catch (error) {
-      if (error.isUnauthorized) await _signOut();
-      rethrow;
+      if (!error.isUnauthorized) rethrow;
+      // A 24-hour access token can expire while Android remains open.
+      // Try the existing rotating refresh credential before asking the user
+      // to reauthenticate; a failed attempt must not destroy offline data.
+      final refresh = await _refreshStore.readRefreshToken();
+      if (refresh == null) rethrow;
+      final renewed = await api.refreshSession(refresh);
+      if (renewed.user.id != session.user.id ||
+          renewed.refreshToken == null) {
+        throw const ApiException('بازیابی امن نشست ممکن نشد.');
+      }
+      if (!mounted ||
+          generation != _sessionEpoch ||
+          _session?.user.id != session.user.id) {
+        return;
+      }
+      // Verify the new bearer with the server before persisting or exposing
+      // credentials; the account's identity must never change on reconnect.
+      await api.reconnect(renewed.token);
+      if (!mounted ||
+          generation != _sessionEpoch ||
+          _session?.user.id != session.user.id) {
+        return;
+      }
+      await _refreshStore.writeRefreshToken(renewed.refreshToken!);
+      await _sessionStore.writeToken(renewed.token);
+      await api.rememberAuthenticatedIdentity(renewed);
+      if (!mounted ||
+          generation != _sessionEpoch ||
+          _session?.user.id != session.user.id) {
+        return;
+      }
+      setState(() => _session = renewed);
     }
+    if (!mounted || generation != _sessionEpoch) return;
+    await _projects?.load();
   }
 
   Widget _offlineShell(Widget child) {
