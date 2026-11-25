@@ -156,9 +156,23 @@ class _MenvalAppState extends State<MenvalApp> {
           // the newly rotated credential while this request was in flight.
         }
       } else {
+        // Older installs may have an access token but no refresh credential.
+        // Upgrade only while the access token is still valid; otherwise keep
+        // the saved credentials and show the existing sign-in recovery UI.
         await api.activateOfflineSession(token!);
-        final user = await api.me(token);
-        session = AuthSession(token: token, user: user);
+        try {
+          session = await api.renewSession(token);
+        } on ApiException catch (error) {
+          // Old server versions do not support renewal. During outages a
+          // previously verified offline identity may still be shown read-only.
+          if (error.statusCode != null &&
+              error.statusCode != 404 &&
+              error.statusCode != 501) {
+            rethrow;
+          }
+          final user = await api.me(token);
+          session = AuthSession(token: token, user: user);
+        }
       }
       if (!mounted || generation != _sessionEpoch) return;
 
