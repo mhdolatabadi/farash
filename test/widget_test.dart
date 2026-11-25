@@ -245,7 +245,10 @@ void main() {
       await tester.pumpWidget(
         app(sessions: saved, refreshCredentials: refresh, api: api),
       );
-      await tester.pumpAndSettle();
+      // The Today screen has ongoing animations; settling every scheduled
+      // frame is not a valid readiness signal for reconnect regressions.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
       expect(find.byType(DueTasksView), findsOneWidget);
       expect(await refresh.readRefreshToken(), 'still-valid-refresh');
     },
@@ -351,9 +354,11 @@ void main() {
       // Simulate an Android app left open until its old access JWT expires.
       await refresh.writeRefreshToken('old-refresh');
       cache.usedOffline();
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.tap(find.text('اتصال دوباره'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(oldAccessChecks, 2);
       expect(refreshAttempts, 1);
