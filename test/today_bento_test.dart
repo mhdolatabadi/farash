@@ -170,7 +170,9 @@ void main() {
     await pump(tester, doneToday: () async => 0);
     expect(find.text('۰ از ۰'), findsOneWidget);
     expect(
-      find.text('برای امروز کاری نمانده؛ از کادر پایین کار تازه‌ای اضافه کنید.'),
+      find.text(
+        'برای امروز کاری نمانده؛ از کادر پایین کار تازه‌ای اضافه کنید.',
+      ),
       findsOneWidget,
     );
     expect(
