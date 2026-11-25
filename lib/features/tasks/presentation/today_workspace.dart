@@ -271,21 +271,15 @@ class _WorkSection extends StatelessWidget {
             spacing: Space.sm,
             runSpacing: Space.xs,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Semantics(
-                    header: true,
-                    child: Text(title, style: titleStyle),
-                  ),
-                  const SizedBox(width: Space.sm),
-                  Text(
-                    persianDigits(count),
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+              Semantics(
+                header: true,
+                child: Text(title, style: titleStyle),
+              ),
+              Text(
+                persianDigits(count),
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
               ),
               ?action,
             ],
