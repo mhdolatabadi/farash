@@ -271,10 +271,7 @@ class _WorkSection extends StatelessWidget {
             spacing: Space.sm,
             runSpacing: Space.xs,
             children: [
-              Semantics(
-                header: true,
-                child: Text(title, style: titleStyle),
-              ),
+              Semantics(header: true, child: Text(title, style: titleStyle)),
               Text(
                 persianDigits(count),
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
