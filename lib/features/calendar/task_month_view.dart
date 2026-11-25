@@ -87,6 +87,15 @@ class _TaskMonthViewState extends State<TaskMonthView> {
     _load();
   }
 
+  void _selectDay(DateTime day) {
+    final settings = CalendarScope.of(context);
+    final currentMonth = monthContaining(_selected, settings);
+    final nextMonth = monthContaining(day, settings);
+    setState(() => _selected = day);
+    // Adjacent-month cells change the grid's fetch range as well as its title.
+    if (currentMonth.firstDay != nextMonth.firstDay) _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = CalendarScope.of(context);
@@ -187,7 +196,7 @@ class _TaskMonthViewState extends State<TaskMonthView> {
                               'month-day-${day.year}-${day.month}-${day.day}',
                             ),
                             borderRadius: BorderRadius.circular(12),
-                            onTap: () => setState(() => _selected = day),
+                            onTap: () => _selectDay(day),
                             child: Container(
                               constraints: const BoxConstraints(minHeight: 56),
                               decoration: BoxDecoration(
