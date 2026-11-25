@@ -21,7 +21,7 @@ import 'package:menval/features/tasks/presentation/project_tasks_view.dart';
 import 'package:menval/features/tasks/presentation/task_detail_sheet.dart';
 import 'package:menval/features/tasks/presentation/task_messages.dart';
 import 'package:menval/features/tasks/presentation/task_tile.dart';
-import 'package:menval/features/tasks/presentation/today_bento.dart';
+import 'package:menval/features/tasks/presentation/today_workspace.dart';
 
 /// The views that gather tasks by date from every project.
 enum DueView {
@@ -486,45 +486,31 @@ class _DueTasksViewState extends State<DueTasksView> {
     );
   }
 
+  /// A real working surface: timed commitments, flexible tasks, then late
+  /// work. The old three-card dashboard no longer appears in this route.
   List<Widget> _todayBody() {
-    final settings = CalendarScope.of(context);
     final today = _today;
-    final late = [
-      for (final t in _tasks)
-        if (daysBetween(today, t.due!.day) < 0) t,
+    final overdue = [
+      for (final task in _tasks)
+        if (daysBetween(today, task.due!.day) < 0) task,
     ];
-    final now = [
-      for (final t in _tasks)
-        if (daysBetween(today, t.due!.day) == 0) t,
+    final due = [
+      for (final task in _tasks)
+        if (daysBetween(today, task.due!.day) == 0) task,
     ];
     return [
-      if (late.isNotEmpty) ...[
-        _DayHeading(
-          title: 'دیرشده',
-          late: true,
-          first: true,
-          action: TextButton.icon(
-            onPressed: () => _moveLateToToday(late),
-            icon: const Icon(Icons.event_repeat),
-            label: const Text('انتقال همه به امروز'),
-          ),
-        ),
-        _card(late),
-      ],
-      _DayHeading(
-        title: 'امروز',
-        first: late.isEmpty,
-        // The bento's date tile already says which day it is.
-        detail: _bento
-            ? null
-            : formatDate(today, settings, today: today, withWeekday: true),
+      TodayWorkspace(
+        today: today,
+        overdueTasks: overdue,
+        todayTasks: due,
+        done: _doneToday,
+        focus: widget.focus,
+        onOpenFocus: widget.onOpenFocus,
+        habits: widget.habits,
+        onOpenHabits: widget.onOpenHabits,
+        onMoveOverdue: () => _moveLateToToday(overdue),
+        rowBuilder: (task, last) => _row(task, last: last),
       ),
-      if (now.isEmpty)
-        const _Quiet(
-          'برای امروز کاری نمانده؛ از کادر پایین کار تازه‌ای اضافه کنید.',
-        )
-      else
-        _card(now),
     ];
   }
 
@@ -652,7 +638,10 @@ class _DueTasksViewState extends State<DueTasksView> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final inset = width > _maxListWidth ? (width - _maxListWidth) / 2 : 0.0;
+        // Today is an actual two-column workspace on wide screens.
+        // Agenda and project lists keep the narrower reading measure.
+        final limit = _bento ? 1180.0 : _maxListWidth;
+        final inset = width > limit ? (width - limit) / 2 : 0.0;
         final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
         final topPadding = MediaQuery.paddingOf(context).top;
         final list = RefreshIndicator(
@@ -687,21 +676,6 @@ class _DueTasksViewState extends State<DueTasksView> {
                       : 24 * scale,
                 ),
               ),
-              if (_bento && !(_loading && _tasks.isEmpty))
-                SliverPadding(
-                  padding: EdgeInsets.symmetric(horizontal: inset),
-                  sliver: SliverToBoxAdapter(
-                    child: TodayBento(
-                      today: _today,
-                      open: _tasks.length,
-                      done: _doneToday,
-                      focus: widget.focus,
-                      onOpenFocus: widget.onOpenFocus,
-                      habits: widget.habits,
-                      onOpenHabits: widget.onOpenHabits,
-                    ),
-                  ),
-                ),
               if (label == null &&
                   (widget.view == DueView.upcoming ||
                       widget.view == DueView.week))
