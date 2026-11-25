@@ -3,6 +3,7 @@ import 'package:menval/app/soft.dart';
 import 'package:menval/app/spacing.dart';
 import 'package:menval/core/text/persian_digits.dart';
 import 'package:menval/features/focus/focus_controller.dart';
+import 'package:menval/features/focus/focus_loom.dart';
 
 class FocusView extends StatefulWidget {
   const FocusView({
@@ -167,71 +168,79 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                             );
                           },
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: Space.lg),
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: Text(
+                            'دارِ تمرکز',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: Space.sm),
                         LayoutBuilder(
                           builder: (context, constraints) {
-                            final size = constraints.maxWidth.clamp(
-                              200.0,
-                              280.0,
-                            );
-                            // The dial is a well sunk into the ground, with
-                            // the elapsed time running round its rim.
-                            return SizedBox.square(
-                              dimension: size,
-                              child: SoftWell(
-                                circle: true,
-                                padding: const EdgeInsets.all(14),
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    CircularProgressIndicator(
-                                      value: timer.progress,
-                                      strokeWidth: 10,
-                                      strokeCap: StrokeCap.round,
-                                      backgroundColor: colors.outlineVariant,
-                                    ),
-                                    Center(
-                                      child: Semantics(
-                                        label:
-                                            '${persianDigits(seconds ~/ 60)} دقیقه و ${persianDigits(seconds % 60)} ثانیه باقی مانده',
-                                        excludeSemantics: true,
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              child: Text(
-                                                persianDigits(time),
-                                                textDirection:
-                                                    TextDirection.ltr,
-                                                style: theme
-                                                    .textTheme
-                                                    .displayLarge
-                                                    ?.copyWith(
-                                                      fontSize: size * .23,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      fontFeatures: const [
-                                                        FontFeature.tabularFigures(),
-                                                      ],
-                                                    ),
-                                              ),
-                                            ),
-                                            Text(
-                                              'از ${persianDigits(timer.minutes)} دقیقه',
-                                              style: theme.textTheme.bodyMedium
-                                                  ?.copyWith(
-                                                    color:
-                                                        colors.onSurfaceVariant,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            final scale = MediaQuery.textScalerOf(
+                              context,
+                            ).scale(1);
+                            final wide = constraints.maxWidth >= 520 &&
+                                scale < 1.5;
+                            final loom = SizedBox(
+                              width: wide
+                                  ? 220
+                                  : constraints.maxWidth.clamp(190.0, 280.0),
+                              child: FocusLoom(
+                                progress: timer.progress,
+                                patternSeed: timer.taskTitle ?? 'منوال',
                               ),
+                            );
+                            final clock = Semantics(
+                              label:
+                                  '${persianDigits(seconds ~/ 60)} دقیقه و ${persianDigits(seconds % 60)} ثانیه باقی مانده',
+                              excludeSemantics: true,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      persianDigits(time),
+                                      textDirection: TextDirection.ltr,
+                                      style: theme.textTheme.displayLarge
+                                          ?.copyWith(
+                                            fontSize: 56,
+                                            fontWeight: FontWeight.w900,
+                                            fontFeatures: const [
+                                              FontFeature.tabularFigures(),
+                                            ],
+                                          ),
+                                    ),
+                                  ),
+                                  Text(
+                                    'از ${persianDigits(timer.minutes)} دقیقه',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: colors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (wide) {
+                              return Row(
+                                children: [
+                                  loom,
+                                  const SizedBox(width: Space.xl),
+                                  Expanded(child: clock),
+                                ],
+                              );
+                            }
+                            return Column(
+                              children: [
+                                loom,
+                                const SizedBox(height: Space.sm),
+                                clock,
+                              ],
                             );
                           },
                         ),
