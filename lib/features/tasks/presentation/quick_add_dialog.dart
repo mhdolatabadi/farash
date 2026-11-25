@@ -59,98 +59,154 @@ class _QuickAddDialogState extends State<QuickAddDialog> {
       now: DateTime.now(),
       ignore: _ignore,
     );
+    final colors = Theme.of(context).colorScheme;
+    final width = MediaQuery.sizeOf(context).width;
+    final panelWidth = width < 420 ? width : 420.0;
+
     return PopScope(
       canPop: !_busy,
-      child: AlertDialog(
-        // Make room for the action buttons on compact Android screens.
-        insetPadding: EdgeInsets.symmetric(
-          horizontal: MediaQuery.sizeOf(context).width < 400 ? 16 : 40,
-          vertical: 24,
-        ),
-        title: const Text('افزودن سریع کار'),
-        scrollable: true,
-        content: SizedBox(
-          width: 520,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('پروژه: ${widget.projectName}'),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _text,
-                autofocus: true,
-                enabled: !_busy && !widget.session.hasPendingRecurrence,
-                maxLength: 500,
-                buildCounter:
-                    (
-                      _, {
-                      required currentLength,
-                      required isFocused,
-                      maxLength,
-                    }) => null,
-                decoration: const InputDecoration(
-                  labelText: 'کار تازه',
-                  hintText: 'مطالعه هر روز #کار /برنامه',
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: Material(
+          color: colors.surface,
+          elevation: 12,
+          shadowColor: colors.shadow.withValues(alpha: 0.16),
+          borderRadius: const BorderRadiusDirectional.only(
+            topEnd: Radius.circular(18),
+            bottomEnd: Radius.circular(18),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            width: panelWidth,
+            height: MediaQuery.sizeOf(context).height,
+            child: SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  24,
+                  24,
+                  24 + MediaQuery.viewInsetsOf(context).bottom,
                 ),
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _submit(),
-                onChanged: (_) => setState(() {
-                  _ignore.clear();
-                  _error = null;
-                }),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final token in parsed.tokens)
-                    InputChip(
-                      label: Text(token.text),
-                      deleteButtonTooltipMessage:
-                          'نادیده گرفتن «${token.text}»',
-                      onDeleted: _busy || widget.session.hasPendingRecurrence
-                          ? null
-                          : () => setState(
-                              () => _ignore.add((token.start, token.end)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'کار جدید',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'بستن',
+                          onPressed: _busy
+                              ? null
+                              : () => Navigator.pop(context),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TextField(
+                              controller: _text,
+                              autofocus: true,
+                              enabled:
+                                  !_busy && !widget.session.hasPendingRecurrence,
+                              maxLength: 500,
+                              buildCounter:
+                                  (
+                                    _, {
+                                    required currentLength,
+                                    required isFocused,
+                                    maxLength,
+                                  }) => null,
+                              decoration: InputDecoration(
+                                hintText: 'عنوان کار',
+                                filled: true,
+                                fillColor: colors.surfaceContainerLowest,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              textInputAction: TextInputAction.done,
+                              onSubmitted: (_) => _submit(),
+                              onChanged: (_) => setState(() {
+                                _ignore.clear();
+                                _error = null;
+                              }),
                             ),
+                            const SizedBox(height: 8),
+                            Text(
+                              widget.projectName,
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(color: colors.onSurfaceVariant),
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: [
+                                for (final token in parsed.tokens)
+                                  InputChip(
+                                    label: Text(token.text),
+                                    deleteButtonTooltipMessage:
+                                        'نادیده گرفتن «${token.text}»',
+                                    onDeleted:
+                                        _busy ||
+                                            widget.session.hasPendingRecurrence
+                                        ? null
+                                        : () => setState(
+                                            () => _ignore.add(
+                                              (token.start, token.end),
+                                            ),
+                                          ),
+                                  ),
+                              ],
+                            ),
+                            if (_error != null) ...[
+                              const SizedBox(height: 12),
+                              Semantics(
+                                liveRegion: true,
+                                child: Text(
+                                  _error!,
+                                  style: TextStyle(color: colors.error),
+                                ),
+                              ),
+                            ],
+                            if (_busy)
+                              const LinearProgressIndicator(
+                                semanticsLabel: 'در حال ذخیرهٔ کار',
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
-                ],
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: _busy ? null : _submit,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        child: Text(
+                          widget.session.hasPendingRecurrence
+                              ? 'ذخیرهٔ تکرار'
+                              : 'افزودن کار',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ),
-              ],
-              if (_busy)
-                const LinearProgressIndicator(
-                  semanticsLabel: 'در حال ذخیرهٔ کار',
-                ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: _busy ? null : () => Navigator.pop(context),
-            child: const Text('بستن'),
-          ),
-          FilledButton(
-            onPressed: _busy ? null : _submit,
-            child: Text(
-              widget.session.hasPendingRecurrence
-                  ? 'ذخیرهٔ تکرار'
-                  : 'افزودن کار',
             ),
           ),
-        ],
+        ),
       ),
     );
   }
