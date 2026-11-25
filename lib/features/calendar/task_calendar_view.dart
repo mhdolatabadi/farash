@@ -162,7 +162,11 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
         ],
       ),
       body: _showMonth
-          ? TaskMonthView(loadTasks: widget.loadTasks, now: widget.now)
+          ? TaskMonthView(
+              loadTasks: widget.loadTasks,
+              now: widget.now,
+              onOpenTask: _openTask,
+            )
           : SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
