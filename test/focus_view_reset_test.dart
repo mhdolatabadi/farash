@@ -20,6 +20,8 @@ void main() {
 
     expect(timer.running, isTrue);
     expect(find.text('شروع دوبارهٔ نوبت؟'), findsNothing);
+    // A running timer creates a periodic ticker; stop it before test teardown.
+    timer.pause();
   });
 
   testWidgets('confirm reset discards the active session', (tester) async {
