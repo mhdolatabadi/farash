@@ -205,10 +205,12 @@ void main() {
         await tester.scrollUntilVisible(
           find.widgetWithText(ListTile, 'تمرکز'),
           80,
-          scrollable: find.descendant(
-            of: find.byType(Drawer),
-            matching: find.byType(Scrollable),
-          ).first,
+          scrollable: find
+              .descendant(
+                of: find.byType(Drawer),
+                matching: find.byType(Scrollable),
+              )
+              .first,
         );
         await tester.pumpAndSettle();
         await tester.tap(find.widgetWithText(ListTile, 'تمرکز').last);
