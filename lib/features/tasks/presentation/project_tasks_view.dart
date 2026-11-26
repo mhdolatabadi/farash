@@ -40,6 +40,7 @@ class ProjectTasksView extends StatefulWidget {
     required this.moveTargets,
     this.sectionsApi,
     this.showTitle = false,
+    this.showQuickCapture = true,
     this.labels,
     this.layouts,
   });
@@ -56,6 +57,9 @@ class ProjectTasksView extends StatefulWidget {
 
   /// Shows the project name as the list's heading, where no app bar does.
   final bool showTitle;
+
+  /// The shared mobile FAB replaces the project-specific input dock.
+  final bool showQuickCapture;
 
   /// The account's labels, for the editor and the rows' tags.
   final LabelsController? labels;
@@ -424,7 +428,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
             context,
             width: listWidth,
             compact: compact,
-            capture: compact
+            capture: compact && widget.showQuickCapture
                 ? Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: Space.gutter,
@@ -437,7 +441,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
         );
         // The capture bar floats over the end of the list, which scrolls
         // under it.
-        final list = compact
+        final list = compact || !widget.showQuickCapture
             ? taskList
             : Stack(
                 children: [
@@ -845,7 +849,11 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
           ],
           // Room to scroll the last task clear of the capture bar.
           SliverToBoxAdapter(
-            child: SizedBox(height: (capture == null ? _dockHeight : 0) + 24),
+            child: SizedBox(
+              height:
+                  (capture == null ? _dockHeight : 0) +
+                  (widget.showQuickCapture ? 24 : 96),
+            ),
           ),
         ],
       ),

@@ -6,6 +6,7 @@ import 'package:menval/core/text/persian_digits.dart';
 import 'package:menval/features/calendar/week_event_layout.dart';
 import 'package:menval/features/tasks/data/task.dart';
 import 'package:flutter/material.dart';
+import 'package:menval/app/press_depth.dart';
 
 /// Scrollable, accessible seven-day timetable with real-time positions.
 /// This is a view of Menval tasks, not a Google Calendar data import.
@@ -32,7 +33,7 @@ class WeekTimeGrid extends StatefulWidget {
 }
 
 class _WeekTimeGridState extends State<WeekTimeGrid> {
-  static const _gutter = 64.0;
+  static const _gutter = 44.0;
   static const _hourHeight = 68.0;
   static const _minDayWidth = 136.0;
   late final ScrollController _vertical = ScrollController(
@@ -62,7 +63,9 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
     builder: (context, constraints) {
       final scheme = Theme.of(context).colorScheme;
       final settings = CalendarScope.of(context);
-      final width = math.max(constraints.maxWidth, _gutter + _minDayWidth * 7);
+      // Keep all seven weekday lanes visible on mobile without horizontal scroll.
+      final minDayWidth = constraints.maxWidth < 760 ? 30.0 : _minDayWidth;
+      final width = math.max(constraints.maxWidth, _gutter + minDayWidth * 7);
       final dayWidth = (width - _gutter) / 7;
       if (_scrollToSelectedDay) {
         _scrollToSelectedDay = false;
@@ -123,59 +126,87 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                             label: formatDate(day, settings, withWeekday: true),
                             selected: daysBetween(widget.selected, day) == 0,
                             button: true,
-                            child: InkWell(
-                              key: ValueKey('week-day-${dateKey(day)}'),
-                              borderRadius: BorderRadius.circular(14),
-                              onTap: () => widget.onSelectDay(day),
-                              child: Container(
-                                constraints: const BoxConstraints(
-                                  minHeight: 48,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(14),
-                                  color: scheme.surface,
-                                  boxShadow:
-                                      daysBetween(widget.selected, day) == 0
-                                      ? [
-                                          BoxShadow(
-                                            color: scheme.shadow.withValues(
-                                              alpha: 0.09,
+                            child: PressDepth(
+                              child: InkWell(
+                                key: ValueKey('week-day-${dateKey(day)}'),
+                                borderRadius: BorderRadius.circular(14),
+                                onTap: () => widget.onSelectDay(day),
+                                child: Container(
+                                  constraints: const BoxConstraints(
+                                    minHeight: 48,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(14),
+                                    color:
+                                        daysBetween(widget.selected, day) == 0
+                                        ? scheme.onSurface
+                                        : scheme.surface,
+                                    boxShadow:
+                                        daysBetween(widget.selected, day) == 0
+                                        ? [
+                                            BoxShadow(
+                                              color: scheme.shadow.withValues(
+                                                alpha: 0.09,
+                                              ),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 2),
                                             ),
-                                            blurRadius: 12,
-                                            offset: const Offset(0, 2),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          weekdayNames[day.weekday - 1],
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelSmall
+                                              ?.copyWith(
+                                                color:
+                                                    daysBetween(
+                                                          widget.selected,
+                                                          day,
+                                                        ) ==
+                                                        0
+                                                    ? scheme.surface
+                                                    : scheme.onSurface,
+                                              ),
+                                        ),
+                                        Text(
+                                          persianDigits(
+                                            settings.isJalali
+                                                ? formatDate(
+                                                    day,
+                                                    settings,
+                                                  ).split(' ').first
+                                                : '${day.day}',
                                           ),
-                                        ]
-                                      : null,
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      weekdayNames[day.weekday - 1],
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.labelSmall,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                color:
+                                                    daysBetween(
+                                                          widget.selected,
+                                                          day,
+                                                        ) ==
+                                                        0
+                                                    ? scheme.surface
+                                                    : scheme.onSurface,
+                                              ),
+                                        ),
+                                      ],
                                     ),
-                                    Text(
-                                      persianDigits(
-                                        settings.isJalali
-                                            ? formatDate(
-                                                day,
-                                                settings,
-                                              ).split(' ').first
-                                            : '${day.day}',
-                                      ),
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.titleMedium,
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -192,10 +223,13 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                     SizedBox(
                       width: _gutter,
                       child: Center(
-                        child: Text(
-                          'تمام‌روز',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.labelSmall,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'تمام‌روز',
+                            maxLines: 1,
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
                         ),
                       ),
                     ),
@@ -221,24 +255,29 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                               for (final task in allDay[day].take(2))
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 2),
-                                  child: Material(
-                                    color: scheme.secondaryContainer,
-                                    borderRadius: BorderRadius.circular(5),
-                                    child: InkWell(
-                                      key: ValueKey('week-all-day-${task.id}'),
-                                      onTap: () => widget.onOpenTask(task),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 5,
-                                          vertical: 2,
+                                  child: PressDepth(
+                                    child: Material(
+                                      color: scheme.secondaryContainer,
+                                      borderRadius: BorderRadius.circular(5),
+                                      child: InkWell(
+                                        key: ValueKey(
+                                          'week-all-day-${task.id}',
                                         ),
-                                        child: Text(
-                                          task.title,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: scheme.onSecondaryContainer,
+                                        onTap: () => widget.onOpenTask(task),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 5,
+                                            vertical: 2,
+                                          ),
+                                          child: Text(
+                                            task.title,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color:
+                                                  scheme.onSecondaryContainer,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -274,8 +313,13 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                         ),
                                       );
                                     },
-                                    child: Text(
-                                      '+${persianDigits('${allDay[day].length - 2}')} کار دیگر',
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        '+${persianDigits('${allDay[day].length - 2}')} کار دیگر',
+                                        maxLines: 1,
+                                        softWrap: false,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -290,7 +334,7 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                 child: SingleChildScrollView(
                   controller: _vertical,
                   child: SizedBox(
-                    height: 24 * _hourHeight,
+                    height: 24 * _hourHeight + 80,
                     child: Stack(
                       clipBehavior: Clip.hardEdge,
                       children: [
@@ -301,12 +345,15 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                             top: hour * _hourHeight + 4,
                             right: 2,
                             width: _gutter - 8,
-                            child: Text(
-                              persianDigits(
-                                '${hour.toString().padLeft(2, '0')}:00',
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                persianDigits(
+                                  '${hour.toString().padLeft(2, '0')}:00',
+                                ),
+                                maxLines: 1,
+                                style: Theme.of(context).textTheme.labelSmall,
                               ),
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.labelSmall,
                             ),
                           ),
                         for (final placement in blocks)
@@ -386,39 +433,41 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
       child: Semantics(
         label: '${block.task.title}، $displayTime',
         button: true,
-        child: Material(
-          color: color,
-          elevation: 1.3,
-          shadowColor: scheme.shadow.withValues(alpha: 0.19),
-          borderRadius: BorderRadius.circular(9),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            key: ValueKey('week-timed-${block.task.id}-${block.dayIndex}'),
-            onTap: () => widget.onOpenTask(block.task),
-            child: Padding(
-              padding: const EdgeInsets.all(4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    block.task.title,
-                    maxLines: height > 70 ? 2 : 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      height: 1.1,
-                    ),
-                  ),
-                  if (height > 42)
+        child: PressDepth(
+          child: Material(
+            color: color,
+            elevation: 1.3,
+            shadowColor: scheme.shadow.withValues(alpha: 0.19),
+            borderRadius: BorderRadius.circular(9),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              key: ValueKey('week-timed-${block.task.id}-${block.dayIndex}'),
+              onTap: () => widget.onOpenTask(block.task),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      displayTime,
-                      maxLines: 1,
+                      block.task.title,
+                      maxLines: height > 70 ? 2 : 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: textColor, fontSize: 10),
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        height: 1.1,
+                      ),
                     ),
-                ],
+                    if (height > 42)
+                      Text(
+                        displayTime,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: textColor, fontSize: 10),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

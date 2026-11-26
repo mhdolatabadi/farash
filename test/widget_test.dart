@@ -287,7 +287,7 @@ void main() {
     await tester.pumpWidget(app(sessions: sessions));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.menu_rounded));
+    await tester.tap(find.byKey(const ValueKey('menval-wordmark')));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('حساب و تنظیمات'));
     await tester.pumpAndSettle();

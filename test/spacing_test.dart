@@ -45,16 +45,17 @@ void main() {
     // the gutter and the keyline are measured from the well's edge.
     const well = Space.gutter - 2;
 
-    // Each check circle sits on the gutter.
+    // Measure the actual 22px checkbox, skipping PressDepth wrappers.
+    // Its 48px hit target begins 4px inside the well (4 + (48 - 22) / 2).
     final circle = tester.getRect(
       find
           .descendant(
             of: find.byType(TaskTile).first,
             matching: find.byType(AnimatedContainer),
           )
-          .first,
+          .last,
     );
-    expect(width - circle.right, closeTo(well + Space.gutter, 2));
+    expect(width - circle.right, closeTo(well + 17, 2));
 
     // Task titles start on the content keyline.
     expect(start(find.text('نان')), closeTo(well + Space.keyline, 1));

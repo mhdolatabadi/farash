@@ -1,25 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:menval/app/soft.dart';
 
-/// The app's mark: a check in a rounded square of the primary color.
+/// The compact monochrome mountain mark beside «منوال» in the approved header.
 class MenvalMark extends StatelessWidget {
   const MenvalMark({super.key, this.size = 28});
+
   final double size;
+
   @override
-  Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme;
-    return ExcludeSemantics(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: c.primary,
-          borderRadius: BorderRadius.circular(size * .28),
-        ),
-        child: Icon(Icons.check_rounded, size: size * .72, color: c.onPrimary),
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: SizedBox.square(
+      dimension: size,
+      child: CustomPaint(
+        painter: _MenvalMarkPainter(Theme.of(context).colorScheme.onSurface),
       ),
-    );
+    ),
+  );
+}
+
+class _MenvalMarkPainter extends CustomPainter {
+  const _MenvalMarkPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = w * .105
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    // Two interlocking peaks, not a filled badge.
+    final path = Path()
+      ..moveTo(w * .09, h * .70)
+      ..lineTo(w * .32, h * .24)
+      ..quadraticBezierTo(w * .37, h * .14, w * .46, h * .24)
+      ..lineTo(w * .62, h * .54)
+      ..lineTo(w * .72, h * .36)
+      ..lineTo(w * .92, h * .70)
+      ..quadraticBezierTo(w * .96, h * .78, w * .86, h * .78)
+      ..lineTo(w * .65, h * .78)
+      ..lineTo(w * .51, h * .55)
+      ..lineTo(w * .40, h * .78)
+      ..lineTo(w * .15, h * .78);
+    canvas.drawPath(path, paint);
   }
+
+  @override
+  bool shouldRepaint(covariant _MenvalMarkPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 /// A raised soft tile with a hairline edge: the one container on the

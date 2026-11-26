@@ -8,6 +8,7 @@ import 'package:menval/features/calendar_connections/calendar_connections_view.d
 import 'package:menval/features/habits/habits_controller.dart';
 import 'package:menval/features/habits/habits_view.dart';
 import 'package:menval/features/habits/habit_detail.dart';
+import 'package:menval/features/habits/habit_editor.dart';
 import 'package:menval/features/habits/reminders/habit_reminders.dart';
 import 'package:menval/features/habits/reminders/local_reminders.dart';
 import 'package:menval/features/habits/reminders/task_due_preference.dart';
@@ -40,6 +41,7 @@ import 'package:menval/features/progress/progress.dart';
 import 'package:menval/features/progress/progress_card.dart';
 import 'package:menval/core/calendar/time_zone.dart';
 import 'package:menval/app/motion.dart';
+import 'package:menval/app/press_depth.dart';
 import 'package:menval/core/calendar/calendar_scope.dart';
 import 'package:menval/core/calendar/calendar_settings_dialog.dart';
 import 'package:menval/core/settings/start_view.dart';
@@ -105,10 +107,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   String? _selectedId;
-  int _section = 1;
+  int _section = 0;
 
   /// Where the app opens, and where Back returns to before leaving.
-  int _startSection = 1;
+  int _startSection = 0;
   final _focus = FocusController();
   late final FocusSessionStorage _focusStorage =
       widget.focusSessionStorage ??
@@ -415,6 +417,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
+        showDragHandle: false,
         backgroundColor: Theme.of(context).colorScheme.surface,
         barrierColor: Colors.black.withValues(alpha: 0.16),
         shape: const RoundedRectangleBorder(
@@ -507,66 +510,84 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
                 child: Row(
                   children: [
-                    PopupMenuButton<String>(
-                      key: const ValueKey('compact-navigation'),
-                      tooltip: 'بخش‌ها',
-                      icon: const Icon(Icons.apps_outlined, size: 20),
-                      onSelected: (choice) {
-                        if (choice == 'tasks') {
-                          _switchSection(1);
-                        } else if (choice == 'today') {
-                          _switchSection(0);
-                        } else if (choice == 'calendar') {
-                          _openNativeCalendar();
-                        } else if (choice == 'habits') {
-                          _switchSection(4);
-                        } else if (choice == 'focus') {
-                          _switchSection(2);
-                        } else if (choice == 'times') {
-                          _switchSection(3);
-                        } else if (choice == 'more') {
-                          _scaffoldKey.currentState?.openDrawer();
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(
-                          value: 'tasks',
-                          child: Text('کارها'),
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                        start: Space.xs,
+                        end: Space.sm,
+                      ),
+                      child: Text(
+                        'منوال',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
                         ),
-                        const PopupMenuItem(
-                          value: 'calendar',
-                          child: Text('تقویم'),
-                        ),
-                        if (_habits != null)
-                          const PopupMenuItem(
-                            value: 'habits',
-                            child: Text('عادت‌ها'),
-                          ),
-                        const PopupMenuItem(
-                          value: 'today',
-                          child: Text('امروز'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'focus',
-                          child: Text('تمرکز'),
-                        ),
-                        if (_tracker != null)
-                          const PopupMenuItem(
-                            value: 'times',
-                            child: Text('زمان‌ها'),
-                          ),
-                        const PopupMenuItem(
-                          value: 'more',
-                          child: Text('بخش‌های بیشتر'),
-                        ),
-                      ],
+                      ),
                     ),
-                    IconButton(
-                      key: const ValueKey('quick-add-more'),
-                      tooltip: 'تاریخ و ساعت کار',
-                      onPressed: () =>
-                          _quickAdd(initialText: _inlineTask.text.trim()),
-                      icon: const Icon(Icons.schedule_outlined, size: 20),
+                    PressDepth(
+                      child: PopupMenuButton<String>(
+                        key: const ValueKey('compact-navigation'),
+                        tooltip: 'بخش‌ها',
+                        icon: const Icon(Icons.apps_outlined, size: 20),
+                        onSelected: (choice) {
+                          if (choice == 'tasks') {
+                            _switchSection(1);
+                          } else if (choice == 'today') {
+                            _switchSection(0);
+                          } else if (choice == 'calendar') {
+                            _openNativeCalendar();
+                          } else if (choice == 'habits') {
+                            _switchSection(4);
+                          } else if (choice == 'focus') {
+                            _switchSection(2);
+                          } else if (choice == 'times') {
+                            _switchSection(3);
+                          } else if (choice == 'more') {
+                            _scaffoldKey.currentState?.openDrawer();
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                            value: 'tasks',
+                            child: Text('کارها'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'calendar',
+                            child: Text('تقویم'),
+                          ),
+                          if (_habits != null)
+                            const PopupMenuItem(
+                              value: 'habits',
+                              child: Text('عادت‌ها'),
+                            ),
+                          const PopupMenuItem(
+                            value: 'today',
+                            child: Text('امروز'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'focus',
+                            child: Text('تمرکز'),
+                          ),
+                          if (_tracker != null)
+                            const PopupMenuItem(
+                              value: 'times',
+                              child: Text('زمان‌ها'),
+                            ),
+                          const PopupMenuItem(
+                            value: 'more',
+                            child: Text('بخش‌های بیشتر'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    PressDepth(
+                      child: IconButton(
+                        key: const ValueKey('quick-add-more'),
+                        tooltip: 'تاریخ و ساعت کار',
+                        onPressed: () =>
+                            _quickAdd(initialText: _inlineTask.text.trim()),
+                        icon: const Icon(Icons.schedule_outlined, size: 20),
+                      ),
                     ),
                     Expanded(
                       child: TextField(
@@ -582,11 +603,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ),
                       ),
                     ),
-                    IconButton.filled(
-                      key: const ValueKey('inline-task-submit'),
-                      tooltip: 'ثبت کار',
-                      onPressed: _submitInline,
-                      icon: const Icon(Icons.keyboard_return_rounded, size: 20),
+                    PressDepth(
+                      child: IconButton.filled(
+                        key: const ValueKey('inline-task-submit'),
+                        tooltip: 'ثبت کار',
+                        onPressed: _submitInline,
+                        icon: const Icon(
+                          Icons.keyboard_return_rounded,
+                          size: 20,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -598,30 +624,138 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  Future<List<Task>> _loadCalendarTasks(DateTime from, DateTime to) async {
+    final token = widget.token();
+    if (token == null) throw StateError('Session unavailable');
+    final tasks = await widget.tasksApi.listDueTasks(token, from: from, to: to);
+    if (widget.token() != token) throw StateError('Session changed');
+    return tasks;
+  }
+
   void _openNativeCalendar() {
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.pop(context);
     }
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => TaskCalendarView(
-          loadTasks: (from, to) async {
-            final token = widget.token();
-            if (token == null) throw StateError('Session unavailable');
-            final tasks = await widget.tasksApi.listDueTasks(
-              token,
-              from: from,
-              to: to,
-            );
-            if (widget.token() != token) {
-              throw StateError('Session changed');
-            }
-            return tasks;
-          },
+    _switchSection(5);
+  }
+
+  Future<void> _createHabitFromFab() async {
+    final controller = _habits;
+    if (controller == null) return;
+    final habit = await createHabit(context, controller);
+    if (!mounted || habit == null) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('«${habit.name}» اضافه شد.')));
+  }
+
+  Widget _approvedNav() {
+    final colors = Theme.of(context).colorScheme;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          Space.md,
+          Space.xs,
+          Space.md,
+          Space.md,
+        ),
+        child: Center(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Soft.ground(context),
+                borderRadius: BorderRadius.circular(26),
+                boxShadow: Soft.raised(context, depth: 3),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(Space.xs),
+                child: Row(
+                  children: [
+                    for (final (section, label, icon) in [
+                      (0, 'کارها', Icons.format_list_bulleted_rounded),
+                      (5, 'تقویم', Icons.calendar_month_outlined),
+                      (4, 'عادت‌ها', Icons.check_circle_outline_rounded),
+                    ])
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Semantics(
+                            button: true,
+                            selected: section == 0
+                                ? _section == 0 || _section == 1
+                                : _section == section,
+                            child: PressDepth(
+                              enabled: section != 4 || _habits != null,
+                              child: InkWell(
+                                key: ValueKey('approved-nav-$section'),
+                                borderRadius: BorderRadius.circular(20),
+                                onTap: section == 4 && _habits == null
+                                    ? null
+                                    : () => _switchSection(section),
+                                child:
+                                    (section == 0
+                                        ? _section == 0 || _section == 1
+                                        : _section == section)
+                                    ? SoftWell(
+                                        radius: 20,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: Space.sm,
+                                          horizontal: Space.xs,
+                                        ),
+                                        child: _navLabel(
+                                          icon,
+                                          label,
+                                          colors.onSurface,
+                                          true,
+                                        ),
+                                      )
+                                    : Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: Space.sm,
+                                          horizontal: Space.xs,
+                                        ),
+                                        child: _navLabel(
+                                          icon,
+                                          label,
+                                          colors.onSurfaceVariant,
+                                          false,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
+
+  Widget _navLabel(IconData icon, String text, Color color, bool selected) =>
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 21, color: color),
+          const SizedBox(height: Space.xs),
+          Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ],
+      );
 
   int _captureRevision = 0;
 
@@ -1148,27 +1282,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           onTap: _openNativeCalendar,
         ),
       ),
-      if (MediaQuery.sizeOf(context).width >= sidebarBreakpoint)
-        for (final (index, icon, title) in [
-          (2, Icons.timelapse_outlined, 'تمرکز'),
-          if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
-          if (_habits != null) (4, Icons.task_alt_rounded, 'عادت‌ها'),
-        ])
-          SidebarRow(
+      // Secondary tools remain reachable from the compact mobile drawer.
+      for (final (index, icon, title) in [
+        (2, Icons.timelapse_outlined, 'تمرکز'),
+        if (_tracker != null) (3, Icons.timer_outlined, 'زمان‌ها'),
+        if (_habits != null) (4, Icons.task_alt_rounded, 'عادت‌ها'),
+      ])
+        SidebarRow(
+          selected: _section == index,
+          child: ListTile(
+            leading: Icon(icon),
+            title: Text(title),
+            trailing: index == 2 && _focusBadge != null
+                ? Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 8),
+                    child: Text(_focusBadge!),
+                  )
+                : null,
             selected: _section == index,
-            child: ListTile(
-              leading: Icon(icon),
-              title: Text(title),
-              trailing: index == 2 && _focusBadge != null
-                  ? Padding(
-                      padding: const EdgeInsetsDirectional.only(end: 8),
-                      child: Text(_focusBadge!),
-                    )
-                  : null,
-              selected: _section == index,
-              onTap: () => _switchSection(index),
-            ),
+            onTap: () => _switchSection(index),
           ),
+        ),
       if (widget.habitReminders is LocalHabitReminders)
         SidebarRow(
           key: const ValueKey('tool-task-due-notifications'),
@@ -1236,6 +1370,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     labels: _labels,
                     sectionsApi: widget.sectionsApi,
                     showQuickCapture: false,
+                    hideHeader: true,
                     doneToday: widget.tasksApi is ApiClient ? _doneToday : null,
                     focus: _focus,
                     onOpenFocus: () => _switchSection(2),
@@ -1243,6 +1378,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     onOpenHabits: _habits == null
                         ? null
                         : () => _switchSection(4),
+                  )
+                : _section == 5
+                ? TaskCalendarView(
+                    key: const ValueKey('embedded-week-calendar'),
+                    embedded: true,
+                    loadTasks: _loadCalendarTasks,
                   )
                 : _section == 2
                 ? FocusView(
@@ -1257,6 +1398,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     key: const ValueKey('habits-view'),
                     controller: _habits,
                     onQuickAdd: _quickAdd,
+                    embedded: true,
                   )
                 : _section == 3 && _tracker != null
                 ? TimeTrackingView(
@@ -1307,6 +1449,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       token: widget.token,
                       moveTargets: () => widget.projects.projects,
                       labels: _labels,
+                      showQuickCapture: wide,
                     ),
                   )
                 : ProjectTasksView(
@@ -1318,6 +1461,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     token: widget.token,
                     moveTargets: () => widget.projects.projects,
                     showTitle: true,
+                    showQuickCapture: wide,
                     labels: _labels,
                   );
             // Changing project fades through instead of cutting.
@@ -1342,14 +1486,77 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               // with the drawer button, so nothing frames the list twice.
               return Scaffold(
                 key: _scaffoldKey,
-                appBar: selected == null && view == null && label == null
-                    ? AppBar(title: const Text('منوال'))
-                    : null,
+                appBar: AppBar(
+                  automaticallyImplyLeading: false,
+                  backgroundColor: Soft.ground(context),
+                  surfaceTintColor: Colors.transparent,
+                  toolbarHeight: 62,
+                  titleSpacing: Space.gutter,
+                  title: PressDepth(
+                    child: InkWell(
+                      key: const ValueKey('menval-wordmark'),
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => _scaffoldKey.currentState?.openDrawer(),
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        padding: const EdgeInsets.symmetric(vertical: Space.xs),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const MenvalMark(size: 28),
+                            const SizedBox(width: Space.sm),
+                            Text(
+                              'منوال',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  actions: [
+                    if (widget.tasksApi case final SearchApi api)
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(
+                          end: Space.sm,
+                        ),
+                        child: PressDepth(
+                          borderRadius: BorderRadius.circular(28),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              shape: BoxShape.circle,
+                              boxShadow: Soft.raised(context, depth: 2),
+                            ),
+                            child: IconButton(
+                              key: const ValueKey('menval-header-search'),
+                              tooltip: 'جست‌وجو',
+                              onPressed: () => _openSearch(api),
+                              icon: const Icon(Icons.search_rounded),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
                 drawer: Drawer(
                   backgroundColor: Soft.ground(context),
                   child: _sidebar(),
                 ),
-                bottomNavigationBar: _captureBar(),
+                bottomNavigationBar: _approvedNav(),
+                floatingActionButtonLocation:
+                    FloatingActionButtonLocation.startFloat,
+                floatingActionButton: PressDepth(
+                  borderRadius: BorderRadius.circular(18),
+                  child: FloatingActionButton(
+                    key: const ValueKey('menval-create-fab'),
+                    shape: const CircleBorder(),
+                    tooltip: _section == 4 ? 'عادت جدید' : 'کار جدید',
+                    onPressed: _section == 4 ? _createHabitFromFab : _quickAdd,
+                    child: const Icon(Icons.add_rounded),
+                  ),
+                ),
                 body: Row(
                   children: [
                     Expanded(

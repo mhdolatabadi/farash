@@ -3,7 +3,7 @@ import 'package:menval/app/palette.dart';
 
 abstract final class MenvalTheme {
   /// The palette the app ships with.
-  static const palette = MenvalPalette.calm;
+  static const palette = MenvalPalette.stone;
 
   static const _fieldRadius = 12.0;
   static const _tileRadius = 22.0;

@@ -24,9 +24,23 @@ jobs:
             exit 1
           fi
       - run: flutter analyze
-      - run: flutter test
+      - name: Run Flutter tests
+        shell: bash
         env:
           CAPTURE_GLASS_UI: '1'
+        run: |
+          test_exit=0
+          flutter test --reporter json > "$RUNNER_TEMP/flutter-tests.json" 2>&1 || test_exit=$?
+          python3 tool/summarize_flutter_tests.py "$RUNNER_TEMP/flutter-tests.json"
+          exit "$test_exit"
+      - name: Upload Flutter test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: menval-flutter-test-diagnostics
+          path: ${{ runner.temp }}/flutter-tests.json
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Check agenda across daylight-saving changes
         run: flutter test test/due_views_test.dart
         env:

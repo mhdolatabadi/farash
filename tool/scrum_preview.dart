@@ -6,12 +6,15 @@ import 'package:menval/app/app_theme.dart';
 import 'package:menval/core/settings/start_view.dart';
 import 'package:menval/core/settings/theme_preferences.dart';
 import 'package:menval/features/home/home_screen.dart';
+import 'package:menval/features/habits/habits_controller.dart';
+import 'package:menval/features/tasks/data/task.dart';
 import 'package:menval/features/calendar_connections/calendar_connections.dart';
 import 'package:menval/features/projects/application/projects_controller.dart';
 import 'package:menval/features/projects/data/project.dart';
 
 import '../test/support/fake_projects_api.dart';
 import '../test/support/fake_scrum_api.dart';
+import '../test/support/fake_habits_api.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,7 +63,42 @@ void main() {
 
 // Synthetic Google-shaped data only; the fixture never starts real consent.
 class _CalendarPreviewApi extends FakeScrumApi
-    implements CalendarConnectionsApi {
+    implements CalendarConnectionsApi, HabitsApi {
+  final _habits = FakeHabitsApi();
+
+  _CalendarPreviewApi() {
+    final now = DateTime.now();
+    String day(int offset) => DateTime(
+      now.year,
+      now.month,
+      now.day - offset,
+    ).toIso8601String().substring(0, 10);
+    _habits.seed('مطالعهٔ روزانه', entries: {day(0): 1, day(1): 1, day(3): 1});
+    _habits.seed('پیاده‌روی', entries: {day(1): 1, day(2): 1});
+    _habits.seed('نوشتن', entries: {day(0): 1, day(2): 1, day(4): 1});
+    for (var offset = 0; offset < 3; offset++) {
+      seed(
+        'inbox',
+        'مرور برنامه ${offset + 1}',
+        dates: TaskDates(
+          due: TaskDue.at(
+            DateTime(now.year, now.month, now.day + offset, 10 + offset),
+            'Asia/Tehran',
+          ),
+          durationMinutes: 60,
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> habitRequest(
+    String token,
+    String method,
+    String path, {
+    Map<String, Object?>? body,
+  }) => _habits.habitRequest(token, method, path, body: body);
+
   @override
   Future<Map<String, dynamic>> calendarRequest(
     String token,

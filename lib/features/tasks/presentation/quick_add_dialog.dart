@@ -102,7 +102,8 @@ class _QuickAddDialogState extends State<QuickAddDialog> {
         MediaQuery.sizeOf(context).height -
         MediaQuery.viewInsetsOf(context).bottom -
         24;
-    final height = availableHeight.clamp(210.0, 445.0).toDouble();
+    final height = availableHeight.clamp(160.0, 445.0).toDouble();
+    final compact = availableHeight < 280;
     final parsed = parseQuickTask(
       _text.text,
       now: DateTime.now(),
@@ -113,7 +114,7 @@ class _QuickAddDialogState extends State<QuickAddDialog> {
       child: SizedBox(
         height: height,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+          padding: EdgeInsets.fromLTRB(20, 8, 20, compact ? 8 : 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -127,7 +128,7 @@ class _QuickAddDialogState extends State<QuickAddDialog> {
                   ),
                 ),
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: compact ? 4 : 18),
               Row(
                 children: [
                   Expanded(
@@ -143,7 +144,7 @@ class _QuickAddDialogState extends State<QuickAddDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: compact ? 4 : 14),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
@@ -256,7 +257,7 @@ class _QuickAddDialogState extends State<QuickAddDialog> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: compact ? 8 : 12),
               FilledButton(
                 onPressed: _busy ? null : _submit,
                 child: Padding(

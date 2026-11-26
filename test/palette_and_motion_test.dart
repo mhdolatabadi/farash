@@ -19,7 +19,7 @@ double _contrast(Color a, Color b) {
 }
 
 void main() {
-  group('calm palette', () {
+  group('stone palette', () {
     for (final brightness in Brightness.values) {
       test('text keeps 4.5:1 contrast ($brightness)', () {
         final theme = brightness == Brightness.dark
@@ -43,16 +43,16 @@ void main() {
       });
     }
 
-    test('the theme reads the calm palette', () {
+    test('the theme reads the stone palette', () {
       final theme = MenvalTheme.light();
-      expect(theme.colorScheme.primary, const Color(0xFF0E7490));
-      expect(theme.colorScheme.surface, const Color(0xFFE9EDF1));
-      expect(MenvalTheme.dark().colorScheme.primary, const Color(0xFFC8F25A));
-      expect(MenvalTheme.dark().colorScheme.surface, const Color(0xFF16191E));
-      expect(theme.colorScheme.error, MenvalPalette.calm.light.overdue);
+      expect(theme.colorScheme.primary, const Color(0xFF383936));
+      expect(theme.colorScheme.surface, const Color(0xFFF2EFEC));
+      expect(MenvalTheme.dark().colorScheme.primary, const Color(0xFFE8C487));
+      expect(MenvalTheme.dark().colorScheme.surface, const Color(0xFF252830));
+      expect(theme.colorScheme.error, MenvalPalette.stone.light.overdue);
       expect(
         theme.extension<MenvalPaletteColors>()!.colors,
-        MenvalPalette.calm.light,
+        MenvalPalette.stone.light,
       );
     });
 
@@ -74,7 +74,7 @@ void main() {
           greaterThanOrEqualTo(4.5),
         );
         // Priority marks are not text; 3:1 keeps them visible.
-        for (final mark in MenvalPalette.calm.of(brightness).priorities) {
+        for (final mark in MenvalPalette.stone.of(brightness).priorities) {
           expect(_contrast(mark, c.surface), greaterThanOrEqualTo(3));
         }
       });
