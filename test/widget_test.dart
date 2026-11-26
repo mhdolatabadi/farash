@@ -6,6 +6,7 @@ import 'package:menval/features/tasks/presentation/due_tasks_view.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:menval/core/api/api_client.dart';
+import 'package:menval/core/offline/offline_read_cache.dart';
 import 'package:menval/features/auth/session_store.dart';
 import 'package:menval/main.dart';
 
@@ -244,7 +245,10 @@ void main() {
       await tester.pumpWidget(
         app(sessions: saved, refreshCredentials: refresh, api: api),
       );
-      await tester.pumpAndSettle();
+      // The Today screen has ongoing animations; settling every scheduled
+      // frame is not a valid readiness signal for reconnect regressions.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
       expect(find.byType(DueTasksView), findsOneWidget);
       expect(await refresh.readRefreshToken(), 'still-valid-refresh');
     },
@@ -281,6 +285,108 @@ void main() {
     expect(await refresh.readRefreshToken(), 'invalid-refresh');
     expect(find.byType(DueTasksView), findsNothing);
   });
+
+  for (final outcome in [
+    'valid',
+    'rejected',
+    'different-owner',
+    'network-outage',
+  ]) {
+    testWidgets('offline reconnect with $outcome refresh preserves identity', (
+      tester,
+    ) async {
+      final saved = MemorySessionStore('old-access');
+      final refresh = MemoryRefreshCredentialStore();
+      final cache = OfflineReadCache();
+      var oldAccessChecks = 0;
+      var refreshAttempts = 0;
+      final api = ApiClient(
+        Uri.parse('https://todo.example.com'),
+        offlineCache: cache,
+        client: MockClient((request) async {
+          if (request.url.path == '/api/v1/me') {
+            final bearer = request.headers['Authorization'];
+            if (bearer == 'Bearer old-access') {
+              oldAccessChecks++;
+              if (oldAccessChecks > 1) {
+                return http.Response('{"error":"invalid_token"}', 401);
+              }
+            } else if (bearer != 'Bearer new-access') {
+              return http.Response('{"error":"invalid_token"}', 401);
+            }
+            return http.Response(
+              jsonEncode({
+                'user': {'id': 'u1', 'email': 'a@example.com'},
+              }),
+              200,
+            );
+          }
+          // The legacy renewal endpoint is absent on this fixture server.
+          // Returning 200 with an empty body would fabricate a bad session.
+          if (request.url.path == '/api/v1/auth/renew') {
+            return http.Response('{"error":"not_found"}', 404);
+          }
+          if (request.url.path == '/api/v1/auth/refresh') {
+            refreshAttempts++;
+            expect(jsonDecode(request.body)['refresh_token'], 'old-refresh');
+            if (outcome == 'rejected') {
+              return http.Response('{"error":"invalid_refresh_token"}', 401);
+            }
+            if (outcome == 'network-outage') {
+              throw http.ClientException('temporary connection failure');
+            }
+            return http.Response(
+              jsonEncode({
+                'token': 'new-access',
+                'refresh_token': 'new-refresh',
+                'user': {
+                  'id': outcome == 'different-owner' ? 'u2' : 'u1',
+                  'email': 'a@example.com',
+                },
+              }),
+              200,
+            );
+          }
+          return http.Response('{}', 200);
+        }),
+      );
+      await tester.pumpWidget(
+        app(sessions: saved, refreshCredentials: refresh, api: api),
+      );
+      // Initial session restoration involves asynchronous auth and navigation.
+      // Settle that transition before simulating a later reconnect; the
+      // reconnect assertions below use bounded pumps for the live Today view.
+      await tester.pumpAndSettle();
+      expect(find.byType(DueTasksView), findsOneWidget);
+
+      // Simulate an Android app left open until its old access JWT expires.
+      await refresh.writeRefreshToken('old-refresh');
+      cache.usedOffline();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(find.text('اتصال دوباره'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(oldAccessChecks, 2);
+      expect(refreshAttempts, 1);
+      expect(find.byType(DueTasksView), findsOneWidget);
+      expect(find.text('ورود به منوال'), findsNothing);
+      if (outcome == 'valid') {
+        expect(await saved.readToken(), 'new-access');
+        expect(await refresh.readRefreshToken(), 'new-refresh');
+        expect(find.text('اتصال دوباره'), findsNothing);
+        expect(cache.isOffline, isFalse);
+      } else {
+        expect(await saved.readToken(), 'old-access');
+        expect(await refresh.readRefreshToken(), 'old-refresh');
+        expect(find.textContaining('اتصال برقرار نشد'), findsOneWidget);
+        // A failed refresh must not unlock offline-only mutations.
+        expect(cache.isOffline, isTrue);
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('signing out forgets the token', (tester) async {
     final sessions = MemorySessionStore('good-token');
