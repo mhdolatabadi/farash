@@ -155,15 +155,16 @@ def capture_review():
     capture('weaving-large-text')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')
     time.sleep(2)
-    # Focus moved into the compact navigation drawer. Reach it through the
-    # real accessible menu rather than assuming a visible bottom tab.
-    open_drawer()
+    # Focus lives in the bottom capture bar's compact section popup, not
+    # the project drawer. Exercise the real accessible navigation control.
+    tap('بخش‌ها', wait_for='تمرکز')
     tap('تمرکز', wait_for='شروع تمرکز')
     capture('focus-dark')
     tap('شروع تمرکز')
     capture('focus-running')
     tap('مکث', wait_for='شروع تمرکز')
     capture('focus-paused')
+    tap('بخش‌ها', wait_for='کارها')
     tap('کارها', wait_for='مطالعهٔ فصل اول کتاب')
     capture('tasks-dark')
     tap('مطالعهٔ فصل اول کتاب')
