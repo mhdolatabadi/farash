@@ -417,6 +417,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
+        showDragHandle: false,
         backgroundColor: Theme.of(context).colorScheme.surface,
         barrierColor: Colors.black.withValues(alpha: 0.16),
         shape: const RoundedRectangleBorder(
