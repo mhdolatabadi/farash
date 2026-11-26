@@ -91,7 +91,14 @@ def matching_nodes(xml, label):
         and any(label in value.splitlines() for value in
                 (node.get('text', ''), node.get('content-desc', '')))
     ]
-    return sorted(matches, key=lambda n: n.get('clickable') != 'true')
+    def action_order(node):
+        bounds = list(map(int, re.findall(r'-?\d+', node.get('bounds', ''))))
+        area = ((bounds[2] - bounds[0]) * (bounds[3] - bounds[1])
+                if len(bounds) == 4 else float('inf'))
+        # A modal barrier can share its dismiss label with the close icon.
+        # Its full-screen center is inside the sheet and does not dismiss it.
+        return node.get('clickable') != 'true', area
+    return sorted(matches, key=action_order)
 
 
 def tap(label, *, wait_for=None):
@@ -178,7 +185,7 @@ def capture_review():
     tap('کارها')
     tap('کار جدید')
     capture('approved-task-bottom-sheet-dark')
-    tap('بستن')
+    tap('بستن', wait_for='منوال')
     open_drawer()
     tap('تمرکز')
     capture('focus-dark')

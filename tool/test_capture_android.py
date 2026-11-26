@@ -30,6 +30,18 @@ class CaptureNavigationTest(unittest.TestCase):
         self.assertEqual(nodes[0].get('clickable'), 'true')
         self.assertEqual(capture.matching_nodes(xml, 'عنوا'), [])
 
+    def test_close_targets_icon_instead_of_full_screen_modal_barrier(self):
+        xml = ('<hierarchy><node content-desc="بستن" enabled="true" '
+               'clickable="true" bounds="[0,0][1080,2280]" />'
+               '<node content-desc="بستن" enabled="true" clickable="true" '
+               'bounds="[900,100][1000,200]" /></hierarchy>').encode()
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(capture, 'OUT', pathlib.Path(directory)), \
+                patch.object(capture, 'window_xml', return_value=xml), \
+                patch.object(capture, 'adb') as adb:
+            capture.tap('بستن')
+        adb.assert_called_once_with('shell', 'input', 'tap', '950', '150')
+
     def test_dump_removes_old_snapshot_before_reading(self):
         calls = []
         def adb(*args):
