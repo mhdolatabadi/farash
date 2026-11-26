@@ -14,8 +14,10 @@ not run a second edge proxy.
    the real domain, PostgreSQL password and JWT secret. Keep
    `FARASH_PROXY_NETWORK=proxynet` unless the shared proxy uses another
    external Docker network. Never commit `.env`.
-4. Make sure the server can pull the GHCR images. If the packages are private,
-   log in once on the server with a token that has `read:packages`.
+4. Make sure the server can reach GHCR metadata and GitHub source. CI downloads
+   application layers on the runner and streams both images over verified SSH,
+   so the server does not need access to the registry's layer CDN. If the packages
+   are private, log in on the server with a token that has `read:packages`.
 5. Verify the shared proxy network exists with `docker network inspect proxynet`.
    The HTTPS server block for `FARASH_DOMAIN` must include the routes in
    `deploy/front-proxy.nginx.conf`, which resolve `farash-api:8080` and
@@ -37,7 +39,12 @@ not run a second edge proxy.
    - `ghcr.io/mhdolatabadi/farash/api:<commit-sha>`
    - `ghcr.io/mhdolatabadi/farash/web:<commit-sha>`
 
-8. `Deploy` sends `tool/deploy_remote.sh` from the CI-validated source over SSH.
+8. `Deploy` first runs `tool/transfer_deploy_images.sh`: it queries the server's
+   Docker platform, pulls both exact-commit images on the runner, and streams a
+   compressed Docker archive over verified SSH into the server image cache.
+   Failed pulls or transfers stop before rollout. Compose pulls only missing images, so a complete preloaded pair needs no
+   registry connection from the deployment host.
+   `Deploy` then sends `tool/deploy_remote.sh` from the CI-validated source over SSH.
    It fetches the selected full commit SHA and exports its deployment files into
    a private, persistent `.farash-releases/<sha>.<suffix>/` directory. It does not
    check out, reset, stash or execute the server's mutable `deploy/deploy.sh`.
@@ -49,7 +56,7 @@ not run a second edge proxy.
    ```
 
    A full 40-character commit SHA is required. The exported `apply.sh` sets
-   `FARASH_IMAGE_TAG`, pulls the images, validates the database backup, then runs
+   `FARASH_IMAGE_TAG`, pulls missing images, validates the database backup, then runs
    `docker compose up -d --no-build --remove-orphans` and checks:
 
    ```bash
@@ -72,6 +79,22 @@ retention policy deletes them. Backups remain in the original `deploy/backups/`
 directory. Disk retention is an operator responsibility.
 
 ## Manual fallback
+
+If registry layer downloads are unavailable on the deployment host, an operator
+with Docker and registry access can preload images from a trusted workstation:
+
+```bash
+export DEPLOY_HOST DEPLOY_USER DEPLOY_SHA
+export DEPLOY_IDENTITY_FILE=/absolute/path/to/existing/ssh-key
+bash tool/transfer_deploy_images.sh
+```
+
+Use a full, CI-validated commit SHA and the existing pinned SSH host key. Then
+rerun the failed Deploy job for that same SHA. Preloading only adds images to
+the cache; it does not restart services or write database records. For rollback,
+preload the selected compatible older SHA and follow the rollback procedure below.
+Do not print or commit credentials. Keep the workflow and source changes together
+when backporting this fix; older workflows do not perform the transfer automatically.
 
 From the server repository checkout:
 

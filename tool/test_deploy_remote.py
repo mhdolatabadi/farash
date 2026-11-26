@@ -86,6 +86,7 @@ if 'pg_dump' in args:
         self.assertEqual(calls[0]["args"], ["network", "inspect", "proxynet"])
         compose = [c for c in calls if c["args"][:1] == ["compose"]]
         self.assertEqual(len(compose), 5)
+        self.assertEqual(compose[0]['args'][-5:], ['pull', '--policy', 'missing', 'api', 'web'])
         prefix = ["compose", "--project-directory", str(self.repo / "deploy"),
                   "--env-file", str(self.config)]
         for call in compose:
