@@ -175,7 +175,10 @@ def capture_review():
     capture('drawer-dark')
     adb('shell', 'input', 'keyevent', '4')
     time.sleep(2)
-    tap('زمان‌ها')
+    # Time tracking is a section in the compact bottom navigation popup.
+    # Do not tap a non-visible route and silently capture the Tasks screen.
+    tap('بخش‌ها', wait_for='زمان‌ها')
+    tap('زمان‌ها', wait_for='شروع برای یک کار')
     capture('times-dark')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')
     capture('times-large-text')
