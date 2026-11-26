@@ -2,11 +2,41 @@ name: Quality checks
 
 on:
   pull_request:
+  workflow_dispatch:
   push:
     branches: [main]
 
+# Discard obsolete PR work, but let main checks finish for release/deploy triggers.
+concurrency:
+  group: quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
 jobs:
-  flutter:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.scope.outputs.app }}
+      visual: ${{ steps.scope.outputs.visual }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Select relevant checks
+        id: scope
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 tool/ci_scope.py
+      - name: Test CI routing and capture navigation
+        run: python3 -m unittest discover -s tool -p 'test_ci*.py'
+
+  flutter-tests:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +57,7 @@ jobs:
       - name: Run Flutter tests
         shell: bash
         env:
-          CAPTURE_GLASS_UI: '1'
+          CAPTURE_GLASS_UI: ${{ needs.changes.outputs.visual == 'true' && '1' || '0' }}
         run: |
           test_exit=0
           flutter test --reporter json > "$RUNNER_TEMP/flutter-tests.json" 2>&1 || test_exit=$?
@@ -53,11 +83,40 @@ jobs:
           path: .impeccable/review/*.png
           if-no-files-found: ignore
           retention-days: 14
+
+  web-build:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.8'
+          channel: stable
+          cache: true
+      - run: flutter pub get
       - run: flutter build web --release --no-web-resources-cdn --dart-define=API_BASE_URL=https://todo.example.com
+
+  android-build:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.8'
+          channel: stable
+          cache: true
+      - run: flutter pub get
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
       - name: Build Android debug APK
         # The APK is meant to be installed, so it talks to the real server.
         shell: bash
@@ -96,6 +155,50 @@ jobs:
           path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+      - name: Build UI review fixture only when needed
+        if: needs.changes.outputs.visual == 'true'
+        shell: bash
+        run: |
+          # Maven Central / Gradle Plugin Portal occasionally rate-limit hosted
+          # runners with HTTP 429. Retry only that transient failure, with a
+          # bounded backoff; never mask compiler or configuration failures.
+          for attempt in 1 2 3; do
+            if flutter build apk --debug --target tool/scrum_preview.dart > "$RUNNER_TEMP/android-review-build.log" 2>&1; then
+              cat "$RUNNER_TEMP/android-review-build.log"
+              exit 0
+            fi
+            cat "$RUNNER_TEMP/android-review-build.log"
+            if ! grep -Eq 'Received status code 429|HTTP (response code )?429|Too Many Requests' "$RUNNER_TEMP/android-review-build.log" || [[ "$attempt" == 3 ]]; then
+              exit 1
+            fi
+            sleep $((attempt * 30))
+          done
+      - uses: actions/upload-artifact@v4
+        if: needs.changes.outputs.visual == 'true'
+        with:
+          name: menval-android-review-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 1
+
+  # Retain the existing required check name; failures/skips cannot turn green.
+  flutter:
+    needs: [changes, flutter-tests, web-build, android-build]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every applicable Flutter check
+        env:
+          SCOPE: ${{ needs.changes.result }}
+          APP: ${{ needs.changes.outputs.app }}
+          TESTS: ${{ needs.flutter-tests.result }}
+          WEB: ${{ needs.web-build.result }}
+          ANDROID: ${{ needs.android-build.result }}
+        run: |
+          [[ "$SCOPE" == success ]]
+          expected=success
+          if [[ "$APP" == false ]]; then expected=skipped; fi
+          [[ "$TESTS" == "$expected" && "$WEB" == "$expected" && "$ANDROID" == "$expected" ]]
 
   api:
     runs-on: ubuntu-latest
@@ -202,40 +305,23 @@ jobs:
           docker compose -f deploy/compose.yaml down -v
           docker network rm "$FARASH_PROXY_NETWORK" >/dev/null 2>&1 || true
 
-  android-ui-review:
+  android-captures:
+    needs: [changes, android-build]
+    if: needs.changes.outputs.visual == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [core, planning, account]
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - uses: actions/download-artifact@v4
         with:
-          flutter-version: '3.47.8'
-          channel: stable
-          cache: true
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - run: flutter pub get
+          name: menval-android-review-apk
+          path: build/app/outputs/flutter-apk
       - name: Test native capture navigation
         run: python3 -m unittest discover -s tool -p test_capture_android.py
-      - name: Build offline UI review fixture
-        shell: bash
-        run: |
-          # Maven Central / Gradle Plugin Portal occasionally rate-limit hosted
-          # runners with HTTP 429. Retry only that transient failure, with a
-          # bounded backoff; never mask compiler or configuration failures.
-          for attempt in 1 2 3; do
-            if flutter build apk --debug --target tool/scrum_preview.dart > "$RUNNER_TEMP/android-review-build.log" 2>&1; then
-              cat "$RUNNER_TEMP/android-review-build.log"
-              exit 0
-            fi
-            cat "$RUNNER_TEMP/android-review-build.log"
-            if ! grep -Eq 'Received status code 429|HTTP (response code )?429|Too Many Requests' "$RUNNER_TEMP/android-review-build.log" || [[ "$attempt" == 3 ]]; then
-              exit 1
-            fi
-            sleep $((attempt * 30))
-          done
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -247,11 +333,30 @@ jobs:
           arch: x86_64
           profile: pixel_4
           disable-animations: true
-          script: python3 tool/capture_android.py
+          script: MENVAL_CAPTURE_GROUP=${{ matrix.group }} python3 tool/capture_android.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: menval-android-ui-review
+          name: menval-android-ui-review-${{ matrix.group }}
           path: .impeccable/android-review/
           if-no-files-found: error
           retention-days: 14
+
+  android-ui-review:
+    needs: [changes, android-build, android-captures]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require complete native review when relevant
+        env:
+          SCOPE: ${{ needs.changes.result }}
+          VISUAL: ${{ needs.changes.outputs.visual }}
+          BUILD: ${{ needs.android-build.result }}
+          CAPTURES: ${{ needs.android-captures.result }}
+        run: |
+          [[ "$SCOPE" == success ]]
+          if [[ "$VISUAL" == true ]]; then
+            [[ "$BUILD" == success && "$CAPTURES" == success ]]
+          else
+            [[ "$VISUAL" == false && "$CAPTURES" == skipped ]]
+          fi

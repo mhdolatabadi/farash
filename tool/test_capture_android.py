@@ -142,6 +142,30 @@ class CaptureNavigationTest(unittest.TestCase):
                 b'<hierarchy><node text="Menval isn&#39;t responding" /></hierarchy>'))
         adb.assert_not_called()
 
+    def test_capture_groups_preserve_every_original_screenshot_once(self):
+        expected = ['weaving-light', 'today-320-light', 'weaving-dark', 'today-320-dark', 'today-font-1_3-dark', 'weaving-large-text', 'approved-week-dark', 'approved-week-320-dark', 'approved-week-light', 'approved-week-large-text', 'approved-habits-light', 'approved-habits-320-light', 'approved-habits-dark', 'approved-habits-large-text', 'approved-task-bottom-sheet-dark', 'focus-dark', 'focus-running', 'focus-paused', 'tasks-dark', 'editor-dark', 'drawer-dark', 'times-dark', 'times-large-text', 'tracker-active', 'tracker-active-large-text', 'tracker-stopped', 'time-manual-dark', 'time-manual-large-text', 'times-light', 'times-wide-light', 'scrum-backlog-light', 'scrum-backlog-dark', 'scrum-backlog-large-text', 'scrum-sprint-editor-large-text', 'scrum-board-dark', 'scrum-board-wide', 'scrum-report-dark', 'scrum-report-large-text', 'appearance-phone-dark', 'appearance-phone-large-text', 'export-initial-dark', 'export-ready-dark', 'export-android-picker', 'export-large-text', 'export-wide-dark', 'calendar-phone-light', 'calendar-events-phone-light', 'calendar-phone-dark', 'calendar-phone-font-1_3-dark', 'calendar-phone-large-text-dark', 'calendar-wide-dark', 'search-phone-ime-dark', 'search-phone-dark', 'search-phone-light', 'search-phone-large-text', 'search-wide-light', 'recurrence-editor-phone-light', 'recurrence-editor-large-text']
+        actual = []
+        for group in capture.GROUPS:
+            with patch.dict(capture.os.environ, {'MENVAL_CAPTURE_GROUP': group}), \
+                    patch.object(capture, 'start_fixture'), \
+                    patch.object(capture, 'adb'), \
+                    patch.object(capture, 'tap'), \
+                    patch.object(capture, 'open_drawer'), \
+                    patch.object(capture, 'scroll_to'), \
+                    patch.object(capture.time, 'sleep'), \
+                    patch.object(capture, 'capture', side_effect=actual.append), \
+                    patch.object(capture, 'capture_narrow', side_effect=actual.append):
+                capture.capture_review()
+        self.assertEqual(sorted(actual), sorted(expected))
+        self.assertEqual(len(actual), len(set(actual)))
+
+    def test_invalid_capture_group_fails_before_installing_fixture(self):
+        with patch.dict(capture.os.environ, {'MENVAL_CAPTURE_GROUP': 'typo'}), \
+                patch.object(capture, 'start_fixture') as start:
+            with self.assertRaises(ValueError):
+                capture.capture_review()
+        start.assert_not_called()
+
     def test_main_restores_emulator_after_success(self):
         with patch.object(capture, 'capture_review') as review, \
                 patch.object(capture, 'adb') as adb:

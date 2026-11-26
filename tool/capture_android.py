@@ -1,4 +1,5 @@
 """Capture the offline fixture on an ephemeral CI emulator, including OS insets."""
+import os
 import pathlib
 import re
 import subprocess
@@ -32,6 +33,7 @@ def window_xml():
 def capture(name):
     time.sleep(2)
     clear_launcher_anr()
+    print(f'Capture: {name}', flush=True)
     (OUT / f'{name}.png').write_bytes(adb('exec-out', 'screencap', '-p'))
 
 
@@ -150,10 +152,13 @@ def scroll_to(label, *, upward=True):
     raise RuntimeError(f'Calendar review could not reveal: {label}')
 
 
-def capture_review():
+def start_fixture():
     adb('install', '-r', 'build/app/outputs/flutter-apk/app-debug.apk')
     adb('shell', 'am', 'start', '-n', 'ir.mhdolatabadi.farash/.MainActivity')
     time.sleep(8)
+
+
+def capture_core():
     capture('weaving-light')
     capture_narrow('today-320-light')
     adb('shell', 'cmd', 'uimode', 'night', 'yes')
@@ -202,7 +207,11 @@ def capture_review():
     time.sleep(2)
     open_drawer()
     capture('drawer-dark')
-    # Keep the confirmed drawer open and choose the real tool row.
+
+
+def capture_planning():
+    adb('shell', 'cmd', 'uimode', 'night', 'yes')
+    open_drawer()
     tap('زمان‌ها', wait_for='شروع برای یک کار')
     capture('times-dark')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')
@@ -266,7 +275,10 @@ def capture_review():
     adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')
     capture('scrum-report-large-text')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')
-    time.sleep(2)
+
+
+def capture_account():
+    adb('shell', 'cmd', 'uimode', 'night', 'yes')
     open_drawer()
     tap('حساب و تنظیمات')
     tap('تنظیمات تقویم')
@@ -350,6 +362,20 @@ def capture_review():
     capture('recurrence-editor-phone-light')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')
     capture('recurrence-editor-large-text')
+
+GROUPS = {'core': capture_core, 'planning': capture_planning,
+          'account': capture_account}
+
+
+def capture_review():
+    group = os.environ.get('MENVAL_CAPTURE_GROUP', 'all')
+    if group != 'all' and group not in GROUPS:
+        raise ValueError(f'Unknown Android capture group: {group}')
+    start_fixture()
+    for name, review in GROUPS.items():
+        if group in ('all', name):
+            review()
+
 
 def restore_emulator_settings():
     """Restore every system setting touched by the capture workflow."""
