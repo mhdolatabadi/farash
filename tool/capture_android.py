@@ -155,12 +155,16 @@ def capture_review():
     capture('weaving-large-text')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')
     time.sleep(2)
-    tap('تمرکز')
+    # Focus lives in the bottom capture bar's compact section popup, not
+    # the project drawer. Exercise the real accessible navigation control.
+    tap('بخش‌ها', wait_for='تمرکز')
+    tap('تمرکز', wait_for='شروع تمرکز')
     capture('focus-dark')
     tap('شروع تمرکز')
     capture('focus-running')
     tap('مکث', wait_for='شروع تمرکز')
     capture('focus-paused')
+    tap('بخش‌ها', wait_for='کارها')
     tap('کارها', wait_for='مطالعهٔ فصل اول کتاب')
     capture('tasks-dark')
     tap('مطالعهٔ فصل اول کتاب')
@@ -171,7 +175,10 @@ def capture_review():
     capture('drawer-dark')
     adb('shell', 'input', 'keyevent', '4')
     time.sleep(2)
-    tap('زمان‌ها')
+    # Time tracking is a section in the compact bottom navigation popup.
+    # Do not tap a non-visible route and silently capture the Tasks screen.
+    tap('بخش‌ها', wait_for='زمان‌ها')
+    tap('زمان‌ها', wait_for='شروع برای یک کار')
     capture('times-dark')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')
     capture('times-large-text')
