@@ -849,7 +849,10 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
           ],
           // Room to scroll the last task clear of the capture bar.
           SliverToBoxAdapter(
-            child: SizedBox(height: (capture == null ? _dockHeight : 0) + 24),
+            child: SizedBox(
+              height: (capture == null ? _dockHeight : 0) +
+                  (widget.showQuickCapture ? 24 : 96),
+            ),
           ),
         ],
       ),

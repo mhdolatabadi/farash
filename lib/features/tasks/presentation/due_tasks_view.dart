@@ -721,7 +721,12 @@ class _DueTasksViewState extends State<DueTasksView> {
                   ),
                 ),
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(inset, 0, inset, 32),
+                padding: EdgeInsets.fromLTRB(
+                  inset,
+                  0,
+                  inset,
+                  widget.hideHeader ? 96 : 32,
+                ),
                 sliver: body,
               ),
             ],

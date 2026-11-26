@@ -72,8 +72,11 @@ def clear_launcher_anr(xml=None):
         return False
     for node in root.iter('node'):
         if node.get('resource-id') == 'android:id/aerr_wait':
-            x1, y1, x2, y2 = map(int, re.findall(r'\d+', node.get('bounds')))
-            adb('shell', 'input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
+            # Density changes can leave the system launcher permanently stuck.
+            # Restart only that identified package; preserve Menval's process/state.
+            adb('shell', 'am', 'force-stop', 'com.android.launcher3')
+            adb('shell', 'am', 'start', '-n',
+                'ir.mhdolatabadi.farash/.MainActivity')
             time.sleep(2)
             return True
     return False

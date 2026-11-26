@@ -139,7 +139,7 @@ void main() {
         await tester.pumpAndSettle();
         final capture = tester.getRect(
           layout.$2.width < sidebarBreakpoint
-              ? find.byKey(const ValueKey('approved-nav-0'))
+              ? find.byKey(const ValueKey('menval-create-fab'))
               : find.byKey(const ValueKey('inline-task-title')),
         );
         expect(tester.getRect(last).bottom, lessThanOrEqualTo(capture.top));
@@ -202,7 +202,14 @@ void main() {
       if (compact) {
         await tester.tap(find.byKey(const ValueKey('menval-wordmark')));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.widgetWithText(ListTile, 'تمرکز').last);
+        await tester.scrollUntilVisible(
+          find.widgetWithText(ListTile, 'تمرکز'),
+          80,
+          scrollable: find.descendant(
+            of: find.byType(Drawer),
+            matching: find.byType(Scrollable),
+          ).first,
+        );
         await tester.pumpAndSettle();
         await tester.tap(find.widgetWithText(ListTile, 'تمرکز').last);
       } else {

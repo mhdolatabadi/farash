@@ -223,10 +223,13 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                     SizedBox(
                       width: _gutter,
                       child: Center(
-                        child: Text(
-                          'تمام‌روز',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.labelSmall,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'تمام‌روز',
+                            maxLines: 1,
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
                         ),
                       ),
                     ),
@@ -331,7 +334,7 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                 child: SingleChildScrollView(
                   controller: _vertical,
                   child: SizedBox(
-                    height: 24 * _hourHeight,
+                    height: 24 * _hourHeight + 80,
                     child: Stack(
                       clipBehavior: Clip.hardEdge,
                       children: [
@@ -342,12 +345,15 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                             top: hour * _hourHeight + 4,
                             right: 2,
                             width: _gutter - 8,
-                            child: Text(
-                              persianDigits(
-                                '${hour.toString().padLeft(2, '0')}:00',
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                persianDigits(
+                                  '${hour.toString().padLeft(2, '0')}:00',
+                                ),
+                                maxLines: 1,
+                                style: Theme.of(context).textTheme.labelSmall,
                               ),
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.labelSmall,
                             ),
                           ),
                         for (final placement in blocks)

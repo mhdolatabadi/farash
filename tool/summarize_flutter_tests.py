@@ -7,6 +7,7 @@ import sys
 def summarize(lines):
     names = {}
     errors = collections.Counter()
+    details = collections.Counter()
     for line in lines:
         try:
             event = json.loads(line)
@@ -18,10 +19,10 @@ def summarize(lines):
             names[event['test']['id']] = event['test']['name']
         elif kind == 'print' and 'EXCEPTION CAUGHT' in event.get('message', ''):
             test_id = event.get('testID')
-            if errors[(test_id, 'detail')] < 2:
+            if details[test_id] < 2:
                 print(f"DETAIL: {names.get(test_id, test_id)}")
                 print(event['message'][:6000])
-            errors[(test_id, 'detail')] += 1
+            details[test_id] += 1
         elif kind == 'error':
             test_id = event.get('testID')
             errors[test_id] += 1

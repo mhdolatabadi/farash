@@ -118,6 +118,18 @@ class CaptureNavigationTest(unittest.TestCase):
         tap.assert_not_called()
 
 
+    def test_launcher_anr_recovers_only_the_identified_system_package(self):
+        xml = b'<hierarchy><node text="Quickstep isn&#39;t responding" /><node resource-id="android:id/aerr_wait" bounds="[0,0][100,100]" /></hierarchy>'
+        with patch.object(capture, 'adb') as adb, \
+                patch.object(capture.time, 'sleep'):
+            self.assertTrue(capture.clear_launcher_anr(xml))
+        self.assertEqual(adb.call_args_list[0].args,
+                         ('shell', 'am', 'force-stop', 'com.android.launcher3'))
+        with patch.object(capture, 'adb') as adb:
+            self.assertFalse(capture.clear_launcher_anr(
+                b'<hierarchy><node text="Menval isn&#39;t responding" /></hierarchy>'))
+        adb.assert_not_called()
+
     def test_main_restores_emulator_after_success(self):
         with patch.object(capture, 'capture_review') as review, \
                 patch.object(capture, 'adb') as adb:
