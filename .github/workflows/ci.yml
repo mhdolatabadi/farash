@@ -195,10 +195,13 @@ jobs:
           WEB: ${{ needs.web-build.result }}
           ANDROID: ${{ needs.android-build.result }}
         run: |
-          [[ "$SCOPE" == success ]]
-          expected=success
-          if [[ "$APP" == false ]]; then expected=skipped; fi
-          [[ "$TESTS" == "$expected" && "$WEB" == "$expected" && "$ANDROID" == "$expected" ]]
+          [[ "$SCOPE" == success ]] || exit 1
+          case "$APP" in
+            true) expected=success ;;
+            false) expected=skipped ;;
+            *) exit 1 ;;
+          esac
+          [[ "$TESTS" == "$expected" && "$WEB" == "$expected" && "$ANDROID" == "$expected" ]] || exit 1
 
   api:
     runs-on: ubuntu-latest
@@ -354,9 +357,9 @@ jobs:
           BUILD: ${{ needs.android-build.result }}
           CAPTURES: ${{ needs.android-captures.result }}
         run: |
-          [[ "$SCOPE" == success ]]
+          [[ "$SCOPE" == success ]] || exit 1
           if [[ "$VISUAL" == true ]]; then
-            [[ "$BUILD" == success && "$CAPTURES" == success ]]
+            [[ "$BUILD" == success && "$CAPTURES" == success ]] || exit 1
           else
-            [[ "$VISUAL" == false && "$CAPTURES" == skipped ]]
+            [[ "$VISUAL" == false && "$CAPTURES" == skipped ]] || exit 1
           fi
