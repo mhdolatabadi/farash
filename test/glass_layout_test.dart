@@ -104,7 +104,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       if (layout.$1 == 'landscape-ime') {
-        await tester.enterText(find.byType(TextField), 'پیش‌نویس محفوظ');
+        await tester.enterText(
+          find.byKey(const ValueKey('inline-task-title')),
+          'پیش‌نویس محفوظ',
+        );
         tester.view.viewInsets = const FakeViewPadding(bottom: 160);
         await tester.pumpAndSettle();
         expect(find.text('پیش‌نویس محفوظ'), findsOneWidget);
@@ -128,10 +131,7 @@ void main() {
         await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
         await tester.pumpAndSettle();
         final capture = tester.getRect(
-          find.ancestor(
-            of: find.byType(TextField),
-            matching: find.byType(Panel),
-          ),
+          find.byKey(const ValueKey('inline-task-title')),
         );
         expect(tester.getRect(last).bottom, lessThanOrEqualTo(capture.top));
         await tester.drag(find.byType(Scrollable).first, const Offset(0, 800));
@@ -180,27 +180,34 @@ void main() {
       expect(find.byType(TaskDetailEditor), findsNothing);
       expect(tester.takeException(), isNull);
       // Today and focus lay out without overflow too.
-      final phoneNav = find.byType(NavigationBar).evaluate().isNotEmpty;
-      final rail = find.byType(NavigationRail).evaluate().isNotEmpty;
-      Finder destination(String label) => phoneNav
-          ? find.widgetWithText(NavigationDestination, label)
-          : find.descendant(
-              of: find.byType(NavigationRail),
-              matching: find.text(label),
-            );
-      await tester.tap(
-        phoneNav || rail
-            ? destination('امروز')
-            : find.byKey(const ValueKey('view-today')),
-      );
+      final compact = layout.$2.width < sidebarBreakpoint;
+      if (compact) {
+        await tester.tap(find.byKey(const ValueKey('compact-navigation')));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.descendant(
+            of: find.byType(PopupMenuItem<String>),
+            matching: find.text('امروز'),
+          ),
+        );
+      } else {
+        await tester.tap(find.byKey(const ValueKey('view-today')));
+      }
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       await _capture(tester, captureKey, '${layout.$1}-today');
-      await tester.tap(
-        phoneNav || rail
-            ? destination('تمرکز')
-            : find.widgetWithText(ListTile, 'تمرکز').first,
-      );
+      if (compact) {
+        await tester.tap(find.byKey(const ValueKey('compact-navigation')));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.descendant(
+            of: find.byType(PopupMenuItem<String>),
+            matching: find.text('تمرکز'),
+          ),
+        );
+      } else {
+        await tester.tap(find.widgetWithText(ListTile, 'تمرکز').first);
+      }
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       await _capture(tester, captureKey, '${layout.$1}-focus');

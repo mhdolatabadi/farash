@@ -82,8 +82,9 @@ void main() {
             home: Builder(
               builder: (context) => Scaffold(
                 body: TextButton(
-                  onPressed: () => showDialog<void>(
+                  onPressed: () => showModalBottomSheet<void>(
                     context: context,
+                    isScrollControlled: true,
                     builder: (_) => QuickAddDialog(
                       session: session,
                       projectName: 'صندوق ورودی',
@@ -98,7 +99,10 @@ void main() {
       );
       await tester.tap(find.text('capture'));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'مطالعه هر روز');
+      await tester.enterText(
+        find.byKey(const ValueKey('quick-add-title')),
+        'مطالعه هر روز',
+      );
       await tester.pumpAndSettle();
       await tester.ensureVisible(
         find.widgetWithText(FilledButton, 'افزودن کار'),
@@ -106,7 +110,12 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'افزودن کار'));
       await tester.pumpAndSettle();
       expect(api.all, hasLength(1));
-      expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('quick-add-title')))
+            .enabled,
+        isFalse,
+      );
       expect(
         find.textContaining('کار ساخته شد اما تکرارش ذخیره نشد.'),
         findsOneWidget,

@@ -137,8 +137,18 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                 ),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(14),
-                                  color: daysBetween(widget.selected, day) == 0
-                                      ? scheme.primaryContainer
+                                  color: scheme.surface,
+                                  boxShadow:
+                                      daysBetween(widget.selected, day) == 0
+                                      ? [
+                                          BoxShadow(
+                                            color: scheme.shadow.withValues(
+                                              alpha: 0.09,
+                                            ),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
                                       : null,
                                 ),
                                 child: Column(
@@ -194,16 +204,15 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                         width: dayWidth,
                         child: Container(
                           decoration: BoxDecoration(
-                            border: Border(
-                              right: BorderSide(
-                                color: scheme.outlineVariant,
-                                width: 0.5,
+                            color: scheme.surface,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: scheme.shadow.withValues(alpha: 0.035),
+                                blurRadius: 8,
+                                offset: const Offset(0, 1),
                               ),
-                              bottom: BorderSide(
-                                color: scheme.outlineVariant,
-                                width: 0.5,
-                              ),
-                            ),
+                            ],
                           ),
                           padding: const EdgeInsets.all(3),
                           child: Column(
@@ -285,26 +294,8 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                     child: Stack(
                       clipBehavior: Clip.hardEdge,
                       children: [
-                        for (var hour = 0; hour <= 24; hour++)
-                          Positioned(
-                            top: hour * _hourHeight,
-                            right: _gutter,
-                            left: 0,
-                            child: Container(
-                              height: 1,
-                              color: scheme.outlineVariant,
-                            ),
-                          ),
-                        for (var day = 0; day <= 7; day++)
-                          Positioned(
-                            top: 0,
-                            bottom: 0,
-                            right: _gutter + day * dayWidth,
-                            child: Container(
-                              width: 0.5,
-                              color: scheme.outlineVariant,
-                            ),
-                          ),
+                        // The hour labels preserve temporal position.
+                        // No horizontal or vertical separator strokes.
                         for (var hour = 0; hour < 24; hour++)
                           Positioned(
                             top: hour * _hourHeight + 4,
@@ -326,7 +317,24 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                             right: _gutter + todayIndex * dayWidth,
                             width: dayWidth,
                             child: IgnorePointer(
-                              child: Container(height: 2, color: scheme.error),
+                              child: Center(
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: scheme.onSurfaceVariant,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: scheme.shadow.withValues(
+                                          alpha: 0.12,
+                                        ),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                       ],
@@ -380,7 +388,9 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
         button: true,
         child: Material(
           color: color,
-          borderRadius: BorderRadius.circular(7),
+          elevation: 1.3,
+          shadowColor: scheme.shadow.withValues(alpha: 0.19),
+          borderRadius: BorderRadius.circular(9),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             key: ValueKey('week-timed-${block.task.id}-${block.dayIndex}'),

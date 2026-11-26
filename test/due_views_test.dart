@@ -442,7 +442,7 @@ void main() {
     api.archivedProjects.add('old');
     await pump(tester, DueView.today);
 
-    expect(find.text('دیرشده'), findsOneWidget);
+    expect(find.text('دیرشده'), findsNothing);
     expect(find.text('Late'), findsOneWidget);
     expect(find.text('Now'), findsOneWidget);
     // Under the «امروز» heading the rows don't repeat «امروز».
@@ -453,8 +453,8 @@ void main() {
     for (final hidden in ['Tomorrow', 'Undated', 'Done', 'Archived']) {
       expect(find.text(hidden), findsNothing);
     }
-    // Each task names its project; tapping opens it in the editor here.
-    expect(find.text('کار'), findsOneWidget);
+    // The minimal list omits redundant project tags, but editing stays reachable.
+    expect(find.text('کار'), findsNothing);
     await tester.tap(find.text('Now'));
     await tester.pumpAndSettle();
     expect(find.byType(TaskDetailEditor), findsOneWidget);
@@ -464,14 +464,14 @@ void main() {
     expect(find.byType(TaskDetailEditor), findsNothing);
 
     // Late tasks move to today together, and come back with undo.
-    await tester.tap(find.text('انتقال همه به امروز'));
+    await tester.tap(find.text('انتقال کارهای عقب‌افتاده به امروز'));
     await tester.pumpAndSettle();
     expect(find.text('دیرشده'), findsNothing);
     expect(api.byTitle('Late').due, TaskDue.onDay(today));
     await tester.tap(find.text('برگرداندن'));
     await tester.pumpAndSettle();
     expect(api.byTitle('Late').due, TaskDue.onDay(day(-2)));
-    expect(find.text('دیرشده'), findsOneWidget);
+    expect(find.text('Late'), findsOneWidget);
   });
 
   testWidgets('checking a task off in today completes it with undo', (
@@ -483,12 +483,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Now'), findsNothing);
     expect(api.byTitle('Now').isCompleted, isTrue);
-    expect(
-      find.text(
-        'برای امروز کاری نمانده؛ از کادر پایین کار تازه‌ای اضافه کنید.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('کاری برای امروز نمانده.'), findsOneWidget);
     await tester.tap(find.text('برگرداندن'));
     await tester.pumpAndSettle();
     expect(find.text('Now'), findsOneWidget);

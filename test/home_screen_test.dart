@@ -37,6 +37,18 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> openCompact(WidgetTester tester, String label) async {
+    await tester.tap(find.byKey(const ValueKey('compact-navigation')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(PopupMenuItem<String>),
+        matching: find.text(label),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('narrow RTL drawer owns selection ink per row after scroll', (
     tester,
   ) async {
@@ -121,25 +133,21 @@ void main() {
     expect(api.all, hasLength(1));
   });
 
-  testWidgets('medium widths move the destinations to a rail', (tester) async {
+  testWidgets('medium widths have a compact menu and inline input', (
+    tester,
+  ) async {
     await pumpHome(tester, size: const Size(700, 800));
-    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationRail), findsNothing);
     expect(find.byType(NavigationBar), findsNothing);
-    await tester.tap(
-      find.descendant(
-        of: find.byType(NavigationRail),
-        matching: find.text('امروز'),
-      ),
-    );
-    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('inline-task-title')), findsOneWidget);
+    await openCompact(tester, 'امروز');
     expect(find.byType(DueTasksView), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('Back returns to the start destination first', (tester) async {
     await pumpHome(tester, size: const Size(400, 800));
-    await tester.tap(find.widgetWithText(NavigationDestination, 'تمرکز'));
-    await tester.pumpAndSettle();
+    await openCompact(tester, 'تمرکز');
     expect(find.byType(ProjectTasksView), findsNothing);
 
     await tester.binding.handlePopRoute();
@@ -147,34 +155,33 @@ void main() {
     expect(find.byType(ProjectTasksView), findsOneWidget);
   });
 
-  testWidgets('running focus uses a compact status dot in navigation', (
+  testWidgets('compact navigation keeps optional tools gated by availability', (
     tester,
   ) async {
     await pumpHome(tester, size: const Size(320, 740));
-    final runningDot = find.byWidgetPredicate(
-      (w) => w is Badge && w.label == null && w.isLabelVisible,
-    );
-    await tester.tap(find.widgetWithText(NavigationDestination, 'تمرکز'));
+    await tester.tap(find.byKey(const ValueKey('compact-navigation')));
     await tester.pumpAndSettle();
-    expect(runningDot, findsNothing);
-    // At 320px the global capture FAB can cover the lower action until
-    // the focus surface is scrolled. Tap it only once in view.
-    await tester.drag(
-      find.byType(CustomScrollView).last,
-      const Offset(0, -220),
-    );
+
+    // No time-tracking API is configured for this test account.
+    expect(find.text('زمان‌ها'), findsNothing);
+    expect(find.text('بخش‌های بیشتر'), findsOneWidget);
+
+    await tester.tap(find.text('بخش‌های بیشتر'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('شروع تمرکز'));
-    await tester.pump();
-    expect(runningDot, findsWidgets);
-    expect(
-      find.byWidgetPredicate((w) => w is Badge && w.label is Text),
-      findsNothing,
-    );
+    // The overflow entry opens the project drawer; its account action is a
+    // tooltip on a scrollable footer, not a visible Text widget.
+    expect(find.byType(Drawer), findsOneWidget);
+    expect(find.text('صندوق ورودی'), findsWidgets);
     expect(tester.takeException(), isNull);
-    await tester.tap(find.text('مکث'));
-    await tester.pump();
-    expect(runningDot, findsNothing);
+  });
+
+  testWidgets('Focus remains reachable through the compact menu', (
+    tester,
+  ) async {
+    await pumpHome(tester, size: const Size(320, 740));
+    await openCompact(tester, 'تمرکز');
+    expect(find.text('شروع تمرکز'), findsWidgets);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('wide screens keep the sidebar open', (tester) async {
@@ -319,36 +326,56 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('tool screens keep quick capture visible on a narrow phone', (
+  testWidgets('bottom input captures a task without opening the sheet', (
+    tester,
+  ) async {
+    await pumpHome(tester, size: const Size(400, 800));
+    await tester.enterText(
+      find.byKey(const ValueKey('inline-task-title')),
+      'کار تازه',
+    );
+    await tester.tap(find.byKey(const ValueKey('inline-task-submit')));
+    await tester.pumpAndSettle();
+    expect(find.byType(QuickAddDialog), findsNothing);
+    expect(find.text('کار اضافه شد.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('secondary screens keep the inline capture field', (
     tester,
   ) async {
     await pumpHome(tester, size: const Size(320, 740));
-    await tester.tap(find.widgetWithText(NavigationDestination, 'تمرکز'));
+    await openCompact(tester, 'تمرکز');
+    expect(find.byKey(const ValueKey('inline-task-title')), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('inline-task-title')),
+      'کار زمان‌دار',
+    );
+    await tester.tap(find.byKey(const ValueKey('quick-add-more')));
     await tester.pumpAndSettle();
-    final focusError = tester.takeException();
-    expect(focusError, isNull);
-    expect(find.byTooltip('افزودن کار'), findsOneWidget);
-    await tester.tap(find.byTooltip('افزودن کار'));
-    await tester.pumpAndSettle();
-    final dialogError = tester.takeException();
-    expect(dialogError, isNull);
     expect(find.byType(QuickAddDialog), findsOneWidget);
-    await tester.tap(find.text('بستن'));
+    final field = tester.widget<TextField>(
+      find.byKey(const ValueKey('quick-add-title')),
+    );
+    expect(field.controller!.text, 'کار زمان‌دار');
+    await tester.tap(find.byTooltip('بستن').last);
     await tester.pumpAndSettle();
     expect(find.byType(QuickAddDialog), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('focus quick capture does not duplicate list capture', (
+  testWidgets('advanced capture is a bottom sheet, not a side drawer', (
     tester,
   ) async {
     await pumpHome(tester, size: const Size(400, 800));
     expect(find.byType(FloatingActionButton), findsNothing);
-    await tester.tap(find.widgetWithText(NavigationDestination, 'تمرکز'));
+    expect(find.byType(NavigationBar), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('quick-add-more')));
     await tester.pumpAndSettle();
-    expect(find.byType(FloatingActionButton), findsOneWidget);
-    await tester.tap(find.widgetWithText(NavigationDestination, 'کارها'));
-    await tester.pumpAndSettle();
-    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.byType(QuickAddDialog), findsOneWidget);
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.text('تاریخ و ساعت (اختیاری)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

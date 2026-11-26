@@ -22,6 +22,9 @@ Future<TaskDates?> showDuePicker(
   context: context,
   isScrollControlled: true,
   useSafeArea: true,
+  shape: const RoundedRectangleBorder(
+    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  ),
   builder: (context) => DuePicker(initial: initial, dueOnly: dueOnly, now: now),
 );
 
@@ -107,14 +110,10 @@ class _DuePickerState extends State<DuePicker> {
     _month = (index ~/ 12, index % 12 + 1);
   });
 
-  Future<void> _pickTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _time ?? const TimeOfDay(hour: 9, minute: 0),
-      helpText: 'ساعت انجام',
-    );
-    if (picked != null) setState(() => _time = picked);
-  }
+  // The date and its clock time are edited in this single sheet; opening
+  // a second modal for the clock makes the scheduling flow needlessly long.
+  void _enableTime() =>
+      setState(() => _time ??= const TimeOfDay(hour: 9, minute: 0));
 
   Future<void> _confirm() async {
     final navigator = Navigator.of(context);
@@ -183,7 +182,7 @@ class _DuePickerState extends State<DuePicker> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              widget.dueOnly ? 'تغییر تاریخ' : 'زمان‌بندی',
+              widget.dueOnly ? 'تغییر تاریخ' : 'تاریخ و ساعت',
               style: theme.textTheme.titleLarge,
             ),
             const SizedBox(height: 12),
@@ -244,40 +243,77 @@ class _DuePickerState extends State<DuePicker> {
               onShift: (by) => _shiftMonth(by, settings),
             ),
             if (_target == _Target.due && _day != null) ...[
-              const Divider(),
-              Row(
+              const SizedBox(height: 8),
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
                 children: [
-                  Expanded(
-                    child: _time == null
-                        ? Align(
-                            alignment: AlignmentDirectional.centerStart,
-                            child: TextButton.icon(
-                              onPressed: _pickTime,
-                              icon: const Icon(Icons.schedule),
-                              label: const Text('افزودن ساعت'),
+                  Text('ساعت انجام', style: theme.textTheme.bodyMedium),
+                  if (_time == null)
+                    TextButton.icon(
+                      onPressed: _enableTime,
+                      icon: const Icon(Icons.schedule_outlined),
+                      label: const Text('افزودن ساعت'),
+                    )
+                  else ...[
+                    DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: _time!.hour,
+                        menuMaxHeight: 320,
+                        items: [
+                          for (var hour = 0; hour < 24; hour++)
+                            DropdownMenuItem<int>(
+                              value: hour,
+                              child: Text(hour.toString().padLeft(2, '0')),
                             ),
-                          )
-                        : Wrap(
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              TextButton.icon(
-                                onPressed: _pickTime,
-                                icon: const Icon(Icons.schedule),
-                                label: Text(
-                                  'ساعت ${formatTime(DateTime(2000, 1, 1, _time!.hour, _time!.minute))}',
-                                ),
-                              ),
-                              IconButton(
-                                tooltip: 'حذف ساعت',
-                                onPressed: () => setState(() {
-                                  _time = null;
-                                  _duration = null;
-                                }),
-                                icon: const Icon(Icons.close),
-                              ),
-                            ],
-                          ),
-                  ),
+                        ],
+                        onChanged: (hour) {
+                          if (hour == null) return;
+                          setState(
+                            () => _time = TimeOfDay(
+                              hour: hour,
+                              minute: _time!.minute,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 6),
+                      child: Text(':'),
+                    ),
+                    DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: _time!.minute,
+                        menuMaxHeight: 320,
+                        items: [
+                          for (var minute = 0; minute < 60; minute++)
+                            DropdownMenuItem<int>(
+                              value: minute,
+                              child: Text(minute.toString().padLeft(2, '0')),
+                            ),
+                        ],
+                        onChanged: (minute) {
+                          if (minute == null) return;
+                          setState(
+                            () => _time = TimeOfDay(
+                              hour: _time!.hour,
+                              minute: minute,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'حذف ساعت',
+                      onPressed: () => setState(() {
+                        _time = null;
+                        _duration = null;
+                      }),
+                      icon: const Icon(Icons.close, size: 18),
+                    ),
+                  ],
                 ],
               ),
               if (_time != null && !widget.dueOnly)

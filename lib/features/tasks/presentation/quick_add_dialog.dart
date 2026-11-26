@@ -3,34 +3,77 @@ import 'package:menval/core/calendar/calendar_scope.dart';
 import 'package:menval/features/tasks/application/quick_capture.dart';
 import 'package:menval/features/tasks/data/quick_parse.dart';
 import 'package:menval/features/tasks/data/task.dart';
+import 'package:menval/features/tasks/presentation/due_picker.dart';
 
+/// The advanced capture surface, presented as a bottom sheet by the shell.
 class QuickAddDialog extends StatefulWidget {
   const QuickAddDialog({
     super.key,
     required this.session,
     required this.projectName,
+    this.initialText = '',
   });
+
   final QuickCaptureSession session;
   final String projectName;
+  final String initialText;
+
   @override
   State<QuickAddDialog> createState() => _QuickAddDialogState();
 }
 
 class _QuickAddDialogState extends State<QuickAddDialog> {
-  final _text = TextEditingController();
+  late final TextEditingController _text;
   final _ignore = <(int, int)>{};
+  TaskDue? _scheduledDue;
   bool _busy = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _text = TextEditingController(text: widget.initialText);
+  }
+
   @override
   void dispose() {
     _text.dispose();
     super.dispose();
   }
 
+  Future<void> _chooseDateTime() async {
+    if (_busy) return;
+    FocusScope.of(context).unfocus();
+    final chosen = await showDuePicker(
+      context,
+      initial: TaskDates(due: _scheduledDue),
+      dueOnly: true,
+    );
+    if (mounted && chosen != null) {
+      setState(() => _scheduledDue = chosen.due);
+    }
+  }
+
   Future<void> _submit() async {
     if (_busy || _text.text.trim().isEmpty) return;
     final raw = _text.text.trim();
     final parsed = parseQuickTask(raw, now: DateTime.now(), ignore: _ignore);
+    final due = _scheduledDue;
+    final capture = due == null
+        ? parsed
+        : QuickTask(
+            title: parsed.title,
+            day: due.day,
+            hour: due.isTimed ? due.localTime!.hour : null,
+            minute: due.isTimed ? due.localTime!.minute : 0,
+            deadline: parsed.deadline,
+            priority: parsed.priority,
+            project: parsed.project,
+            section: parsed.section,
+            recurrence: parsed.recurrence,
+            labels: parsed.labels,
+            tokens: parsed.tokens,
+          );
     final calendar = CalendarScope.of(context).isJalali
         ? 'jalali'
         : 'gregorian';
@@ -40,7 +83,7 @@ class _QuickAddDialogState extends State<QuickAddDialog> {
     });
     try {
       final task = await widget.session.capture(
-        parsed,
+        capture,
         raw,
         calendar: calendar,
       );
@@ -54,6 +97,12 @@ class _QuickAddDialogState extends State<QuickAddDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final availableHeight =
+        MediaQuery.sizeOf(context).height -
+        MediaQuery.viewInsetsOf(context).bottom -
+        24;
+    final height = availableHeight.clamp(210.0, 445.0).toDouble();
     final parsed = parseQuickTask(
       _text.text,
       now: DateTime.now(),
@@ -61,96 +110,167 @@ class _QuickAddDialogState extends State<QuickAddDialog> {
     );
     return PopScope(
       canPop: !_busy,
-      child: AlertDialog(
-        // Make room for the action buttons on compact Android screens.
-        insetPadding: EdgeInsets.symmetric(
-          horizontal: MediaQuery.sizeOf(context).width < 400 ? 16 : 40,
-          vertical: 24,
-        ),
-        title: const Text('افزودن سریع کار'),
-        scrollable: true,
-        content: SizedBox(
-          width: 520,
+      child: SizedBox(
+        height: height,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('پروژه: ${widget.projectName}'),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _text,
-                autofocus: true,
-                enabled: !_busy && !widget.session.hasPendingRecurrence,
-                maxLength: 500,
-                buildCounter:
-                    (
-                      _, {
-                      required currentLength,
-                      required isFocused,
-                      maxLength,
-                    }) => null,
-                decoration: const InputDecoration(
-                  labelText: 'کار تازه',
-                  hintText: 'مطالعه هر روز #کار /برنامه',
-                ),
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _submit(),
-                onChanged: (_) => setState(() {
-                  _ignore.clear();
-                  _error = null;
-                }),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final token in parsed.tokens)
-                    InputChip(
-                      label: Text(token.text),
-                      deleteButtonTooltipMessage:
-                          'نادیده گرفتن «${token.text}»',
-                      onDeleted: _busy || widget.session.hasPendingRecurrence
-                          ? null
-                          : () => setState(
-                              () => _ignore.add((token.start, token.end)),
-                            ),
-                    ),
-                ],
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.outlineVariant,
+                    borderRadius: BorderRadius.circular(4),
                   ),
                 ),
-              ],
-              if (_busy)
-                const LinearProgressIndicator(
-                  semanticsLabel: 'در حال ذخیرهٔ کار',
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'کار جدید',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'بستن',
+                    onPressed: _busy ? null : () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        key: const ValueKey('quick-add-title'),
+                        controller: _text,
+                        autofocus: true,
+                        enabled: !_busy && !widget.session.hasPendingRecurrence,
+                        maxLength: 500,
+                        buildCounter:
+                            (
+                              _, {
+                              required currentLength,
+                              required isFocused,
+                              maxLength,
+                            }) => null,
+                        decoration: const InputDecoration(
+                          hintText: 'عنوان کار',
+                          border: InputBorder.none,
+                          isDense: true,
+                        ),
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _submit(),
+                        onChanged: (_) => setState(() {
+                          _ignore.clear();
+                          _error = null;
+                        }),
+                      ),
+                      const SizedBox(height: 12),
+                      Material(
+                        color: colors.surface,
+                        elevation: 1,
+                        shadowColor: colors.shadow.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          onTap: _busy ? null : _chooseDateTime,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.schedule_outlined, size: 20),
+                                const SizedBox(width: 9),
+                                Expanded(
+                                  child: Text(
+                                    _scheduledDue == null
+                                        ? 'تاریخ و ساعت (اختیاری)'
+                                        : describeDates(
+                                            TaskDates(due: _scheduledDue),
+                                            CalendarScope.of(context),
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        widget.projectName,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      if (parsed.tokens.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            for (final token in parsed.tokens)
+                              InputChip(
+                                label: Text(token.text),
+                                deleteButtonTooltipMessage:
+                                    'نادیده گرفتن «${token.text}»',
+                                onDeleted:
+                                    _busy || widget.session.hasPendingRecurrence
+                                    ? null
+                                    : () => setState(
+                                        () => _ignore.add((
+                                          token.start,
+                                          token.end,
+                                        )),
+                                      ),
+                              ),
+                          ],
+                        ),
+                      ],
+                      if (_error != null) ...[
+                        const SizedBox(height: 12),
+                        Semantics(
+                          liveRegion: true,
+                          child: Text(
+                            _error!,
+                            style: TextStyle(color: colors.error),
+                          ),
+                        ),
+                      ],
+                      if (_busy)
+                        const LinearProgressIndicator(
+                          semanticsLabel: 'در حال ذخیرهٔ کار',
+                        ),
+                    ],
+                  ),
                 ),
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: _busy ? null : _submit,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  child: Text(
+                    widget.session.hasPendingRecurrence
+                        ? 'ذخیرهٔ تکرار'
+                        : 'افزودن کار',
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: _busy ? null : () => Navigator.pop(context),
-            child: const Text('بستن'),
-          ),
-          FilledButton(
-            onPressed: _busy ? null : _submit,
-            child: Text(
-              widget.session.hasPendingRecurrence
-                  ? 'ذخیرهٔ تکرار'
-                  : 'افزودن کار',
-            ),
-          ),
-        ],
       ),
     );
   }

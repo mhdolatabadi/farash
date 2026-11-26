@@ -198,7 +198,14 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('عادت‌ها'));
+    await tester.tap(find.byKey(const ValueKey('compact-navigation')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(PopupMenuItem<String>),
+        matching: find.text('عادت‌ها'),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.byType(HabitsView), findsOneWidget);
     expect(find.text('ورزش صبحگاهی'), findsOneWidget);

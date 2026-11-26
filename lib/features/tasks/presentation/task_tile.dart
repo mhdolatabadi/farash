@@ -35,6 +35,7 @@ class TaskTile extends StatelessWidget {
     this.tag,
     this.labels = const [],
     this.showToday = true,
+    this.showDue = true,
     this.dense = false,
   });
 
@@ -76,6 +77,9 @@ class TaskTile extends StatelessWidget {
   /// time or duration still shows.
   final bool showToday;
 
+  /// On a clock lane the due time belongs to its rail, not repeated in a pill.
+  final bool showDue;
+
   /// Tighter rows for the soft «امروز» well; the check keeps its 48 target.
   final bool dense;
 
@@ -85,7 +89,7 @@ class TaskTile extends StatelessWidget {
     final done = task.isCompleted;
     final firstLine = descriptionPreview(task.description);
     final checklist = parseChecklist(task.description);
-    final dated = task.due != null || task.deadline != null;
+    final dated = (showDue && task.due != null) || task.deadline != null;
     final row = InkWell(
       onTap: onOpen,
       onLongPress: onLongPress,
@@ -159,7 +163,11 @@ class TaskTile extends StatelessWidget {
                               total: checklist.length,
                             ),
                           if (dated)
-                            TaskDateLabels(task: task, showToday: showToday),
+                            TaskDateLabels(
+                              task: task,
+                              showToday: showToday,
+                              showDue: showDue,
+                            ),
                           ?tag,
                           for (final label in labels) LabelTag(label: label),
                         ],
@@ -347,11 +355,13 @@ class TaskDateLabels extends StatelessWidget {
     required this.task,
     this.now,
     this.showToday = true,
+    this.showDue = true,
   });
 
   final Task task;
   final DateTime? now;
   final bool showToday;
+  final bool showDue;
 
   @override
   Widget build(BuildContext context) {
@@ -428,6 +438,7 @@ class TaskDateLabels extends StatelessWidget {
       spacing: 12,
       children: [
         if (due != null &&
+            showDue &&
             !(quietToday && !due.isTimed && task.durationMinutes == null))
           label(
             due.isTimed ? Icons.schedule : Icons.event,

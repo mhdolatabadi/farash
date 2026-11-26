@@ -21,7 +21,7 @@ import 'package:menval/features/tasks/presentation/project_tasks_view.dart';
 import 'package:menval/features/tasks/presentation/task_detail_sheet.dart';
 import 'package:menval/features/tasks/presentation/task_messages.dart';
 import 'package:menval/features/tasks/presentation/task_tile.dart';
-import 'package:menval/features/tasks/presentation/today_bento.dart';
+import 'package:menval/features/tasks/presentation/today_workspace.dart';
 
 /// The views that gather tasks by date from every project.
 enum DueView {
@@ -65,6 +65,7 @@ class DueTasksView extends StatefulWidget {
     this.onOpenFocus,
     this.habits,
     this.onOpenHabits,
+    this.showQuickCapture = true,
   });
 
   final DueView view;
@@ -94,6 +95,9 @@ class DueTasksView extends StatefulWidget {
   final VoidCallback? onOpenFocus;
   final HabitsController? habits;
   final VoidCallback? onOpenHabits;
+
+  /// The home shell can use its floating capture button instead of a second bar.
+  final bool showQuickCapture;
 
   @override
   State<DueTasksView> createState() => _DueTasksViewState();
@@ -419,14 +423,15 @@ class _DueTasksViewState extends State<DueTasksView> {
     final tile = TaskTile(
       key: ValueKey(task.id),
       task: task,
-      divider: !last,
+      divider: !_bento && !last,
       dense: true,
       showToday: widget.view != DueView.today || widget.label != null,
-      tag: project == null ? null : _ProjectTag(project: project),
+      showDue: true,
+      tag: _bento || project == null ? null : _ProjectTag(project: project),
       labels: [for (final id in task.labelIds) ?widget.labels?.byId(id)],
       onToggle: () => _complete(task),
       onOpen: () => _openTask(task),
-      trailing: task.due == null
+      trailing: _bento || task.due == null
           ? null
           : IconButton(
               tooltip: 'تغییر روز «${task.title}»',
@@ -486,45 +491,30 @@ class _DueTasksViewState extends State<DueTasksView> {
     );
   }
 
+  /// One unclassified list with optional late-task bulk rescheduling.
   List<Widget> _todayBody() {
-    final settings = CalendarScope.of(context);
     final today = _today;
-    final late = [
-      for (final t in _tasks)
-        if (daysBetween(today, t.due!.day) < 0) t,
+    final overdue = [
+      for (final task in _tasks)
+        if (daysBetween(today, task.due!.day) < 0) task,
     ];
-    final now = [
-      for (final t in _tasks)
-        if (daysBetween(today, t.due!.day) == 0) t,
+    final due = [
+      for (final task in _tasks)
+        if (daysBetween(today, task.due!.day) == 0) task,
     ];
     return [
-      if (late.isNotEmpty) ...[
-        _DayHeading(
-          title: 'دیرشده',
-          late: true,
-          first: true,
-          action: TextButton.icon(
-            onPressed: () => _moveLateToToday(late),
-            icon: const Icon(Icons.event_repeat),
-            label: const Text('انتقال همه به امروز'),
-          ),
-        ),
-        _card(late),
-      ],
-      _DayHeading(
-        title: 'امروز',
-        first: late.isEmpty,
-        // The bento's date tile already says which day it is.
-        detail: _bento
-            ? null
-            : formatDate(today, settings, today: today, withWeekday: true),
+      TodayWorkspace(
+        today: today,
+        overdueTasks: overdue,
+        todayTasks: due,
+        done: _doneToday,
+        focus: widget.focus,
+        onOpenFocus: widget.onOpenFocus,
+        habits: widget.habits,
+        onOpenHabits: widget.onOpenHabits,
+        onMoveOverdue: () => _moveLateToToday(overdue),
+        rowBuilder: (task, last) => _row(task, last: last),
       ),
-      if (now.isEmpty)
-        const _Quiet(
-          'برای امروز کاری نمانده؛ از کادر پایین کار تازه‌ای اضافه کنید.',
-        )
-      else
-        _card(now),
     ];
   }
 
@@ -652,6 +642,7 @@ class _DueTasksViewState extends State<DueTasksView> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
+        // All task lists use a readable measure, including Today.
         final inset = width > _maxListWidth ? (width - _maxListWidth) / 2 : 0.0;
         final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
         final topPadding = MediaQuery.paddingOf(context).top;
@@ -664,44 +655,33 @@ class _DueTasksViewState extends State<DueTasksView> {
                 pinned: true,
                 delegate: ListAppBar(
                   background: Soft.ground(context),
-                  title: label?.tag ?? widget.view.title,
-                  subtitle: count,
-                  mark: label != null
+                  title: _bento ? '' : label?.tag ?? widget.view.title,
+                  subtitle: _bento ? '' : count,
+                  mark: _bento
+                      ? const SizedBox.shrink()
+                      : label != null
                       ? Icon(Icons.sell, color: label.swatch)
                       : Icon(
                           widget.view.icon,
                           color: theme.colorScheme.primary,
                         ),
-                  actions: [
-                    IconButton(
-                      tooltip: 'به‌روزرسانی',
-                      onPressed: _load,
-                      icon: const Icon(Icons.refresh),
-                    ),
-                  ],
+                  actions: _bento
+                      ? []
+                      : [
+                          IconButton(
+                            tooltip: 'به‌روزرسانی',
+                            onPressed: _load,
+                            icon: const Icon(Icons.refresh),
+                          ),
+                        ],
                   topPadding: topPadding,
                   inset: inset,
-                  // The bento's tiles carry the count on «امروز».
+                  // This minimal view has no dashboard title or counter.
                   expandedHeight: _bento || constraints.maxHeight < 240
                       ? 0
                       : 24 * scale,
                 ),
               ),
-              if (_bento && !(_loading && _tasks.isEmpty))
-                SliverPadding(
-                  padding: EdgeInsets.symmetric(horizontal: inset),
-                  sliver: SliverToBoxAdapter(
-                    child: TodayBento(
-                      today: _today,
-                      open: _tasks.length,
-                      done: _doneToday,
-                      focus: widget.focus,
-                      onOpenFocus: widget.onOpenFocus,
-                      habits: widget.habits,
-                      onOpenHabits: widget.onOpenHabits,
-                    ),
-                  ),
-                ),
               if (label == null &&
                   (widget.view == DueView.upcoming ||
                       widget.view == DueView.week))
@@ -734,7 +714,11 @@ class _DueTasksViewState extends State<DueTasksView> {
           ),
         );
         // Today is where the day is planned, so it takes new tasks too.
-        if (label != null || widget.view != DueView.today) return list;
+        if (label != null ||
+            widget.view != DueView.today ||
+            !widget.showQuickCapture) {
+          return list;
+        }
         return ColoredBox(
           color: Soft.ground(context),
           child: Column(
@@ -768,14 +752,12 @@ class _DayHeading extends StatelessWidget {
     super.key,
     required this.title,
     this.detail,
-    this.action,
     this.late = false,
     this.first = false,
   });
 
   final String title;
   final String? detail;
-  final Widget? action;
   final bool late;
 
   /// Right under the app bar, whose count already leaves room above.
@@ -820,7 +802,6 @@ class _DayHeading extends StatelessWidget {
               ),
             ),
           ),
-          ?action,
         ],
       ),
     );
