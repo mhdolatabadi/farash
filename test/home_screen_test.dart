@@ -168,7 +168,10 @@ void main() {
 
     await tester.tap(find.text('بخش‌های بیشتر'));
     await tester.pumpAndSettle();
-    expect(find.text('حساب و تنظیمات'), findsWidgets);
+    // The overflow entry opens the project drawer; its account action is a
+    // tooltip on a scrollable footer, not a visible Text widget.
+    expect(find.byType(Drawer), findsOneWidget);
+    expect(find.text('صندوق ورودی'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 
