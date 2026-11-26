@@ -16,6 +16,12 @@ def summarize(lines):
         kind = event.get('type')
         if kind == 'testStart':
             names[event['test']['id']] = event['test']['name']
+        elif kind == 'print' and 'EXCEPTION CAUGHT' in event.get('message', ''):
+            test_id = event.get('testID')
+            if errors[(test_id, 'detail')] < 2:
+                print(f"DETAIL: {names.get(test_id, test_id)}")
+                print(event['message'][:6000])
+            errors[(test_id, 'detail')] += 1
         elif kind == 'error':
             test_id = event.get('testID')
             errors[test_id] += 1

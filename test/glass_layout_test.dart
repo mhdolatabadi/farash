@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:menval/core/settings/start_view.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -92,6 +93,7 @@ void main() {
               child: child!,
             ),
             home: HomeScreen(
+              startView: StartView(value: StartView.inbox),
               email: 'demo@example.com',
               projects: projects,
               tasksApi: api,
@@ -154,6 +156,7 @@ void main() {
         await tester.pumpAndSettle();
         await _capture(tester, captureKey, '${layout.$1}-tasks');
       }
+      await tester.ensureVisible(find.text('ادامهٔ مطالعهٔ کتاب'));
       await tester.tap(find.text('ادامهٔ مطالعهٔ کتاب'));
       await tester.pumpAndSettle();
       expect(find.byType(TaskDetailEditor), findsOneWidget);
@@ -198,6 +201,8 @@ void main() {
       await _capture(tester, captureKey, '${layout.$1}-today');
       if (compact) {
         await tester.tap(find.byKey(const ValueKey('menval-wordmark')));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.widgetWithText(ListTile, 'تمرکز').last);
         await tester.pumpAndSettle();
         await tester.tap(find.widgetWithText(ListTile, 'تمرکز').last);
       } else {

@@ -413,6 +413,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
   Widget build(BuildContext context, double shrink, bool overlaps) {
     final muted = theme.colorScheme.onSurfaceVariant;
     return Container(
+      height: height,
       decoration: BoxDecoration(color: ground, border: null),
       padding: EdgeInsets.symmetric(horizontal: inset + Space.gutter - 2),
       child: Row(
