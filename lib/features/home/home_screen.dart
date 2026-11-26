@@ -539,6 +539,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             _switchSection(4);
                           } else if (choice == 'focus') {
                             _switchSection(2);
+                          } else if (choice == 'times') {
+                            _switchSection(3);
                           } else if (choice == 'more') {
                             _scaffoldKey.currentState?.openDrawer();
                           }
@@ -565,6 +567,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             value: 'focus',
                             child: Text('تمرکز'),
                           ),
+                          if (_tracker != null)
+                            const PopupMenuItem(
+                              value: 'times',
+                              child: Text('زمان‌ها'),
+                            ),
                           const PopupMenuItem(
                             value: 'more',
                             child: Text('بخش‌های بیشتر'),

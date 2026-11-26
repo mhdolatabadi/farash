@@ -160,6 +160,25 @@ void main() {
     expect(find.byType(ProjectTasksView), findsOneWidget);
   });
 
+  testWidgets('desktop overflow keeps optional tools gated by availability', (
+    tester,
+  ) async {
+    await pumpHome(tester, size: const Size(1200, 800));
+    await tester.tap(find.byKey(const ValueKey('compact-navigation')));
+    await tester.pumpAndSettle();
+
+    // No time-tracking API is configured for this test account.
+    expect(find.text('زمان‌ها'), findsNothing);
+    expect(find.text('بخش‌های بیشتر'), findsOneWidget);
+
+    await tester.tap(find.text('بخش‌های بیشتر'));
+    await tester.pumpAndSettle();
+    // The overflow entry opens the project drawer; its account action is a
+    // tooltip on a scrollable footer, not a visible Text widget.
+    expect(find.text('صندوق ورودی'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Focus remains reachable through the compact menu', (
     tester,
   ) async {
