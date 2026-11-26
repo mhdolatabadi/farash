@@ -20,8 +20,8 @@ export FARASH_IMAGE_TAG="$revision"
 export FARASH_BACKUP_DIR="${FARASH_BACKUP_DIR:-$config_dir/backups}"
 source ./compose-command.sh
 
-# Pull both immutable application images before changing running containers.
-farash_compose pull api web
+# CI preloads exact-commit images over SSH. Only missing images need the CDN.
+farash_compose pull --policy missing api web
 farash_compose up -d --no-deps --wait postgres
 bash ./backup.sh
 # This also removes the obsolete Menval Caddy container from deployments that

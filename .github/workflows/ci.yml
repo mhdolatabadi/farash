@@ -119,6 +119,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Test image transfer failure gates
+        run: python3 -m unittest discover -s tool -p test_transfer_deploy_images.py
       - name: Keep Flutter toolchain aligned
         run: python3 tool/check_flutter_toolchain.py
       - name: Validate shared nginx route
