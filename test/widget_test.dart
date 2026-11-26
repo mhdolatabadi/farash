@@ -353,13 +353,10 @@ void main() {
       await tester.pumpWidget(
         app(sessions: saved, refreshCredentials: refresh, api: api),
       );
-      // The Today shell schedules continuous frames. Wait for its actual
-      // readiness condition instead of waiting for every frame to settle.
-      var attempts = 0;
-      while (attempts < 40 && find.byType(DueTasksView).evaluate().isEmpty) {
-        await tester.pump(const Duration(milliseconds: 100));
-        attempts++;
-      }
+      // Initial session restoration involves asynchronous auth and navigation.
+      // Settle that transition before simulating a later reconnect; the
+      // reconnect assertions below use bounded pumps for the live Today view.
+      await tester.pumpAndSettle();
       expect(find.byType(DueTasksView), findsOneWidget);
 
       // Simulate an Android app left open until its old access JWT expires.
