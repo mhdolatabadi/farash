@@ -45,7 +45,8 @@ void main() {
     // the gutter and the keyline are measured from the well's edge.
     const well = Space.gutter - 2;
 
-    // Each check circle sits on the gutter.
+    // In the compact raised-row layout, the checkbox begins at the well's
+    // leading edge; the title keeps the established content keyline.
     final circle = tester.getRect(
       find
           .descendant(
@@ -54,7 +55,7 @@ void main() {
           )
           .first,
     );
-    expect(width - circle.right, closeTo(well + Space.gutter, 2));
+    expect(width - circle.right, closeTo(well, 2));
 
     // Task titles start on the content keyline.
     expect(start(find.text('نان')), closeTo(well + Space.keyline, 1));
