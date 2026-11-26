@@ -379,10 +379,13 @@ void main() {
         expect(await saved.readToken(), 'new-access');
         expect(await refresh.readRefreshToken(), 'new-refresh');
         expect(find.text('اتصال دوباره'), findsNothing);
+        expect(cache.isOffline, isFalse);
       } else {
         expect(await saved.readToken(), 'old-access');
         expect(await refresh.readRefreshToken(), 'old-refresh');
         expect(find.textContaining('اتصال برقرار نشد'), findsOneWidget);
+        // A failed refresh must not unlock offline-only mutations.
+        expect(cache.isOffline, isTrue);
       }
       expect(tester.takeException(), isNull);
     });
