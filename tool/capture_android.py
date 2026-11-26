@@ -72,8 +72,11 @@ def clear_launcher_anr(xml=None):
         return False
     for node in root.iter('node'):
         if node.get('resource-id') == 'android:id/aerr_wait':
-            x1, y1, x2, y2 = map(int, re.findall(r'\d+', node.get('bounds')))
-            adb('shell', 'input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
+            # Density changes can leave the system launcher permanently stuck.
+            # Restart only that identified package; preserve Menval's process/state.
+            adb('shell', 'am', 'force-stop', 'com.android.launcher3')
+            adb('shell', 'am', 'start', '-n',
+                'ir.mhdolatabadi.farash/.MainActivity')
             time.sleep(2)
             return True
     return False
@@ -88,7 +91,14 @@ def matching_nodes(xml, label):
         and any(label in value.splitlines() for value in
                 (node.get('text', ''), node.get('content-desc', '')))
     ]
-    return sorted(matches, key=lambda n: n.get('clickable') != 'true')
+    def action_order(node):
+        bounds = list(map(int, re.findall(r'-?\d+', node.get('bounds', ''))))
+        area = ((bounds[2] - bounds[0]) * (bounds[3] - bounds[1])
+                if len(bounds) == 4 else float('inf'))
+        # A modal barrier can share its dismiss label with the close icon.
+        # Its full-screen center is inside the sheet and does not dismiss it.
+        return node.get('clickable') != 'true', area
+    return sorted(matches, key=action_order)
 
 
 def tap(label, *, wait_for=None):
@@ -123,7 +133,7 @@ def open_drawer():
     # Tapping the hidden menu button again would fail despite a valid screen.
     if matching_nodes(window_xml(), 'حساب و تنظیمات'):
         return
-    tap('باز کردن منو پیمایش', wait_for='حساب و تنظیمات')
+    tap('منوال', wait_for='حساب و تنظیمات')
 
 
 
@@ -155,17 +165,36 @@ def capture_review():
     capture('weaving-large-text')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')
     time.sleep(2)
-    # Focus lives in the bottom capture bar's compact section popup, not
-    # the project drawer. Exercise the real accessible navigation control.
-    tap('بخش‌ها', wait_for='تمرکز')
-    tap('تمرکز', wait_for='شروع تمرکز')
+    # Review the actual approved destinations, including narrow RTL and 2x text.
+    tap('تقویم', wait_for='تمام‌روز')
+    capture('approved-week-dark')
+    capture_narrow('approved-week-320-dark')
+    adb('shell', 'cmd', 'uimode', 'night', 'no')
+    capture('approved-week-light')
+    adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')
+    capture('approved-week-large-text')
+    adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')
+    tap('عادت‌ها', wait_for='مطالعهٔ روزانه')
+    capture('approved-habits-light')
+    capture_narrow('approved-habits-320-light')
+    adb('shell', 'cmd', 'uimode', 'night', 'yes')
+    capture('approved-habits-dark')
+    adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')
+    capture('approved-habits-large-text')
+    adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')
+    tap('کارها')
+    tap('کار جدید')
+    capture('approved-task-bottom-sheet-dark')
+    tap('بستن', wait_for='منوال')
+    open_drawer()
+    tap('تمرکز')
     capture('focus-dark')
     tap('شروع تمرکز')
     capture('focus-running')
     tap('مکث', wait_for='شروع تمرکز')
     capture('focus-paused')
-    tap('بخش‌ها', wait_for='کارها')
-    tap('کارها', wait_for='مطالعهٔ فصل اول کتاب')
+    tap('کارها')
+    time.sleep(2)
     capture('tasks-dark')
     tap('مطالعهٔ فصل اول کتاب')
     capture('editor-dark')
@@ -173,11 +202,7 @@ def capture_review():
     time.sleep(2)
     open_drawer()
     capture('drawer-dark')
-    adb('shell', 'input', 'keyevent', '4')
-    time.sleep(2)
-    # Time tracking is a section in the compact bottom navigation popup.
-    # Do not tap a non-visible route and silently capture the Tasks screen.
-    tap('بخش‌ها', wait_for='زمان‌ها')
+    # Keep the confirmed drawer open and choose the real tool row.
     tap('زمان‌ها', wait_for='شروع برای یک کار')
     capture('times-dark')
     adb('shell', 'settings', 'put', 'system', 'font_scale', '2.0')

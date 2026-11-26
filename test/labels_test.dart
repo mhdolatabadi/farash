@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:menval/core/settings/start_view.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:menval/core/calendar/calendar_scope.dart';
 import 'package:menval/core/calendar/calendar_settings.dart';
@@ -36,6 +37,7 @@ void main() {
         home: Directionality(
           textDirection: TextDirection.rtl,
           child: HomeScreen(
+            startView: StartView(value: StartView.inbox),
             email: 'a@example.com',
             onLogout: () {},
             projects: projects,

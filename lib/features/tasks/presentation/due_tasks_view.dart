@@ -66,6 +66,7 @@ class DueTasksView extends StatefulWidget {
     this.habits,
     this.onOpenHabits,
     this.showQuickCapture = true,
+    this.hideHeader = false,
   });
 
   final DueView view;
@@ -98,6 +99,9 @@ class DueTasksView extends StatefulWidget {
 
   /// The home shell can use its floating capture button instead of a second bar.
   final bool showQuickCapture;
+
+  /// The signed-in shell supplies its own shared Menval toolbar.
+  final bool hideHeader;
 
   @override
   State<DueTasksView> createState() => _DueTasksViewState();
@@ -622,6 +626,15 @@ class _DueTasksViewState extends State<DueTasksView> {
           ),
         ),
       );
+    } else if (widget.hideHeader &&
+        widget.view == DueView.today &&
+        label == null) {
+      // The approved task well reaches the navigation area even when only
+      // one task is present. It can grow beyond the viewport and scroll.
+      body = SliverFillRemaining(
+        hasScrollBody: false,
+        child: _todayBody().single,
+      );
     } else {
       body = SliverList.list(
         children: label != null
@@ -648,40 +661,41 @@ class _DueTasksViewState extends State<DueTasksView> {
         final topPadding = MediaQuery.paddingOf(context).top;
         final list = RefreshIndicator(
           onRefresh: _load,
-          edgeOffset: topPadding + listBarHeight,
+          edgeOffset: topPadding + (widget.hideHeader ? 0 : listBarHeight),
           child: CustomScrollView(
             slivers: [
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: ListAppBar(
-                  background: Soft.ground(context),
-                  title: _bento ? '' : label?.tag ?? widget.view.title,
-                  subtitle: _bento ? '' : count,
-                  mark: _bento
-                      ? const SizedBox.shrink()
-                      : label != null
-                      ? Icon(Icons.sell, color: label.swatch)
-                      : Icon(
-                          widget.view.icon,
-                          color: theme.colorScheme.primary,
-                        ),
-                  actions: _bento
-                      ? []
-                      : [
-                          IconButton(
-                            tooltip: 'به‌روزرسانی',
-                            onPressed: _load,
-                            icon: const Icon(Icons.refresh),
+              if (!widget.hideHeader)
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: ListAppBar(
+                    background: Soft.ground(context),
+                    title: _bento ? '' : label?.tag ?? widget.view.title,
+                    subtitle: _bento ? '' : count,
+                    mark: _bento
+                        ? const SizedBox.shrink()
+                        : label != null
+                        ? Icon(Icons.sell, color: label.swatch)
+                        : Icon(
+                            widget.view.icon,
+                            color: theme.colorScheme.primary,
                           ),
-                        ],
-                  topPadding: topPadding,
-                  inset: inset,
-                  // This minimal view has no dashboard title or counter.
-                  expandedHeight: _bento || constraints.maxHeight < 240
-                      ? 0
-                      : 24 * scale,
+                    actions: _bento
+                        ? []
+                        : [
+                            IconButton(
+                              tooltip: 'به‌روزرسانی',
+                              onPressed: _load,
+                              icon: const Icon(Icons.refresh),
+                            ),
+                          ],
+                    topPadding: topPadding,
+                    inset: inset,
+                    // This minimal view has no dashboard title or counter.
+                    expandedHeight: _bento || constraints.maxHeight < 240
+                        ? 0
+                        : 24 * scale,
+                  ),
                 ),
-              ),
               if (label == null &&
                   (widget.view == DueView.upcoming ||
                       widget.view == DueView.week))
@@ -707,7 +721,12 @@ class _DueTasksViewState extends State<DueTasksView> {
                   ),
                 ),
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(inset, 0, inset, 32),
+                padding: EdgeInsets.fromLTRB(
+                  inset,
+                  0,
+                  inset,
+                  widget.hideHeader ? 96 : 32,
+                ),
                 sliver: body,
               ),
             ],

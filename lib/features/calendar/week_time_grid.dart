@@ -33,7 +33,7 @@ class WeekTimeGrid extends StatefulWidget {
 }
 
 class _WeekTimeGridState extends State<WeekTimeGrid> {
-  static const _gutter = 64.0;
+  static const _gutter = 44.0;
   static const _hourHeight = 68.0;
   static const _minDayWidth = 136.0;
   late final ScrollController _vertical = ScrollController(
@@ -63,7 +63,9 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
     builder: (context, constraints) {
       final scheme = Theme.of(context).colorScheme;
       final settings = CalendarScope.of(context);
-      final width = math.max(constraints.maxWidth, _gutter + _minDayWidth * 7);
+      // Keep all seven weekday lanes visible on mobile without horizontal scroll.
+      final minDayWidth = constraints.maxWidth < 760 ? 30.0 : _minDayWidth;
+      final width = math.max(constraints.maxWidth, _gutter + minDayWidth * 7);
       final dayWidth = (width - _gutter) / 7;
       if (_scrollToSelectedDay) {
         _scrollToSelectedDay = false;
@@ -139,7 +141,10 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                   ),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(14),
-                                    color: scheme.surface,
+                                    color:
+                                        daysBetween(widget.selected, day) == 0
+                                        ? scheme.onSurface
+                                        : scheme.surface,
                                     boxShadow:
                                         daysBetween(widget.selected, day) == 0
                                         ? [
@@ -153,31 +158,54 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                           ]
                                         : null,
                                   ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        weekdayNames[day.weekday - 1],
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.labelSmall,
-                                      ),
-                                      Text(
-                                        persianDigits(
-                                          settings.isJalali
-                                              ? formatDate(
-                                                  day,
-                                                  settings,
-                                                ).split(' ').first
-                                              : '${day.day}',
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          weekdayNames[day.weekday - 1],
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelSmall
+                                              ?.copyWith(
+                                                color:
+                                                    daysBetween(
+                                                          widget.selected,
+                                                          day,
+                                                        ) ==
+                                                        0
+                                                    ? scheme.surface
+                                                    : scheme.onSurface,
+                                              ),
                                         ),
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.titleMedium,
-                                      ),
-                                    ],
+                                        Text(
+                                          persianDigits(
+                                            settings.isJalali
+                                                ? formatDate(
+                                                    day,
+                                                    settings,
+                                                  ).split(' ').first
+                                                : '${day.day}',
+                                          ),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                color:
+                                                    daysBetween(
+                                                          widget.selected,
+                                                          day,
+                                                        ) ==
+                                                        0
+                                                    ? scheme.surface
+                                                    : scheme.onSurface,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -195,10 +223,13 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                     SizedBox(
                       width: _gutter,
                       child: Center(
-                        child: Text(
-                          'تمام‌روز',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.labelSmall,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'تمام‌روز',
+                            maxLines: 1,
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
                         ),
                       ),
                     ),
@@ -282,8 +313,13 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                                         ),
                                       );
                                     },
-                                    child: Text(
-                                      '+${persianDigits('${allDay[day].length - 2}')} کار دیگر',
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        '+${persianDigits('${allDay[day].length - 2}')} کار دیگر',
+                                        maxLines: 1,
+                                        softWrap: false,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -298,7 +334,7 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                 child: SingleChildScrollView(
                   controller: _vertical,
                   child: SizedBox(
-                    height: 24 * _hourHeight,
+                    height: 24 * _hourHeight + 80,
                     child: Stack(
                       clipBehavior: Clip.hardEdge,
                       children: [
@@ -309,12 +345,15 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                             top: hour * _hourHeight + 4,
                             right: 2,
                             width: _gutter - 8,
-                            child: Text(
-                              persianDigits(
-                                '${hour.toString().padLeft(2, '0')}:00',
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                persianDigits(
+                                  '${hour.toString().padLeft(2, '0')}:00',
+                                ),
+                                maxLines: 1,
+                                style: Theme.of(context).textTheme.labelSmall,
                               ),
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.labelSmall,
                             ),
                           ),
                         for (final placement in blocks)

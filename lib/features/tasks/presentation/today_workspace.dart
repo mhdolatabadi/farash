@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:menval/app/spacing.dart';
+import 'package:menval/app/soft.dart';
 import 'package:menval/features/focus/focus_controller.dart';
 import 'package:menval/features/habits/habits_controller.dart';
 import 'package:menval/features/tasks/data/task.dart';
@@ -59,41 +60,50 @@ class TodayWorkspace extends StatelessWidget {
         Space.gutter,
         Space.xxl,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (tasks.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: Space.xl),
-              child: Text(
-                'کاری برای امروز نمانده.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            )
-          else
-            for (var index = 0; index < tasks.length; index++)
+      child: SoftWell(
+        radius: 36,
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          Space.md,
+          Space.xl,
+          Space.md,
+          Space.md,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (tasks.isEmpty)
               Padding(
-                padding: const EdgeInsets.only(bottom: Space.sm),
-                child: Material(
-                  color: colors.surface,
-                  elevation: 1.5,
-                  shadowColor: colors.shadow.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(12),
-                  clipBehavior: Clip.antiAlias,
-                  child: rowBuilder(tasks[index], index == tasks.length - 1),
+                padding: const EdgeInsets.symmetric(vertical: Space.xl),
+                child: Text(
+                  'کاری برای امروز نمانده.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              )
+            else
+              for (var index = 0; index < tasks.length; index++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: Space.sm),
+                  child: Material(
+                    color: colors.surface,
+                    elevation: 3,
+                    shadowColor: colors.shadow.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(24),
+                    clipBehavior: Clip.antiAlias,
+                    child: rowBuilder(tasks[index], index == tasks.length - 1),
+                  ),
+                ),
+            if (overdueTasks.isNotEmpty)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton(
+                  onPressed: onMoveOverdue,
+                  child: const Text('انتقال کارهای عقب‌افتاده به امروز'),
                 ),
               ),
-          if (overdueTasks.isNotEmpty)
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: TextButton(
-                onPressed: onMoveOverdue,
-                child: const Text('انتقال کارهای عقب‌افتاده به امروز'),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -24,10 +24,18 @@ const _maxWidth = 760.0;
 /// Loop Habit Tracker's main screen: every habit with its strength ring and
 /// a checkmark grid of the most recent days, today first.
 class HabitsView extends StatefulWidget {
-  const HabitsView({super.key, required this.controller, this.onQuickAdd});
+  const HabitsView({
+    super.key,
+    required this.controller,
+    this.onQuickAdd,
+    this.embedded = false,
+  });
 
   final HabitsController controller;
   final VoidCallback? onQuickAdd;
+
+  /// The shared shell provides the title, navigation and creation FAB.
+  final bool embedded;
 
   @override
   State<HabitsView> createState() => _HabitsViewState();
@@ -90,30 +98,32 @@ class _HabitsViewState extends State<HabitsView> {
             // one line; the rest, less the end gutter, becomes day columns.
             // Rows and the day header grow with the user's text size.
             final scaler = MediaQuery.textScalerOf(context);
-            final rowHeight = max(_rowHeight, scaler.scale(16) * 2.6 + 12);
-            final headerHeight = max(48.0, scaler.scale(12) * 3.2 + 8);
-            final columns =
-                ((width - Space.sm - 150 - 2 * (Space.gutter - 2)) /
-                        habitCellWidth)
-                    .floor()
-                    .clamp(1, 7);
+            final rowHeight = max(60.0, scaler.scale(15) * 2.7 + 12);
+            final headerHeight = max(42.0, scaler.scale(12) * 3.2 + 8);
+            // Seven Loop-like days remain visible even on 320px phones.
+            final cellWidth =
+                ((width - 2 * (Space.gutter - 2) - Space.sm - 95) / 7)
+                    .clamp(26.0, habitCellWidth)
+                    .toDouble();
+            const columns = 7;
             final list = CustomScrollView(
               slivers: [
-                SliverAppBar(
-                  pinned: true,
-                  backgroundColor: Soft.ground(context),
-                  title: const Text('عادت‌ها'),
-                  actions: [
-                    if (widget.onQuickAdd != null)
-                      IconButton(
-                        tooltip: 'افزودن کار',
-                        onPressed: widget.onQuickAdd,
-                        icon: const Icon(Icons.add_task_rounded),
-                      ),
-                    _FilterMenu(controller: _c),
-                  ],
-                ),
-                if (habits.isNotEmpty)
+                if (!widget.embedded)
+                  SliverAppBar(
+                    pinned: true,
+                    backgroundColor: Soft.ground(context),
+                    title: const Text('عادت‌ها'),
+                    actions: [
+                      if (widget.onQuickAdd != null)
+                        IconButton(
+                          tooltip: 'افزودن کار',
+                          onPressed: widget.onQuickAdd,
+                          icon: const Icon(Icons.add_task_rounded),
+                        ),
+                      _FilterMenu(controller: _c),
+                    ],
+                  ),
+                if (habits.isNotEmpty && !widget.embedded)
                   SliverPadding(
                     padding: EdgeInsets.fromLTRB(
                       inset + Space.gutter - 2,
@@ -125,6 +135,8 @@ class _HabitsViewState extends State<HabitsView> {
                       child: _Summary(controller: _c, habits: habits),
                     ),
                   ),
+                if (habits.isNotEmpty && widget.embedded)
+                  const SliverToBoxAdapter(child: SizedBox(height: Space.xl)),
                 if (habits.isNotEmpty)
                   SliverPersistentHeader(
                     pinned: true,
@@ -132,10 +144,13 @@ class _HabitsViewState extends State<HabitsView> {
                       height: headerHeight,
                       today: _c.today,
                       columns: columns,
+                      cellWidth: cellWidth,
                       inset: inset,
                       settings: CalendarScope.of(context),
                       theme: Theme.of(context),
-                      ground: Soft.ground(context),
+                      ground: widget.embedded
+                          ? Colors.transparent
+                          : Soft.ground(context),
                     ),
                   ),
                 if (_c.loading && _c.all.isEmpty)
@@ -163,11 +178,13 @@ class _HabitsViewState extends State<HabitsView> {
                       text: _c.all.isEmpty
                           ? 'هنوز عادتی نساخته‌اید.'
                           : 'عادت فعالی ندارید.',
-                      action: FilledButton.icon(
-                        onPressed: _add,
-                        icon: const Icon(Icons.add_rounded),
-                        label: const Text('عادت تازه'),
-                      ),
+                      action: widget.embedded
+                          ? const SizedBox.shrink()
+                          : FilledButton.icon(
+                              onPressed: _add,
+                              icon: const Icon(Icons.add_rounded),
+                              label: const Text('عادت تازه'),
+                            ),
                     ),
                   )
                 else
@@ -180,7 +197,10 @@ class _HabitsViewState extends State<HabitsView> {
                     ),
                     // The rows sit in one well on the soft ground.
                     sliver: DecoratedSliver(
-                      decoration: Soft.wellDecoration(context),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(Soft.tileRadius),
+                      ),
                       sliver: SliverReorderableList(
                         itemCount: habits.length,
                         onReorderItem: (from, to) {
@@ -203,9 +223,29 @@ class _HabitsViewState extends State<HabitsView> {
                             columns: columns,
                             height: rowHeight,
                             controller: _c,
-                            divider: i != habits.length - 1,
+                            cellWidth: cellWidth,
+                            divider: false,
                           );
-                          final pressed = PressDepth(child: row);
+                          final pressed = Padding(
+                            padding: const EdgeInsetsDirectional.fromSTEB(
+                              Space.sm,
+                              Space.xs,
+                              Space.sm,
+                              Space.xs,
+                            ),
+                            child: PressDepth(
+                              child: Material(
+                                color: Theme.of(context).colorScheme.surface,
+                                elevation: 2,
+                                shadowColor: Theme.of(
+                                  context,
+                                ).colorScheme.shadow.withValues(alpha: 0.13),
+                                borderRadius: BorderRadius.circular(22),
+                                clipBehavior: Clip.antiAlias,
+                                child: row,
+                              ),
+                            ),
+                          );
                           return _c.sort == HabitSort.manual
                               ? ReorderableDelayedDragStartListener(
                                   key: ValueKey(habit.id),
@@ -226,8 +266,29 @@ class _HabitsViewState extends State<HabitsView> {
             // last row thanks to the list's bottom padding.
             return Stack(
               children: [
-                ColoredBox(color: Soft.ground(context), child: list),
-                if (_c.all.isNotEmpty)
+                if (widget.embedded)
+                  Positioned.fill(
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        Space.md,
+                        Space.lg,
+                        Space.md,
+                        Space.lg,
+                      ),
+                      child: IgnorePointer(
+                        child: SoftWell(
+                          radius: 36,
+                          child: const SizedBox.expand(),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Positioned.fill(
+                    child: ColoredBox(color: Soft.ground(context)),
+                  ),
+                list,
+                if (!widget.embedded && _c.all.isNotEmpty)
                   PositionedDirectional(
                     end: 16 + inset,
                     bottom: 16,
@@ -330,6 +391,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
     required this.height,
     required this.today,
     required this.columns,
+    required this.cellWidth,
     required this.inset,
     required this.settings,
     required this.theme,
@@ -338,7 +400,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
 
   final Color ground;
   final int today, columns;
-  final double inset, height;
+  final double inset, height, cellWidth;
   final CalendarSettings settings;
   final ThemeData theme;
 
@@ -351,38 +413,34 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
   Widget build(BuildContext context, double shrink, bool overlaps) {
     final muted = theme.colorScheme.onSurfaceVariant;
     return Container(
-      decoration: BoxDecoration(
-        color: ground,
-        border: Border(
-          bottom: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
-      ),
+      height: height,
+      decoration: BoxDecoration(color: ground, border: null),
       padding: EdgeInsets.symmetric(horizontal: inset + Space.gutter - 2),
       child: Row(
         children: [
           const Spacer(),
           for (var i = 0; i < columns; i++)
             SizedBox(
-              width: habitCellWidth,
+              width: cellWidth,
               child: ExcludeSemantics(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      habitWeekdays[dayDate(today - i).weekday - 1],
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: i == 0 ? theme.colorScheme.onSurface : muted,
-                        fontWeight: i == 0 ? FontWeight.w700 : FontWeight.w500,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        habitWeekdays[dayDate(saturdayOf(today) + i).weekday -
+                            1],
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: i == 0 ? theme.colorScheme.onSurface : muted,
+                          fontWeight: i == 0
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
                       ),
-                    ),
-                    Text(
-                      persianDigits(dayOfMonth(today - i, settings)),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: i == 0 ? theme.colorScheme.onSurface : muted,
-                        fontWeight: i == 0 ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -397,6 +455,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
       old.today != today ||
       old.height != height ||
       old.columns != columns ||
+      old.cellWidth != cellWidth ||
       old.inset != inset ||
       old.theme != theme ||
       old.ground != ground ||
@@ -405,6 +464,26 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
 
 /// Short weekday names for the day columns, indexed by weekday − 1.
 const habitWeekdays = ['دو', 'سه', 'چهار', 'پنج', 'جمعه', 'شنبه', 'یک'];
+
+// RTL calendar rows run from Saturday to Friday, matching the approved view.
+int saturdayOf(int day) =>
+    day - ((dayDate(day).weekday + 1) % DateTime.daysPerWeek);
+
+IconData habitGlyph(String name) {
+  if (name.contains('مطالع') || name.contains('کتاب')) {
+    return Icons.menu_book_outlined;
+  }
+  if (name.contains('ورزش') || name.contains('تمرین')) {
+    return Icons.fitness_center_rounded;
+  }
+  if (name.contains('نوشت') || name.contains('یادداشت')) {
+    return Icons.edit_outlined;
+  }
+  if (name.contains('پیاده') || name.contains('قدم')) {
+    return Icons.directions_walk_outlined;
+  }
+  return Icons.check_circle_outline_rounded;
+}
 
 int dayOfMonth(int day, CalendarSettings settings) {
   final date = dayDate(day);
@@ -418,6 +497,7 @@ class HabitRow extends StatelessWidget {
     required this.stats,
     required this.columns,
     required this.controller,
+    this.cellWidth = habitCellWidth,
     this.height = _rowHeight,
     this.divider = true,
   });
@@ -427,23 +507,17 @@ class HabitRow extends StatelessWidget {
   final Habit habit;
   final HabitStats stats;
   final int columns;
-  final double height;
+  final double height, cellWidth;
   final HabitsController controller;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = habitColor(context, habit.color);
+    final color = theme.colorScheme.onSurface;
     final settings = CalendarScope.of(context);
-    // Flat rows separated by hairlines, as in Loop.
+    // Raised compact rows sit inside a single lower surface.
     return DecoratedBox(
-      decoration: BoxDecoration(
-        border: divider
-            ? Border(
-                bottom: BorderSide(color: theme.colorScheme.outlineVariant),
-              )
-            : null,
-      ),
+      decoration: const BoxDecoration(),
       child: Material(
         type: MaterialType.transparency,
         child: SizedBox(
@@ -462,63 +536,76 @@ class HabitRow extends StatelessWidget {
                   ),
                   child: Padding(
                     padding: const EdgeInsetsDirectional.only(
-                      start: Space.gutter,
-                      end: Space.sm,
+                      start: Space.sm,
+                      end: Space.xs,
                     ),
                     child: Row(
                       children: [
-                        Semantics(
-                          label: persianDigits(
-                            'قدرت ${(stats.currentScore * 100).round()}٪',
-                          ),
-                          child: ScoreRing(
-                            score: stats.currentScore,
-                            color: color,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
+                        Icon(habitGlyph(habit.name), color: color, size: 18),
+                        const SizedBox(width: Space.xs),
                         Expanded(
-                          child: Text(
-                            habit.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: habit.archived
-                                  ? theme.colorScheme.onSurfaceVariant
-                                  : color,
-                              fontWeight: FontWeight.w600,
-                              height: 1.3,
-                            ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                habit.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: habit.archived
+                                      ? theme.colorScheme.onSurfaceVariant
+                                      : color,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    persianDigits(
+                                      '${stats.currentStreak?.length ?? 0}',
+                                    ),
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      fontSize: 10,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Icon(
+                                    Icons.local_fire_department_outlined,
+                                    size: 13,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                        if (habit.archived)
-                          Padding(
-                            padding: const EdgeInsetsDirectional.only(end: 4),
-                            child: Icon(
-                              Icons.archive_outlined,
-                              size: 18,
-                              semanticLabel: 'بایگانی‌شده',
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
                       ],
                     ),
                   ),
                 ),
               ),
+
               for (var i = 0; i < columns; i++)
                 CheckCell(
                   habit: habit,
                   stats: stats,
-                  day: stats.today - i,
+                  width: cellWidth,
+                  day: saturdayOf(stats.today) + i,
                   label: relativeDay(
-                    dayDate(stats.today - i),
+                    dayDate(saturdayOf(stats.today) + i),
                     settings,
                     today: dayDate(stats.today),
                   ),
-                  onTap: () =>
-                      recordDay(context, controller, habit, stats.today - i),
+                  onTap: () => recordDay(
+                    context,
+                    controller,
+                    habit,
+                    saturdayOf(stats.today) + i,
+                  ),
                 ),
               const SizedBox(width: Space.sm),
             ],
@@ -564,6 +651,7 @@ class CheckCell extends StatelessWidget {
     required this.day,
     required this.label,
     required this.onTap,
+    this.width = habitCellWidth,
   });
 
   final Habit habit;
@@ -571,11 +659,14 @@ class CheckCell extends StatelessWidget {
   final int day;
   final String label;
   final VoidCallback onTap;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = habitColor(context, habit.color);
+    final color = theme.brightness == Brightness.dark
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurface;
     final muted = theme.colorScheme.onSurfaceVariant;
     final check = stats.check(day);
     final Widget mark;
@@ -632,20 +723,38 @@ class CheckCell extends StatelessWidget {
           'انجام نشد',
         ),
         DayCheck.unknown => (
-          Icons.close_rounded,
+          Icons.circle_outlined,
           muted.withValues(alpha: .35),
           'ثبت نشده',
         ),
       };
       state = text;
-      mark = Icon(
-        icon,
-        color: tint,
-        size: switch (check) {
-          DayCheck.yes || DayCheck.auto => 24,
-          DayCheck.skip => 20,
-          _ => 16,
-        },
+      final active = check == DayCheck.yes || check == DayCheck.auto;
+      mark = AnimatedContainer(
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 120),
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: active ? tint : Colors.transparent,
+          border: Border.all(
+            color: active
+                ? tint
+                : theme.colorScheme.outline.withValues(alpha: 0.6),
+            width: active ? 1 : 1.7,
+          ),
+        ),
+        child: active
+            ? Icon(
+                Icons.check_rounded,
+                size: 14,
+                color: theme.colorScheme.surface,
+              )
+            : check == DayCheck.no || check == DayCheck.skip
+            ? Icon(icon, size: 12, color: tint)
+            : null,
       );
     }
     return Semantics(
@@ -655,7 +764,7 @@ class CheckCell extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: SizedBox(
-          width: habitCellWidth,
+          width: width,
           height: double.infinity,
           child: Center(child: mark),
         ),
