@@ -147,6 +147,10 @@ void main() {
     expect(find.byKey(const ValueKey('inline-task-title')), findsNothing);
     expect(find.byKey(const ValueKey('approved-nav-0')), findsOneWidget);
     expect(find.byKey(const ValueKey('menval-create-fab')), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(const ValueKey('menval-wordmark'))).height,
+      greaterThanOrEqualTo(48),
+    );
     await openCompact(tester, 'امروز');
     expect(find.byType(DueTasksView), findsOneWidget);
     expect(tester.takeException(), isNull);

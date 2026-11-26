@@ -1496,7 +1496,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       key: const ValueKey('menval-wordmark'),
                       borderRadius: BorderRadius.circular(12),
                       onTap: () => _scaffoldKey.currentState?.openDrawer(),
-                      child: Padding(
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 48),
                         padding: const EdgeInsets.symmetric(vertical: Space.xs),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
