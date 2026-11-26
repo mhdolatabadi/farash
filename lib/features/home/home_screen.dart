@@ -40,6 +40,7 @@ import 'package:menval/features/progress/progress.dart';
 import 'package:menval/features/progress/progress_card.dart';
 import 'package:menval/core/calendar/time_zone.dart';
 import 'package:menval/app/motion.dart';
+import 'package:menval/app/press_depth.dart';
 import 'package:menval/core/calendar/calendar_scope.dart';
 import 'package:menval/core/calendar/calendar_settings_dialog.dart';
 import 'package:menval/core/settings/start_view.dart';
@@ -507,66 +508,84 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
                 child: Row(
                   children: [
-                    PopupMenuButton<String>(
-                      key: const ValueKey('compact-navigation'),
-                      tooltip: 'بخش‌ها',
-                      icon: const Icon(Icons.apps_outlined, size: 20),
-                      onSelected: (choice) {
-                        if (choice == 'tasks') {
-                          _switchSection(1);
-                        } else if (choice == 'today') {
-                          _switchSection(0);
-                        } else if (choice == 'calendar') {
-                          _openNativeCalendar();
-                        } else if (choice == 'habits') {
-                          _switchSection(4);
-                        } else if (choice == 'focus') {
-                          _switchSection(2);
-                        } else if (choice == 'times') {
-                          _switchSection(3);
-                        } else if (choice == 'more') {
-                          _scaffoldKey.currentState?.openDrawer();
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(
-                          value: 'tasks',
-                          child: Text('کارها'),
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                        start: Space.xs,
+                        end: Space.sm,
+                      ),
+                      child: Text(
+                        'منوال',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
                         ),
-                        const PopupMenuItem(
-                          value: 'calendar',
-                          child: Text('تقویم'),
-                        ),
-                        if (_habits != null)
-                          const PopupMenuItem(
-                            value: 'habits',
-                            child: Text('عادت‌ها'),
-                          ),
-                        const PopupMenuItem(
-                          value: 'today',
-                          child: Text('امروز'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'focus',
-                          child: Text('تمرکز'),
-                        ),
-                        if (_tracker != null)
-                          const PopupMenuItem(
-                            value: 'times',
-                            child: Text('زمان‌ها'),
-                          ),
-                        const PopupMenuItem(
-                          value: 'more',
-                          child: Text('بخش‌های بیشتر'),
-                        ),
-                      ],
+                      ),
                     ),
-                    IconButton(
-                      key: const ValueKey('quick-add-more'),
-                      tooltip: 'تاریخ و ساعت کار',
-                      onPressed: () =>
-                          _quickAdd(initialText: _inlineTask.text.trim()),
-                      icon: const Icon(Icons.schedule_outlined, size: 20),
+                    PressDepth(
+                      child: PopupMenuButton<String>(
+                        key: const ValueKey('compact-navigation'),
+                        tooltip: 'بخش‌ها',
+                        icon: const Icon(Icons.apps_outlined, size: 20),
+                        onSelected: (choice) {
+                          if (choice == 'tasks') {
+                            _switchSection(1);
+                          } else if (choice == 'today') {
+                            _switchSection(0);
+                          } else if (choice == 'calendar') {
+                            _openNativeCalendar();
+                          } else if (choice == 'habits') {
+                            _switchSection(4);
+                          } else if (choice == 'focus') {
+                            _switchSection(2);
+                          } else if (choice == 'times') {
+                            _switchSection(3);
+                          } else if (choice == 'more') {
+                            _scaffoldKey.currentState?.openDrawer();
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                            value: 'tasks',
+                            child: Text('کارها'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'calendar',
+                            child: Text('تقویم'),
+                          ),
+                          if (_habits != null)
+                            const PopupMenuItem(
+                              value: 'habits',
+                              child: Text('عادت‌ها'),
+                            ),
+                          const PopupMenuItem(
+                            value: 'today',
+                            child: Text('امروز'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'focus',
+                            child: Text('تمرکز'),
+                          ),
+                          if (_tracker != null)
+                            const PopupMenuItem(
+                              value: 'times',
+                              child: Text('زمان‌ها'),
+                            ),
+                          const PopupMenuItem(
+                            value: 'more',
+                            child: Text('بخش‌های بیشتر'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    PressDepth(
+                      child: IconButton(
+                        key: const ValueKey('quick-add-more'),
+                        tooltip: 'تاریخ و ساعت کار',
+                        onPressed: () =>
+                            _quickAdd(initialText: _inlineTask.text.trim()),
+                        icon: const Icon(Icons.schedule_outlined, size: 20),
+                      ),
                     ),
                     Expanded(
                       child: TextField(
@@ -582,11 +601,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ),
                       ),
                     ),
-                    IconButton.filled(
-                      key: const ValueKey('inline-task-submit'),
-                      tooltip: 'ثبت کار',
-                      onPressed: _submitInline,
-                      icon: const Icon(Icons.keyboard_return_rounded, size: 20),
+                    PressDepth(
+                      child: IconButton.filled(
+                        key: const ValueKey('inline-task-submit'),
+                        tooltip: 'ثبت کار',
+                        onPressed: _submitInline,
+                        icon: const Icon(
+                          Icons.keyboard_return_rounded,
+                          size: 20,
+                        ),
+                      ),
                     ),
                   ],
                 ),
