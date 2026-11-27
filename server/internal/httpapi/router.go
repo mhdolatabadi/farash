@@ -41,6 +41,7 @@ func NewHandler(config Config) http.Handler {
 		mux.HandleFunc("POST /api/v1/auth/register", auth.register)
 		mux.HandleFunc("POST /api/v1/auth/login", auth.login)
 		mux.HandleFunc("POST /api/v1/auth/refresh", auth.refresh)
+		mux.HandleFunc("POST /api/v1/auth/renew", auth.renew)
 		mux.HandleFunc("POST /api/v1/auth/revoke", auth.revoke)
 		mux.HandleFunc("GET /api/v1/me", auth.me)
 		calendarRoutes(mux, auth, config.Calendar)
