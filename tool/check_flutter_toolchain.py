@@ -35,8 +35,8 @@ if "storage.googleapis.com/flutter_infra_release/releases/stable/linux/" not in 
     fail("The web image must download Flutter from the official release archive.")
 
 workflow_versions = re.findall(r"flutter-version:\s*['\"]?([^'\"\s]+)", ci + "\n" + release)
-if len(workflow_versions) != 3:
-    fail(f"Expected three pinned workflow Flutter versions, found {len(workflow_versions)}.")
+if len(workflow_versions) != 4:
+    fail(f"Expected four pinned workflow Flutter versions, found {len(workflow_versions)}.")
 
 mismatches = [item for item in workflow_versions if item != version]
 if mismatches:
