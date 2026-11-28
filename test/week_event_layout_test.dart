@@ -1,4 +1,5 @@
 import 'package:menval/features/calendar/week_event_layout.dart';
+import 'package:menval/features/calendar/calendar_event.dart';
 import 'package:menval/features/tasks/data/task.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -21,9 +22,9 @@ void main() {
         timed('second', 23, 12, 30, 60),
         timed('third', 23, 14, 0, 30),
       ], week);
-      final first = blocks.singleWhere((e) => e.task.id == 'first');
-      final second = blocks.singleWhere((e) => e.task.id == 'second');
-      final third = blocks.singleWhere((e) => e.task.id == 'third');
+      final first = blocks.singleWhere((e) => e.task!.id == 'first');
+      final second = blocks.singleWhere((e) => e.task!.id == 'second');
+      final third = blocks.singleWhere((e) => e.task!.id == 'third');
       expect(first.dayIndex, 2);
       expect(first.startMinute, 720);
       expect(first.endMinute, 810);
@@ -63,7 +64,51 @@ void main() {
       timed('friday', 27, 23, 40, 100),
     ], week);
     expect(blocks.length, 1);
-    expect(blocks.single.task.id, 'friday');
+    expect(blocks.single.task!.id, 'friday');
     expect(blocks.single.endMinute, 1440);
+  });
+
+  test('native events share collision lanes without becoming tasks', () {
+    final event = CalendarEvent(
+      id: 'appointment',
+      title: 'جلسه',
+      start: DateTime(2026, 11, 23, 12, 30),
+      end: DateTime(2026, 11, 23, 14),
+      timeZone: 'UTC',
+      version: 1,
+    );
+    final blocks = layoutWeekEvents(
+      [timed('task', 23, 12, 0, 90)],
+      week,
+      events: [event],
+    );
+    expect(blocks, hasLength(2));
+    final appointment = blocks.singleWhere((block) => block.event != null);
+    final task = blocks.singleWhere((block) => block.task != null);
+    expect(appointment.task, isNull);
+    expect(appointment.event, same(event));
+    expect(appointment.startMinute, 750);
+    expect(appointment.endMinute, 840);
+    expect(appointment.columns, 2);
+    expect(appointment.column, isNot(task.column));
+  });
+
+  test('native overnight event is split and clipped to the requested week', () {
+    final event = CalendarEvent(
+      id: 'overnight-event',
+      title: 'شیفت',
+      start: DateTime(2026, 11, 20, 23, 30),
+      end: DateTime(2026, 11, 22, 1),
+      timeZone: 'UTC',
+      version: 1,
+    );
+    final blocks = layoutWeekEvents([], week, events: [event]);
+    expect(blocks, hasLength(2));
+    expect(blocks[0].dayIndex, 0);
+    expect(blocks[0].startMinute, 0);
+    expect(blocks[0].endMinute, 1440);
+    expect(blocks[1].dayIndex, 1);
+    expect(blocks[1].endMinute, 60);
+    expect(blocks.every((block) => block.task == null), isTrue);
   });
 }

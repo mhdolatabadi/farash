@@ -136,7 +136,7 @@ void main() {
     expect(find.text('ورزش صبحگاهی'), findsOneWidget);
     expect(find.text('آب خوردن'), findsOneWidget);
     // Today's cell sits next to the name; the numeric habit shows amounts.
-    expect(find.text('۶'), findsOneWidget);
+    expect(find.bySemanticsLabel('آب خوردن، امروز: ۶ لیوان'), findsOneWidget);
 
     final today = find.bySemanticsLabel(
       'مطالعهٔ ۳۰ دقیقه، امروز: در بازهٔ انجام‌شده',
@@ -162,6 +162,71 @@ void main() {
       );
     }
     expect(api.calls.last.$1, 'DELETE');
+  });
+
+  testWidgets('scrolling history keeps check-ins attached to their actual dates', (
+    tester,
+  ) async {
+    final api = seeded();
+    final controller = await pump(tester, api);
+    final habit = controller.all.last;
+    final pastDay = today - 20;
+    Finder cellFor(int day) => find.byWidgetPredicate(
+      (widget) =>
+          widget is CheckCell &&
+          widget.habit.id == habit.id &&
+          widget.day == day,
+    );
+    expect(find.byKey(const ValueKey('habit-history-range')), findsNothing);
+    expect(find.byTooltip('نمایش ۷ روز'), findsNothing);
+    expect(find.byTooltip('نمایش ۱۴ روز'), findsNothing);
+    expect(find.byTooltip('نمایش ۳۰ روز'), findsNothing);
+    expect(cellFor(today - 29), findsOneWidget);
+    await tester.ensureVisible(cellFor(pastDay));
+    await tester.pumpAndSettle();
+    await tester.tap(cellFor(pastDay));
+    await tester.pumpAndSettle();
+    expect(api.calls.last.$2, endsWith('/entries/${dayKey(pastDay)}'));
+    expect(controller.byId(habit.id)!.entries[pastDay]?.value, 1);
+
+    await tester.ensureVisible(cellFor(today));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(cellFor(pastDay));
+    await tester.pumpAndSettle();
+    final cell = tester.widget<CheckCell>(cellFor(pastDay));
+    expect(cell.stats.counts(pastDay), isTrue);
+    expect(controller.byId(habit.id)!.entries[pastDay]?.value, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('history scrolls together while names remain visible at 320px', (
+    tester,
+  ) async {
+    final controller = await pump(tester, seeded(), size: const Size(320, 700));
+    final name = find.text('ورزش صبحگاهی');
+    final nameBounds = tester.getRect(name);
+    final history = find.byKey(
+      ValueKey('habit-history-${controller.all.first.id}'),
+    );
+    await tester.drag(history, const Offset(160, 0));
+    await tester.pumpAndSettle();
+    final offset = tester
+        .widget<SingleChildScrollView>(history)
+        .controller!
+        .offset;
+    expect(offset, greaterThan(0));
+    final header = tester.widget<SingleChildScrollView>(
+      find.byKey(const ValueKey('habit-history-header')),
+    );
+    expect(header.controller!.offset, closeTo(offset, 0.1));
+    for (final habit in controller.all) {
+      final row = tester.widget<SingleChildScrollView>(
+        find.byKey(ValueKey('habit-history-${habit.id}')),
+      );
+      expect(row.controller!.offset, closeTo(offset, 0.1));
+    }
+    expect(tester.getRect(name), nameBounds);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('the shell offers habits as a destination', (tester) async {
@@ -201,6 +266,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('approved-nav-4')));
     await tester.pumpAndSettle();
     expect(find.byType(HabitsView), findsOneWidget);
+    expect(find.byKey(const ValueKey('habit-history-range')), findsNothing);
+    expect(find.byTooltip('نمایش و ترتیب'), findsOneWidget);
     expect(find.text('ورزش صبحگاهی'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -305,9 +372,9 @@ void main() {
         captureKey: captureKey,
       );
       expect(tester.takeException(), isNull);
-      // All seven days fit on mobile while remaining individually tappable.
+      // Date history scrolls independently; every day retains a 48px target.
       final cell = tester.getSize(find.byType(CheckCell).first);
-      expect(cell.width, greaterThanOrEqualTo(26));
+      expect(cell.width, greaterThanOrEqualTo(48));
       expect(cell.height, greaterThanOrEqualTo(48));
       // The add button never covers the last habit.
       final last = find.textContaining('بدون شبکهٔ اجتماعی');

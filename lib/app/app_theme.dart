@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:menval/app/palette.dart';
+import 'package:menval/app/design_tokens.dart';
 
 abstract final class MenvalTheme {
   /// The palette the app ships with.
@@ -63,7 +64,9 @@ abstract final class MenvalTheme {
       borderRadius: BorderRadius.circular(_tileRadius),
       side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.6)),
     );
-    const stadium = StadiumBorder();
+    const stadium = RoundedRectangleBorder(
+      borderRadius: MenvalDesignTokens.radius,
+    );
 
     return base.copyWith(
       extensions: [MenvalPaletteColors(p)],
@@ -107,7 +110,13 @@ abstract final class MenvalTheme {
         surfaceTintColor: Colors.transparent,
       ),
       iconButtonTheme: const IconButtonThemeData(
-        style: ButtonStyle(minimumSize: WidgetStatePropertyAll(Size(48, 48))),
+        style: ButtonStyle(
+          minimumSize: WidgetStatePropertyAll(Size(48, 48)),
+          iconSize: WidgetStatePropertyAll(20),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: MenvalDesignTokens.radius),
+          ),
+        ),
       ),
       textSelectionTheme: TextSelectionThemeData(
         cursorColor: colors.primary,
@@ -191,7 +200,7 @@ abstract final class MenvalTheme {
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
-          minimumSize: const WidgetStatePropertyAll(Size(48, 44)),
+          minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
           side: WidgetStatePropertyAll(BorderSide(color: colors.outline)),
         ),
       ),

@@ -26,6 +26,7 @@ import 'package:menval/features/tasks/presentation/section_dialogs.dart';
 import 'package:menval/features/tasks/presentation/task_detail_sheet.dart';
 import 'package:menval/features/tasks/presentation/task_messages.dart';
 import 'package:menval/features/tasks/presentation/task_tile.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
 
 /// Readable width for the task list on wide screens.
 const _maxListWidth = 760.0;
@@ -43,10 +44,12 @@ class ProjectTasksView extends StatefulWidget {
     this.showQuickCapture = true,
     this.labels,
     this.layouts,
+    this.refreshRevision = 0,
   });
 
   final Project project;
   final TasksApi api;
+  final int refreshRevision;
 
   /// Null where sections are not available.
   final SectionsApi? sectionsApi;
@@ -111,7 +114,11 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
       widget.layouts ?? ProjectLayouts(store: SecureCalendarSettingsStore());
   ProjectLayout _layout = ProjectLayout.list;
 
-  void _setLayout(ProjectLayout layout) {
+  Future<void> _setLayout(ProjectLayout layout) async {
+    if (!await (_editorKey.currentState?.canLeave() ?? Future.value(true)) ||
+        !mounted) {
+      return;
+    }
     setState(() {
       _layout = layout;
       _editingTask = null;
@@ -123,6 +130,12 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
     if (section != null) return _addTaskTo(section);
     final title = await askTaskTitle(context, 'بدون بخش');
     if (title != null) await _run(() => _tasks.add(title));
+  }
+
+  @override
+  void didUpdateWidget(covariant ProjectTasksView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshRevision != widget.refreshRevision) _tasks.load();
   }
 
   @override
@@ -191,7 +204,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
   });
 
   Task? _editingTask;
-  var _editorKey = GlobalKey();
+  var _editorKey = GlobalKey<TaskDetailEditorState>();
   final _captureKey = GlobalKey();
 
   /// Tasks picked for a bulk change; a long press starts picking.
@@ -231,9 +244,14 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
   }
 
   Future<void> _open(Task task) async {
-    if ((context.size?.width ?? 0) >= 820) {
+    if (_editingTask?.id == task.id) return;
+    if (!await (_editorKey.currentState?.canLeave() ?? Future.value(true)) ||
+        !mounted) {
+      return;
+    }
+    if ((context.size?.width ?? 0) >= 760) {
       setState(() {
-        _editorKey = GlobalKey();
+        _editorKey = GlobalKey<TaskDetailEditorState>();
         _editingTask = task;
       });
       return;
@@ -417,7 +435,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
             }
           },
         );
-        final wide = constraints.maxWidth >= 820;
+        final wide = constraints.maxWidth >= 760;
         final task = _editingTask;
         final listWidth = task != null && wide
             ? constraints.maxWidth - _editorWidth - 12
@@ -486,6 +504,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
           task: task,
           projects: widget.moveTargets(),
           labels: widget.labels,
+          tracker: TrackerScope.of(context),
           onResult: _editorResult,
         );
         if (!wide) return editor;
@@ -862,7 +881,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
 }
 
 /// The side sheet's width beside the list.
-const _editorWidth = 400.0;
+const _editorWidth = 288.0;
 
 /// Reports its child's size after layout, so the list can leave room for
 /// the capture bar floating over it.

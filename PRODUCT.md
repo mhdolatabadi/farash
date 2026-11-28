@@ -14,10 +14,11 @@ sections, priorities, completion, undo and project navigation. Roadmap features
 must not appear as working controls before implementation.
 
 ## Brand Commitments
-منوال / Menval, Persian RTL, bundled Vazirmatn. The owner rejected every themed
-look (glass, dew, garden, weaving rug) and chose a plain Material 3 app: white
-and teal by day, near-black and lime by night, flat lists, no illustration or
-metaphor. Habits follow Loop Habit Tracker's UI closely. See DESIGN.md.
+منوال / Menval, Persian RTL, bundled Vazirmatn. The owner approved an ivory and
+charcoal tactile workspace: raised compact rows in inset wells, shared controls,
+compact active-inset navigation, and a desktop sidebar/master-detail composition.
+Brand is top right and search top left. Capture stays inside the page. Native
+calendar events are independent of tasks. See DESIGN.md for the current contract.
 
 ## Migration boundary
 The Android application ID, persisted storage keys and deployment identifiers retain the legacy `farash` spelling for compatibility. See `docs/rebrand-menval.md`.

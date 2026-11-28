@@ -1,91 +1,85 @@
 ---
-name: Menval Calm
-description: A calm Material 3 task app on a soft ground; one accent, raised tiles, dense lists in wells, no ornament.
-colors:
-  day-primary: '#0E7490'
-  day-on-primary: '#FFFFFF'
-  day-primary-container: '#D9EEF2'
-  day-on-primary-container: '#0B4F63'
-  day-accent: '#0757B5'
-  day-surface: '#FFFFFF'
-  day-ink: '#1B1F24'
-  day-muted-ink: '#5F6670'
-  day-container-low: '#F6F7F9'
-  day-container: '#F0F2F4'
-  day-outline: '#C9CED4'
-  day-divider: '#EEF0F2'
-  day-error: '#B42318'
-  day-soft-ground: '#E9EDF1'
-  day-soft-light: '#FFFFFF'
-  day-soft-shade: '#C9D0D7'
-  primary: '#C8F25A'
-  on-primary: '#0F1115'
-  primary-container: '#2E3A14'
-  on-primary-container: '#DDF79A'
-  accent: '#74A7FF'
-  surface: '#0F1115'
-  ink: '#ECEDEE'
-  muted-ink: '#9BA1A6'
-  container-low: '#15181D'
-  container: '#191C22'
-  outline: '#4A4F57'
-  divider: '#1E2127'
-  error: '#FF8A8A'
-  soft-ground: '#16191E'
-  soft-light: '#22262D'
-  soft-shade: '#0A0C0F'
-typography:
-  title: {fontFamily: Vazirmatn, fontSize: 22, fontWeight: 700}
-  body: {fontFamily: Vazirmatn, fontSize: 16}
-  timer: {fontFamily: Vazirmatn, fontWeight: 700, features: tabular}
-rounded: {field: 12, surface: 16, tile: 22, sheet: 28, button: stadium}
-spacing: {xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, gutter: 16, keyline: 56}
+name: Menval compact workspace
+description: Approved Persian-first tactile task, habit and calendar workspace.
 ---
 
-# Design System: Menval Calm
+# Menval design system
 
-## Overview
+The owner's November 2026 reference and subsequently approved interactive desktop
+workspace are the visual authority. This replaces the older teal Material/bento
+brief. The interface is an Operate surface: real planning data, fast capture,
+readable content and consistent controls. No decorative illustrations, invented
+statistics or additional dashboard cards.
 
-Menval is an Operate surface: people open it to capture and finish work, so a category-fluent user should trust every screen immediately. Material 3 governs structure, navigation and components; the brand lives only in color, Persian typography and precise spacing. There is no illustration, metaphor, reward art or ornament. The owner chose this after rejecting the glass, garden and weaving looks; the comparison board is at https://claude.ai/artifact/DtsjUw4u7MrgYgF15jpevY (row A for structure and the light theme, row C for the dark colors). In October 2026 the owner added a soft bento layer to the three main destinations, blending three Dribbble directions: bento tiles, soft UI and dense Linear-style rows (issue #146; options at https://claude.ai/artifact/XwCrpTtJBADVWoYgHUvzYv).
+## Shared controls
 
-## Colors
+`lib/app/design_tokens.dart`, `controls.dart`, `palette.dart`, `soft.dart` and
+`app_theme.dart` own geometry, states and color. Controls have a minimum 48px hit
+area, 12px corners and 20px icons. Checkboxes share one 20px circular mark with a
+14px check inside the 48px target, including task, subtask, checklist and habit
+uses. Numeric and skipped habit states retain their meaning.
 
-One accent per theme. By day: white surfaces, ink text, teal `#0E7490` for the primary action, today, the running timer and selection. By night: near-black `#0F1115`, light ink, and lime `#C8F25A` with dark text on it. Tomorrow uses the blue accent; overdue dates and errors use the error role, and nothing else does. Priorities keep the familiar red, orange, blue and grey per theme (`MenvalPalette.calm`). Every color reaches widgets through `ColorScheme` roles or `MenvalPaletteColors`; widgets never hard-code hex values.
+Raised controls sit above inset content wells. Press feedback sinks the surface;
+keyboard focus has a visible 2px outline. Transitions take 120ms and respect reduced
+motion. Disabled controls cannot act. Labels/tooltips describe icon-only actions.
+Text uses bundled Vazirmatn, Persian-first RTL, and wraps or truncates safely.
 
-## Typography
+## Palette
 
-Vazirmatn for every role, Persian digits, RTL first. Screen titles use `titleLarge` bold; section labels in lists use `titleSmall` bold in muted ink; task titles use `bodyLarge`. The timer uses tabular figures, isolated LTR, scaled to the ring. Text follows the user's scale; at large scales, controls wrap rather than truncate.
+Current light: ground `#F1EDE9`, surface `#F2EEEB`, well `#EAE5E0`, ink
+`#34332F`, muted `#706D66`, primary `#5A564E`, light `#FFFDFA`, shade `#D2CCC6`.
+Current dark: ground `#272724`, surface `#2D2D29`, well `#242520`, ink
+`#EEECE5`, muted `#B4B1A8`, primary `#DDD8CB`, light `#3B3C35`, shade `#191A17`.
+Errors and task priorities retain distinct accessible semantic colors.
 
-## Layout
+Gray/gold, burgundy/gold and navy/neon-green are future palette proposals. Their
+reserved tokens do not add an appearance setting or alter the current palette.
 
-Phones: four destinations in the navigation bar, امروز, کارها, تمرکز and, with time support, زمان‌ها (habits add عادت‌ها). The drawer holds views, projects and labels. At 840 logical pixels and wider, a sidebar replaces the bar; it lists the Inbox and views first, then the tools (تمرکز, زمان‌ها, عادت‌ها), then projects and labels, so nothing appears twice. Lists keep a readable measure on wide screens.
+## Desktop composition
 
-The sidebar and drawer (issue #158) follow what roughly 200 task-app and SaaS sidebars on Dribbble share: brand on top, a search field sunk in as a small well (with a `Ctrl K` hint on pointer devices; Ctrl/Cmd+K opens search), compact rows in labelled groups, and the progress and account pinned under a hairline at the bottom. On wide screens the sidebar is one raised panel (`Panel`, radius 18) floating on the ground, like the page's tiles. Rows share one style (`SidebarTheme`): 18 icons, medium-weight titles, 36 high under a pointer and 48 on touch, and a muted open-task count at the row's end. The row menu replaces the count on hover (`HoverSwap`); on touch it opens with a long press, so no row carries three dots. Groups: Inbox and the views (no label), «ابزارها» (تمرکز, زمان‌ها, عادت‌ها, wide screens only), favourites, «پروژه‌ها» with quiet archive and add buttons, and «برچسب‌ها»; projects and labels fold away from their names. The open row sits on a soft tint of the accent, with the accent on its icon and title. «پیشرفت من» is one flat line with the level, a thin bar of this week's days and a caption; under it the account row (initial, email, menu) holds the account's actions. Capture is not a navigation row: the capture bar on each list and the `q` shortcut cover it.
+A right sidebar keeps the Menval wordmark, destinations, projects and account
+reachable. Search sits at the top left; appearance is beside it. The rail is 208px
+(or 176px on the smaller desktop), main content has generous side gutters and a
+1160px maximum width. Content never stretches to the viewport edges.
 
-Spacing comes from one 4-point scale in `lib/app/spacing.dart` (`Space`), never from one-off numbers. Every list lines up on two keylines, measured from the edge of the well it sits in (the well itself starts 14 in from the screen edge): the 16 gutter, where check circles, section labels, the empty-list line and header icon glyphs start, and the 56 content keyline, where row titles, row dividers and the header's mark (beside the menu) start. List rows run edge to edge and carry the gutter themselves; containers do not add their own side padding. The header's open count shares the title's start edge and sits just under it. A section label takes 24 above and 4 below, so it belongs to the rows it names; the first one under the header takes 8. In the task editor, actions such as «افزودن زیرکار» are rows with the same icon and label keylines as the properties above them, not loose text buttons. The capture field stays above the navigation and safe areas, and the last task always scrolls clear of it.
+Task lists use compact rows with the title, completion mark and time visible in
+one scan. Simple rows are 52px; large text and meaningful metadata may grow them.
+An opened task occupies a 288px contextual pane to the left of the list when space
+allows. Switching tasks or destinations protects unsaved edits. Creating a task
+refreshes data without remounting the editor or discarding its draft.
 
-A saved `garden` or `weaving` start view migrates to `today`, which is also the default.
+## Capture and navigation
 
-## Elevation and shapes
+The plus is icon-only and contextual: task list creates a task, habits creates a
+habit, calendar creates an independent calendar event. Capture opens inside the
+page, retaining the surrounding list/grid. Task capture needs only a title;
+date/time is optional. Failure preserves input, repeated submissions are guarded,
+and uncertain recurring-task/habit/event creates reuse their original intent.
+Task notes are not shown or edited; existing stored descriptions/checklists are
+preserved. The workspace `q` shortcut opens task capture without stealing typing
+or acting behind another route. Ctrl/Cmd+K opens search.
 
-Every screen, sheet, dialog and menu stands on `softGround`, which is also the theme's `surface` (`lib/app/soft.dart`); the owner asked for the soft layer on every page and detail screen (issue #155). A summary sits on a `SoftTile`, which rises off the ground with a shade shadow toward the bottom end and a light shadow toward the top start. A list or the focus dial sits in a `SoftWell`, sunk in with inner shadows. Tiles and wells use a 22 radius, and both carry a hairline, so an edge never depends on a shadow alone. Slivers that cannot paint inner shadows use the flat `Soft.wellDecoration`. `Panel` is a raised tile too, so the side editor, the sign-in card, the sprint card and the time totals rise off the ground. Every list of rows (projects, upcoming, 7 days, all, search, the sprint backlog and board columns, time entries, badges, the task editor's properties and subtasks) sits in a well, with dense rows. Habit detail sections, the weekly report and challenge, and the level and points on «پیشرفت من» are tiles. Fields are small wells: filled a touch darker than the ground, with a hairline. Nothing is flat white any more; tone and the two shadows separate layers. Tiles and wells never nest more than one level deep. Buttons are stadium-shaped and at least 48 high; fields have a 12 radius outline; sheets and dialogs use 28. The FAB keeps Material's small elevation.
+Phones retain the compact three-tab navigation with inset active tab, brand top
+right, search top left, safe areas and bottom padding clearing the floating action.
+Keyboard and large-text layouts must keep capture and remaining content usable.
 
-## Components
+## Habits and calendar
 
-- **Task rows** are full-width and flat, separated by a hairline that starts at the title. The check circle takes the priority color. Selection fills the row with the primary container. Near dates sit in a tinted pill: today in the primary, tomorrow in the accent, late in the error color.
-- **امروز bento**: a date tile with the day numeral in the primary color, a tasks tile, a focus tile with the live timer and a play button, and a habits tile with up to five check squares. The tasks tile shows «۳ از ۴» with a ring only when the progress API confirmed today's done count; otherwise it shows only the open count. At text scale 1.5 and above, the tiles stack. Below the tiles, the day's rows are dense (6 vertical padding, the check keeps its 48 target) and sit in one well.
-- **عادت‌ها** opens with two tiles, today's done count with a ring and the best current streak, and puts the Loop-style grid in a well.
-- **Navigation** uses Material's indicator in the primary container, labels bold when selected.
-- **Focus** has a segmented mode picker (chips when the labels do not fit), one progress ring around the timer that shows real elapsed time, set in a round well, the task title under it, and a large primary start/pause button with a small soft-tile reset beside it. Its lifecycle and time-tracking behavior are described in `docs/time-tracking.md`.
-- **Sidebar progress** (level, XP, weekly goal) comes from the account API; unavailable data never shows an invented score.
+Habit rows are compact 52px rows with names kept visible while history scrolls.
+Ranges are 7, 14 or 30 actual local calendar days ending today. Switching ranges never
+changes the date of a stored check-in. Boolean four-state and numeric habits,
+reordering, filters and detail editing remain available.
 
-## Motion
+The week has seven equal day columns, Saturday-first in Persian settings, and
+shared time labels. Scheduled tasks and independent native events share overlap
+lanes. Event capture/editing remains inline and retains the selected week.
+Provider calendars remain read-only; native events have their own owner-scoped
+persistent model. See `docs/native-calendar-events.md` for exact data behavior.
 
-150 to 280 ms, conveying state only: row arrival and completion, the check, page fades. `Motion.of` removes durations when reduced motion is requested.
+## Validation
 
-## Do's and Don'ts
-
-- Do keep one accent per theme and use it only for primary actions, today, the running timer and selection.
-- Do follow Material 3 components before inventing a control.
-- Don't add illustrations, metaphors, decorative glow, glass or gradients. Outside the soft layer, don't wrap lists in cards.
-- Don't show progress, rewards or scores the server did not confirm.
+Behavior tests cover creation/retry, draft protection, range date identity and
+shared control semantics. Capture the actual Flutter app at 1440, 1024 and 320px,
+light and dark, including keyboard/large-text conditions. Keep native Android
+screenshot coverage, release web compilation and Android build gates. Mockups
+alone do not constitute acceptance of the implementation.

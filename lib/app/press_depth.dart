@@ -1,7 +1,9 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import 'package:menval/app/design_tokens.dart';
 import 'package:menval/app/motion.dart';
+import 'package:menval/app/palette.dart';
 
 /// A reusable, gesture-passive plastic press effect.
 ///
@@ -16,6 +18,8 @@ class PressDepth extends StatefulWidget {
     this.enabled = true,
     this.scale = 0.975,
     this.shadows = false,
+    this.statesController,
+    this.inset = true,
   });
 
   final Widget child;
@@ -26,6 +30,12 @@ class PressDepth extends StatefulWidget {
   /// Adds a subtle lifted idle shadow; leave off on already elevated cards.
   final bool shadows;
 
+  /// Supplies keyboard activation as well as pointer activation from a button.
+  final WidgetStatesController? statesController;
+
+  /// A compact checkbox paints its inset on the mark instead of the hit area.
+  final bool inset;
+
   @override
   State<PressDepth> createState() => _PressDepthState();
 }
@@ -34,6 +44,22 @@ class _PressDepthState extends State<PressDepth> {
   int? _pointer;
   Offset? _origin;
   bool _pressed = false;
+
+  bool get _active =>
+      widget.enabled &&
+      (_pressed ||
+          (widget.statesController?.value.contains(WidgetState.pressed) ??
+              false));
+
+  @override
+  void initState() {
+    super.initState();
+    widget.statesController?.addListener(_statesChanged);
+  }
+
+  void _statesChanged() {
+    if (mounted) setState(() {});
+  }
 
   void _down(PointerDownEvent event) {
     if (!mounted || !widget.enabled || _pointer != null) return;
@@ -60,6 +86,10 @@ class _PressDepthState extends State<PressDepth> {
   @override
   void didUpdateWidget(covariant PressDepth oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.statesController != widget.statesController) {
+      oldWidget.statesController?.removeListener(_statesChanged);
+      widget.statesController?.addListener(_statesChanged);
+    }
     if (!widget.enabled && oldWidget.enabled) {
       _pointer = null;
       _origin = null;
@@ -68,17 +98,16 @@ class _PressDepthState extends State<PressDepth> {
   }
 
   @override
+  void dispose() {
+    widget.statesController?.removeListener(_statesChanged);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final duration = Motion.of(
-      context,
-      _pressed
-          ? const Duration(milliseconds: 85)
-          : const Duration(milliseconds: 190),
-    );
-    final shade = colors.shadow.withValues(alpha: isDark ? 0.17 : 0.12);
-    final highlight = Colors.white.withValues(alpha: isDark ? 0.05 : 0.15);
+    final palette = MenvalPaletteColors.of(context);
+    final duration = Motion.of(context, MenvalDesignTokens.motion);
+    final active = _active;
 
     return Listener(
       onPointerDown: _down,
@@ -86,14 +115,12 @@ class _PressDepthState extends State<PressDepth> {
       onPointerUp: (event) => _release(event.pointer),
       onPointerCancel: (event) => _release(event.pointer),
       child: AnimatedScale(
-        scale: widget.enabled && _pressed ? widget.scale : 1,
+        scale: active ? widget.scale : 1,
         alignment: Alignment.center,
-        curve: _pressed ? Curves.easeOutCubic : Curves.easeOutBack,
+        curve: Motion.enter,
         duration: duration,
         child: AnimatedSlide(
-          offset: widget.enabled && _pressed
-              ? const Offset(0, 0.025)
-              : Offset.zero,
+          offset: active ? const Offset(0, 0.02) : Offset.zero,
           duration: duration,
           curve: Motion.enter,
           child: AnimatedContainer(
@@ -101,35 +128,95 @@ class _PressDepthState extends State<PressDepth> {
             curve: Motion.enter,
             decoration: BoxDecoration(
               borderRadius: widget.borderRadius,
-              boxShadow: !widget.shadows || _pressed
+              boxShadow: !widget.enabled || !widget.shadows || active
                   ? const []
                   : [
                       BoxShadow(
-                        color: shade,
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        color: palette.softShade,
+                        blurRadius: 8,
+                        offset: const Offset(3, 4),
+                      ),
+                      BoxShadow(
+                        color: palette.softLight,
+                        blurRadius: 8,
+                        offset: const Offset(-3, -3),
                       ),
                     ],
             ),
-            foregroundDecoration: BoxDecoration(
-              borderRadius: widget.borderRadius,
-              gradient: !_pressed || !widget.enabled
-                  ? null
-                  : LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        shade.withValues(alpha: isDark ? 0.30 : 0.45),
-                        Colors.transparent,
-                        highlight,
-                      ],
-                      stops: const [0, 0.55, 1],
-                    ),
+            child: CustomPaint(
+              foregroundPainter: active && widget.inset
+                  ? MenvalInsetPainter(
+                      light: palette.softLight,
+                      shade: palette.softShade,
+                      borderRadius: widget.borderRadius,
+                    )
+                  : null,
+              child: widget.child,
             ),
-            child: widget.child,
           ),
         ),
       ),
     );
   }
+}
+
+/// Shared inner-shadow paint for wells and pressed controls. The shadow stays
+/// inside the shape, so it never obscures adjacent controls or enlarges layout.
+class MenvalInsetPainter extends CustomPainter {
+  const MenvalInsetPainter({
+    required this.light,
+    required this.shade,
+    this.borderRadius = MenvalDesignTokens.radius,
+    this.circle = false,
+    this.edge,
+  });
+
+  final Color light;
+  final Color shade;
+  final BorderRadius borderRadius;
+  final bool circle;
+  final Color? edge;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final shape = circle
+        ? (Path()..addOval(rect))
+        : (Path()..addRRect(borderRadius.toRRect(rect)));
+    canvas.save();
+    canvas.clipPath(shape);
+    void cast(Color color, Offset offset) {
+      final outside = Path()
+        ..fillType = PathFillType.evenOdd
+        ..addRect(rect.inflate(24))
+        ..addPath(shape, Offset.zero);
+      canvas.drawPath(
+        outside.shift(offset),
+        Paint()
+          ..color = color
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.5),
+      );
+    }
+
+    cast(shade, const Offset(3, 3));
+    cast(light, const Offset(-3, -3));
+    canvas.restore();
+    if (edge case final edgeColor?) {
+      canvas.drawPath(
+        shape,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = edgeColor,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(MenvalInsetPainter old) =>
+      old.light != light ||
+      old.shade != shade ||
+      old.borderRadius != borderRadius ||
+      old.circle != circle ||
+      old.edge != edge;
 }

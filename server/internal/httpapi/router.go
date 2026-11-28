@@ -45,6 +45,9 @@ func NewHandler(config Config) http.Handler {
 		mux.HandleFunc("POST /api/v1/auth/revoke", auth.revoke)
 		mux.HandleFunc("GET /api/v1/me", auth.me)
 		calendarRoutes(mux, auth, config.Calendar)
+		if data, ok := config.Store.(calendarEventsStore); ok {
+			nativeEventRoutes(mux, auth, data)
+		}
 		if data, ok := config.Store.(searchStore); ok {
 			searchRoutes(mux, auth, data)
 		}

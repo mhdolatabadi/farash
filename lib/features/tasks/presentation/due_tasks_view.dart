@@ -22,6 +22,7 @@ import 'package:menval/features/tasks/presentation/task_detail_sheet.dart';
 import 'package:menval/features/tasks/presentation/task_messages.dart';
 import 'package:menval/features/tasks/presentation/task_tile.dart';
 import 'package:menval/features/tasks/presentation/today_workspace.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
 
 /// The views that gather tasks by date from every project.
 enum DueView {
@@ -67,10 +68,12 @@ class DueTasksView extends StatefulWidget {
     this.onOpenHabits,
     this.showQuickCapture = true,
     this.hideHeader = false,
+    this.refreshRevision = 0,
   });
 
   final DueView view;
   final TasksApi api;
+  final int refreshRevision;
   final String? Function() token;
   final List<Project> Function() projects;
   final ValueChanged<Project> onOpenProject;
@@ -111,6 +114,59 @@ class _DueTasksViewState extends State<DueTasksView> {
   List<Task> _tasks = const [];
   bool _loading = true;
   bool _openingTask = false;
+  TasksController? _editorController;
+  Task? _editingTask;
+  var _editorKey = GlobalKey<TaskDetailEditorState>();
+
+  @override
+  void dispose() {
+    ++_loadGeneration;
+    _editorController?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _editorResult(TaskSheetResult? result) async {
+    final controller = _editorController;
+    final task = _editingTask;
+    setState(() {
+      _editingTask = null;
+      _editorController = null;
+    });
+    if (result == TaskSheetResult.deleted &&
+        controller != null &&
+        task != null) {
+      await _run((_) => controller.delete(task));
+    }
+    controller?.dispose();
+    if (mounted) await _load();
+  }
+
+  Widget _withEditor(Widget list, double width) {
+    final task = _editingTask;
+    final controller = _editorController;
+    if (task == null || controller == null) return list;
+    final editor = TaskDetailEditor(
+      key: _editorKey,
+      controller: controller,
+      task: task,
+      projects: widget.projects(),
+      labels: widget.labels,
+      tracker: TrackerScope.of(context),
+      onResult: _editorResult,
+    );
+    if (width < 760) return editor;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(child: list),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: SizedBox(width: 288, child: editor),
+        ),
+      ],
+    );
+  }
+
   int? _doneToday;
   Object? _error;
   int _loadGeneration = 0;
@@ -145,7 +201,14 @@ class _DueTasksViewState extends State<DueTasksView> {
   @override
   void didUpdateWidget(covariant DueTasksView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.refreshRevision != oldWidget.refreshRevision &&
+        widget.token() == _activeToken) {
+      _load();
+    }
     if (widget.token() != _activeToken) {
+      _editorController?.dispose();
+      _editorController = null;
+      _editingTask = null;
       _load();
     }
   }
@@ -341,10 +404,15 @@ class _DueTasksViewState extends State<DueTasksView> {
   /// Opens [task] in the editor over this view, with its project's tasks
   /// loaded behind it for sections and subtasks.
   Future<void> _openTask(Task task) async {
-    if (_openingTask) return;
+    if (_openingTask || _editingTask?.id == task.id) return;
+    if (!await (_editorKey.currentState?.canLeave() ?? Future.value(true)) ||
+        !mounted) {
+      return;
+    }
     final requestToken = widget.token();
     if (requestToken == null) return;
     _openingTask = true;
+    var retained = false;
     final controller = TasksController(
       api: widget.api,
       sectionsApi: widget.sectionsApi,
@@ -369,6 +437,17 @@ class _DueTasksViewState extends State<DueTasksView> {
         );
         return;
       }
+      if ((context.size?.width ?? 0) >= 760) {
+        final previous = _editorController;
+        setState(() {
+          _editorController = controller;
+          _editingTask = current;
+          _editorKey = GlobalKey<TaskDetailEditorState>();
+        });
+        retained = true;
+        previous?.dispose();
+        return;
+      }
       final result = await showTaskDetailSheet(
         context,
         controller: controller,
@@ -380,7 +459,7 @@ class _DueTasksViewState extends State<DueTasksView> {
         await _run((_) => controller.delete(current));
       }
     } finally {
-      controller.dispose();
+      if (!retained) controller.dispose();
       _openingTask = false;
     }
     if (mounted && widget.token() == requestToken) await _load();
@@ -654,7 +733,10 @@ class _DueTasksViewState extends State<DueTasksView> {
     }
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
+        final totalWidth = constraints.maxWidth;
+        final width = _editingTask != null && totalWidth >= 760
+            ? totalWidth - 288
+            : totalWidth;
         // All task lists use a readable measure, including Today.
         final inset = width > _maxListWidth ? (width - _maxListWidth) / 2 : 0.0;
         final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
@@ -736,29 +818,32 @@ class _DueTasksViewState extends State<DueTasksView> {
         if (label != null ||
             widget.view != DueView.today ||
             !widget.showQuickCapture) {
-          return list;
+          return _withEditor(list, totalWidth);
         }
-        return ColoredBox(
-          color: Soft.ground(context),
-          child: Column(
-            children: [
-              Expanded(child: list),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  inset + Space.gutter,
-                  Space.sm,
-                  inset + Space.gutter,
-                  Space.md,
+        return _withEditor(
+          ColoredBox(
+            color: Soft.ground(context),
+            child: Column(
+              children: [
+                Expanded(child: list),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    inset + Space.gutter,
+                    Space.sm,
+                    inset + Space.gutter,
+                    Space.md,
+                  ),
+                  child: QuickAddBar(
+                    hint: 'افزودن کار برای امروز…',
+                    error: _captureError,
+                    pending: () => _captureSession.hasPendingRecurrence,
+                    onAdd: _quickAdd,
+                  ),
                 ),
-                child: QuickAddBar(
-                  hint: 'افزودن کار برای امروز…',
-                  error: _captureError,
-                  pending: () => _captureSession.hasPendingRecurrence,
-                  onAdd: _quickAdd,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
+          totalWidth,
         );
       },
     );

@@ -1,4 +1,5 @@
 import 'package:menval/features/calendar_connections/calendar_connections.dart';
+import 'package:menval/features/calendar/calendar_events_controller.dart';
 import 'package:menval/features/habits/habits_controller.dart';
 import 'package:menval/core/offline/offline_read_cache.dart';
 import 'package:menval/features/search/search.dart';
@@ -218,7 +219,8 @@ class ApiClient
         ScrumApi,
         SearchApi,
         ExportApi,
-        CalendarConnectionsApi {
+        CalendarConnectionsApi,
+        CalendarEventsApi {
   ApiClient(this.baseUri, {http.Client? client, this.offlineCache})
     : _client = client ?? http.Client();
 
@@ -250,6 +252,14 @@ class ApiClient
 
   @override
   Future<Map<String, dynamic>> calendarRequest(
+    String token,
+    String method,
+    String path, {
+    Map<String, Object?>? body,
+  }) => searchRequest(token, method, path, body: body);
+
+  @override
+  Future<Map<String, dynamic>> eventRequest(
     String token,
     String method,
     String path, {

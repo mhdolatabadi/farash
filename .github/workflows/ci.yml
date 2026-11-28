@@ -46,6 +46,7 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+        id: dependencies
       - name: Check Dart formatting
         shell: bash
         run: |
@@ -54,7 +55,11 @@ jobs:
             exit 1
           fi
       - run: flutter analyze
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
       - name: Run Flutter tests
+        # Collect behavior failures and screenshots in the same run as lint
+        # failures. Failed formatting/analysis still fails this required job.
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
         shell: bash
         env:
           CAPTURE_GLASS_UI: ${{ needs.changes.outputs.visual == 'true' && '1' || '0' }}

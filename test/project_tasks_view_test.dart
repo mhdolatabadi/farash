@@ -259,17 +259,15 @@ void main() {
   testWidgets('the detail sheet edits, moves and deletes with undo', (
     tester,
   ) async {
-    api.seed('p1', 'A');
+    final a = api.seed('p1', 'A');
+    await api.updateTask('token', a.id, const TaskDraft(description: 'جزئیات'));
     api.seed('p1', 'B');
     await pumpView(tester);
 
     await tester.tap(find.text('A'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const ValueKey('task-title')), 'A2');
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'توضیحات'),
-      'جزئیات',
-    );
+    expect(find.widgetWithText(TextFormField, 'توضیحات'), findsNothing);
     await tester.tap(find.byTooltip('اولویت ۲'));
     await tester.tap(find.text('ذخیره'));
     await tester.pumpAndSettle();
