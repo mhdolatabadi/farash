@@ -91,26 +91,67 @@ class TaskTile extends StatelessWidget {
     final done = task.isCompleted;
     final checklist = parseChecklist(task.description);
     final dated = (showDue && task.due != null) || task.deadline != null;
-    if (dense && !task.hasSubtasks && checklist.isEmpty &&
-        task.deadline == null && tag == null && labels.isEmpty && !stamped) {
+    if (dense &&
+        !task.hasSubtasks &&
+        checklist.isEmpty &&
+        task.deadline == null &&
+        tag == null &&
+        labels.isEmpty &&
+        !stamped) {
       final time = task.due?.localTime;
-      return Semantics(selected: selected, child: Material(
-        color: selected ? theme.colorScheme.primaryContainer : Colors.transparent,
-        child: PressDepth(child: InkWell(onTap: onOpen, onLongPress: onLongPress,
-          child: Padding(padding: EdgeInsetsDirectional.only(start: 2 + subtaskIndent * depth, end: 10, top: 2, bottom: 2),
-            child: Row(children: [
-              ?leading,
-              _PriorityCheck(task: task, onToggle: onToggle),
-              Expanded(child: Text(task.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500,
-                  decoration: done ? TextDecoration.lineThrough : null,
-                  color: done ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.onSurface))),
-              if (showDue && time != null) Padding(padding: const EdgeInsetsDirectional.only(start: 8),
-                child: Text(formatTime(time), style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant))),
-              ?trailing,
-            ])),
-        )),
-      ));
+      return Semantics(
+        selected: selected,
+        child: Material(
+          color: selected
+              ? theme.colorScheme.primaryContainer
+              : Colors.transparent,
+          child: PressDepth(
+            child: InkWell(
+              onTap: onOpen,
+              onLongPress: onLongPress,
+              child: Padding(
+                padding: EdgeInsetsDirectional.only(
+                  start: 2 + subtaskIndent * depth,
+                  end: 10,
+                  top: 2,
+                  bottom: 2,
+                ),
+                child: Row(
+                  children: [
+                    ?leading,
+                    _PriorityCheck(task: task, onToggle: onToggle),
+                    Expanded(
+                      child: Text(
+                        task.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          decoration: done ? TextDecoration.lineThrough : null,
+                          color: done
+                              ? theme.colorScheme.onSurfaceVariant
+                              : theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    if (showDue && time != null)
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(start: 8),
+                        child: Text(
+                          formatTime(time),
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ?trailing,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
     }
     final row = InkWell(
       onTap: onOpen,
@@ -494,10 +535,14 @@ class _PriorityCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final priority = task.priority == TaskPriority.p4 ? '' : '، ${task.priority.label}';
+    final priority = task.priority == TaskPriority.p4
+        ? ''
+        : '، ${task.priority.label}';
     return MenvalCheckbox(
       value: task.isCompleted,
-      label: task.isCompleted ? 'برگرداندن «${task.title}»$priority' : 'انجام «${task.title}»$priority',
+      label: task.isCompleted
+          ? 'برگرداندن «${task.title}»$priority'
+          : 'انجام «${task.title}»$priority',
       activeColor: task.priority.colorIn(context),
       onChanged: (_) => onToggle(),
     );

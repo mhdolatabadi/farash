@@ -159,6 +159,28 @@ func newRefreshToken() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(raw[:]), nil
 }
 
+// Renew exchanges a still-valid legacy access JWT for a new access token
+// and a rotatable refresh credential. Expired or forged tokens cannot upgrade.
+func (h *authHandler) renew(w http.ResponseWriter, r *http.Request) {
+	if h.refreshStore == nil {
+		writeError(w, http.StatusNotImplemented, "refresh_unavailable")
+		return
+	}
+	if !h.rateLimits.allow(clientKey(r, "renew")) {
+		writeError(w, http.StatusTooManyRequests, "rate_limited")
+		return
+	}
+	user, ok := h.authenticate(w, r)
+	if !ok {
+		return
+	}
+	if !h.rateLimits.allow("renew-account:" + user.ID) {
+		writeError(w, http.StatusTooManyRequests, "rate_limited")
+		return
+	}
+	h.writeAuth(w, r.Context(), http.StatusOK, user)
+}
+
 func (h *authHandler) refresh(w http.ResponseWriter, r *http.Request) {
 	if h.refreshStore == nil {
 		writeError(w, http.StatusNotImplemented, "refresh_unavailable")

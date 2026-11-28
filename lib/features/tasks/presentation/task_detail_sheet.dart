@@ -782,12 +782,29 @@ class _ChecklistState extends State<_Checklist> {
                   : 'چک‌لیست ${persianDigits(done)}/${persianDigits(items.length)}',
             ),
             for (final item in items)
-              Row(key: ValueKey('checklist-${item.line}'), children: [
-                MenvalCheckbox(value: item.done, label: item.text,
-                  onChanged: (checked) => widget.onChanged(setChecklistItem(value.text, item.line, checked))),
-                Expanded(child: Text(item.text, style: item.done ? TextStyle(
-                  decoration: TextDecoration.lineThrough, color: theme.colorScheme.onSurfaceVariant) : null)),
-              ]),
+              Row(
+                key: ValueKey('checklist-${item.line}'),
+                children: [
+                  MenvalCheckbox(
+                    value: item.done,
+                    label: item.text,
+                    onChanged: (checked) => widget.onChanged(
+                      setChecklistItem(value.text, item.line, checked),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      item.text,
+                      style: item.done
+                          ? TextStyle(
+                              decoration: TextDecoration.lineThrough,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            )
+                          : null,
+                    ),
+                  ),
+                ],
+              ),
             _InlineAdd(
               controller: widget.newItem,
               hint: 'مورد تازهٔ چک‌لیست',

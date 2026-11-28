@@ -114,7 +114,9 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
   ProjectLayout _layout = ProjectLayout.list;
 
   Future<void> _setLayout(ProjectLayout layout) async {
-    if (!await (_editorKey.currentState?.canLeave() ?? Future.value(true)) || !mounted) return;
+    if (!await (_editorKey.currentState?.canLeave() ?? Future.value(true)) ||
+        !mounted)
+      return;
     setState(() {
       _layout = layout;
       _editingTask = null;
@@ -241,7 +243,9 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
 
   Future<void> _open(Task task) async {
     if (_editingTask?.id == task.id) return;
-    if (!await (_editorKey.currentState?.canLeave() ?? Future.value(true)) || !mounted) return;
+    if (!await (_editorKey.currentState?.canLeave() ?? Future.value(true)) ||
+        !mounted)
+      return;
     if ((context.size?.width ?? 0) >= 760) {
       setState(() {
         _editorKey = GlobalKey<TaskDetailEditorState>();

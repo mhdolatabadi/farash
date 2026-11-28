@@ -45,9 +45,9 @@ void main() {
 
     test('the theme reads the stone palette', () {
       final theme = MenvalTheme.light();
-      expect(theme.colorScheme.primary, const Color(0xFF383936));
+      expect(theme.colorScheme.primary, const Color(0xFF5A564E));
       expect(theme.colorScheme.surface, const Color(0xFFF2EFEC));
-      expect(MenvalTheme.dark().colorScheme.primary, const Color(0xFFE8C487));
+      expect(MenvalTheme.dark().colorScheme.primary, const Color(0xFFDDD8CB));
       expect(MenvalTheme.dark().colorScheme.surface, const Color(0xFF252830));
       expect(theme.colorScheme.error, MenvalPalette.stone.light.overdue);
       expect(

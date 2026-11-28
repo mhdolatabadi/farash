@@ -123,8 +123,7 @@ class _MenvalCheckboxState extends State<MenvalCheckbox> {
             statesController: _states,
             onPressed: enabled ? toggle : null,
             style: _controlStyle(context).copyWith(
-              backgroundColor:
-                  const WidgetStatePropertyAll(Colors.transparent),
+              backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
             ),
             icon: Opacity(
               opacity: enabled ? 1 : .45,

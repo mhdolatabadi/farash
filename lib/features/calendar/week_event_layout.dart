@@ -67,6 +67,7 @@ List<WeekEventPlacement> layoutWeekEvents(
       }
     }
   }
+
   for (final task in tasks) {
     final start = task.due?.localTime;
     if (start == null) continue;

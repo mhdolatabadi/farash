@@ -172,7 +172,10 @@ void main() {
     final habit = controller.all.last;
     final pastDay = today - 20;
     Finder cellFor(int day) => find.byWidgetPredicate(
-      (widget) => widget is CheckCell && widget.habit.id == habit.id && widget.day == day,
+      (widget) =>
+          widget is CheckCell &&
+          widget.habit.id == habit.id &&
+          widget.day == day,
     );
     expect(cellFor(today - 6), findsOneWidget);
     expect(cellFor(today - 7), findsNothing);
@@ -208,10 +211,15 @@ void main() {
     final controller = await pump(tester, seeded(), size: const Size(320, 700));
     final name = find.text('ورزش صبحگاهی');
     final nameBounds = tester.getRect(name);
-    final history = find.byKey(ValueKey('habit-history-${controller.all.first.id}'));
+    final history = find.byKey(
+      ValueKey('habit-history-${controller.all.first.id}'),
+    );
     await tester.drag(history, const Offset(160, 0));
     await tester.pumpAndSettle();
-    final offset = tester.widget<SingleChildScrollView>(history).controller!.offset;
+    final offset = tester
+        .widget<SingleChildScrollView>(history)
+        .controller!
+        .offset;
     expect(offset, greaterThan(0));
     final header = tester.widget<SingleChildScrollView>(
       find.byKey(const ValueKey('habit-history-header')),

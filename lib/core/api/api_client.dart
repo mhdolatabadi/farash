@@ -734,6 +734,16 @@ class ApiClient
     return AuthSession.fromJson(decoded as Map<String, dynamic>);
   }
 
+  /// Upgrade a still-valid pre-refresh-token session on app startup.
+  Future<AuthSession> renewSession(String accessToken) async {
+    final result = await _send(
+      'POST',
+      '/api/v1/auth/renew',
+      token: accessToken,
+    );
+    return AuthSession.fromJson(result as Map<String, dynamic>);
+  }
+
   Future<AuthSession> refreshSession(String refreshToken) async {
     final result = await _send(
       'POST',

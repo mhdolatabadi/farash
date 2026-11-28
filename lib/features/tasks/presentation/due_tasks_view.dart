@@ -127,8 +127,13 @@ class _DueTasksViewState extends State<DueTasksView> {
   Future<void> _editorResult(TaskSheetResult? result) async {
     final controller = _editorController;
     final task = _editingTask;
-    setState(() { _editingTask = null; _editorController = null; });
-    if (result == TaskSheetResult.deleted && controller != null && task != null) {
+    setState(() {
+      _editingTask = null;
+      _editorController = null;
+    });
+    if (result == TaskSheetResult.deleted &&
+        controller != null &&
+        task != null) {
       await _run((_) => controller.delete(task));
     }
     controller?.dispose();
@@ -139,16 +144,27 @@ class _DueTasksViewState extends State<DueTasksView> {
     final task = _editingTask;
     final controller = _editorController;
     if (task == null || controller == null) return list;
-    final editor = TaskDetailEditor(key: _editorKey, controller: controller,
-      task: task, projects: widget.projects(), labels: widget.labels,
-      onResult: _editorResult);
+    final editor = TaskDetailEditor(
+      key: _editorKey,
+      controller: controller,
+      task: task,
+      projects: widget.projects(),
+      labels: widget.labels,
+      onResult: _editorResult,
+    );
     if (width < 760) return editor;
-    return Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Expanded(child: list),
-      Padding(padding: const EdgeInsets.symmetric(vertical: 12),
-        child: SizedBox(width: 288, child: editor)),
-    ]);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(child: list),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: SizedBox(width: 288, child: editor),
+        ),
+      ],
+    );
   }
+
   int? _doneToday;
   Object? _error;
   int _loadGeneration = 0;
@@ -183,7 +199,9 @@ class _DueTasksViewState extends State<DueTasksView> {
   @override
   void didUpdateWidget(covariant DueTasksView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.refreshRevision != oldWidget.refreshRevision && widget.token() == _activeToken) _load();
+    if (widget.refreshRevision != oldWidget.refreshRevision &&
+        widget.token() == _activeToken)
+      _load();
     if (widget.token() != _activeToken) {
       _editorController?.dispose();
       _editorController = null;
@@ -384,7 +402,9 @@ class _DueTasksViewState extends State<DueTasksView> {
   /// loaded behind it for sections and subtasks.
   Future<void> _openTask(Task task) async {
     if (_openingTask || _editingTask?.id == task.id) return;
-    if (!await (_editorKey.currentState?.canLeave() ?? Future.value(true)) || !mounted) return;
+    if (!await (_editorKey.currentState?.canLeave() ?? Future.value(true)) ||
+        !mounted)
+      return;
     final requestToken = widget.token();
     if (requestToken == null) return;
     _openingTask = true;
@@ -710,7 +730,9 @@ class _DueTasksViewState extends State<DueTasksView> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final totalWidth = constraints.maxWidth;
-        final width = _editingTask != null && totalWidth >= 760 ? totalWidth - 288 : totalWidth;
+        final width = _editingTask != null && totalWidth >= 760
+            ? totalWidth - 288
+            : totalWidth;
         // All task lists use a readable measure, including Today.
         final inset = width > _maxListWidth ? (width - _maxListWidth) / 2 : 0.0;
         final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
@@ -794,28 +816,31 @@ class _DueTasksViewState extends State<DueTasksView> {
             !widget.showQuickCapture) {
           return _withEditor(list, totalWidth);
         }
-        return _withEditor(ColoredBox(
-          color: Soft.ground(context),
-          child: Column(
-            children: [
-              Expanded(child: list),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  inset + Space.gutter,
-                  Space.sm,
-                  inset + Space.gutter,
-                  Space.md,
+        return _withEditor(
+          ColoredBox(
+            color: Soft.ground(context),
+            child: Column(
+              children: [
+                Expanded(child: list),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    inset + Space.gutter,
+                    Space.sm,
+                    inset + Space.gutter,
+                    Space.md,
+                  ),
+                  child: QuickAddBar(
+                    hint: 'افزودن کار برای امروز…',
+                    error: _captureError,
+                    pending: () => _captureSession.hasPendingRecurrence,
+                    onAdd: _quickAdd,
+                  ),
                 ),
-                child: QuickAddBar(
-                  hint: 'افزودن کار برای امروز…',
-                  error: _captureError,
-                  pending: () => _captureSession.hasPendingRecurrence,
-                  onAdd: _quickAdd,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ), totalWidth);
+          totalWidth,
+        );
       },
     );
   }

@@ -138,8 +138,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           reminders: widget.habitReminders,
         )
       : null;
-  late final CalendarEventsController? _events = widget.tasksApi is CalendarEventsApi
-      ? CalendarEventsController(api: widget.tasksApi as CalendarEventsApi, token: widget.token) : null;
+  late final CalendarEventsController? _events =
+      widget.tasksApi is CalendarEventsApi
+      ? CalendarEventsController(
+          api: widget.tasksApi as CalendarEventsApi,
+          token: widget.token,
+        )
+      : null;
   final _eventCapture = ValueNotifier<int>(0);
   final _habitTitle = TextEditingController();
   bool _habitCaptureVisible = false;
@@ -367,7 +372,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   TaskDue? _inlineDue;
 
   KeyEventResult _quickKey(KeyEvent event) {
-    if (ModalRoute.of(context)?.isCurrent != true) return KeyEventResult.ignored;
+    if (ModalRoute.of(context)?.isCurrent != true)
+      return KeyEventResult.ignored;
     final keyboard = HardwareKeyboard.instance;
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.keyK &&
@@ -414,15 +420,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (_quickAdding) return;
     if (_section != 0 && _section != 1) await _switchSection(0);
     if (!mounted) return;
-    final selected = _section == 1 && _view == null && _labelId == null ? _selected : null;
-    final target = selected != null && !selected.isFolder && !selected.isArchived
-        ? selected : widget.projects.inbox;
+    final selected = _section == 1 && _view == null && _labelId == null
+        ? _selected
+        : null;
+    final target =
+        selected != null && !selected.isFolder && !selected.isArchived
+        ? selected
+        : widget.projects.inbox;
     if (target == null) return;
     if (_inlineSession == null || _inlineTask.text.isEmpty) {
       _inlineProject = target;
       _inlineSession = QuickCaptureSession(
-        api: widget.tasksApi, sections: widget.sectionsApi, labels: _labels,
-        token: widget.token, projects: () => widget.projects.projects,
+        api: widget.tasksApi,
+        sections: widget.sectionsApi,
+        labels: _labels,
+        token: widget.token,
+        projects: () => widget.projects.projects,
         defaultProject: () => target,
       );
     }
@@ -449,19 +462,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final token = widget.token();
     final parsed = parseQuickTask(raw, now: DateTime.now());
     final due = _inlineDue;
-    final capture = due == null ? parsed : QuickTask(
-      title: parsed.title, day: due.day,
-      hour: due.isTimed ? due.localTime!.hour : null,
-      minute: due.isTimed ? due.localTime!.minute : 0,
-      deadline: parsed.deadline, priority: parsed.priority, project: parsed.project,
-      section: parsed.section, recurrence: parsed.recurrence,
-      labels: parsed.labels, tokens: parsed.tokens,
-    );
-    setState(() { _quickAdding = true; _inlineError = null; });
+    final capture = due == null
+        ? parsed
+        : QuickTask(
+            title: parsed.title,
+            day: due.day,
+            hour: due.isTimed ? due.localTime!.hour : null,
+            minute: due.isTimed ? due.localTime!.minute : 0,
+            deadline: parsed.deadline,
+            priority: parsed.priority,
+            project: parsed.project,
+            section: parsed.section,
+            recurrence: parsed.recurrence,
+            labels: parsed.labels,
+            tokens: parsed.tokens,
+          );
+    setState(() {
+      _quickAdding = true;
+      _inlineError = null;
+    });
     try {
-      await session.capture(capture, raw,
+      await session.capture(
+        capture,
+        raw,
         calendar: CalendarScope.of(context).isJalali ? 'jalali' : 'gregorian',
-        defaultDay: _section == 0 ? DateTime.now() : null);
+        defaultDay: _section == 0 ? DateTime.now() : null,
+      );
       if (!mounted || token != widget.token()) return;
       _inlineTask.clear();
       _inlineDue = null;
@@ -469,65 +495,161 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       setState(() => _captureRevision++);
       _inlineFocus.requestFocus();
     } catch (error) {
-      if (mounted && token == widget.token()) setState(() => _inlineError = error.toString());
+      if (mounted && token == widget.token())
+        setState(() => _inlineError = error.toString());
     } finally {
       if (mounted) setState(() => _quickAdding = false);
     }
   }
 
   Future<void> _pickCaptureDate() async {
-    final result = await showDuePicker(context, initial: TaskDates(due: _inlineDue), dueOnly: true);
+    final result = await showDuePicker(
+      context,
+      initial: TaskDates(due: _inlineDue),
+      dueOnly: true,
+    );
     if (mounted && result != null) setState(() => _inlineDue = result.due);
   }
 
   Widget _captureBar() => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    child: SoftWell(radius: 12, padding: const EdgeInsets.all(8), child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(children: [
-          Expanded(child: TextField(
-            key: const ValueKey('inline-task-title'), controller: _inlineTask,
-            focusNode: _inlineFocus, maxLength: 500,
-            enabled: !_quickAdding && !(_inlineSession?.hasPendingRecurrence ?? false),
-            decoration: const InputDecoration(labelText: 'عنوان کار', counterText: ''),
-            onSubmitted: (_) => _submitInline(),
-          )),
-          MenvalIconButton(key: const ValueKey('inline-task-submit'), tooltip: 'ثبت کار',
-            icon: Icons.check_rounded, primary: true, onPressed: _quickAdding ? null : _submitInline),
-          MenvalIconButton(tooltip: 'بستن افزودن کار', icon: Icons.close_rounded,
-            onPressed: _quickAdding ? null : () => setState(() => _captureVisible = false)),
-        ]),
-        Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, children: [
-          TextButton.icon(onPressed: _quickAdding ? null : _pickCaptureDate,
-            icon: const Icon(Icons.schedule_outlined, size: 20),
-            label: Text(_inlineDue == null ? 'تاریخ و ساعت' : describeDates(TaskDates(due: _inlineDue), CalendarScope.of(context)))),
-          if (_inlineProject != null) Text(_inlineProject!.displayName),
-        ]),
-        if (_inlineError != null) Text(_inlineError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-      ],
-    )),
+    child: SoftWell(
+      radius: 12,
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const ValueKey('inline-task-title'),
+                  controller: _inlineTask,
+                  focusNode: _inlineFocus,
+                  maxLength: 500,
+                  enabled:
+                      !_quickAdding &&
+                      !(_inlineSession?.hasPendingRecurrence ?? false),
+                  decoration: const InputDecoration(
+                    labelText: 'عنوان کار',
+                    counterText: '',
+                  ),
+                  onSubmitted: (_) => _submitInline(),
+                ),
+              ),
+              MenvalIconButton(
+                key: const ValueKey('inline-task-submit'),
+                tooltip: 'ثبت کار',
+                icon: Icons.check_rounded,
+                primary: true,
+                onPressed: _quickAdding ? null : _submitInline,
+              ),
+              MenvalIconButton(
+                tooltip: 'بستن افزودن کار',
+                icon: Icons.close_rounded,
+                onPressed: _quickAdding
+                    ? null
+                    : () => setState(() => _captureVisible = false),
+              ),
+            ],
+          ),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            children: [
+              TextButton.icon(
+                onPressed: _quickAdding ? null : _pickCaptureDate,
+                icon: const Icon(Icons.schedule_outlined, size: 20),
+                label: Text(
+                  _inlineDue == null
+                      ? 'تاریخ و ساعت'
+                      : describeDates(
+                          TaskDates(due: _inlineDue),
+                          CalendarScope.of(context),
+                        ),
+                ),
+              ),
+              if (_inlineProject != null) Text(_inlineProject!.displayName),
+            ],
+          ),
+          if (_inlineError != null)
+            Text(
+              _inlineError!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+        ],
+      ),
+    ),
   );
 
   Widget _desktopToolbar() {
     final theme = Theme.of(context);
     final preferences = ThemePreferencesScope.maybeOf(context);
-    return Padding(padding: const EdgeInsets.fromLTRB(20, 16, 20, 12), child: Row(children: [
-      Expanded(child: Text(switch (_section) {0 => 'امروز', 4 => 'عادت‌ها', 5 => 'تقویم', 2 => 'تمرکز', 3 => 'زمان‌ها', _ => _selected?.displayName ?? 'کارها'},
-        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700))),
-      if (_section == 0 || _section == 1)
-        MenvalIconButton(tooltip: 'کار جدید', icon: Icons.add_rounded, primary: true, onPressed: _quickAdd),
-      if (_section == 4) MenvalIconButton(tooltip: 'عادت جدید', icon: Icons.add_rounded, primary: true, onPressed: _createHabitFromFab),
-      if (_section == 5 && _events != null) MenvalIconButton(tooltip: 'رویداد جدید', icon: Icons.add_rounded,
-        primary: true, onPressed: () => _eventCapture.value++),
-      if (preferences != null) MenvalIconButton(
-        tooltip: theme.brightness == Brightness.dark ? 'تم روشن' : 'تم تاریک',
-        icon: theme.brightness == Brightness.dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-        onPressed: () => preferences.setMode(theme.brightness == Brightness.dark ? ThemeMode.light : ThemeMode.dark)),
-      if (widget.tasksApi case final SearchApi api)
-        MenvalIconButton(key: const ValueKey('menval-header-search'), tooltip: 'جست‌وجو', icon: Icons.search_rounded, onPressed: () => _openSearch(api)),
-    ]));
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              switch (_section) {
+                0 => 'امروز',
+                4 => 'عادت‌ها',
+                5 => 'تقویم',
+                2 => 'تمرکز',
+                3 => 'زمان‌ها',
+                _ => _selected?.displayName ?? 'کارها',
+              },
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          if (_section == 0 || _section == 1)
+            MenvalIconButton(
+              tooltip: 'کار جدید',
+              icon: Icons.add_rounded,
+              primary: true,
+              onPressed: _quickAdd,
+            ),
+          if (_section == 4)
+            MenvalIconButton(
+              tooltip: 'عادت جدید',
+              icon: Icons.add_rounded,
+              primary: true,
+              onPressed: _createHabitFromFab,
+            ),
+          if (_section == 5 && _events != null)
+            MenvalIconButton(
+              tooltip: 'رویداد جدید',
+              icon: Icons.add_rounded,
+              primary: true,
+              onPressed: () => _eventCapture.value++,
+            ),
+          if (preferences != null)
+            MenvalIconButton(
+              tooltip: theme.brightness == Brightness.dark
+                  ? 'تم روشن'
+                  : 'تم تاریک',
+              icon: theme.brightness == Brightness.dark
+                  ? Icons.light_mode_outlined
+                  : Icons.dark_mode_outlined,
+              onPressed: () => preferences.setMode(
+                theme.brightness == Brightness.dark
+                    ? ThemeMode.light
+                    : ThemeMode.dark,
+              ),
+            ),
+          if (widget.tasksApi case final SearchApi api)
+            MenvalIconButton(
+              key: const ValueKey('menval-header-search'),
+              tooltip: 'جست‌وجو',
+              icon: Icons.search_rounded,
+              onPressed: () => _openSearch(api),
+            ),
+        ],
+      ),
+    );
   }
 
   Future<List<Task>> _loadCalendarTasks(DateTime from, DateTime to) async {
@@ -553,8 +675,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _submitHabit() async {
     final title = _habitTitle.text.trim();
     if (_habitSaving || title.isEmpty || _habits == null) return;
-    setState(() { _habitSaving = true; _habitCaptureError = null; });
-    final habit = await _habits!.create(HabitDraft(name: title), attempt: _habitAttempt);
+    setState(() {
+      _habitSaving = true;
+      _habitCaptureError = null;
+    });
+    final habit = await _habits!.create(
+      HabitDraft(name: title),
+      attempt: _habitAttempt,
+    );
     if (!mounted) return;
     setState(() {
       _habitSaving = false;
@@ -570,21 +698,53 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Widget _habitCapture() => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    child: SoftWell(radius: 12, padding: const EdgeInsets.all(8), child: Column(
-      mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [Row(children: [
-        Expanded(child: TextField(key: const ValueKey('inline-habit-title'),
-          controller: _habitTitle, autofocus: true, enabled: !_habitSaving,
-          maxLength: 200, textInputAction: TextInputAction.done,
-          decoration: const InputDecoration(labelText: 'نام عادت', counterText: ''),
-          onSubmitted: (_) => _submitHabit())),
-        MenvalIconButton(tooltip: 'ثبت عادت', icon: Icons.check_rounded, primary: true,
-          onPressed: _habitSaving ? null : _submitHabit),
-        MenvalIconButton(tooltip: 'بستن افزودن عادت', icon: Icons.close_rounded,
-          onPressed: _habitSaving ? null : () => setState(() => _habitCaptureVisible = false)),
-      ]),
-      if (_habitCaptureError != null) Text(_habitCaptureError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-    ])),
+    child: SoftWell(
+      radius: 12,
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const ValueKey('inline-habit-title'),
+                  controller: _habitTitle,
+                  autofocus: true,
+                  enabled: !_habitSaving,
+                  maxLength: 200,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    labelText: 'نام عادت',
+                    counterText: '',
+                  ),
+                  onSubmitted: (_) => _submitHabit(),
+                ),
+              ),
+              MenvalIconButton(
+                tooltip: 'ثبت عادت',
+                icon: Icons.check_rounded,
+                primary: true,
+                onPressed: _habitSaving ? null : _submitHabit,
+              ),
+              MenvalIconButton(
+                tooltip: 'بستن افزودن عادت',
+                icon: Icons.close_rounded,
+                onPressed: _habitSaving
+                    ? null
+                    : () => setState(() => _habitCaptureVisible = false),
+              ),
+            ],
+          ),
+          if (_habitCaptureError != null)
+            Text(
+              _habitCaptureError!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+        ],
+      ),
+    ),
   );
 
   Widget _approvedNav() {
@@ -1403,7 +1563,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       moveTargets: () => widget.projects.projects,
                       labels: _labels,
                       refreshRevision: _captureRevision,
-                    showQuickCapture: false,
+                      showQuickCapture: false,
                     ),
                   )
                 : ProjectTasksView(
@@ -1471,10 +1631,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     ),
                   ),
                   actions: [
-                    if (ThemePreferencesScope.maybeOf(context) case final preferences?)
-                      MenvalIconButton(tooltip: Theme.of(context).brightness == Brightness.dark ? 'تم روشن' : 'تم تاریک',
-                        icon: Theme.of(context).brightness == Brightness.dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                        onPressed: () => preferences.setMode(Theme.of(context).brightness == Brightness.dark ? ThemeMode.light : ThemeMode.dark)),
+                    if (ThemePreferencesScope.maybeOf(context)
+                        case final preferences?)
+                      MenvalIconButton(
+                        tooltip: Theme.of(context).brightness == Brightness.dark
+                            ? 'تم روشن'
+                            : 'تم تاریک',
+                        icon: Theme.of(context).brightness == Brightness.dark
+                            ? Icons.light_mode_outlined
+                            : Icons.dark_mode_outlined,
+                        onPressed: () => preferences.setMode(
+                          Theme.of(context).brightness == Brightness.dark
+                              ? ThemeMode.light
+                              : ThemeMode.dark,
+                        ),
+                      ),
                     if (widget.tasksApi case final SearchApi api)
                       Padding(
                         padding: const EdgeInsetsDirectional.only(
@@ -1511,9 +1682,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   child: FloatingActionButton(
                     key: const ValueKey('menval-create-fab'),
                     shape: const CircleBorder(),
-                    tooltip: _section == 4 ? 'عادت جدید' : _section == 5 ? 'رویداد جدید' : 'کار جدید',
-                    onPressed: _section == 4 ? _createHabitFromFab : _section == 5
-                        ? (_events == null ? null : () => _eventCapture.value++) : _quickAdd,
+                    tooltip: _section == 4
+                        ? 'عادت جدید'
+                        : _section == 5
+                        ? 'رویداد جدید'
+                        : 'کار جدید',
+                    onPressed: _section == 4
+                        ? _createHabitFromFab
+                        : _section == 5
+                        ? (_events == null ? null : () => _eventCapture.value++)
+                        : _quickAdd,
                     child: const Icon(Icons.add_rounded),
                   ),
                 ),
@@ -1530,8 +1708,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           if (_tracker != null)
                             TrackerMessage(tracker: _tracker),
                           if (wide) _desktopToolbar(),
-                          if (_habitCaptureVisible && _section == 4) _habitCapture(),
-                          if (_captureVisible && (_section == 0 || _section == 1)) _captureBar(),
+                          if (_habitCaptureVisible && _section == 4)
+                            _habitCapture(),
+                          if (_captureVisible &&
+                              (_section == 0 || _section == 1))
+                            _captureBar(),
                           Expanded(
                             child: KeyedSubtree(
                               key: const ValueKey('workspace-content'),
@@ -1571,28 +1752,37 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       ),
                     ),
                     Expanded(
-                      child: Padding(padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1160),
-                          child: Column(
-                        children: [
-                          if (_tracker != null)
-                            ActiveTimeBar(
-                              tracker: _tracker,
-                              onOpen: () => _switchSection(3),
-                            ),
-                          if (_tracker != null)
-                            TrackerMessage(tracker: _tracker),
-                          if (wide) _desktopToolbar(),
-                          if (_habitCaptureVisible && _section == 4) _habitCapture(),
-                          if (_captureVisible && (_section == 0 || _section == 1)) _captureBar(),
-                          Expanded(
-                            child: KeyedSubtree(
-                              key: const ValueKey('workspace-content'),
-                              child: page,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 1160),
+                            child: Column(
+                              children: [
+                                if (_tracker != null)
+                                  ActiveTimeBar(
+                                    tracker: _tracker,
+                                    onOpen: () => _switchSection(3),
+                                  ),
+                                if (_tracker != null)
+                                  TrackerMessage(tracker: _tracker),
+                                if (wide) _desktopToolbar(),
+                                if (_habitCaptureVisible && _section == 4)
+                                  _habitCapture(),
+                                if (_captureVisible &&
+                                    (_section == 0 || _section == 1))
+                                  _captureBar(),
+                                Expanded(
+                                  child: KeyedSubtree(
+                                    key: const ValueKey('workspace-content'),
+                                    child: page,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),)),),
+                        ),
+                      ),
                     ),
                   ],
                 ),

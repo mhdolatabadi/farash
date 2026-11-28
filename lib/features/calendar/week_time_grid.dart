@@ -94,7 +94,11 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                 weekDayIndex(task, widget.start) == day;
           }).toList(),
       ];
-      final blocks = layoutWeekEvents(widget.tasks, widget.start, events: widget.events);
+      final blocks = layoutWeekEvents(
+        widget.tasks,
+        widget.start,
+        events: widget.events,
+      );
       final maxAllDay = allDay.fold<int>(
         0,
         (previous, value) => math.max(previous, value.length),
@@ -418,7 +422,8 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
       '${(minute ~/ 60).toString().padLeft(2, '0')}:${(minute % 60).toString().padLeft(2, '0')}',
     );
     final startTime = clock(block.startMinute);
-    final displayTime = block.event == null && block.task?.durationMinutes == null
+    final displayTime =
+        block.event == null && block.task?.durationMinutes == null
         ? startTime
         : '$startTime–${clock(block.endMinute)}';
     final color = block.task?.isCompleted == true
@@ -436,7 +441,8 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
       width: laneWidth - gap,
       height: height,
       child: Semantics(
-        label: '${block.event != null ? 'رویداد ' : ''}${block.title}، $displayTime',
+        label:
+            '${block.event != null ? 'رویداد ' : ''}${block.title}، $displayTime',
         button: true,
         child: PressDepth(
           child: Material(
@@ -446,7 +452,9 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
             borderRadius: BorderRadius.circular(9),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
-              key: ValueKey('week-${block.event == null ? 'timed' : 'event'}-${block.id}-${block.dayIndex}'),
+              key: ValueKey(
+                'week-${block.event == null ? 'timed' : 'event'}-${block.id}-${block.dayIndex}',
+              ),
               onTap: () => block.event != null
                   ? widget.onOpenEvent?.call(block.event!)
                   : widget.onOpenTask(block.task!),

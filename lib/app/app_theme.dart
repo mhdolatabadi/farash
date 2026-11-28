@@ -64,7 +64,9 @@ abstract final class MenvalTheme {
       borderRadius: BorderRadius.circular(_tileRadius),
       side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.6)),
     );
-    const stadium = RoundedRectangleBorder(borderRadius: MenvalDesignTokens.radius);
+    const stadium = RoundedRectangleBorder(
+      borderRadius: MenvalDesignTokens.radius,
+    );
 
     return base.copyWith(
       extensions: [MenvalPaletteColors(p)],
@@ -108,9 +110,13 @@ abstract final class MenvalTheme {
         surfaceTintColor: Colors.transparent,
       ),
       iconButtonTheme: const IconButtonThemeData(
-        style: ButtonStyle(minimumSize: WidgetStatePropertyAll(Size(48, 48)),
+        style: ButtonStyle(
+          minimumSize: WidgetStatePropertyAll(Size(48, 48)),
           iconSize: WidgetStatePropertyAll(20),
-          shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: MenvalDesignTokens.radius))),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: MenvalDesignTokens.radius),
+          ),
+        ),
       ),
       textSelectionTheme: TextSelectionThemeData(
         cursorColor: colors.primary,

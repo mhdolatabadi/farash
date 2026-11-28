@@ -30,10 +30,15 @@ class WorkspaceEdits {
 }
 
 class WorkspaceEditsScope extends InheritedWidget {
-  const WorkspaceEditsScope({super.key, required this.edits, required super.child});
+  const WorkspaceEditsScope({
+    super.key,
+    required this.edits,
+    required super.child,
+  });
   final WorkspaceEdits edits;
-  static WorkspaceEdits? of(BuildContext context) => context
-      .dependOnInheritedWidgetOfExactType<WorkspaceEditsScope>()?.edits;
+  static WorkspaceEdits? of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<WorkspaceEditsScope>()?.edits;
   @override
-  bool updateShouldNotify(WorkspaceEditsScope oldWidget) => edits != oldWidget.edits;
+  bool updateShouldNotify(WorkspaceEditsScope oldWidget) =>
+      edits != oldWidget.edits;
 }

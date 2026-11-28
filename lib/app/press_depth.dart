@@ -120,9 +120,7 @@ class _PressDepthState extends State<PressDepth> {
         curve: Motion.enter,
         duration: duration,
         child: AnimatedSlide(
-          offset: active
-              ? const Offset(0, 0.02)
-              : Offset.zero,
+          offset: active ? const Offset(0, 0.02) : Offset.zero,
           duration: duration,
           curve: Motion.enter,
           child: AnimatedContainer(

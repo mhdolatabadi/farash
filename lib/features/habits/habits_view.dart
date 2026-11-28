@@ -51,7 +51,9 @@ class _HabitsViewState extends State<HabitsView> {
 
   ScrollController _historyController(String key) =>
       _historyControllers.putIfAbsent(key, () {
-        final controller = ScrollController(initialScrollOffset: _historyOffset);
+        final controller = ScrollController(
+          initialScrollOffset: _historyOffset,
+        );
         controller.addListener(() {
           if (_syncingHistory || !controller.hasClients) return;
           _syncingHistory = true;
@@ -59,7 +61,9 @@ class _HabitsViewState extends State<HabitsView> {
           for (final other in _historyControllers.values) {
             if (identical(other, controller) || !other.hasClients) continue;
             final offset = _historyOffset.clamp(
-              other.position.minScrollExtent, other.position.maxScrollExtent);
+              other.position.minScrollExtent,
+              other.position.maxScrollExtent,
+            );
             if (other.offset != offset) other.jumpTo(offset);
           }
           _syncingHistory = false;
@@ -178,7 +182,8 @@ class _HabitsViewState extends State<HabitsView> {
                               ),
                           ],
                           selected: {columns},
-                          onSelectionChanged: (values) => _selectRange(values.first),
+                          onSelectionChanged: (values) =>
+                              _selectRange(values.first),
                         ),
                         const Text('روز'),
                         if (widget.embedded) _FilterMenu(controller: _c),
@@ -238,12 +243,7 @@ class _HabitsViewState extends State<HabitsView> {
                   )
                 else
                   SliverPadding(
-                    padding: EdgeInsets.fromLTRB(
-                      inset + 16,
-                      0,
-                      inset + 16,
-                      96,
-                    ),
+                    padding: EdgeInsets.fromLTRB(inset + 16, 0, inset + 16, 96),
                     // The rows sit in one well on the soft ground.
                     sliver: DecoratedSliver(
                       decoration: BoxDecoration(
@@ -440,9 +440,15 @@ class _FilterMenu extends StatelessWidget {
 /// A pinned label for each real day, scrolling in step with every habit row.
 class _DayHeader extends SliverPersistentHeaderDelegate {
   _DayHeader({
-    required this.height, required this.today, required this.columns,
-    required this.cellWidth, required this.inset, required this.nameWidth,
-    required this.controller, required this.settings, required this.theme,
+    required this.height,
+    required this.today,
+    required this.columns,
+    required this.cellWidth,
+    required this.inset,
+    required this.nameWidth,
+    required this.controller,
+    required this.settings,
+    required this.theme,
     required this.ground,
   });
 
@@ -463,42 +469,67 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
     height: height,
     color: ground,
     padding: EdgeInsets.symmetric(horizontal: inset + 16),
-    child: Row(children: [
-      SizedBox(width: nameWidth, child: Padding(
-        padding: const EdgeInsetsDirectional.only(start: 12),
-        child: Text('عادت', style: theme.textTheme.labelMedium),
-      )),
-      Expanded(child: SingleChildScrollView(
-        key: const ValueKey('habit-history-header'),
-        scrollDirection: Axis.horizontal,
-        controller: controller,
-        child: Row(children: [
-          for (var i = 0; i < columns; i++)
-            SizedBox(width: cellWidth, child: ExcludeSemantics(child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+    child: Row(
+      children: [
+        SizedBox(
+          width: nameWidth,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(start: 12),
+            child: Text('عادت', style: theme.textTheme.labelMedium),
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            key: const ValueKey('habit-history-header'),
+            scrollDirection: Axis.horizontal,
+            controller: controller,
+            child: Row(
               children: [
-                Text(habitWeekdays[dayDate(today - i).weekday - 1],
-                  maxLines: 1,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  )),
-                Text(persianDigits(dayOfMonth(today - i, settings)),
-                  maxLines: 1,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: i == 0 ? FontWeight.w700 : FontWeight.w400,
-                  )),
+                for (var i = 0; i < columns; i++)
+                  SizedBox(
+                    width: cellWidth,
+                    child: ExcludeSemantics(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            habitWeekdays[dayDate(today - i).weekday - 1],
+                            maxLines: 1,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          Text(
+                            persianDigits(dayOfMonth(today - i, settings)),
+                            maxLines: 1,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontWeight: i == 0
+                                  ? FontWeight.w700
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
-            ))),
-        ]),
-      )),
-    ]),
+            ),
+          ),
+        ),
+      ],
+    ),
   );
 
   @override
   bool shouldRebuild(_DayHeader old) =>
-      old.today != today || old.height != height || old.columns != columns ||
-      old.cellWidth != cellWidth || old.inset != inset || old.theme != theme ||
-      old.ground != ground || old.nameWidth != nameWidth ||
+      old.today != today ||
+      old.height != height ||
+      old.columns != columns ||
+      old.cellWidth != cellWidth ||
+      old.inset != inset ||
+      old.theme != theme ||
+      old.ground != ground ||
+      old.nameWidth != nameWidth ||
       old.settings.system != settings.system;
 }
 
@@ -633,24 +664,41 @@ class HabitRow extends StatelessWidget {
                 ),
               ),
 
-              Expanded(child: SingleChildScrollView(
-                key: ValueKey('habit-history-${habit.id}'),
-                scrollDirection: Axis.horizontal,
-                controller: historyController,
-                child: Row(children: [
-                  for (var i = 0; i < columns; i++)
-                    SizedBox(height: height, child: CheckCell(
-                      key: ValueKey('${habit.id}-${dayKey(stats.today - i)}'),
-                      habit: habit,
-                      stats: stats,
-                      width: cellWidth,
-                      day: stats.today - i,
-                      label: relativeDay(dayDate(stats.today - i), settings,
-                        today: dayDate(stats.today)),
-                      onTap: () => recordDay(context, controller, habit, stats.today - i),
-                    )),
-                ]),
-              )),
+              Expanded(
+                child: SingleChildScrollView(
+                  key: ValueKey('habit-history-${habit.id}'),
+                  scrollDirection: Axis.horizontal,
+                  controller: historyController,
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < columns; i++)
+                        SizedBox(
+                          height: height,
+                          child: CheckCell(
+                            key: ValueKey(
+                              '${habit.id}-${dayKey(stats.today - i)}',
+                            ),
+                            habit: habit,
+                            stats: stats,
+                            width: cellWidth,
+                            day: stats.today - i,
+                            label: relativeDay(
+                              dayDate(stats.today - i),
+                              settings,
+                              today: dayDate(stats.today),
+                            ),
+                            onTap: () => recordDay(
+                              context,
+                              controller,
+                              habit,
+                              stats.today - i,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -755,13 +803,18 @@ class CheckCell extends StatelessWidget {
         DayCheck.no => (Icons.close_rounded, 'انجام نشد'),
         DayCheck.unknown => (null, 'ثبت نشده'),
       };
-      return SizedBox(width: width, child: Center(child: MenvalCheckbox(
-        value: check == DayCheck.yes || check == DayCheck.auto,
-        label: '${habit.name}، $label: $text',
-        activeColor: check == DayCheck.auto ? muted : null,
-        indeterminateIcon: icon,
-        onChanged: (_) => onTap(),
-      )));
+      return SizedBox(
+        width: width,
+        child: Center(
+          child: MenvalCheckbox(
+            value: check == DayCheck.yes || check == DayCheck.auto,
+            label: '${habit.name}، $label: $text',
+            activeColor: check == DayCheck.auto ? muted : null,
+            indeterminateIcon: icon,
+            onChanged: (_) => onTap(),
+          ),
+        ),
+      );
     }
     return Semantics(
       button: true,
