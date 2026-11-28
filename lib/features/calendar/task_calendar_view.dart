@@ -8,7 +8,6 @@ import 'package:menval/features/calendar/task_month_view.dart';
 import 'package:menval/features/calendar/week_time_grid.dart';
 import 'package:menval/features/tasks/data/task.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:menval/app/soft.dart';
 import 'package:menval/app/controls.dart';
 import 'package:menval/features/calendar/calendar_event.dart';
@@ -84,8 +83,9 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
         action: SnackBarAction(
           label: 'بازگردانی',
           onPressed: () async {
-            if (await widget.events!.setDeleted(event, false) && mounted)
+            if (await widget.events!.setDeleted(event, false) && mounted) {
               _load();
+            }
           },
         ),
       ),

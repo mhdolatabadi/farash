@@ -71,7 +71,7 @@ class _RecurringTasksApi extends FakeTasksApi implements TimeApi {
     String path, {
     Map<String, Object?>? body,
   }) async {
-    if (!path.endsWith('/recurrence'))
+    if (!path.endsWith('/recurrence')) {
       return {
         'active': null,
         'entries': <Object>[],
@@ -80,6 +80,7 @@ class _RecurringTasksApi extends FakeTasksApi implements TimeApi {
         'today_seconds': 0,
         'server_now': DateTime.now().toUtc().toIso8601String(),
       };
+    }
     rulePaths.add(path);
     if (failRule) throw const ApiException('پاسخ ذخیرهٔ تکرار نرسید.');
     return {

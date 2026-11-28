@@ -136,7 +136,7 @@ void main() {
     expect(find.text('ورزش صبحگاهی'), findsOneWidget);
     expect(find.text('آب خوردن'), findsOneWidget);
     // Today's cell sits next to the name; the numeric habit shows amounts.
-    expect(find.text('۶'), findsOneWidget);
+    expect(find.bySemanticsLabel('آب خوردن، امروز: ۶ لیوان'), findsOneWidget);
 
     final today = find.bySemanticsLabel(
       'مطالعهٔ ۳۰ دقیقه، امروز: در بازهٔ انجام‌شده',
@@ -164,7 +164,7 @@ void main() {
     expect(api.calls.last.$1, 'DELETE');
   });
 
-  testWidgets('history ranges keep check-ins attached to their actual dates', (
+  testWidgets('scrolling history keeps check-ins attached to their actual dates', (
     tester,
   ) async {
     final api = seeded();
@@ -177,11 +177,10 @@ void main() {
           widget.habit.id == habit.id &&
           widget.day == day,
     );
-    expect(cellFor(today - 6), findsOneWidget);
-    expect(cellFor(today - 7), findsNothing);
-
-    await tester.tap(find.byTooltip('نمایش ۳۰ روز'));
-    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('habit-history-range')), findsNothing);
+    expect(find.byTooltip('نمایش ۷ روز'), findsNothing);
+    expect(find.byTooltip('نمایش ۱۴ روز'), findsNothing);
+    expect(find.byTooltip('نمایش ۳۰ روز'), findsNothing);
     expect(cellFor(today - 29), findsOneWidget);
     await tester.ensureVisible(cellFor(pastDay));
     await tester.pumpAndSettle();
@@ -190,14 +189,9 @@ void main() {
     expect(api.calls.last.$2, endsWith('/entries/${dayKey(pastDay)}'));
     expect(controller.byId(habit.id)!.entries[pastDay]?.value, 1);
 
-    await tester.tap(find.byTooltip('نمایش ۷ روز'));
+    await tester.ensureVisible(cellFor(today));
     await tester.pumpAndSettle();
-    expect(cellFor(pastDay), findsNothing);
-    await tester.tap(find.byTooltip('نمایش ۱۴ روز'));
-    await tester.pumpAndSettle();
-    expect(cellFor(today - 13), findsOneWidget);
-    expect(cellFor(today - 14), findsNothing);
-    await tester.tap(find.byTooltip('نمایش ۳۰ روز'));
+    await tester.ensureVisible(cellFor(pastDay));
     await tester.pumpAndSettle();
     final cell = tester.widget<CheckCell>(cellFor(pastDay));
     expect(cell.stats.counts(pastDay), isTrue);
@@ -272,6 +266,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('approved-nav-4')));
     await tester.pumpAndSettle();
     expect(find.byType(HabitsView), findsOneWidget);
+    expect(find.byKey(const ValueKey('habit-history-range')), findsNothing);
+    expect(find.byTooltip('نمایش و ترتیب'), findsOneWidget);
     expect(find.text('ورزش صبحگاهی'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

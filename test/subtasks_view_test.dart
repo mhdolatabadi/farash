@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:menval/app/controls.dart';
 import 'package:menval/core/api/api_client.dart';
 import 'package:menval/features/projects/data/project.dart';
 import 'package:menval/features/tasks/presentation/project_tasks_view.dart';
@@ -143,7 +144,11 @@ void main() {
 
     await tester.tap(find.text('خرید'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(CheckboxListTile, 'نان'));
+    await tester.tap(
+      find.byWidgetPredicate(
+        (widget) => widget is MenvalCheckbox && widget.label == 'نان',
+      ),
+    );
     await tester.pumpAndSettle();
     expect(tasksApi.byTitle('خرید').description, 'نکته\n- [x] نان');
 

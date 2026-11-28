@@ -256,8 +256,9 @@ class _CalendarEventComposerState extends State<CalendarEventComposer> {
                                   event,
                                   true,
                                 ) &&
-                                mounted)
+                                mounted) {
                               widget.onDeleted(event);
+                            }
                           },
                   ),
               ],

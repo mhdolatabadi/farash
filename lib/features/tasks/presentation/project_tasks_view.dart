@@ -26,6 +26,7 @@ import 'package:menval/features/tasks/presentation/section_dialogs.dart';
 import 'package:menval/features/tasks/presentation/task_detail_sheet.dart';
 import 'package:menval/features/tasks/presentation/task_messages.dart';
 import 'package:menval/features/tasks/presentation/task_tile.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
 
 /// Readable width for the task list on wide screens.
 const _maxListWidth = 760.0;
@@ -115,8 +116,9 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
 
   Future<void> _setLayout(ProjectLayout layout) async {
     if (!await (_editorKey.currentState?.canLeave() ?? Future.value(true)) ||
-        !mounted)
+        !mounted) {
       return;
+    }
     setState(() {
       _layout = layout;
       _editingTask = null;
@@ -244,8 +246,9 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
   Future<void> _open(Task task) async {
     if (_editingTask?.id == task.id) return;
     if (!await (_editorKey.currentState?.canLeave() ?? Future.value(true)) ||
-        !mounted)
+        !mounted) {
       return;
+    }
     if ((context.size?.width ?? 0) >= 760) {
       setState(() {
         _editorKey = GlobalKey<TaskDetailEditorState>();
@@ -501,6 +504,7 @@ class _ProjectTasksViewState extends State<ProjectTasksView> {
           task: task,
           projects: widget.moveTargets(),
           labels: widget.labels,
+          tracker: TrackerScope.of(context),
           onResult: _editorResult,
         );
         if (!wide) return editor;

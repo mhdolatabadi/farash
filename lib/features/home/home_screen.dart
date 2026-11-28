@@ -372,8 +372,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   TaskDue? _inlineDue;
 
   KeyEventResult _quickKey(KeyEvent event) {
-    if (ModalRoute.of(context)?.isCurrent != true)
+    if (ModalRoute.of(context)?.isCurrent != true) {
       return KeyEventResult.ignored;
+    }
     final keyboard = HardwareKeyboard.instance;
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.keyK &&
@@ -495,8 +496,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       setState(() => _captureRevision++);
       _inlineFocus.requestFocus();
     } catch (error) {
-      if (mounted && token == widget.token())
+      if (mounted && token == widget.token()) {
         setState(() => _inlineError = error.toString());
+      }
     } finally {
       if (mounted) setState(() => _quickAdding = false);
     }
@@ -523,7 +525,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           Row(
             children: [
               Expanded(
-                child: TextField(
+                child: Semantics(
+                  label: 'عنوان کار',
+                  child: TextField(
                   key: const ValueKey('inline-task-title'),
                   controller: _inlineTask,
                   focusNode: _inlineFocus,
@@ -536,6 +540,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     counterText: '',
                   ),
                   onSubmitted: (_) => _submitInline(),
+                  ),
                 ),
               ),
               MenvalIconButton(
@@ -679,7 +684,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _habitSaving = true;
       _habitCaptureError = null;
     });
-    final habit = await _habits!.create(
+    final habit = await _habits.create(
       HabitDraft(name: title),
       attempt: _habitAttempt,
     );

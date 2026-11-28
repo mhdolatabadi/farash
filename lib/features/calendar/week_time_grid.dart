@@ -40,7 +40,6 @@ class WeekTimeGrid extends StatefulWidget {
 class _WeekTimeGridState extends State<WeekTimeGrid> {
   static const _gutter = 44.0;
   static const _hourHeight = 68.0;
-  static const _minDayWidth = 136.0;
   late final ScrollController _vertical = ScrollController(
     initialScrollOffset: 8 * _hourHeight,
   );
@@ -69,8 +68,8 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
       final scheme = Theme.of(context).colorScheme;
       final settings = CalendarScope.of(context);
       // Keep all seven weekday lanes visible on mobile without horizontal scroll.
-      final minDayWidth = constraints.maxWidth < 760 ? 30.0 : _minDayWidth;
-      final width = math.max(constraints.maxWidth, _gutter + minDayWidth * 7);
+      final rtl = Directionality.of(context) == TextDirection.rtl;
+      final width = constraints.maxWidth;
       final dayWidth = (width - _gutter) / 7;
       if (_scrollToSelectedDay) {
         _scrollToSelectedDay = false;
@@ -126,7 +125,7 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                 height: 64,
                 child: Row(
                   children: [
-                    const SizedBox(width: _gutter),
+                    if (!rtl) const SizedBox(width: _gutter),
                     for (final day in days)
                       SizedBox(
                         width: dayWidth,
@@ -222,6 +221,7 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                           ),
                         ),
                       ),
+                    if (rtl) const SizedBox(width: _gutter),
                   ],
                 ),
               ),
@@ -229,7 +229,7 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                 height: allDayHeight,
                 child: Row(
                   children: [
-                    SizedBox(
+                    if (!rtl) SizedBox(
                       width: _gutter,
                       child: Center(
                         child: FittedBox(
@@ -336,6 +336,19 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                           ),
                         ),
                       ),
+                    if (rtl) SizedBox(
+                      width: _gutter,
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'تمام‌روز',
+                            maxLines: 1,
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -352,7 +365,7 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                         for (var hour = 0; hour < 24; hour++)
                           Positioned(
                             top: hour * _hourHeight + 4,
-                            right: 2,
+                            left: 2,
                             width: _gutter - 8,
                             child: FittedBox(
                               fit: BoxFit.scaleDown,
@@ -370,7 +383,8 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                         if (todayIndex >= 0 && todayIndex < 7)
                           Positioned(
                             top: timeY,
-                            right: _gutter + todayIndex * dayWidth,
+                            right: rtl ? todayIndex * dayWidth : null,
+                            left: rtl ? null : _gutter + todayIndex * dayWidth,
                             width: dayWidth,
                             child: IgnorePointer(
                               child: Center(
@@ -434,10 +448,12 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
     final textColor = block.task?.priority == TaskPriority.p1
         ? scheme.onErrorContainer
         : scheme.onPrimaryContainer;
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final offset = block.dayIndex * dayWidth + block.column * laneWidth + gap;
     return Positioned(
       top: top,
-      right:
-          _gutter + block.dayIndex * dayWidth + block.column * laneWidth + gap,
+      right: rtl ? offset : null,
+      left: rtl ? null : _gutter + offset,
       width: laneWidth - gap,
       height: height,
       child: Semantics(
@@ -463,9 +479,10 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    Expanded(
+                      child: Text(
                       block.title,
-                      maxLines: height > 70 ? 2 : 1,
+                      maxLines: height > 55 ? 3 : 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: textColor,
@@ -473,13 +490,17 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                         fontWeight: FontWeight.w600,
                         height: 1.1,
                       ),
+                      ),
                     ),
-                    if (height > 42)
-                      Text(
-                        displayTime,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: textColor, fontSize: 10),
+                    if (height > MediaQuery.textScalerOf(context).scale(42))
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(
+                          laneWidth < 100 ? clock(block.startMinute) : displayTime,
+                          maxLines: 1,
+                          style: TextStyle(color: textColor, fontSize: 10),
+                        ),
                       ),
                   ],
                 ),

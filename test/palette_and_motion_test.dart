@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:menval/app/controls.dart';
 import 'package:menval/app/app_theme.dart';
 import 'package:menval/app/palette.dart';
 import 'package:menval/features/projects/data/project.dart';
@@ -46,9 +47,9 @@ void main() {
     test('the theme reads the stone palette', () {
       final theme = MenvalTheme.light();
       expect(theme.colorScheme.primary, const Color(0xFF5A564E));
-      expect(theme.colorScheme.surface, const Color(0xFFF2EFEC));
+      expect(theme.colorScheme.surface, const Color(0xFFF1EDE9));
       expect(MenvalTheme.dark().colorScheme.primary, const Color(0xFFDDD8CB));
-      expect(MenvalTheme.dark().colorScheme.surface, const Color(0xFF252830));
+      expect(MenvalTheme.dark().colorScheme.surface, const Color(0xFF272724));
       expect(theme.colorScheme.error, MenvalPalette.stone.light.overdue);
       expect(
         theme.extension<MenvalPaletteColors>()!.colors,
@@ -153,7 +154,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 80));
       // Still on screen and checked while it lingers; not yet sent.
       expect(find.text('نوشتن گزارش'), findsOneWidget);
-      expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(
+        tester.widget<MenvalCheckbox>(find.byType(MenvalCheckbox)).value,
+        isTrue,
+      );
       expect(api.byTitle('نوشتن گزارش').isCompleted, isFalse);
 
       await tester.pumpAndSettle();

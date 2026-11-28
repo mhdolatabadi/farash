@@ -22,6 +22,7 @@ import 'package:menval/features/tasks/presentation/task_detail_sheet.dart';
 import 'package:menval/features/tasks/presentation/task_messages.dart';
 import 'package:menval/features/tasks/presentation/task_tile.dart';
 import 'package:menval/features/tasks/presentation/today_workspace.dart';
+import 'package:menval/features/time_tracking/time_tracking.dart';
 
 /// The views that gather tasks by date from every project.
 enum DueView {
@@ -150,6 +151,7 @@ class _DueTasksViewState extends State<DueTasksView> {
       task: task,
       projects: widget.projects(),
       labels: widget.labels,
+      tracker: TrackerScope.of(context),
       onResult: _editorResult,
     );
     if (width < 760) return editor;
@@ -200,8 +202,9 @@ class _DueTasksViewState extends State<DueTasksView> {
   void didUpdateWidget(covariant DueTasksView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.refreshRevision != oldWidget.refreshRevision &&
-        widget.token() == _activeToken)
+        widget.token() == _activeToken) {
       _load();
+    }
     if (widget.token() != _activeToken) {
       _editorController?.dispose();
       _editorController = null;
@@ -403,8 +406,9 @@ class _DueTasksViewState extends State<DueTasksView> {
   Future<void> _openTask(Task task) async {
     if (_openingTask || _editingTask?.id == task.id) return;
     if (!await (_editorKey.currentState?.canLeave() ?? Future.value(true)) ||
-        !mounted)
+        !mounted) {
       return;
+    }
     final requestToken = widget.token();
     if (requestToken == null) return;
     _openingTask = true;

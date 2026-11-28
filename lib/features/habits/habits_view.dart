@@ -44,7 +44,6 @@ class HabitsView extends StatefulWidget {
 
 class _HabitsViewState extends State<HabitsView> {
   HabitsController get _c => widget.controller;
-  int? _selectedRange;
   double _historyOffset = 0;
   bool _syncingHistory = false;
   final _historyControllers = <String, ScrollController>{};
@@ -70,17 +69,6 @@ class _HabitsViewState extends State<HabitsView> {
         });
         return controller;
       });
-
-  void _selectRange(int range) {
-    // A new range begins at today; existing entry keys never change.
-    _syncingHistory = true;
-    _historyOffset = 0;
-    for (final controller in _historyControllers.values) {
-      if (controller.hasClients) controller.jumpTo(0);
-    }
-    _syncingHistory = false;
-    setState(() => _selectedRange = range);
-  }
 
   @override
   void initState() {
@@ -139,7 +127,9 @@ class _HabitsViewState extends State<HabitsView> {
             final rowHeight = max(_rowHeight, scaler.scale(14) * 2.4 + 12);
             final headerHeight = max(52.0, scaler.scale(12) * 3.2 + 8);
             final nameWidth = width >= 700 ? 180.0 : 120.0;
-            final columns = _selectedRange ?? (width >= 700 ? 14 : 7);
+            // Recent dated history stays available at every screen width.
+            // Scroll to older days without adding range controls to the page.
+            const columns = 30;
             const cellWidth = habitCellWidth;
             final list = CustomScrollView(
               slivers: [
@@ -158,39 +148,16 @@ class _HabitsViewState extends State<HabitsView> {
                       _FilterMenu(controller: _c),
                     ],
                   ),
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(inset + 16, 12, inset + 16, 8),
-                  sliver: SliverToBoxAdapter(
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        SegmentedButton<int>(
-                          key: const ValueKey('habit-history-range'),
-                          showSelectedIcon: false,
-                          style: SegmentedButton.styleFrom(
-                            minimumSize: const Size(48, 48),
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                          ),
-                          segments: [
-                            for (final days in [7, 14, 30])
-                              ButtonSegment(
-                                value: days,
-                                tooltip: 'نمایش ${persianDigits(days)} روز',
-                                label: Text(persianDigits(days)),
-                              ),
-                          ],
-                          selected: {columns},
-                          onSelectionChanged: (values) =>
-                              _selectRange(values.first),
-                        ),
-                        const Text('روز'),
-                        if (widget.embedded) _FilterMenu(controller: _c),
-                      ],
+                if (widget.embedded && habits.isEmpty)
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(horizontal: inset + 16),
+                    sliver: SliverToBoxAdapter(
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: _FilterMenu(controller: _c),
+                      ),
                     ),
                   ),
-                ),
                 if (habits.isNotEmpty)
                   SliverPersistentHeader(
                     pinned: true,
@@ -205,6 +172,7 @@ class _HabitsViewState extends State<HabitsView> {
                       settings: CalendarScope.of(context),
                       theme: Theme.of(context),
                       ground: Soft.ground(context),
+                      action: widget.embedded ? _FilterMenu(controller: _c) : null,
                     ),
                   ),
                 if (_c.loading && _c.all.isEmpty)
@@ -450,6 +418,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
     required this.settings,
     required this.theme,
     required this.ground,
+    this.action,
   });
 
   final Color ground;
@@ -458,6 +427,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
   final ScrollController controller;
   final CalendarSettings settings;
   final ThemeData theme;
+  final Widget? action;
 
   @override
   double get minExtent => height;
@@ -475,7 +445,14 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
           width: nameWidth,
           child: Padding(
             padding: const EdgeInsetsDirectional.only(start: 12),
-            child: Text('عادت', style: theme.textTheme.labelMedium),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text('عادت', style: theme.textTheme.labelMedium),
+                ),
+                if (action != null) action!,
+              ],
+            ),
           ),
         ),
         Expanded(
@@ -530,6 +507,7 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
       old.theme != theme ||
       old.ground != ground ||
       old.nameWidth != nameWidth ||
+      old.action != action ||
       old.settings.system != settings.system;
 }
 
