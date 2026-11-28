@@ -4,6 +4,7 @@ import 'package:menval/core/calendar/calendar_scope.dart';
 import 'package:menval/core/calendar/date_labels.dart';
 import 'package:menval/core/text/persian_digits.dart';
 import 'package:menval/features/calendar/week_event_layout.dart';
+import 'package:menval/features/calendar/calendar_event.dart';
 import 'package:menval/features/tasks/data/task.dart';
 import 'package:flutter/material.dart';
 import 'package:menval/app/press_depth.dart';
@@ -19,6 +20,8 @@ class WeekTimeGrid extends StatefulWidget {
     required this.now,
     required this.onSelectDay,
     required this.onOpenTask,
+    this.events = const [],
+    this.onOpenEvent,
   });
 
   final DateTime start;
@@ -27,6 +30,8 @@ class WeekTimeGrid extends StatefulWidget {
   final DateTime now;
   final ValueChanged<DateTime> onSelectDay;
   final ValueChanged<Task> onOpenTask;
+  final List<CalendarEvent> events;
+  final ValueChanged<CalendarEvent>? onOpenEvent;
 
   @override
   State<WeekTimeGrid> createState() => _WeekTimeGridState();
@@ -89,7 +94,7 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
                 weekDayIndex(task, widget.start) == day;
           }).toList(),
       ];
-      final blocks = layoutWeekEvents(widget.tasks, widget.start);
+      final blocks = layoutWeekEvents(widget.tasks, widget.start, events: widget.events);
       final maxAllDay = allDay.fold<int>(
         0,
         (previous, value) => math.max(previous, value.length),
@@ -413,15 +418,15 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
       '${(minute ~/ 60).toString().padLeft(2, '0')}:${(minute % 60).toString().padLeft(2, '0')}',
     );
     final startTime = clock(block.startMinute);
-    final displayTime = block.task.durationMinutes == null
+    final displayTime = block.event == null && block.task?.durationMinutes == null
         ? startTime
         : '$startTime–${clock(block.endMinute)}';
-    final color = block.task.isCompleted
+    final color = block.task?.isCompleted == true
         ? scheme.surfaceContainerHighest
-        : block.task.priority == TaskPriority.p1
+        : block.task?.priority == TaskPriority.p1
         ? scheme.errorContainer
         : scheme.primaryContainer;
-    final textColor = block.task.priority == TaskPriority.p1
+    final textColor = block.task?.priority == TaskPriority.p1
         ? scheme.onErrorContainer
         : scheme.onPrimaryContainer;
     return Positioned(
@@ -431,7 +436,7 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
       width: laneWidth - gap,
       height: height,
       child: Semantics(
-        label: '${block.task.title}، $displayTime',
+        label: '${block.event != null ? 'رویداد ' : ''}${block.title}، $displayTime',
         button: true,
         child: PressDepth(
           child: Material(
@@ -441,15 +446,17 @@ class _WeekTimeGridState extends State<WeekTimeGrid> {
             borderRadius: BorderRadius.circular(9),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
-              key: ValueKey('week-timed-${block.task.id}-${block.dayIndex}'),
-              onTap: () => widget.onOpenTask(block.task),
+              key: ValueKey('week-${block.event == null ? 'timed' : 'event'}-${block.id}-${block.dayIndex}'),
+              onTap: () => block.event != null
+                  ? widget.onOpenEvent?.call(block.event!)
+                  : widget.onOpenTask(block.task!),
               child: Padding(
                 padding: const EdgeInsets.all(4),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      block.task.title,
+                      block.title,
                       maxLines: height > 70 ? 2 : 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

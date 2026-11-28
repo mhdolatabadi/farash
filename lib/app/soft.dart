@@ -12,6 +12,12 @@ abstract final class Soft {
   static Color ground(BuildContext context) =>
       MenvalPaletteColors.of(context).softGround;
 
+  static Color surface(BuildContext context) =>
+      MenvalPaletteColors.of(context).surface;
+
+  static Color inset(BuildContext context) =>
+      Theme.of(context).colorScheme.primaryContainer;
+
   static List<BoxShadow> raised(BuildContext context, {double depth = 5}) {
     final p = MenvalPaletteColors.of(context);
     return [
@@ -31,9 +37,8 @@ abstract final class Soft {
   /// A well's flat form, for slivers that cannot carry [SoftWell]'s inner
   /// shadows: a touch darker than the ground, with the hairline.
   static BoxDecoration wellDecoration(BuildContext context) {
-    final p = MenvalPaletteColors.of(context);
     return BoxDecoration(
-      color: Color.lerp(p.softGround, p.softShade, 0.22),
+      color: inset(context),
       borderRadius: BorderRadius.circular(tileRadius),
       border: Border.fromBorderSide(hairline(context)),
     );
@@ -76,7 +81,7 @@ class SoftTile extends StatelessWidget {
     return DecoratedBox(
       decoration: ShapeDecoration(
         shape: shape,
-        color: color ?? Soft.ground(context),
+        color: color ?? Soft.surface(context),
         shadows: Soft.raised(context, depth: depth),
       ),
       child: Material(
@@ -117,10 +122,10 @@ class SoftWell extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = MenvalPaletteColors.of(context);
     return CustomPaint(
-      foregroundPainter: _InsetShadow(
+      foregroundPainter: MenvalInsetPainter(
         light: p.softLight,
         shade: p.softShade,
-        radius: radius,
+        borderRadius: BorderRadius.circular(radius),
         circle: circle,
         edge: Soft.hairline(context).color,
       ),
@@ -134,70 +139,10 @@ class SoftWell extends StatelessWidget {
         ),
         // A Material, so rows inside keep their ink and selection.
         child: Material(
-          color: p.softGround,
+          color: Soft.inset(context),
           child: Padding(padding: padding, child: child),
         ),
       ),
     );
   }
-}
-
-/// Paints the inner shadows of a well: dark from the top start corner,
-/// light from the bottom end, inside the shape only.
-class _InsetShadow extends CustomPainter {
-  _InsetShadow({
-    required this.light,
-    required this.shade,
-    required this.radius,
-    required this.circle,
-    required this.edge,
-  });
-
-  final Color light;
-  final Color shade;
-  final Color edge;
-  final double radius;
-  final bool circle;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final shape = circle
-        ? (Path()..addOval(rect))
-        : (Path()
-            ..addRRect(RRect.fromRectAndRadius(rect, Radius.circular(radius))));
-    canvas.save();
-    canvas.clipPath(shape);
-    void cast(Color color, Offset offset) {
-      final outside = Path()
-        ..fillType = PathFillType.evenOdd
-        ..addRect(rect.inflate(24))
-        ..addPath(shape, Offset.zero);
-      canvas.drawPath(
-        outside.shift(offset),
-        Paint()
-          ..color = color
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
-      );
-    }
-
-    cast(shade, const Offset(4, 4));
-    cast(light, const Offset(-4, -4));
-    canvas.restore();
-    canvas.drawPath(
-      shape,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..color = edge,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_InsetShadow old) =>
-      old.light != light ||
-      old.shade != shade ||
-      old.edge != edge ||
-      old.radius != radius ||
-      old.circle != circle;
 }

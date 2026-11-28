@@ -1,10 +1,12 @@
 import 'package:menval/core/calendar/date_labels.dart';
 import 'package:menval/features/tasks/data/task.dart';
+import 'package:menval/features/calendar/calendar_event.dart';
 
 /// A positioned portion of a timed task in one calendar day.
 class WeekEventPlacement {
   const WeekEventPlacement({
-    required this.task,
+    this.task,
+    this.event,
     required this.dayIndex,
     required this.startMinute,
     required this.endMinute,
@@ -12,7 +14,10 @@ class WeekEventPlacement {
     required this.columns,
   });
 
-  final Task task;
+  final Task? task;
+  final CalendarEvent? event;
+  String get id => event?.id ?? task!.id;
+  String get title => event?.title ?? task!.title;
   final int dayIndex;
   final int startMinute;
   final int endMinute;
@@ -21,9 +26,11 @@ class WeekEventPlacement {
 }
 
 class _Candidate {
-  _Candidate(this.task, this.dayIndex, this.start, this.end);
+  _Candidate(this.task, this.event, this.dayIndex, this.start, this.end);
 
-  final Task task;
+  final Task? task;
+  final CalendarEvent? event;
+  String get id => event?.id ?? task!.id;
   final int dayIndex;
   final int start;
   final int end;
@@ -36,18 +43,15 @@ class _Candidate {
 /// no duration is provided we display a clearly provisional 30-minute block.
 List<WeekEventPlacement> layoutWeekEvents(
   List<Task> tasks,
-  DateTime weekStart,
-) {
+  DateTime weekStart, {
+  List<CalendarEvent> events = const [],
+}) {
   final days = [
     for (var i = 0; i < 7; i++)
       DateTime(weekStart.year, weekStart.month, weekStart.day + i),
   ];
   final candidates = <_Candidate>[];
-  for (final task in tasks) {
-    final start = task.due?.localTime;
-    if (start == null) continue;
-    final length = (task.durationMinutes ?? 30).clamp(15, 1440).toInt();
-    final end = start.add(Duration(minutes: length));
+  void add(DateTime start, DateTime end, Task? task, CalendarEvent? event) {
     for (var i = 0; i < days.length; i++) {
       final day = days[i];
       final next = DateTime(day.year, day.month, day.day + 1);
@@ -59,9 +63,18 @@ List<WeekEventPlacement> layoutWeekEvents(
           ? 1440
           : visibleEnd.hour * 60 + visibleEnd.minute;
       if (endMinute > startMinute) {
-        candidates.add(_Candidate(task, i, startMinute, endMinute));
+        candidates.add(_Candidate(task, event, i, startMinute, endMinute));
       }
     }
+  }
+  for (final task in tasks) {
+    final start = task.due?.localTime;
+    if (start == null) continue;
+    final length = (task.durationMinutes ?? 30).clamp(15, 1440).toInt();
+    add(start, start.add(Duration(minutes: length)), task, null);
+  }
+  for (final event in events) {
+    add(event.localStart, event.localEnd, null, event);
   }
   final result = <WeekEventPlacement>[];
   for (var dayIndex = 0; dayIndex < 7; dayIndex++) {
@@ -70,7 +83,7 @@ List<WeekEventPlacement> layoutWeekEvents(
         final byStart = a.start.compareTo(b.start);
         if (byStart != 0) return byStart;
         final byEnd = b.end.compareTo(a.end);
-        return byEnd != 0 ? byEnd : a.task.id.compareTo(b.task.id);
+        return byEnd != 0 ? byEnd : a.id.compareTo(b.id);
       });
     var group = <_Candidate>[];
     var active = <_Candidate>[];
@@ -82,6 +95,7 @@ List<WeekEventPlacement> layoutWeekEvents(
         result.add(
           WeekEventPlacement(
             task: candidate.task,
+            event: candidate.event,
             dayIndex: candidate.dayIndex,
             startMinute: candidate.start,
             endMinute: candidate.end,

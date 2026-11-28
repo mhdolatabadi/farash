@@ -8,6 +8,10 @@ import 'package:menval/features/calendar/week_time_grid.dart';
 import 'package:menval/features/tasks/data/task.dart';
 import 'package:flutter/material.dart';
 import 'package:menval/app/soft.dart';
+import 'package:menval/app/controls.dart';
+import 'package:menval/features/calendar/calendar_event.dart';
+import 'package:menval/features/calendar/calendar_event_composer.dart';
+import 'package:menval/features/calendar/calendar_events_controller.dart';
 
 typedef CalendarTaskLoader =
     Future<List<Task>> Function(DateTime from, DateTime to);
@@ -19,9 +23,13 @@ class TaskCalendarView extends StatefulWidget {
     required this.loadTasks,
     this.now,
     this.embedded = false,
+    this.events,
+    this.createRequest,
   });
 
   final CalendarTaskLoader loadTasks;
+  final CalendarEventsController? events;
+  final ValueListenable<int>? createRequest;
   final DateTime Function()? now;
 
   /// Hide the page title when hosted inside Menval's shared shell.
@@ -34,6 +42,34 @@ class TaskCalendarView extends StatefulWidget {
 class _TaskCalendarViewState extends State<TaskCalendarView> {
   late DateTime _selected = dayOf((widget.now ?? DateTime.now)());
   bool _showMonth = false;
+  bool _composing = false;
+  CalendarEvent? _editing;
+  List<CalendarEvent> _events = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    widget.createRequest?.addListener(_createEvent);
+  }
+
+  void _createEvent() {
+    if (widget.events == null) return;
+    setState(() { _showMonth=false; _editing=null; _composing=true; });
+  }
+
+  void _openEvent(CalendarEvent event) => setState(() { _editing=event; _composing=true; });
+
+  void _savedEvent() {
+    setState(() { _composing=false; _editing=null; });
+    _load();
+  }
+
+  void _deletedEvent(CalendarEvent event) {
+    _savedEvent();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:const Text('رویداد حذف شد.'),action:SnackBarAction(label:'بازگردانی',onPressed:()async{
+      if(await widget.events!.setDeleted(event,false)&&mounted) _load();
+    })));
+  }
   List<Task> _tasks = const [];
   bool _loading = true;
   Object? _error;
@@ -48,7 +84,12 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
   @override
   void didUpdateWidget(covariant TaskCalendarView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.loadTasks != widget.loadTasks) {
+    if (oldWidget.createRequest != widget.createRequest) {
+      oldWidget.createRequest?.removeListener(_createEvent);
+      widget.createRequest?.addListener(_createEvent);
+    }
+    if (oldWidget.events != widget.events) { _events=const []; _composing=false; _editing=null; }
+    if (oldWidget.loadTasks != widget.loadTasks || oldWidget.events != widget.events) {
       // Parent may have switched accounts. Clear private data before paint
       // and reject results from the previous account's pending request.
       ++_generation;
@@ -63,6 +104,7 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
 
   @override
   void dispose() {
+    widget.createRequest?.removeListener(_createEvent);
     ++_generation;
     super.dispose();
   }
@@ -77,15 +119,19 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
       _loading = true;
       _error = null;
       _tasks = const [];
+      _events = const [];
     });
     try {
-      final tasks = await widget.loadTasks(
-        start,
-        DateTime(start.year, start.month, start.day + 6),
-      );
+      final result = await Future.wait<Object>([
+        widget.loadTasks(start,DateTime(start.year,start.month,start.day+6)),
+        if(widget.events!=null) widget.events!.load(start,DateTime(start.year,start.month,start.day+7)),
+      ]);
+      final tasks=result[0] as List<Task>;
+      final events=result.length>1 ? result[1] as List<CalendarEvent> : const <CalendarEvent>[];
       if (!mounted || generation != _generation) return;
       setState(() {
         _tasks = tasks;
+        _events = events;
         _loading = false;
       });
     } catch (error) {
@@ -183,10 +229,11 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
           : AppBar(
               title: const Text('تقویم'),
               actions: [
-                TextButton(
+                if(widget.events==null) TextButton(
                   onPressed: () => setState(() => _showMonth = !_showMonth),
                   child: Text(_showMonth ? 'هفته' : 'ماه'),
                 ),
+                if(widget.events!=null) MenvalIconButton(tooltip:'رویداد جدید',icon:Icons.add_rounded,onPressed:_createEvent),
               ],
             ),
       body: _showMonth
@@ -226,6 +273,15 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
                           ),
                       ],
                     ),
+                    if(_composing && widget.events!=null) Padding(
+                      padding:const EdgeInsets.symmetric(vertical:8),
+                      child:CalendarEventComposer(
+                        key:ValueKey('event-compose-${_editing?.id ?? 'new'}'),
+                        controller:widget.events!,day:_selected,weekStart:_start,existing:_editing,
+                        onSaved:_savedEvent,onDeleted:_deletedEvent,
+                        onCancel:()=>setState(()=>_composing=false),
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     Expanded(
                       child: LayoutBuilder(
@@ -263,6 +319,8 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
                                         child: WeekTimeGrid(
                                           start: _start,
                                           tasks: _tasks,
+                                          events: _events,
+                                          onOpenEvent: _openEvent,
                                           selected: _selected,
                                           now: (widget.now ?? DateTime.now)(),
                                           onSelectDay: _selectDay,
@@ -273,6 +331,8 @@ class _TaskCalendarViewState extends State<TaskCalendarView> {
                                   : WeekTimeGrid(
                                       start: _start,
                                       tasks: _tasks,
+                                      events: _events,
+                                      onOpenEvent: _openEvent,
                                       selected: _selected,
                                       now: (widget.now ?? DateTime.now)(),
                                       onSelectDay: _selectDay,

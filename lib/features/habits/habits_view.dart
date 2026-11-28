@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:menval/app/soft.dart';
+import 'package:menval/app/controls.dart';
 import 'package:menval/app/spacing.dart';
 import 'package:menval/app/press_depth.dart';
 import 'package:menval/core/calendar/calendar_scope.dart';
@@ -18,11 +19,11 @@ import 'package:menval/features/habits/habits_controller.dart';
 
 /// Width of one day column; also its touch target.
 const habitCellWidth = 48.0;
-const _rowHeight = 60.0;
-const _maxWidth = 760.0;
+const _rowHeight = 52.0;
+const _maxWidth = 1160.0;
 
-/// Loop Habit Tracker's main screen: every habit with its strength ring and
-/// a checkmark grid of the most recent days, today first.
+/// Compact habit history. Names remain visible while date columns scroll.
+/// Each column is an actual local calendar day, with today first in RTL.
 class HabitsView extends StatefulWidget {
   const HabitsView({
     super.key,
@@ -43,6 +44,39 @@ class HabitsView extends StatefulWidget {
 
 class _HabitsViewState extends State<HabitsView> {
   HabitsController get _c => widget.controller;
+  int? _selectedRange;
+  double _historyOffset = 0;
+  bool _syncingHistory = false;
+  final _historyControllers = <String, ScrollController>{};
+
+  ScrollController _historyController(String key) =>
+      _historyControllers.putIfAbsent(key, () {
+        final controller = ScrollController(initialScrollOffset: _historyOffset);
+        controller.addListener(() {
+          if (_syncingHistory || !controller.hasClients) return;
+          _syncingHistory = true;
+          _historyOffset = controller.offset;
+          for (final other in _historyControllers.values) {
+            if (identical(other, controller) || !other.hasClients) continue;
+            final offset = _historyOffset.clamp(
+              other.position.minScrollExtent, other.position.maxScrollExtent);
+            if (other.offset != offset) other.jumpTo(offset);
+          }
+          _syncingHistory = false;
+        });
+        return controller;
+      });
+
+  void _selectRange(int range) {
+    // A new range begins at today; existing entry keys never change.
+    _syncingHistory = true;
+    _historyOffset = 0;
+    for (final controller in _historyControllers.values) {
+      if (controller.hasClients) controller.jumpTo(0);
+    }
+    _syncingHistory = false;
+    setState(() => _selectedRange = range);
+  }
 
   @override
   void initState() {
@@ -63,6 +97,9 @@ class _HabitsViewState extends State<HabitsView> {
   @override
   void dispose() {
     _c.message.removeListener(_showMessage);
+    for (final controller in _historyControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -94,18 +131,12 @@ class _HabitsViewState extends State<HabitsView> {
           builder: (context, constraints) {
             final width = min(constraints.maxWidth, _maxWidth);
             final inset = (constraints.maxWidth - width) / 2;
-            // Name and ring keep at least 150, so a two-word name stays on
-            // one line; the rest, less the end gutter, becomes day columns.
-            // Rows and the day header grow with the user's text size.
             final scaler = MediaQuery.textScalerOf(context);
-            final rowHeight = max(60.0, scaler.scale(15) * 2.7 + 12);
-            final headerHeight = max(42.0, scaler.scale(12) * 3.2 + 8);
-            // Seven Loop-like days remain visible even on 320px phones.
-            final cellWidth =
-                ((width - 2 * (Space.gutter - 2) - Space.sm - 95) / 7)
-                    .clamp(26.0, habitCellWidth)
-                    .toDouble();
-            const columns = 7;
+            final rowHeight = max(_rowHeight, scaler.scale(14) * 2.4 + 12);
+            final headerHeight = max(52.0, scaler.scale(12) * 3.2 + 8);
+            final nameWidth = width >= 700 ? 180.0 : 120.0;
+            final columns = _selectedRange ?? (width >= 700 ? 14 : 7);
+            const cellWidth = habitCellWidth;
             final list = CustomScrollView(
               slivers: [
                 if (!widget.embedded)
@@ -123,20 +154,38 @@ class _HabitsViewState extends State<HabitsView> {
                       _FilterMenu(controller: _c),
                     ],
                   ),
-                if (habits.isNotEmpty && !widget.embedded)
-                  SliverPadding(
-                    padding: EdgeInsets.fromLTRB(
-                      inset + Space.gutter - 2,
-                      Space.xs,
-                      inset + Space.gutter - 2,
-                      Space.md,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: _Summary(controller: _c, habits: habits),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(inset + 16, 12, inset + 16, 8),
+                  sliver: SliverToBoxAdapter(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        SegmentedButton<int>(
+                          key: const ValueKey('habit-history-range'),
+                          showSelectedIcon: false,
+                          style: SegmentedButton.styleFrom(
+                            minimumSize: const Size(48, 48),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          ),
+                          segments: [
+                            for (final days in [7, 14, 30])
+                              ButtonSegment(
+                                value: days,
+                                tooltip: 'نمایش ${persianDigits(days)} روز',
+                                label: Text(persianDigits(days)),
+                              ),
+                          ],
+                          selected: {columns},
+                          onSelectionChanged: (values) => _selectRange(values.first),
+                        ),
+                        const Text('روز'),
+                        if (widget.embedded) _FilterMenu(controller: _c),
+                      ],
                     ),
                   ),
-                if (habits.isNotEmpty && widget.embedded)
-                  const SliverToBoxAdapter(child: SizedBox(height: Space.xl)),
+                ),
                 if (habits.isNotEmpty)
                   SliverPersistentHeader(
                     pinned: true,
@@ -146,11 +195,11 @@ class _HabitsViewState extends State<HabitsView> {
                       columns: columns,
                       cellWidth: cellWidth,
                       inset: inset,
+                      nameWidth: nameWidth,
+                      controller: _historyController('header'),
                       settings: CalendarScope.of(context),
                       theme: Theme.of(context),
-                      ground: widget.embedded
-                          ? Colors.transparent
-                          : Soft.ground(context),
+                      ground: Soft.ground(context),
                     ),
                   ),
                 if (_c.loading && _c.all.isEmpty)
@@ -190,9 +239,9 @@ class _HabitsViewState extends State<HabitsView> {
                 else
                   SliverPadding(
                     padding: EdgeInsets.fromLTRB(
-                      inset + Space.gutter - 2,
+                      inset + 16,
                       0,
-                      inset + Space.gutter - 2,
+                      inset + 16,
                       96,
                     ),
                     // The rows sit in one well on the soft ground.
@@ -204,6 +253,7 @@ class _HabitsViewState extends State<HabitsView> {
                       sliver: SliverReorderableList(
                         itemCount: habits.length,
                         onReorderItem: (from, to) {
+                          if (from == to) return;
                           final habit = habits[from];
                           final shown = [...habits]..removeAt(from);
                           final rest = [..._c.all]..remove(habit);
@@ -225,13 +275,15 @@ class _HabitsViewState extends State<HabitsView> {
                             controller: _c,
                             cellWidth: cellWidth,
                             divider: false,
+                            nameWidth: nameWidth,
+                            historyController: _historyController(habit.id),
                           );
                           final pressed = Padding(
                             padding: const EdgeInsetsDirectional.fromSTEB(
-                              Space.sm,
-                              Space.xs,
-                              Space.sm,
-                              Space.xs,
+                              0,
+                              4,
+                              0,
+                              4,
                             ),
                             child: PressDepth(
                               child: Material(
@@ -240,7 +292,7 @@ class _HabitsViewState extends State<HabitsView> {
                                 shadowColor: Theme.of(
                                   context,
                                 ).colorScheme.shadow.withValues(alpha: 0.13),
-                                borderRadius: BorderRadius.circular(22),
+                                borderRadius: BorderRadius.circular(12),
                                 clipBehavior: Clip.antiAlias,
                                 child: row,
                               ),
@@ -385,22 +437,19 @@ class _FilterMenu extends StatelessWidget {
   }
 }
 
-/// Weekday initial and day of month above each day column.
+/// A pinned label for each real day, scrolling in step with every habit row.
 class _DayHeader extends SliverPersistentHeaderDelegate {
   _DayHeader({
-    required this.height,
-    required this.today,
-    required this.columns,
-    required this.cellWidth,
-    required this.inset,
-    required this.settings,
-    required this.theme,
+    required this.height, required this.today, required this.columns,
+    required this.cellWidth, required this.inset, required this.nameWidth,
+    required this.controller, required this.settings, required this.theme,
     required this.ground,
   });
 
   final Color ground;
   final int today, columns;
-  final double inset, height, cellWidth;
+  final double inset, height, cellWidth, nameWidth;
+  final ScrollController controller;
   final CalendarSettings settings;
   final ThemeData theme;
 
@@ -410,55 +459,46 @@ class _DayHeader extends SliverPersistentHeaderDelegate {
   double get maxExtent => height;
 
   @override
-  Widget build(BuildContext context, double shrink, bool overlaps) {
-    final muted = theme.colorScheme.onSurfaceVariant;
-    return Container(
-      height: height,
-      decoration: BoxDecoration(color: ground, border: null),
-      padding: EdgeInsets.symmetric(horizontal: inset + Space.gutter - 2),
-      child: Row(
-        children: [
-          const Spacer(),
+  Widget build(BuildContext context, double shrink, bool overlaps) => Container(
+    height: height,
+    color: ground,
+    padding: EdgeInsets.symmetric(horizontal: inset + 16),
+    child: Row(children: [
+      SizedBox(width: nameWidth, child: Padding(
+        padding: const EdgeInsetsDirectional.only(start: 12),
+        child: Text('عادت', style: theme.textTheme.labelMedium),
+      )),
+      Expanded(child: SingleChildScrollView(
+        key: const ValueKey('habit-history-header'),
+        scrollDirection: Axis.horizontal,
+        controller: controller,
+        child: Row(children: [
           for (var i = 0; i < columns; i++)
-            SizedBox(
-              width: cellWidth,
-              child: ExcludeSemantics(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        habitWeekdays[dayDate(saturdayOf(today) + i).weekday -
-                            1],
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: i == 0 ? theme.colorScheme.onSurface : muted,
-                          fontWeight: i == 0
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          const SizedBox(width: Space.sm),
-        ],
-      ),
-    );
-  }
+            SizedBox(width: cellWidth, child: ExcludeSemantics(child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(habitWeekdays[dayDate(today - i).weekday - 1],
+                  maxLines: 1,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  )),
+                Text(persianDigits(dayOfMonth(today - i, settings)),
+                  maxLines: 1,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: i == 0 ? FontWeight.w700 : FontWeight.w400,
+                  )),
+              ],
+            ))),
+        ]),
+      )),
+    ]),
+  );
 
   @override
   bool shouldRebuild(_DayHeader old) =>
-      old.today != today ||
-      old.height != height ||
-      old.columns != columns ||
-      old.cellWidth != cellWidth ||
-      old.inset != inset ||
-      old.theme != theme ||
-      old.ground != ground ||
+      old.today != today || old.height != height || old.columns != columns ||
+      old.cellWidth != cellWidth || old.inset != inset || old.theme != theme ||
+      old.ground != ground || old.nameWidth != nameWidth ||
       old.settings.system != settings.system;
 }
 
@@ -500,6 +540,8 @@ class HabitRow extends StatelessWidget {
     this.cellWidth = habitCellWidth,
     this.height = _rowHeight,
     this.divider = true,
+    this.nameWidth = 120,
+    this.historyController,
   });
 
   /// The hairline under the row; off for the last row of the well.
@@ -507,7 +549,8 @@ class HabitRow extends StatelessWidget {
   final Habit habit;
   final HabitStats stats;
   final int columns;
-  final double height, cellWidth;
+  final double height, cellWidth, nameWidth;
+  final ScrollController? historyController;
   final HabitsController controller;
 
   @override
@@ -524,7 +567,8 @@ class HabitRow extends StatelessWidget {
           height: height,
           child: Row(
             children: [
-              Expanded(
+              SizedBox(
+                width: nameWidth,
                 child: InkWell(
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -541,7 +585,7 @@ class HabitRow extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(habitGlyph(habit.name), color: color, size: 18),
+                        Icon(habitGlyph(habit.name), color: color, size: 20),
                         const SizedBox(width: Space.xs),
                         Expanded(
                           child: Column(
@@ -589,25 +633,24 @@ class HabitRow extends StatelessWidget {
                 ),
               ),
 
-              for (var i = 0; i < columns; i++)
-                CheckCell(
-                  habit: habit,
-                  stats: stats,
-                  width: cellWidth,
-                  day: saturdayOf(stats.today) + i,
-                  label: relativeDay(
-                    dayDate(saturdayOf(stats.today) + i),
-                    settings,
-                    today: dayDate(stats.today),
-                  ),
-                  onTap: () => recordDay(
-                    context,
-                    controller,
-                    habit,
-                    saturdayOf(stats.today) + i,
-                  ),
-                ),
-              const SizedBox(width: Space.sm),
+              Expanded(child: SingleChildScrollView(
+                key: ValueKey('habit-history-${habit.id}'),
+                scrollDirection: Axis.horizontal,
+                controller: historyController,
+                child: Row(children: [
+                  for (var i = 0; i < columns; i++)
+                    SizedBox(height: height, child: CheckCell(
+                      key: ValueKey('${habit.id}-${dayKey(stats.today - i)}'),
+                      habit: habit,
+                      stats: stats,
+                      width: cellWidth,
+                      day: stats.today - i,
+                      label: relativeDay(dayDate(stats.today - i), settings,
+                        today: dayDate(stats.today)),
+                      onTap: () => recordDay(context, controller, habit, stats.today - i),
+                    )),
+                ]),
+              )),
             ],
           ),
         ),
@@ -705,57 +748,20 @@ class CheckCell extends StatelessWidget {
         ],
       );
     } else {
-      final (icon, tint, text) = switch (check) {
-        DayCheck.yes => (Icons.check_rounded, color, 'انجام شد'),
-        DayCheck.auto => (
-          Icons.check_rounded,
-          color.withValues(alpha: .4),
-          'در بازهٔ انجام‌شده',
-        ),
-        DayCheck.skip => (
-          Icons.keyboard_double_arrow_left_rounded,
-          color.withValues(alpha: .75),
-          'رد شد',
-        ),
-        DayCheck.no => (
-          Icons.close_rounded,
-          muted.withValues(alpha: .7),
-          'انجام نشد',
-        ),
-        DayCheck.unknown => (
-          Icons.circle_outlined,
-          muted.withValues(alpha: .35),
-          'ثبت نشده',
-        ),
+      final (icon, text) = switch (check) {
+        DayCheck.yes => (null, 'انجام شد'),
+        DayCheck.auto => (null, 'در بازهٔ انجام‌شده'),
+        DayCheck.skip => (Icons.keyboard_double_arrow_left_rounded, 'رد شد'),
+        DayCheck.no => (Icons.close_rounded, 'انجام نشد'),
+        DayCheck.unknown => (null, 'ثبت نشده'),
       };
-      state = text;
-      final active = check == DayCheck.yes || check == DayCheck.auto;
-      mark = AnimatedContainer(
-        duration: MediaQuery.disableAnimationsOf(context)
-            ? Duration.zero
-            : const Duration(milliseconds: 120),
-        width: 22,
-        height: 22,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: active ? tint : Colors.transparent,
-          border: Border.all(
-            color: active
-                ? tint
-                : theme.colorScheme.outline.withValues(alpha: 0.6),
-            width: active ? 1 : 1.7,
-          ),
-        ),
-        child: active
-            ? Icon(
-                Icons.check_rounded,
-                size: 14,
-                color: theme.colorScheme.surface,
-              )
-            : check == DayCheck.no || check == DayCheck.skip
-            ? Icon(icon, size: 12, color: tint)
-            : null,
-      );
+      return SizedBox(width: width, child: Center(child: MenvalCheckbox(
+        value: check == DayCheck.yes || check == DayCheck.auto,
+        label: '${habit.name}، $label: $text',
+        activeColor: check == DayCheck.auto ? muted : null,
+        indeterminateIcon: icon,
+        onChanged: (_) => onTap(),
+      )));
     }
     return Semantics(
       button: true,
@@ -944,95 +950,6 @@ class _AmountDialogState extends State<_AmountDialog> {
         ),
         FilledButton(onPressed: _save, child: const Text('ثبت')),
       ],
-    );
-  }
-}
-
-/// Two tiles over the grid: today's done count, and the longest streak
-/// still running. Both come from the habits' own entries.
-class _Summary extends StatelessWidget {
-  const _Summary({required this.controller, required this.habits});
-
-  final HabitsController controller;
-  final List<Habit> habits;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final today = controller.today;
-    final active = [
-      for (final h in habits)
-        if (!h.archived) h,
-    ];
-    final done = active.where((h) => controller.stats(h).counts(today)).length;
-    final streak = active.fold<int>(
-      0,
-      (best, h) => max(best, controller.stats(h).currentStreak?.length ?? 0),
-    );
-    Widget tile(String caption, String value, {Widget? lead}) => Expanded(
-      child: Semantics(
-        label: '$caption: $value',
-        excludeSemantics: true,
-        child: SoftTile(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          child: Row(
-            children: [
-              if (lead != null) ...[lead, const SizedBox(width: 10)],
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      caption,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text(
-                        value,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          tile(
-            'امروز',
-            '${persianDigits(done)} از ${persianDigits(active.length)}',
-            lead: active.isEmpty
-                ? null
-                : SizedBox.square(
-                    dimension: 40,
-                    child: CircularProgressIndicator(
-                      value: done / active.length,
-                      strokeWidth: 6,
-                      strokeCap: StrokeCap.round,
-                      backgroundColor: theme.colorScheme.outlineVariant,
-                    ),
-                  ),
-          ),
-          const SizedBox(width: Space.md),
-          tile('بهترین زنجیرهٔ جاری', '${persianDigits(streak)} روز'),
-        ],
-      ),
     );
   }
 }

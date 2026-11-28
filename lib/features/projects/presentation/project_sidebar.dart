@@ -353,14 +353,10 @@ class SidebarTheme extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final pointer = switch (theme.platform) {
-      TargetPlatform.android || TargetPlatform.iOS => false,
-      _ => MediaQuery.sizeOf(context).width >= 840,
-    };
     return ListTileTheme(
       data: ListTileThemeData(
         dense: true,
-        minTileHeight: pointer ? 36 : 48,
+        minTileHeight: 48,
         minLeadingWidth: 18,
         minVerticalPadding: 0,
         visualDensity: VisualDensity.compact,
@@ -391,7 +387,7 @@ class SidebarRow extends StatelessWidget {
   const SidebarRow({super.key, required this.selected, required this.child});
 
   /// The corner of every row and of the open row's pill.
-  static const radius = 10.0;
+  static const radius = 12.0;
 
   final bool selected;
   final Widget child;

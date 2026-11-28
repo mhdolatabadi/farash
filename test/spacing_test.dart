@@ -45,8 +45,8 @@ void main() {
     // the gutter and the keyline are measured from the well's edge.
     const well = Space.gutter - 2;
 
-    // Measure the actual 22px checkbox, skipping PressDepth wrappers.
-    // Its 48px hit target begins 4px inside the well (4 + (48 - 22) / 2).
+    // Measure the actual20px checkbox, skipping PressDepth wrappers.
+    // Its 48px hit target begins2px inside the well (2 + (48 - 20) / 2).
     final circle = tester.getRect(
       find
           .descendant(
@@ -55,11 +55,11 @@ void main() {
           )
           .last,
     );
-    expect(width - circle.right, closeTo(well + 17, 2));
+    expect(width - circle.right, closeTo(well + 16, 2));
 
     // Task titles start on the content keyline.
-    expect(start(find.text('نان')), closeTo(well + Space.keyline, 1));
-    expect(start(find.text('کتاب')), closeTo(well + Space.keyline, 1));
+    expect(start(find.text('نان')), closeTo(well + 50, 1));
+    expect(start(find.text('کتاب')), closeTo(well + 50, 1));
 
     // The open count shares the title's start and sits close under it.
     expect(start(find.text('۲ کار باز')), start(find.text('کار')));

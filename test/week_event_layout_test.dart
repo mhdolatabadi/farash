@@ -21,9 +21,9 @@ void main() {
         timed('second', 23, 12, 30, 60),
         timed('third', 23, 14, 0, 30),
       ], week);
-      final first = blocks.singleWhere((e) => e.task.id == 'first');
-      final second = blocks.singleWhere((e) => e.task.id == 'second');
-      final third = blocks.singleWhere((e) => e.task.id == 'third');
+      final first = blocks.singleWhere((e) => e.task!.id == 'first');
+      final second = blocks.singleWhere((e) => e.task!.id == 'second');
+      final third = blocks.singleWhere((e) => e.task!.id == 'third');
       expect(first.dayIndex, 2);
       expect(first.startMinute, 720);
       expect(first.endMinute, 810);
@@ -63,7 +63,7 @@ void main() {
       timed('friday', 27, 23, 40, 100),
     ], week);
     expect(blocks.length, 1);
-    expect(blocks.single.task.id, 'friday');
+    expect(blocks.single.task!.id, 'friday');
     expect(blocks.single.endMinute, 1440);
   });
 }

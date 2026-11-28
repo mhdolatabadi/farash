@@ -61,10 +61,10 @@ class TodayWorkspace extends StatelessWidget {
         Space.xxl,
       ),
       child: SoftWell(
-        radius: 36,
+        radius: 22,
         padding: const EdgeInsetsDirectional.fromSTEB(
           Space.md,
-          Space.xl,
+          Space.md,
           Space.md,
           Space.md,
         ),
@@ -89,7 +89,7 @@ class TodayWorkspace extends StatelessWidget {
                     color: colors.surface,
                     elevation: 3,
                     shadowColor: colors.shadow.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(12),
                     clipBehavior: Clip.antiAlias,
                     child: rowBuilder(tasks[index], index == tasks.length - 1),
                   ),

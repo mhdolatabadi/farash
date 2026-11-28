@@ -4,6 +4,8 @@ import 'package:menval/features/time_tracking/time_tracking.dart';
 import 'package:menval/features/time_tracking/time_tracking_view.dart';
 import 'package:flutter/material.dart';
 import 'package:menval/app/soft.dart';
+import 'package:menval/app/workspace_edits.dart';
+import 'package:menval/app/controls.dart';
 import 'package:menval/app/spacing.dart';
 import 'package:menval/app/surfaces.dart';
 import 'package:menval/features/labels/application/labels_controller.dart';
@@ -70,10 +72,20 @@ class TaskDetailEditor extends StatefulWidget {
   final List<Project> projects;
 
   @override
-  State<TaskDetailEditor> createState() => _TaskDetailSheetState();
+  TaskDetailEditorState createState() => TaskDetailEditorState();
 }
 
-class _TaskDetailSheetState extends State<TaskDetailEditor> {
+class TaskDetailEditorState extends State<TaskDetailEditor> {
+  WorkspaceEdits? _workspace;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final workspace = WorkspaceEditsScope.of(context);
+    if (workspace != _workspace) _workspace?.unregister(this);
+    _workspace = workspace;
+    if (widget.onResult != null) _workspace?.register(this, canLeave);
+  }
+
   final _formKey = GlobalKey<FormState>();
   late final _title = TextEditingController(text: widget.task.title);
   late final _description = TextEditingController(
@@ -107,8 +119,8 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
       a.length == b.length && a.toSet().containsAll(b);
 
   /// Closes without saving, asking first when something would be lost.
-  Future<void> _dismiss() async {
-    if (_saving) return;
+  Future<bool> canLeave() async {
+    if (_saving) return false;
     if (_dirty) {
       final discard = await showDialog<bool>(
         context: context,
@@ -127,9 +139,13 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
           ],
         ),
       );
-      if (discard != true || !mounted) return;
+      if (discard != true || !mounted) return false;
     }
-    _close(null);
+    return true;
+  }
+
+  Future<void> _dismiss() async {
+    if (await canLeave() && mounted) _close(null);
   }
 
   Future<void> _pickDates() async {
@@ -147,6 +163,7 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
 
   @override
   void dispose() {
+    _workspace?.unregister(this);
     _title.dispose();
     _description.dispose();
     _newSubtask.dispose();
@@ -330,19 +347,6 @@ class _TaskDetailSheetState extends State<TaskDetailEditor> {
                         icon: const Icon(Icons.close),
                       ),
                     ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsetsDirectional.only(end: 12),
-                    child: TextFormField(
-                      controller: _description,
-                      maxLength: 20000,
-                      buildCounter: _counterNearLimit,
-                      minLines: 2,
-                      maxLines: 10,
-                      keyboardType: TextInputType.multiline,
-                      style: theme.textTheme.bodyLarge,
-                      decoration: _bare(theme, 'توضیحات'),
-                    ),
                   ),
                   const SizedBox(height: 12),
                   // The properties sit in one well, the checklist and
@@ -778,25 +782,12 @@ class _ChecklistState extends State<_Checklist> {
                   : 'چک‌لیست ${persianDigits(done)}/${persianDigits(items.length)}',
             ),
             for (final item in items)
-              CheckboxListTile(
-                key: ValueKey('checklist-${item.line}'),
-                value: item.done,
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-                title: Text(
-                  item.text,
-                  style: item.done
-                      ? TextStyle(
-                          decoration: TextDecoration.lineThrough,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        )
-                      : null,
-                ),
-                onChanged: (checked) => widget.onChanged(
-                  setChecklistItem(value.text, item.line, checked ?? false),
-                ),
-              ),
+              Row(key: ValueKey('checklist-${item.line}'), children: [
+                MenvalCheckbox(value: item.done, label: item.text,
+                  onChanged: (checked) => widget.onChanged(setChecklistItem(value.text, item.line, checked))),
+                Expanded(child: Text(item.text, style: item.done ? TextStyle(
+                  decoration: TextDecoration.lineThrough, color: theme.colorScheme.onSurfaceVariant) : null)),
+              ]),
             _InlineAdd(
               controller: widget.newItem,
               hint: 'مورد تازهٔ چک‌لیست',

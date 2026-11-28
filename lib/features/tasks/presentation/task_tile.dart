@@ -1,6 +1,7 @@
 import 'package:menval/features/time_tracking/time_tracking.dart';
 import 'package:menval/features/time_tracking/time_tracking_view.dart';
 import 'package:flutter/material.dart';
+import 'package:menval/app/controls.dart';
 import 'package:menval/app/motion.dart';
 import 'package:menval/app/press_depth.dart';
 import 'package:menval/app/spacing.dart';
@@ -88,9 +89,29 @@ class TaskTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final done = task.isCompleted;
-    final firstLine = descriptionPreview(task.description);
     final checklist = parseChecklist(task.description);
     final dated = (showDue && task.due != null) || task.deadline != null;
+    if (dense && !task.hasSubtasks && checklist.isEmpty &&
+        task.deadline == null && tag == null && labels.isEmpty && !stamped) {
+      final time = task.due?.localTime;
+      return Semantics(selected: selected, child: Material(
+        color: selected ? theme.colorScheme.primaryContainer : Colors.transparent,
+        child: PressDepth(child: InkWell(onTap: onOpen, onLongPress: onLongPress,
+          child: Padding(padding: EdgeInsetsDirectional.only(start: 2 + subtaskIndent * depth, end: 10, top: 2, bottom: 2),
+            child: Row(children: [
+              ?leading,
+              _PriorityCheck(task: task, onToggle: onToggle),
+              Expanded(child: Text(task.title, maxLines: 2, overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500,
+                  decoration: done ? TextDecoration.lineThrough : null,
+                  color: done ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.onSurface))),
+              if (showDue && time != null) Padding(padding: const EdgeInsetsDirectional.only(start: 8),
+                child: Text(formatTime(time), style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant))),
+              ?trailing,
+            ])),
+        )),
+      ));
+    }
     final row = InkWell(
       onTap: onOpen,
       onLongPress: onLongPress,
@@ -111,13 +132,13 @@ class TaskTile extends StatelessWidget {
             const SizedBox(width: 4),
             Expanded(
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: dense ? 6 : 12),
+                padding: EdgeInsets.symmetric(vertical: dense ? 4 : 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       task.title,
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         decoration: done ? TextDecoration.lineThrough : null,
@@ -126,17 +147,6 @@ class TaskTile extends StatelessWidget {
                             : theme.colorScheme.onSurface,
                       ),
                     ),
-                    if (firstLine.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        firstLine,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
                     if (stamped) ...[
                       const SizedBox(height: 4),
                       const _DoneStamp(),
@@ -484,70 +494,12 @@ class _PriorityCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = task.priority.colorIn(context);
-    final done = task.isCompleted;
-    final priority = task.priority == TaskPriority.p4
-        ? ''
-        : '، ${task.priority.label}';
-    return Semantics(
-      checked: done,
-      label: done
-          ? 'برگرداندن «${task.title}»$priority'
-          : 'انجام «${task.title}»$priority',
-      child: InkResponse(
-        onTap: onToggle,
-        radius: 24,
-        child: SizedBox.square(
-          dimension: 48,
-          child: Center(
-            child: AnimatedContainer(
-              duration: MediaQuery.disableAnimationsOf(context)
-                  ? Duration.zero
-                  : const Duration(milliseconds: 150),
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: done
-                    ? color
-                    : color.withValues(
-                        alpha: task.priority == TaskPriority.p4 ? 0 : 0.12,
-                      ),
-                border: Border.all(color: color, width: 2),
-              ),
-              // The check pops in rather than appearing.
-              child: AnimatedSwitcher(
-                duration: Motion.of(context, Motion.quick),
-                transitionBuilder: (child, animation) => ScaleTransition(
-                  scale: CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutBack,
-                  ),
-                  child: child,
-                ),
-                child: done
-                    ? Icon(
-                        Icons.check,
-                        key: const ValueKey('checked'),
-                        size: 14,
-                        // Dark fills take the light ink, light fills the dark.
-                        color:
-                            ThemeData.estimateBrightnessForColor(color) ==
-                                Brightness.dark
-                            ? (theme.brightness == Brightness.dark
-                                  ? theme.colorScheme.onSurface
-                                  : theme.colorScheme.surface)
-                            : (theme.brightness == Brightness.dark
-                                  ? theme.colorScheme.surface
-                                  : theme.colorScheme.onSurface),
-                      )
-                    : const SizedBox.shrink(key: ValueKey('open')),
-              ),
-            ),
-          ),
-        ),
-      ),
+    final priority = task.priority == TaskPriority.p4 ? '' : '، ${task.priority.label}';
+    return MenvalCheckbox(
+      value: task.isCompleted,
+      label: task.isCompleted ? 'برگرداندن «${task.title}»$priority' : 'انجام «${task.title}»$priority',
+      activeColor: task.priority.colorIn(context),
+      onChanged: (_) => onToggle(),
     );
   }
 }
